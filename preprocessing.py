@@ -41,9 +41,9 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
                             meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
     eog_ver_scores = ica.find_sources_raw(meg_raw, \
                         target=eog_ver_filtered, score_func=score_func)
-    idx_eog_ver = np.where(np.abs(eog_ver_scores) >= thresh)[0]
-    if not idx_eog_ver.any(): 
-        idx_eog_ver = np.array([-1])
+    ic_eog_ver = np.where(np.abs(eog_ver_scores) >= thresh)[0] +1  # plus 1 for any()
+    if not ic_eog_ver.any(): 
+        ic_eog_ver = np.array([0])
 
     # horizontal EOG
     idx_eog_hor = [meg_raw.ch_names.index(name_eog_hor)]
@@ -51,18 +51,18 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
                             meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
     eog_hor_scores = ica.find_sources_raw(meg_raw, \
                         target=eog_hor_filtered, score_func=score_func)
-    idx_eog_hor = np.where(np.abs(eog_hor_scores) >= thresh)[0]
-    if not idx_eog_hor.any(): 
-        idx_eog_hor = np.array([-1])
+    ic_eog_hor = np.where(np.abs(eog_hor_scores) >= thresh)[0] +1 # plus 1 for any()
+    if not ic_eog_hor.any(): 
+        ic_eog_hor = np.array([0])
     
     # combine both  
     idx_eog = []
-    for i in range(idx_eog_ver.size):
-        ix = idx_eog_ver[i]
+    for i in range(ic_eog_ver.size):
+        ix = ic_eog_ver[i] -1
         if (ix >= 0):
             idx_eog.append(ix)
-    for i in range(idx_eog_hor.size):
-        ix = idx_eog_hor[i]
+    for i in range(ic_eog_hor.size):
+        ix = ic_eog_hor[i] -1
         if (ix >= 0):
             idx_eog.append(ix)
 
@@ -451,9 +451,9 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         
         # get ECG and EOG related components
         ic_ecg = get_ics_cardiac(meg_raw, ica, 
-                                flow=10, fhigh=20, thresh=threshold)
+                                flow=flow_ecg, fhigh=fhigh_ecg, thresh=threshold)
         ic_eog = get_ics_ocular(meg_raw, ica, 
-                                flow=1, fhigh=10, thresh=threshold)
+                                flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
         ica.exclude += list(ic_ecg) + list(ic_eog)
         # ica.plot_topomap(ic_artifacts)
         ica.save(fnica)  # save again to store excluded
@@ -602,7 +602,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 
     """ Select ICs based on CTPS analysis. """
 
-    import mne, os, ctps
+    import mne, os, ctps, string
     import numpy as np
     import matplotlib.pylab as pl
 
@@ -617,7 +617,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
         fnctps = fnlist[ifile]
         name  = os.path.splitext(fnctps)[0]
         basename = os.path.splitext(os.path.basename(fnctps))[0]
-        print 'working on: '+basename
+        print '>>> working on: '+basename
         # load CTPS data
         dctps = np.load(fnctps).item()
         freqs = dctps['freqs']
@@ -627,6 +627,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
         times = dctps['times']
         ic_sel = []
         # loop acros all freq. bands
+        pl.ioff()  # switch off (interactive) plot visualisation
         fig=pl.figure(ifile+1,figsize=(16,9), dpi=100) 
         fig.subplots_adjust(left=0.08, right=0.95, bottom=0.05,
                             top=0.93, wspace=0.2, hspace=0.2)            
@@ -644,25 +645,27 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
                 else:
                     ic_sel = ix+1
 
-                # do construct names for title, fnout_fig, fnout_ctps
-                frange = ' @'+str(freqs[ifreq][0])+'-'+str(freqs[ifreq][1])+'Hz'
-                x = np.arange(ncomp)+1
-                # do make bar plots for ctps thresh level plots
-                ax = fig.add_subplot(nrow,2,ifreq+1)
-                pl.bar(x,pkmax,color='steelblue')
-                pl.bar(x[ix],pkmax[ix],color='red')
-                pl.title(trig_name+frange, fontsize='small')
-                pl.xlim([1,ncomp])
-                pl.ylim([0,0.5])
-                pl.text(2,0.45, 'ICs: '+str(ix+1))
+            # do construct names for title, fnout_fig, fnout_ctps
+            frange = ' @'+str(freqs[ifreq][0])+'-'+str(freqs[ifreq][1])+'Hz'
+            x = np.arange(ncomp)+1
+            # do make bar plots for ctps thresh level plots
+            ax = fig.add_subplot(nrow,2,ifreq+1)
+            pl.bar(x,pkmax,color='steelblue')
+            pl.bar(x[ix],pkmax[ix],color='red')
+            pl.title(trig_name+frange, fontsize='small')
+            pl.xlim([1,ncomp])
+            pl.ylim([0,0.5])
+            pl.text(2,0.45, 'ICs: '+str(ix+1))
         ic_sel = np.unique(ic_sel)
-        fig.text(0.5,0.012, 'ICs (all): '+str(ic_sel), 
-                horizontalalignment='center', transform=ax.transAxes)
+        info = 'ICs (all): '+str(ic_sel).strip('[]')
+        fig.text(0.02,0.01, info,transform=ax.transAxes)
 
         # save CTPS components found
         fntxt = name+'-ic_selection.txt'
+        #ic_sel = string.join(str(np.unique(ic_sel)),', ')
         np.savetxt(fntxt,ic_sel,fmt='%i')
 
         # save figure
         fnfig = name+'-ic_selection.png'
         pl.savefig(fnfig,dpi=100)
+        pl.ion()  # switch on (interactive) plot visualisation
