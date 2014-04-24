@@ -1,13 +1,35 @@
 #!/usr/bin/env python
 
-# Script reads meg and eeg as fif files and combines them into one raw fif file. 
-# jumeg_import_eeg2meg
-#
+# Functions to perform IO operations.
+
 # Authors: praveen.sripad@rwth-aachen.de
 # License: BSD 3 clause
 
-import mne, sys
-import matplotlib.pyplot as pl
+import mne
+import sys
+import os
+
+def wrapper_brain_vision2fiff(header_fname):
+    '''
+    Python wrapper for mne_barin_vision2fiff binary.
+    Please make sure the MNE_BIN_PATH environment variable is set correctly.
+    Parameters
+    ----------
+    header_fname: Header file name. The .eeg data file is automatically found.
+    '''
+    if not os.environ['MNE_BIN_PATH']:
+        print "MNE_BIN_PATH not correctly set."
+        return
+    
+    if header_fname is "" or not header_fname.endswith('vhdr'):
+        print "Usage: .py <header_file>"
+        print "Please use the original binary to pass other arguments."
+        return
+    else:
+        print "The header file name provided is %s" %(header_fname)
+     
+    mne_brain_vision2fiff_path = os.environ['MNE_BIN_PATH']+'/mne_brain_vision2fiff'
+    os.system(mne_brain_vision2fiff_path + ' --header ' + header_fname + ' --out ' + header_fname.split('.')[0] + '-eeg')
 
 def jumeg_resample(l_sfreq, h_sfreq, samp_length):
     ''' 
@@ -34,25 +56,34 @@ def jumeg_resample(l_sfreq, h_sfreq, samp_length):
         j += 1
     return resamp_list
 
-raw_fname = sys.argv[1]
-eeg_fname = sys.argv[2]
+def combine_meeg(raw_fname, eeg_fname, flow=0.1, fhigh=200, filter_order=2, n_jobs=2):
+    ''' 
+    Functions combines meg data with eeg data. This is done by: - 
+        1. Adjust MEG and EEG data length.
+        2. Resampling EEG data channels to match sampling frequency of MEG signals. 
+        3. Write EEG channels into MEG fif file and write to disk. 
+        
+    Parameters
+    ---------- 
+    raw_fname: FIF file containing MEG data.
+    eeg_fname: FIF file containing EEG data.
+    flow, fhigh: Low and high frequency limits for filtering.
+    filter_order: Order of the Butterworth filter used for filtering. 
+    n_jobs : Number of jobs.
 
-def combine_meeg(raw_fname, eeg_fname):
-    
+    Warning: Please make sure that the filter settings provided are stable for both MEG and EEG data. 
+    '''
     raw = mne.fiff.Raw(raw_fname, preload=True)
     eeg = mne.fiff.Raw(eeg_fname, preload=True)
     
-    # Filter both signals from 1-200 Hz
-    flow, fhigh = 1.0, 200.0
+    # Filter both signals
     filter_type = 'butter'
-    filter_order = 4
-    njobs = 2
     picks_fil = mne.fiff.pick_types(raw.info, meg=True, eog=True, ecg=True, exclude='bads')
     raw.filter(flow, fhigh, picks=picks_fil, n_jobs=njobs, method='iir', \
                iir_params={'ftype': filter_type, 'order': filter_order})
     picks_fil = mne.fiff.pick_types(eeg.info, meg=False, eeg=True, exclude='bads')
     eeg.filter(flow, fhigh, picks=picks_fil, n_jobs=njobs, method='iir', \
-               iir_params={'ftype': filter_type, 'order': 2})
+               iir_params={'ftype': filter_type, 'order': filter_order})
     
     # Find sync pulse S128 in stim channel of EEG signal.
     start_idx_eeg = mne.find_events(eeg, stim_channel='STI 014', output='onset')[0, 0]
@@ -85,14 +116,13 @@ def combine_meeg(raw_fname, eeg_fname):
     eeg_data, eeg_times = eeg[:, start_idx_eeg:stop_idx_eeg]
     _, raw_times = raw[:, start_idx_raw:stop_idx_raw]
     
-    # Resample eeg signal (jumeg_resample uses standard function)
+    # Resample eeg signal
     resamp_list = jumeg_resample(raw.info['sfreq'], eeg.info['sfreq'], raw_times.shape[0])
     
     # Update eeg signal
     eeg._data, eeg._times = eeg_data[:, resamp_list], eeg_times[resamp_list]
     
     # Update meg signal
-    #raw._data, raw._times = raw_data, raw_times
     raw._data, raw._times = raw[:, start_idx_raw:stop_idx_raw]
     
     # Identify raw channels for ECG, EOG and STI and replace it with relevant data.
@@ -103,13 +133,3 @@ def combine_meeg(raw_fname, eeg_fname):
     
     # Write the combined FIF file to disk.
     raw.save(raw_fname.split('.')[0] + '_processed' + '.fif')
-
-'''
-with open('list.txt') as temp_file:
-  flist = [line.rstrip('\n') for line in temp_file]
-
-for i in flist:
-    combine_meeg(i+'-meg.fif', i+'-eeg_raw.fif')
-'''
-
-combine_meeg(raw_fname, eeg_fname)
