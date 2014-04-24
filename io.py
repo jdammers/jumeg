@@ -56,7 +56,7 @@ def jumeg_resample(l_sfreq, h_sfreq, samp_length):
         j += 1
     return resamp_list
 
-def combine_meeg(raw_fname, eeg_fname, flow=0.1, fhigh=200, filter_order=2, n_jobs=2):
+def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200, filter_order=2, njobs=2):
     ''' 
     Functions combines meg data with eeg data. This is done by: - 
         1. Adjust MEG and EEG data length.
@@ -69,9 +69,10 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.1, fhigh=200, filter_order=2, n_jo
     eeg_fname: FIF file containing EEG data.
     flow, fhigh: Low and high frequency limits for filtering.
     filter_order: Order of the Butterworth filter used for filtering. 
-    n_jobs : Number of jobs.
+    njobs : Number of jobs.
 
     Warning: Please make sure that the filter settings provided are stable for both MEG and EEG data. 
+    Only channels ECG 001, EOG 001, EOG 002 and STI 014 are written.
     '''
     raw = mne.fiff.Raw(raw_fname, preload=True)
     eeg = mne.fiff.Raw(eeg_fname, preload=True)
@@ -111,7 +112,6 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.1, fhigh=200, filter_order=2, n_jo
     # Calculate the index of the last time points
     stop_idx_eeg = eeg.time_as_index(round(end_time_eeg, 3))[0]
     stop_idx_raw = raw.time_as_index(round(end_time_raw, 3))[0]
-    print start_idx_raw, stop_idx_raw, start_idx_eeg, stop_idx_eeg
     
     eeg_data, eeg_times = eeg[:, start_idx_eeg:stop_idx_eeg]
     _, raw_times = raw[:, start_idx_raw:stop_idx_raw]
