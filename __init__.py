@@ -12,3 +12,4 @@ from .preprocessing import (get_ics_cardiac, get_ics_ocular,
                             plot_performance_artifact_rejection)
 from . import math
 from . import io
+from . import utils
