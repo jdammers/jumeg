@@ -338,6 +338,8 @@ def apply_average(filenames, name_stim='STI 014', event_id =None,
         fnlist = list(filenames)
     nfiles = len(fnlist)
 
+    # loop across raw files
+    fnavg = []    # collect output filenames
     for ifile in range(nfiles):        
         fname = fnlist[ifile]
         name  = os.path.split(fname)[1]
@@ -367,10 +369,14 @@ def apply_average(filenames, name_stim='STI 014', event_id =None,
             fnout = fname[0:len(fname)-4] + ',avg.fif'
             avg.save(fnout)
             print 'saved:'+fnout
+            fnavg.append(fnout)
 
         else: 
             event_id = None
             print '>>> Warning: Event not found in file: '+fname   
+
+    if (save_plot):
+        plot_average(fnavg, show_plot=show_plot)
 
 
 
