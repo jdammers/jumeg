@@ -125,9 +125,6 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
 
 
 
-
-
-
 #######################################################
 # 
 #  calculate the performance of artifact rejection
@@ -289,7 +286,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
     if isinstance(fname_raw, list):
         fnraw = fname_raw
     else:
-        fnraw = [fname_raw]
+        fnraw = list(fname_raw)
     nfiles = len(fnraw)
     # loop across all filenames
     for ifile in range(nfiles):        
@@ -316,12 +313,14 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 # 
 #######################################################
 def apply_average(filenames, name_stim='STI 014', event_id =None,
-              tmin=-0.2, tmax=0.4, baseline = (None,0)):
+    tmin=-0.2, tmax=0.4, baseline = (None,0), save_plot=True, show_plot=False):
 
     """ Performs averaging to a list of raw files. """
 
     import mne, os
     import numpy as np
+    import matplotlib.pylab as pl
+
 
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
@@ -336,8 +335,11 @@ def apply_average(filenames, name_stim='STI 014', event_id =None,
     if isinstance(filenames, list):
         fnlist = filenames
     else:
-        fnlist = [filenames]
+        fnlist = list(filenames)
     nfiles = len(fnlist)
+
+    # loop across raw files
+    fnavg = []    # collect output filenames
     for ifile in range(nfiles):        
         fname = fnlist[ifile]
         name  = os.path.split(fname)[1]
@@ -364,13 +366,63 @@ def apply_average(filenames, name_stim='STI 014', event_id =None,
                         picks=picks, preload=True, baseline=baseline)
             avg = epochs.average()
             # save averaged data
-            fnout = fname[0:len(fname)-4] + ',avg,'+trig_name+'.fif'
+            fnout = fname[0:len(fname)-4] + ',avg.fif'
             avg.save(fnout)
             print 'saved:'+fnout
+            fnavg.append(fnout)
 
         else: 
             event_id = None
             print '>>> Warning: Event not found in file: '+fname   
+
+    if (save_plot):
+        plot_average(fnavg, show_plot=show_plot)
+
+
+
+#######################################################
+# 
+#  plot average from a list of files
+# 
+#######################################################
+def plot_average(filenames, save_plot=True, show_plot=False):
+
+    """ Plot Signal average from a list of averaged files. """
+
+    import mne, os
+    import matplotlib.pylab as pl
+
+
+    # check list of filenames        
+    if isinstance(filenames, list):
+        fname = filenames
+    else:
+        #fname = [filenames]
+        fname = list(filenames)
+    nfiles = len(fname)
+
+    # if not show_plot:
+    #     pl.ioff()  # switch off (interactive) plot visualisation
+
+    # plot averages
+    pl.ioff()  # switch off (interactive) plot visualisation
+    for ifile in range(nfiles):
+        fnavg = fname[ifile]
+        name = fnavg[0:len(fnavg)-4] 
+        print fnavg
+        avg = mne.fiff.read_evoked(fnavg)
+        fig = pl.figure(ifile+1,figsize=(10,8), dpi=100) 
+        ax = pl.subplot(1,1,1)   
+        ymin, ymax = avg.data.min()*1.2e15, avg.data.max()*1.2e15
+        pl.ylim(ymin,ymax)
+        avg.plot(axes=ax)
+        basename = os.path.splitext(os.path.basename(name))[0]
+        pl.title(basename)
+        # save figure
+        fnfig = os.path.splitext(fnavg)[0]+'.png'
+        pl.savefig(fnfig,dpi=100)
+
+    pl.ion()  # switch on (interactive) plot visualisation
 
 
 
@@ -392,7 +444,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
     if isinstance(fname_filtered, list):
         fnfilt = fname_filtered
     else:
-        fnfilt = [fname_filtered]
+        fnfilt = list(fname_filtered)
     nfiles = len(fnfilt)
     # loop across all filenames
     for ifile in range(nfiles):                    
@@ -430,7 +482,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
     if isinstance(fname_ica, list):
         fnlist = fname_ica
     else:
-        fnlist = [fname_ica]
+        fnlist = list(fname_ica)
     nfiles = len(fnlist)
     # loop across all filenames
     for ifile in range(nfiles):        
@@ -508,7 +560,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     if isinstance(fname_ica, list):
         fnlist = fname_ica
     else:
-        fnlist = [fname_ica]
+        fnlist = list(fname_ica)
     nfiles = len(fnlist)
     # loop across all filenames
     for ifile in range(nfiles):        
@@ -610,7 +662,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
     if isinstance(fname_ctps, list):
         fnlist = fname_ctps
     else:
-        fnlist = [fname_ctps]
+        fnlist = list(fname_ctps)
     nfiles = len(fnlist)
     # loop across all filenames
     for ifile in range(nfiles):        
@@ -657,13 +709,14 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
             pl.ylim([0,0.5])
             pl.text(2,0.45, 'ICs: '+str(ix+1))
         ic_sel = np.unique(ic_sel)
+        nic = np.size(ic_sel)
         info = 'ICs (all): '+str(ic_sel).strip('[]')
         fig.text(0.02,0.01, info,transform=ax.transAxes)
 
         # save CTPS components found
         fntxt = name+'-ic_selection.txt'
-        #ic_sel = string.join(str(np.unique(ic_sel)),', ')
-        np.savetxt(fntxt,ic_sel,fmt='%i')
+        ic_sel = np.reshape(ic_sel,[1,nic])
+        np.savetxt(fntxt,ic_sel,fmt='%i',delimiter=', ')
 
         # save figure
         fnfig = name+'-ic_selection.png'
