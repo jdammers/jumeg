@@ -1,3 +1,288 @@
+#################################################################
+#
+# apply filter on (raw) data
+#
+#################################################################
+def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):    
+    
+    """ Applies the MNE butterworth filter to a list of raw files. """
+
+    import mne
+
+    filter_type = 'butter'
+    filt_method = 'fft'
+
+    if isinstance(fname_raw, list):
+        fnraw = fname_raw
+    else:
+        if isinstance(fnraw, str):
+            fnraw = list([fnraw]) 
+        else:
+            fnraw = list(fnraw)
+    nfiles = len(fnraw)
+
+
+    # loop across all filenames
+    for fname in fnraw:        
+        print ">>> filter raw data: %0.1f - %0.1fHz..." % (flow, fhigh)
+        # load raw data
+        raw = mne.fiff.Raw(fname,preload=True)
+        # filter raw data
+        raw.filter(flow, fhigh,n_jobs=njobs,method=filt_method)
+        # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
+        #     iir_params={'ftype': filter_type, 'order': order})
+        print ">>>> writing filtered data to disk..."
+        name_raw = fname[0:len(fname)-4]
+        fnfilt = name_raw+',bp' + "%d-%dHz" % (flow, fhigh)
+        fnfilt = fnfilt + '.fif'
+        print 'saving: '+ fnfilt
+        raw.save(fnfilt, overwrite=True)
+
+
+
+
+
+#######################################################
+# 
+#  apply average on list of files
+# 
+#######################################################
+def apply_average(filenames, name_stim='STI 014', event_id =None, postfix='None',
+    tmin=-0.2, tmax=0.4, baseline = (None,0), save_plot=True, show_plot=False):
+
+    """ Performs averaging to a list of raw files. """
+
+    import mne, os
+    import numpy as np
+    import matplotlib.pylab as pl
+
+
+    # Trigger or Response ?
+    if name_stim == 'STI 014':      # trigger
+        trig_name = 'trigger'    
+    else:
+        if name_stim == 'STI 013':   # response
+            trig_name = 'response'
+        else:
+            trig_name = 'trigger'
+
+    # check list of filenames        
+    if isinstance(filenames, list):
+        fnlist = filenames
+    else:
+        if isinstance(filenames, str):
+            fnlist = list([filenames]) 
+        else:
+            fnlist = list(filenames)
+    nfiles = len(fnlist)
+
+    # loop across raw files
+    fnavg = []    # collect output filenames
+    for fname in fnlist:        
+        name  = os.path.split(fname)[1]
+        print '>>> average raw data'
+        print name
+        # load raw data
+        raw = mne.fiff.Raw(fname,preload=True)
+        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
+
+        # stim events
+        stim_events = mne.find_events(raw, stim_channel=name_stim) 
+        nevents = len(stim_events)
+        
+        if (nevents > 0):
+            # for a specific event ID
+            if event_id:
+                ix = np.where(stim_events[:,2] == event_id)[0]
+                stim_events = stim_events[ix,:]
+            else:
+                event_id = stim_events[0,2]  
+                
+            epochs = mne.Epochs(raw, events=stim_events,
+                        event_id=event_id, tmin=tmin, tmax=tmax,
+                        picks=picks, preload=True, baseline=baseline)
+            avg = epochs.average()
+
+            # save averaged data
+            fnout = fname[0:len(fname)-4]
+            if (postfix):
+                fnout += postfix+'.fif'
+            else:    
+                fnout += ',avg,'+trig_name+'.fif'
+
+            avg.save(fnout)
+            print 'saved:'+fnout
+            fnavg.append(fnout)
+
+        else: 
+            event_id = None
+            print '>>> Warning: Event not found in file: '+fname   
+
+    if (save_plot):
+        plot_average(fnavg, show_plot=show_plot)
+
+
+
+
+
+#######################################################
+# 
+#  plot average from a list of files
+# 
+#######################################################
+def plot_average(filenames, save_plot=True, show_plot=False):
+
+    """ Plot Signal average from a list of averaged files. """
+
+    import mne, os
+    import matplotlib.pylab as pl
+
+
+    # check list of filenames        
+    if isinstance(filenames, list):
+        fname = filenames
+    else:
+        if isinstance(filenames, str):
+            fname = list([filenames]) 
+        else:
+            fname = list(filenames)
+    nfiles = len(fname)
+
+
+    # plot averages
+    pl.ioff()  # switch off (interactive) plot visualisation
+    factor = 1e15
+    for fnavg in fname:
+        name = fnavg[0:len(fnavg)-4] 
+        basename = os.path.splitext(os.path.basename(name))[0]
+        print fnavg
+        avg = mne.fiff.read_evoked(fnavg)
+        ymin, ymax = avg.data.min(), avg.data.max()
+        ymin  *= factor*1.1
+        ymax  *= factor*1.1
+        fig = pl.figure(basename,figsize=(10,8), dpi=100) 
+        pl.clf()
+        pl.ylim([ymin, ymax])
+        pl.xlim([avg.times.min(), avg.times.max()])
+        pl.plot(avg.times, avg.data.T*factor, color='black')
+        pl.title(basename)
+
+        # save figure
+        fnfig = os.path.splitext(fnavg)[0]+'.png'
+        pl.savefig(fnfig,dpi=100)
+
+    pl.ion()  # switch on (interactive) plot visualisation
+
+
+
+
+
+#######################################################
+# 
+#  apply ICA for artifact rejection
+# 
+#######################################################
+def apply_ica(fname_filtered, n_components=0.99, decim=None):
+    """ Applies ICA to a list of (filtered) raw files. """
+
+    import mne
+    from mne.preprocessing import ICA
+    import os
+
+
+    if isinstance(fname_filtered, list):
+        fnfilt = fname_filtered
+    else:
+        if isinstance(fname_filtered, str):
+            fnfilt = list([fname_filtered]) 
+        else:
+            fnfilt = list(fname_filtered)
+    nfiles = len(fnfilt)
+
+
+    # loop across all filenames
+    for fname in fnfilt:                    
+        name  = os.path.split(fname)[1]
+        print ">>>> perform ICA signal decomposition on :  "+name
+        # load filtered data
+        raw = mne.fiff.Raw(fname,preload=True)
+        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
+        # ICA decomposition
+        ica = ICA(n_components=n_components, max_pca_components=None)
+        ica.decompose_raw(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
+        # save ICA object 
+        fnica_out = fname[0:len(fname)-4]+'.ica'
+        ica.save(fnica_out)
+
+
+
+
+
+
+#######################################################
+# 
+#  apply ICA-cleaning for artifact rejection
+# 
+#######################################################
+def apply_ica_cleaning(fname_ica, n_pca_components=None, 
+    flow_ecg=10, fhigh_ecg=20, flow_eog=1, fhigh_eog=10, threshold=0.3):
+
+    """ Performs artifact rejection based on ICA to a list of (ICA) files. """
+
+
+    import mne, os
+
+    if isinstance(fname_ica, list):
+        fnlist = fname_ica
+    else:
+        if isinstance(fname_ica, str):
+            fnlist = list([fname_ica]) 
+        else:
+            fnlist = list(fname_ica)
+    nfiles = len(fnlist)
+
+
+    # loop across all filenames
+    for fnica in fnlist:        
+        name  = os.path.split(fnica)[1]
+        basename = fnica[0:len(fnica)-4]
+        fnfilt = basename+'.fif'
+        fnclean = basename+',ica.fif'
+        fnica_ar = basename+',ica-performance'
+        print ">>>> perform artifact rejection on :"
+        print '   '+name
+
+        # load filtered data
+        meg_raw = mne.fiff.Raw(fnfilt,preload=True)
+        picks = mne.fiff.pick_types(meg_raw.info, meg=True, exclude='bads')
+        # ICA decomposition
+        ica = mne.preprocessing.read_ica(fnica)
+        
+        # get ECG and EOG related components
+        ic_ecg = get_ics_cardiac(meg_raw, ica, 
+                                flow=flow_ecg, fhigh=fhigh_ecg, thresh=threshold)
+        ic_eog = get_ics_ocular(meg_raw, ica, 
+                                flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
+        ica.exclude += list(ic_ecg) + list(ic_eog)
+        # ica.plot_topomap(ic_artifacts)
+        ica.save(fnica)  # save again to store excluded
+
+        # clean and save MEG data 
+        if n_pca_components:
+            npca = n_pca_components
+        else:
+            npca = picks.size
+        print npca
+        meg_clean = ica.pick_sources_raw(meg_raw, exclude=ica.exclude,
+                                            n_pca_components=npca)
+        meg_clean.save(fnclean, overwrite=True)
+
+        # plot ECG, EOG averages before and after ICA 
+        print ">>>> create performance image..."
+        plot_performance_artifact_rejection(meg_raw, ica, fnica_ar,
+                                show=False, verbose=False)
+
+
 #######################################################
 # 
 #  determine occular related ICs
@@ -180,7 +465,9 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
 
 
     # ToDo:  How can we avoid popping up the window if show=False ?
+    pl.ioff()
     pl.figure('performance image', figsize=(xFigSize, 12))
+    pl.clf()
     
 
     # ECG, EOG:  loop over all artifact events
@@ -265,260 +552,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     # save image
     pl.savefig(fnout_fig + '.tif', format='tif')
     pl.close('performance image')
-
-
-
-
-#################################################################
-#
-# apply filter on (raw) data
-#
-#################################################################
-def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):    
-    
-    """ Applies a butterworth filter to a list of raw files. """
-
-    import mne
-
-    filter_type = 'butter'
-    filt_method = 'fft'
-
-    if isinstance(fname_raw, list):
-        fnraw = fname_raw
-    else:
-        fnraw = list(fname_raw)
-    nfiles = len(fnraw)
-    # loop across all filenames
-    for ifile in range(nfiles):        
-        fname = fnraw[ifile]
-        print ">>> filter raw data: %0.1f - %0.1fHz..." % (flow, fhigh)
-        # load raw data
-        raw = mne.fiff.Raw(fname,preload=True)
-        # filter raw data
-        raw.filter(flow, fhigh,n_jobs=njobs,method=filt_method)
-        # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
-        #     iir_params={'ftype': filter_type, 'order': order})
-        print ">>>> writing filtered data to disk..."
-        name_raw = fname[0:len(fname)-4]
-        fnfilt = name_raw+',bp' + "%d-%dHz" % (flow, fhigh)
-        fnfilt = fnfilt + '.fif'
-        print 'saving: '+ fnfilt
-        raw.save(fnfilt, overwrite=True)
-
-
-
-#######################################################
-# 
-#  apply average on list of files
-# 
-#######################################################
-def apply_average(filenames, name_stim='STI 014', event_id =None,
-    tmin=-0.2, tmax=0.4, baseline = (None,0), save_plot=True, show_plot=False):
-
-    """ Performs averaging to a list of raw files. """
-
-    import mne, os
-    import numpy as np
-    import matplotlib.pylab as pl
-
-
-    # Trigger or Response ?
-    if name_stim == 'STI 014':      # trigger
-        trig_name = 'trigger'    
-    else:
-        if name_stim == 'STI 013':   # response
-            trig_name = 'response'
-        else:
-            trig_name = 'trigger'
-
-    # check list of filenames        
-    if isinstance(filenames, list):
-        fnlist = filenames
-    else:
-        fnlist = list(filenames)
-    nfiles = len(fnlist)
-
-    for ifile in range(nfiles):        
-        fname = fnlist[ifile]
-        name  = os.path.split(fname)[1]
-        print '>>> average raw data'
-        print name
-        # load raw data
-        raw = mne.fiff.Raw(fname,preload=True)
-        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
-
-        # stim events
-        stim_events = mne.find_events(raw, stim_channel=name_stim) 
-        nevents = len(stim_events)
-        
-        if (nevents > 0):
-            # for a specific event ID
-            if event_id:
-                ix = np.where(stim_events[:,2] == event_id)[0]
-                stim_events = stim_events[ix,:]
-            else:
-                event_id = stim_events[0,2]  
-                
-            epochs = mne.Epochs(raw, events=stim_events,
-                        event_id=event_id, tmin=tmin, tmax=tmax,
-                        picks=picks, preload=True, baseline=baseline)
-            avg = epochs.average()
-            # save averaged data
-            fnout = fname[0:len(fname)-4] + ',avg.fif'
-            avg.save(fnout)
-            print 'saved:'+fnout
-
-        else: 
-            event_id = None
-            print '>>> Warning: Event not found in file: '+fname   
-
-
-
-#######################################################
-# 
-#  plot average from a list of files
-# 
-#######################################################
-def plot_average(filenames, save_plot=True, show_plot=False):
-
-    """ Plot Signal average from a list of averaged files. """
-
-    import mne, os
-    import matplotlib.pylab as pl
-
-
-    # check list of filenames        
-    if isinstance(filenames, list):
-        fname = filenames
-    else:
-        #fname = [filenames]
-        fname = list(filenames)
-    nfiles = len(fname)
-
-    # if not show_plot:
-    #     pl.ioff()  # switch off (interactive) plot visualisation
-
-    # plot averages
-    pl.ioff()  # switch off (interactive) plot visualisation
-    for ifile in range(nfiles):
-        fnavg = fname[ifile]
-        name = fnavg[0:len(fnavg)-4] 
-        print fnavg
-        avg = mne.fiff.read_evoked(fnavg)
-        fig = pl.figure(ifile+1,figsize=(10,8), dpi=100) 
-        ax = pl.subplot(1,1,1)   
-        ymin, ymax = avg.data.min()*1.2e15, avg.data.max()*1.2e15
-        pl.ylim(ymin,ymax)
-        avg.plot(axes=ax)
-        basename = os.path.splitext(os.path.basename(name))[0]
-        pl.title(basename)
-        # save figure
-        fnfig = os.path.splitext(fnavg)[0]+'.png'
-        pl.savefig(fnfig,dpi=100)
-
-    pl.ion()  # switch on (interactive) plot visualisation
-
-
-
-
-
-#######################################################
-# 
-#  apply ICA for artifact rejection
-# 
-#######################################################
-def apply_ica(fname_filtered, n_components=0.99, decim=None):
-    """ Applies ICA to a list of (filtered) raw files. """
-
-    import mne
-    from mne.preprocessing import ICA
-    import os
-
-
-    if isinstance(fname_filtered, list):
-        fnfilt = fname_filtered
-    else:
-        fnfilt = list(fname_filtered)
-    nfiles = len(fnfilt)
-    # loop across all filenames
-    for ifile in range(nfiles):                    
-        fname = fnfilt[ifile]
-        name  = os.path.split(fname)[1]
-        print ">>>> perform ICA signal decomposition on :  "+name
-        # load filtered data
-        raw = mne.fiff.Raw(fname,preload=True)
-        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
-        # ICA decomposition
-        ica = ICA(n_components=n_components, max_pca_components=None)
-        ica.decompose_raw(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
-        # save ICA object 
-        fnica_out = fname[0:len(fname)-4]+'.ica'
-        ica.save(fnica_out)
-
-
-
-
-
-
-#######################################################
-# 
-#  apply ICA-cleaning for artifact rejection
-# 
-#######################################################
-def apply_ica_cleaning(fname_ica, n_pca_components=None, 
-    flow_ecg=10, fhigh_ecg=20, flow_eog=1, fhigh_eog=10, threshold=0.3):
-
-    """ Performs artifact rejection based on ICA to a list of (ICA) files. """
-
-
-    import mne, os
-
-    if isinstance(fname_ica, list):
-        fnlist = fname_ica
-    else:
-        fnlist = list(fname_ica)
-    nfiles = len(fnlist)
-    # loop across all filenames
-    for ifile in range(nfiles):        
-        fnica = fnlist[ifile]
-        name  = os.path.split(fnica)[1]
-        basename = fnica[0:len(fnica)-4]
-        fnfilt = basename+'.fif'
-        fnclean = basename+',ica.fif'
-        fnica_ar = basename+',ica-performance'
-        print ">>>> perform artifact rejection on :"
-        print '   '+name
-
-        # load filtered data
-        meg_raw = mne.fiff.Raw(fnfilt,preload=True)
-        picks = mne.fiff.pick_types(meg_raw.info, meg=True, exclude='bads')
-        # ICA decomposition
-        ica = mne.preprocessing.read_ica(fnica)
-        
-        # get ECG and EOG related components
-        ic_ecg = get_ics_cardiac(meg_raw, ica, 
-                                flow=flow_ecg, fhigh=fhigh_ecg, thresh=threshold)
-        ic_eog = get_ics_ocular(meg_raw, ica, 
-                                flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
-        ica.exclude += list(ic_ecg) + list(ic_eog)
-        # ica.plot_topomap(ic_artifacts)
-        ica.save(fnica)  # save again to store excluded
-
-        # clean and save MEG data 
-        if n_pca_components:
-            npca = n_pca_components
-        else:
-            npca = picks.size
-        print npca
-        meg_clean = ica.pick_sources_raw(meg_raw, exclude=ica.exclude,
-                                            n_pca_components=npca)
-        meg_clean.save(fnclean, overwrite=True)
-
-        # plot ECG, EOG averages before and after ICA 
-        print ">>>> create performance image..."
-        plot_performance_artifact_rejection(meg_raw, ica, fnica_ar,
-                                show=True, verbose=False)
-
+    pl.ion()
 
 
 
@@ -554,11 +588,14 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     if isinstance(fname_ica, list):
         fnlist = fname_ica
     else:
-        fnlist = list(fname_ica)
+        if isinstance(fname_ica, str):
+            fnlist = list([fname_ica]) 
+        else:
+            fnlist = list(fname_ica)
     nfiles = len(fnlist)
+
     # loop across all filenames
-    for ifile in range(nfiles):        
-        fnica = fnlist[ifile]
+    for fnica in fnlist:        
         name  = os.path.split(fnica)[1]
         fname = fnica[0:len(fnica)-4]
         fnraw = fname+'.fif'
@@ -656,11 +693,17 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
     if isinstance(fname_ctps, list):
         fnlist = fname_ctps
     else:
-        fnlist = list(fname_ctps)
+        if isinstance(fname_ctps, str):
+            fnlist = list([fname_ctps]) 
+        else:
+            fnlist = list(fname_ctps)
     nfiles = len(fnlist)
+
+
     # loop across all filenames
-    for ifile in range(nfiles):        
-        fnctps = fnlist[ifile]
+    pl.ioff()  # switch off (interactive) plot visualisation
+    ifile = 0
+    for fnctps in fnlist:        
         name  = os.path.splitext(fnctps)[0]
         basename = os.path.splitext(os.path.basename(fnctps))[0]
         print '>>> working on: '+basename
@@ -673,8 +716,8 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
         times = dctps['times']
         ic_sel = []
         # loop acros all freq. bands
-        pl.ioff()  # switch off (interactive) plot visualisation
         fig=pl.figure(ifile+1,figsize=(16,9), dpi=100) 
+        pl.clf()
         fig.subplots_adjust(left=0.08, right=0.95, bottom=0.05,
                             top=0.93, wspace=0.2, hspace=0.2)            
         fig.suptitle(basename, fontweight='bold')
@@ -711,8 +754,9 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
         fntxt = name+'-ic_selection.txt'
         ic_sel = np.reshape(ic_sel,[1,nic])
         np.savetxt(fntxt,ic_sel,fmt='%i',delimiter=', ')
+        ifile += 1
 
         # save figure
         fnfig = name+'-ic_selection.png'
         pl.savefig(fnfig,dpi=100)
-        pl.ion()  # switch on (interactive) plot visualisation
+    pl.ion()  # switch on (interactive) plot visualisation
