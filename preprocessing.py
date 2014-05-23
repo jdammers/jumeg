@@ -14,11 +14,11 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 
     if isinstance(fname_raw, list):
         fnraw = fname_raw
+    elif isinstance(fname_raw, str):
+        fnraw = list([fname_raw])
     else:
-        if isinstance(fnraw, str):
-            fnraw = list([fnraw]) 
-        else:
-            fnraw = list(fnraw)
+        fnraw = list(fname_raw)
+    
     nfiles = len(fnraw)
 
 
