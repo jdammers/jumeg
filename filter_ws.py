@@ -123,7 +123,7 @@ class Filter_WS:
      def get_fcut2(self):
          return self._fcut2
     
-     fcut1 = property(get_fcut2, set_fcut2)
+     fcut2 = property(get_fcut2, set_fcut2)
 
 #--- filter_window   
      def set_filter_window(self,value):
