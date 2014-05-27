@@ -5,7 +5,7 @@ import numpy as np
 #----------------------------------------------------------------------# 
 # autor      : Frank Boers 
 # email      : f.boers@fz-juelich.de
-# last update: 26.05.2014
+# last update: 27.05.2014
 # version    : 0.006
 #----------------------------------------------------------------------# 
 # Taken from:
@@ -326,13 +326,8 @@ class Filter_WS:
          dfcut1  = self.fcut1 / self.sampling_frequency
          dfcut2  = self.fcut2 / self.sampling_frequency
                   
-         print "---> fcut"
-         print  self.fcut1 
-         print  self.fcut2
-         print"-----" 
          #--- M has to bee even !!!
          self.filter_kernel_data       = np.zeros( M + 1 ,np.float64)
-         #self.filter_kernel_data.dtype = np.double
          
          if self.filter_type == 'lp':
            #print "lp"  
