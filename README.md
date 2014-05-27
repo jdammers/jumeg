@@ -3,6 +3,12 @@ jumeg
 
 MEG Data Analysis at FZJ
 
+Warning
+=======
+
+1. Please do not push any changes directly to the master branch of jdammers/jumeg. Always make a pull request, discuss and only then merge with the master branch.
+2. If you have code that you want to share and are not sure how to, please put it on a gist (https://gist.github.com/) and raise an issue on Github so that it can be discussed and added.
+
 Installation
 ============
 
