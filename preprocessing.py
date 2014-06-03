@@ -15,18 +15,16 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
     if isinstance(fname_raw, list):
         fnraw = fname_raw
     else:
-        if isinstance(fnraw, str):
-            fnraw = list([fnraw]) 
+        if isinstance(fname_raw, str):
+            fnraw = list([fname_raw]) 
         else:
-            fnraw = list(fnraw)
-    nfiles = len(fnraw)
-
+            fnraw = list(fname_raw)
 
     # loop across all filenames
     for fname in fnraw:        
         print ">>> filter raw data: %0.1f - %0.1fHz..." % (flow, fhigh)
         # load raw data
-        raw = mne.fiff.Raw(fname,preload=True)
+        raw = mne.io.Raw(fname,preload=True)
         # filter raw data
         raw.filter(flow, fhigh,n_jobs=njobs,method=filt_method)
         # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
@@ -47,7 +45,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 #  apply average on list of files
 # 
 #######################################################
-def apply_average(filenames, name_stim='STI 014', event_id =None, postfix='None',
+def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
     tmin=-0.2, tmax=0.4, baseline = (None,0), save_plot=True, show_plot=False):
 
     """ Performs averaging to a list of raw files. """
@@ -74,7 +72,6 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix='None'
             fnlist = list([filenames]) 
         else:
             fnlist = list(filenames)
-    nfiles = len(fnlist)
 
     # loop across raw files
     fnavg = []    # collect output filenames
@@ -83,8 +80,8 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix='None'
         print '>>> average raw data'
         print name
         # load raw data
-        raw = mne.fiff.Raw(fname,preload=True)
-        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
+        raw = mne.io.Raw(fname,preload=True)
+        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
 
         # stim events
         stim_events = mne.find_events(raw, stim_channel=name_stim) 
@@ -104,22 +101,22 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix='None'
             avg = epochs.average()
 
             # save averaged data
-            fnout = fname[0:len(fname)-4]
             if (postfix):
-                fnout += postfix+'.fif'
+                fnout = fname[0:len(fname)-4] + postfix+'.fif'
             else:    
-                fnout += ',avg,'+trig_name+'.fif'
+                fnout = fname[0:len(fname)-4] + ',avg,'+trig_name+'.fif'
 
             avg.save(fnout)
             print 'saved:'+fnout
             fnavg.append(fnout)
 
+            if (save_plot):
+                plot_average(fnavg, show_plot=show_plot)
+
         else: 
             event_id = None
             print '>>> Warning: Event not found in file: '+fname   
 
-    if (save_plot):
-        plot_average(fnavg, show_plot=show_plot)
 
 
 
@@ -146,8 +143,6 @@ def plot_average(filenames, save_plot=True, show_plot=False):
             fname = list([filenames]) 
         else:
             fname = list(filenames)
-    nfiles = len(fname)
-
 
     # plot averages
     pl.ioff()  # switch off (interactive) plot visualisation
@@ -156,7 +151,7 @@ def plot_average(filenames, save_plot=True, show_plot=False):
         name = fnavg[0:len(fnavg)-4] 
         basename = os.path.splitext(os.path.basename(name))[0]
         print fnavg
-        avg = mne.fiff.read_evoked(fnavg)
+        avg = mne.io.read_evoked(fnavg)
         ymin, ymax = avg.data.min(), avg.data.max()
         ymin  *= factor*1.1
         ymax  *= factor*1.1
@@ -197,16 +192,14 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
             fnfilt = list([fname_filtered]) 
         else:
             fnfilt = list(fname_filtered)
-    nfiles = len(fnfilt)
-
 
     # loop across all filenames
     for fname in fnfilt:                    
         name  = os.path.split(fname)[1]
         print ">>>> perform ICA signal decomposition on :  "+name
         # load filtered data
-        raw = mne.fiff.Raw(fname,preload=True)
-        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
+        raw = mne.io.Raw(fname,preload=True)
+        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = ICA(n_components=n_components, max_pca_components=None)
         ica.decompose_raw(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
@@ -239,8 +232,6 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
             fnlist = list([fname_ica]) 
         else:
             fnlist = list(fname_ica)
-    nfiles = len(fnlist)
-
 
     # loop across all filenames
     for fnica in fnlist:        
@@ -253,8 +244,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         print '   '+name
 
         # load filtered data
-        meg_raw = mne.fiff.Raw(fnfilt,preload=True)
-        picks = mne.fiff.pick_types(meg_raw.info, meg=True, exclude='bads')
+        meg_raw = mne.io.Raw(fnfilt,preload=True)
+        picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnica)
         
@@ -281,6 +272,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         print ">>>> create performance image..."
         plot_performance_artifact_rejection(meg_raw, ica, fnica_ar,
                                 show=False, verbose=False)
+
 
 
 #######################################################
@@ -455,7 +447,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     tmin_eog = -0.4
     tmax_eog =  0.4
 
-    picks = mne.fiff.pick_types(meg_raw.info, meg=True, exclude='bads')
+    picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
     meg_clean = ica.pick_sources_raw(meg_raw,n_pca_components=ica.n_components_)
 
     # plotting parameter
@@ -569,6 +561,14 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     import mne, ctps, os
     import numpy as np
 
+    from jumeg import filter_ws
+
+
+    fiws = filter_ws.Filter_WS()
+    fiws.filter_type        = 'bp'   # bp, lp, hp
+    fiws.dcoffset           = True
+    fiws.filter_attenuation_factor = 1
+
     nfreq = len(freqs)
 
     print freqs
@@ -592,7 +592,6 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             fnlist = list([fname_ica]) 
         else:
             fnlist = list(fname_ica)
-    nfiles = len(fnlist)
 
     # loop across all filenames
     for fnica in fnlist:        
@@ -602,8 +601,8 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
         basename = os.path.splitext(os.path.basename(fnica))[0]
 
         # load cleaned data
-        raw = mne.fiff.Raw(fnraw,preload=True)
-        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
+        raw = mne.io.Raw(fnraw,preload=True)
+        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
 
         # read (second) ICA  
         print ">>>> working on: "+basename
@@ -642,11 +641,27 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
                 flow,fhigh = freqs[ifreq][0],freqs[ifreq][1]
                 bp = str(flow)+'_'+str(fhigh)
                 # filter ICA data and create epochs
-                tw=0.1
+                #tw=0.1
                 # ica_raw.filter(l_freq=flow, h_freq=fhigh, picks=ica_picks,
                 #     method='fft',l_trans_bandwidth=tw, h_trans_bandwidth=tw)
-                ica_raw.filter(l_freq=flow, h_freq=fhigh, picks=ica_picks,
-                                                                method='fft')
+                # ica_raw.filter(l_freq=flow, h_freq=fhigh, picks=ica_picks,
+                #                                                 method='fft')
+
+                
+                # filter ws settings
+                # later we will make this as a one line call
+                data_length = raw._data[0,:].size
+                fiws.sampling_frequency = raw.info['sfreq']
+                fiws.fcut1              = flow
+                fiws.fcut2              = fhigh
+                fiws.init_filter_kernel(data_length)
+                fiws.init_filter(data_length)
+                for ichan in ica_picks:
+                    fiws.apply_filter(ica_raw._data[ichan,:])
+
+                
+
+
 
                 ica_epochs = mne.Epochs(ica_raw, events=stim_events,
                         event_id=event_id, tmin=tmin, tmax=tmax, verbose=False,
@@ -697,8 +712,6 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
             fnlist = list([fname_ctps]) 
         else:
             fnlist = list(fname_ctps)
-    nfiles = len(fnlist)
-
 
     # loop across all filenames
     pl.ioff()  # switch off (interactive) plot visualisation
@@ -760,3 +773,83 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
         fnfig = name+'-ic_selection.png'
         pl.savefig(fnfig,dpi=100)
     pl.ion()  # switch on (interactive) plot visualisation
+
+
+
+#######################################################
+#                                                     #
+# interface for creating the noise-covariance matrix  #
+#                                                     #
+#######################################################
+def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
+
+    """
+    Creates the noise covariance matrix from an
+    empty room file.
+
+        Parameters
+        ----------
+        fname_empty_room : String containing the filename
+            of the empty room file (must be a fif-file)
+        fname_out : String containing the output filename
+            of the noise-covariance estimation (must also
+            be a fif-file)
+        verbose : bool, str, int, or None
+            If not None, override default verbose level
+            (see mne.verbose).
+            default: verbose=None
+    """
+
+    # -------------------------------------------
+    # import necessary modules
+    # -------------------------------------------
+    from mne import compute_raw_data_covariance as cp_covariance
+    from mne import write_cov
+    from mne.io import Raw
+    from mne.pick import pick_types
+    import os
+
+
+    if isinstance(fname_empty_room, list):
+        fner = fname_empty_room
+    else:
+        if isinstance(fname_empty_room, str):
+            fner = list([fname_empty_room]) 
+        else:
+            fner = list(fname_empty_room)
+    nfiles = len(fner)
+
+    if isinstance(fname_out, list):
+        fnout = fname_out
+    else:
+        if isinstance(fname_out, str):
+            fnout = list([fname_out]) 
+        else:
+            fnout = list(fname_out)
+    if (len(fnout) != nfiles):
+        print ">>> Error (create_noise_covariance_matrix):"
+        print "    Number of in/out files do not match"
+        print
+        exit()
+    
+
+    # loop across all filenames
+    for ifile in range(nfiles):
+        fn_in = fner[ifile]
+        fn_out = fnout[ifile]
+        print ">>> create noise covariance using file: " 
+        path_in , name  = os.path.split(fn_in)
+        print name
+
+        # read in data
+        raw_empty = Raw(fn_in, verbose=verbose)
+
+        # pick MEG channels only
+        picks = pick_types(raw_empty.info, meg=True, eeg=False, stim=False,
+                           eog=False, exclude='bads')
+
+        # calculate noise-covariance matrix
+        noise_cov_mat = cp_covariance(raw_empty, picks=picks, verbose=verbose)
+
+        # write noise-covariance matrix to disk
+        write_cov(fn_out, noise_cov_mat)

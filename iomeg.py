@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 # Functions to perform IO operations.
-
-# Authors: praveen.sripad@rwth-aachen.de
+#
+# Authors: Praveen Sripad  <praveen.sripad@rwth-aachen.de>
+#          Frank Boers     <f.boers@fz-juelich.de>
+#
 # License: BSD 3 clause
 
 
