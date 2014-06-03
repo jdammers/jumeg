@@ -24,7 +24,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
     for fname in fnraw:        
         print ">>> filter raw data: %0.1f - %0.1fHz..." % (flow, fhigh)
         # load raw data
-        raw = mne.fiff.Raw(fname,preload=True)
+        raw = mne.io.Raw(fname,preload=True)
         # filter raw data
         raw.filter(flow, fhigh,n_jobs=njobs,method=filt_method)
         # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
@@ -151,7 +151,7 @@ def plot_average(filenames, save_plot=True, show_plot=False):
         name = fnavg[0:len(fnavg)-4] 
         basename = os.path.splitext(os.path.basename(name))[0]
         print fnavg
-        avg = mne.fiff.read_evoked(fnavg)
+        avg = mne.io.read_evoked(fnavg)
         ymin, ymax = avg.data.min(), avg.data.max()
         ymin  *= factor*1.1
         ymax  *= factor*1.1
@@ -198,8 +198,8 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         name  = os.path.split(fname)[1]
         print ">>>> perform ICA signal decomposition on :  "+name
         # load filtered data
-        raw = mne.fiff.Raw(fname,preload=True)
-        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
+        raw = mne.io.Raw(fname,preload=True)
+        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = ICA(n_components=n_components, max_pca_components=None)
         ica.decompose_raw(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
@@ -244,8 +244,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         print '   '+name
 
         # load filtered data
-        meg_raw = mne.fiff.Raw(fnfilt,preload=True)
-        picks = mne.fiff.pick_types(meg_raw.info, meg=True, exclude='bads')
+        meg_raw = mne.io.Raw(fnfilt,preload=True)
+        picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnica)
         
@@ -272,6 +272,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         print ">>>> create performance image..."
         plot_performance_artifact_rejection(meg_raw, ica, fnica_ar,
                                 show=False, verbose=False)
+
 
 
 #######################################################
@@ -446,7 +447,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     tmin_eog = -0.4
     tmax_eog =  0.4
 
-    picks = mne.fiff.pick_types(meg_raw.info, meg=True, exclude='bads')
+    picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
     meg_clean = ica.pick_sources_raw(meg_raw,n_pca_components=ica.n_components_)
 
     # plotting parameter
@@ -600,8 +601,8 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
         basename = os.path.splitext(os.path.basename(fnica))[0]
 
         # load cleaned data
-        raw = mne.fiff.Raw(fnraw,preload=True)
-        picks = mne.fiff.pick_types(raw.info, meg=True, exclude='bads')
+        raw = mne.io.Raw(fnraw,preload=True)
+        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
 
         # read (second) ICA  
         print ">>>> working on: "+basename
@@ -780,7 +781,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 # interface for creating the noise-covariance matrix  #
 #                                                     #
 #######################################################
-def create_noise_covariance_matrix(fname_empty_room, fname_out, verbose=None):
+def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
 
     """
     Creates the noise covariance matrix from an
@@ -804,7 +805,7 @@ def create_noise_covariance_matrix(fname_empty_room, fname_out, verbose=None):
     # -------------------------------------------
     from mne import compute_raw_data_covariance as cp_covariance
     from mne import write_cov
-    from mne.fiff import Raw
+    from mne.io import Raw
     from mne.pick import pick_types
     import os
 
