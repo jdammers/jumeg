@@ -78,14 +78,15 @@ Please follow the below file name conventions when writing and reading your code
    (109925 - subject id, CAU01A - experiment id, 10-07-15 - date of measuement, 08:42 - time of measurement, c,rfDC - mode of measurement)
 
 2. Exported raw data (from BTI to FIFF) - ```109925_CAU01A_100715_0842_2_c,rfDC-raw.fif```.
+   All files with -raw.fif will contain both MEG and EEG/ECG/EOG channels combined. 
 
 3. Exported raw data with only MEG channels - ```109925_CAU01A_100715_0842_2_c,rfDC-meg.fif```.
 
 4. Exported raw data with only EEG/ECG/EOG channels - ```109925_CAU01A_100715_0842_2_c,rfDC-eeg.fif```.
 
-5. Raw data band pass filtered from 1 to 45 Hz - ```109925_CAU01A_100715_0842_2_c,rfDC,bp1-45-raw.fif```.
+5. Raw data band pass filtered from 1 to 45 Hz - ```109925_CAU01A_100715_0842_2_c,rfDC,fibp1-45-raw.fif```.
    
-   (bp - band pass filtered, lp - low pass filtered, hp - high pass filtered, n - notch filtered)
+   (fibp - band pass filtered, filp - low pass filtered, fihp - high pass filtered, fin - notch filtered)
 
 6. ICA object after decomposition - ```109925_CAU01A_100715_0842_2_c,rfDC,bp1-45-ica.fif```.
    
