@@ -57,3 +57,46 @@ Making some changes and updating it to the web server:
 5. Now go to https://github.com/<yourname>/jumeg and use the "Compare and pull request" option to raise a pull request where you can discuss and finally merge the new changes to main master branch. 
 
 6. Use ```git checkout master``` and ```git pull upstream master``` to remain on the latest changes before making your own changes. 
+
+Standard module and file naming conventions
+===========================================
+
+# Modules
+
+All modules should have a prefix of 'jumeg_' added. For example, jumeg_math.py, jumeg_io.py and so on. 
+
+Subdirectories can be created with a relevant name and the files should follow the naming pattern. For example, the subdirectory ICA will contain jumeg_infomax.py, jumeg_fastica.py etc.
+
+Please follow the coding conventions as used in mne-python as much as possible.
+
+# Files
+
+Please follow the below file name conventions when writing and reading your code using the jumeg codebase. An example file name along with descriptions are shown below. 
+
+1. Unchanged Raw File Name - 109925_CAU01A_10-07-15@08:42_2_c,rfDC.fif
+   (109925 - subject id, CAU01A - experiment id, 10-07-15 - date of measuement, 08:42 - time of measurement, c,rfDC - mode of measurement)
+
+2. Exported raw data (from BTI to FIFF) - 109925_CAU01A_100715_0842_2_c,rfDC-raw.fif
+   Exported raw data with only MEG channels - 109925_CAU01A_100715_0842_2_c,rfDC-meg.fif
+   Exported raw data with only EEG/ECG/EOG channels - 109925_CAU01A_100715_0842_2_c,rfDC-eeg.fif
+
+5. Raw data band pass filtered from 1 to 45 Hz - 109925_CAU01A_100715_0842_2_c,rfDC,bp1-45-raw.fif
+   (bp - band pass filtered, lp - low pass filtered, hp - high pass filtered, n - notch filtered)
+
+6. ICA object after decomposition - 109925_CAU01A_100715_0842_2_c,rfDC,bp1-45-ica.fif
+   (-ica suffix)
+
+7. Raw file after artifact rejection (preprocessed and cleaned raw data) - 109925_CAU01A_100715_0842_2_c,rfDC,bp1-45,ar-raw.fif
+   (,ar added)
+
+8. Averages of evoked files - 109925_CAU01A_100715_0842_2_c,rfDC,bp1-45,ar,STI014_003-evoked.fif or
+                              109925_CAU01A_100715_0842_2_c,rfDC,bp1-45,ar,happy-evoked.fif or
+                              109925_CAU01A_100715_0842_2_c,rfDC,bp1-45,ar,STIMIX_MIX-evoked.fif
+   The condition upon which the file is averaged should be mentioned. eg. happy, sad, audi_cued etc. If this is not available then the channel name and event id used to generate the averages should be added. If there are many conditions, then STIMIX_MIX should be used. 
+
+9. Empty room files - 109925_CAU01A_100715_0842_2_c,rfDC,bp1-45-empty.fif
+   (suffix of -empty indicates that it is an empty room raw file)
+
+10. If plots or figures are to be generated, they should always be in a separate subdirectory './plots' and the plot file names should have the exact same name as the raw file used to generate it, except for the file extension which should be different. 
+    e.g. 109925_CAU01A_100715_0842_2_c,rfDC,bp1-45,ar,happy-evoked.png would indicate a plot of averages over 'happy condition' for 1 to 45 Hz band passed data. 
+
