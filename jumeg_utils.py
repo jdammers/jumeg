@@ -1,6 +1,8 @@
-import mne, sys
+import mne
+import sys
 import numpy as np
 import scipy as sci
+from mne.utils import logger
 
 def mark_bads_batch(subject_list, subjects_dir=None):
     '''
@@ -61,7 +63,7 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
     '''
     # Check if data is longer than required chop duration.
     if (raw.n_times / (raw.info['sfreq'])) < (stop_time + 60.0):
-        print "The data is not long enough."
+        logger.info("The data is not long enough.")
         return
     # Obtain indexes for start and stop times.
     assert start_time < stop_time, "Start time is greater than stop time."
@@ -71,6 +73,8 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
     raw._data,raw._times = data, times
     dur = int((stop_time - start_time) / 60)
     raw.save(raw.info['filename'].split('/')[-1].split('.')[0]+'_'+str(dur)+'m.fif')
+    # For the moment, simply warn.
+    logger.warning('The file name is not saved in standard form.')
     return
 
 def make_surrogates_sklearn(epochs):

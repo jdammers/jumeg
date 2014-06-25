@@ -19,14 +19,13 @@ def rescale(data_arr, minval, maxval):
     return data_new
 
 
-
 ##################################################
 # 
 # Function to calculate the RMS-value
 # 
 ##################################################
 def calc_rms(data, average=None, rmsmean=None):
-    """ Calculate the rms value of the signal. Simply ported from Prof. Dammers IDL code. """
+    """ Calculate the rms value of the signal. Ported from Dr. J. Dammers IDL code. """
     # check input
     sz      = np.shape(data)
     nchan   = np.size(sz)

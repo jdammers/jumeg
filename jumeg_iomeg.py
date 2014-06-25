@@ -10,7 +10,7 @@
 
 def wrapper_brain_vision2fiff(header_fname):
     '''
-    Python wrapper for mne_barin_vision2fiff binary.
+    Python wrapper for mne_brin_vision2fiff binary.
     Please make sure the MNE_BIN_PATH environment variable is set correctly.
     Parameters
     ----------
@@ -22,20 +22,23 @@ def wrapper_brain_vision2fiff(header_fname):
     if not os.environ['MNE_BIN_PATH']:
         print "MNE_BIN_PATH not correctly set."
         return
-    
+
     if header_fname is "" or not header_fname.endswith('vhdr'):
         print "Usage: .py <header_file>"
         print "Please use the original binary to pass other arguments."
         return
     else:
         print "The header file name provided is %s" %(header_fname)
-     
+
     mne_brain_vision2fiff_path = os.environ['MNE_BIN_PATH']+'/mne_brain_vision2fiff'
     os.system(mne_brain_vision2fiff_path + ' --header ' + header_fname + ' --out ' + header_fname.split('.')[0] + '-eeg')
+    # mne_brain_vision2fiff always adds _raw.fif extension to its files, so it has to be renamed to -eeg.fif.
+    os.system('mv %s %s' %(header_fname.split('.')[0] + '-eeg_raw.fif', header_fname.split('.')[0] + '-eeg.fif'))
+    print "Output in FIF format can be found at %s" %(header_fname.split('.')[0] + '-eeg.fif')
 
 def jumeg_resample(l_sfreq, h_sfreq, samp_length):
     ''' 
-    Downsampling function to downsample signal of samp_length from higher sampling frequency to lower sampling frequency.
+    Downsampling function to resample signal of samp_length from higher sampling frequency to lower sampling frequency.
 
     Parameters 
     ----------
@@ -58,7 +61,7 @@ def jumeg_resample(l_sfreq, h_sfreq, samp_length):
         j += 1
     return resamp_list
 
-def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200, filter_order=2, njobs=2):
+def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200, filter_order=2, njobs=-1):
     ''' 
     Functions combines meg data with eeg data. This is done by: - 
         1. Adjust MEG and EEG data length.
@@ -69,7 +72,7 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200, filter_order=2, njob
     ---------- 
     raw_fname: FIF file containing MEG data.
     eeg_fname: FIF file containing EEG data.
-    flow, fhigh: Low and high frequency limits for filtering.
+    flow, fhigh: Low and high frequency limits for filtering. (default 0.6-200 Hz)
     filter_order: Order of the Butterworth filter used for filtering. 
     njobs : Number of jobs.
 
@@ -78,16 +81,21 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200, filter_order=2, njob
     '''
 
     import mne
+    from mne.utils import logger
+    
+    if not raw_fname.endswith('-meg.fif') and not eeg_fname.endswith('-eeg.fif'):
+        logger.warning('Files names are not standard. Please use standard file name extensions.')
 
     raw = mne.fiff.Raw(raw_fname, preload=True)
     eeg = mne.fiff.Raw(eeg_fname, preload=True)
     
     # Filter both signals
     filter_type = 'butter'
-    picks_fil = mne.fiff.pick_types(raw.info, meg=True, eog=True, ecg=True, exclude='bads')
+    logger.info('The MEG and EEG signals will be filtered from %s to %s' %(flow, fhigh))
+    picks_fil = mne.pick_types(raw.info, meg=True, eog=True, ecg=True, exclude='bads')
     raw.filter(flow, fhigh, picks=picks_fil, n_jobs=njobs, method='iir', \
                iir_params={'ftype': filter_type, 'order': filter_order})
-    picks_fil = mne.fiff.pick_types(eeg.info, meg=False, eeg=True, exclude='bads')
+    picks_fil = mne.pick_types(eeg.info, meg=False, eeg=True, exclude='bads')
     eeg.filter(flow, fhigh, picks=picks_fil, n_jobs=njobs, method='iir', \
                iir_params={'ftype': filter_type, 'order': filter_order})
     
@@ -131,11 +139,12 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200, filter_order=2, njob
     raw._data, raw._times = raw[:, start_idx_raw:stop_idx_raw]
     
     # Identify raw channels for ECG, EOG and STI and replace it with relevant data.
+    logger.info('Only ECG 001, EOG 001, EOG002 and STI 014 will be updated.')
     raw._data[raw.ch_names.index('ECG 001')] = eeg._data[0]
     raw._data[raw.ch_names.index('EOG 001')] = eeg._data[1]
     raw._data[raw.ch_names.index('EOG 002')] = eeg._data[2]
     raw._data[raw.ch_names.index('STI 014')] = eeg._data[3]
     
     # Write the combined FIF file to disk.
-    raw.save(raw_fname.split('.')[0] + '_processed' + '.fif')
+    raw.save(raw_fname.split('-')[0] + '-raw.fif')
 
