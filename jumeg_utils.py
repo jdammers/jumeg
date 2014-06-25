@@ -4,6 +4,36 @@ import numpy as np
 import scipy as sci
 from mne.utils import logger
 
+
+def check_jumeg_standards(fname):
+    '''
+    Checks for file name extension and provides information on type of file
+
+    fname: str
+    '''
+    if fname == '' or not fname.endswith('.fif'):
+        print 'Empty string or not a FIF format filename.'
+    if fname.endswith('-meg.fif') or fname.endswith('-eeg.fif'):
+        print 'Raw FIF file with only MEG or only EEG data.'
+    if fname.split('-')[-1] == 'raw.fif':
+        print 'Raw FIF file - Subject %s, Experiment %s, Data %s, Time %s, Trial number %s.' \
+              %(fname.split('_')[0], fname.split('_')[1], fname.split('_')[2], \
+                fname.split('_')[3], fname.split('_')[4])
+        print 'Processing identifier in the file %s.' \
+              %(fname.strip('-raw.fif').split('_')[-1])
+    if fname.split('-')[-1] == 'ica.fif':
+        print 'FIF file storing ICA session.'
+    if fname.split('-')[-1] == 'evoked.fif':
+        print 'FIF file with averages.'
+    if fname.split('-')[-1] == 'epochs.fif':
+        print 'FIF file with epochs.'
+    if fname.split('-')[-1] == 'empty.fif':
+        print 'Empty room FIF file.'
+    
+    print 'Please verify if the information is correct !'
+    return
+
+
 def mark_bads_batch(subject_list, subjects_dir=None):
     '''
     Opens all raw files ending with -raw.fif in subjects directory for marking bads.
