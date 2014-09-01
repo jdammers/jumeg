@@ -840,9 +840,9 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
         path_in , name  = os.path.split(fn_in)
         print name
         #Whether is it necessary to filter the empty raw data before calculate noise-cov?
-        #apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
-        #fn_in = fnica[0:len(fnica)-4]
-        #fn_in = fn_in+',bp' + "%d-%dHz".fif'
+        apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
+        fn_in = fn_in[0:len(fn_in)-4]
+        fn_in = fn_in+',bp' + '1-45Hz.fif'
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
 
