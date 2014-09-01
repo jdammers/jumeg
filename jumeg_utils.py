@@ -54,7 +54,7 @@ def mark_bads_batch(subject_list, subjects_dir=None):
         for raw_fname in os.listdir(dirname):
             if raw_fname.endswith('-raw.fif'):
                 print "Raw calculations for file %s"%(dirname+'/'+raw_fname)
-                raw = mne.fiff.Raw(dirname+'/'+raw_fname)
+                raw = mne.io.Raw(dirname+'/'+raw_fname)
                 raw.plot(block=True)
                 print 'The bad channels marked are'+raw.info['bads']
                 raw.save(raw.info['filename'].split('/')[-1].split('.')[0]+'_bcc-raw.fif')

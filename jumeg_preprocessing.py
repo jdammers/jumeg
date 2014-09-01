@@ -81,7 +81,7 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
         print name
         # load raw data
         raw = mne.io.Raw(fname,preload=True)
-        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
 
         # stim events
         stim_events = mne.find_events(raw, stim_channel=name_stim) 
@@ -199,7 +199,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         print ">>>> perform ICA signal decomposition on :  "+name
         # load filtered data
         raw = mne.io.Raw(fname,preload=True)
-        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = ICA(n_components=n_components, max_pca_components=None)
         ica.decompose_raw(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
@@ -234,7 +234,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
             fnlist = list(fname_ica)
 
     # loop across all filenames
-    for fnica in fnlist:        
+    for fnica in fnlist:
         name  = os.path.split(fnica)[1]
         basename = fnica[0:len(fnica)-4]
         fnfilt = basename+'.fif'
@@ -245,14 +245,14 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 
         # load filtered data
         meg_raw = mne.io.Raw(fnfilt,preload=True)
-        picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnica)
         
         # get ECG and EOG related components
-        ic_ecg = get_ics_cardiac(meg_raw, ica, 
+        ic_ecg = get_ics_cardiac(meg_raw, ica,
                                 flow=flow_ecg, fhigh=fhigh_ecg, thresh=threshold)
-        ic_eog = get_ics_ocular(meg_raw, ica, 
+        ic_eog = get_ics_ocular(meg_raw, ica,
                                 flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
         ica.exclude += list(ic_ecg) + list(ic_eog)
         # ica.plot_topomap(ic_artifacts)
@@ -447,7 +447,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     tmin_eog = -0.4
     tmax_eog =  0.4
 
-    picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
+    picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
     meg_clean = ica.pick_sources_raw(meg_raw,n_pca_components=ica.n_components_)
 
     # plotting parameter
@@ -602,7 +602,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 
         # load cleaned data
         raw = mne.io.Raw(fnraw,preload=True)
-        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
 
         # read (second) ICA  
         print ">>>> working on: "+basename
@@ -806,7 +806,7 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
     from mne import compute_raw_data_covariance as cp_covariance
     from mne import write_cov
     from mne.io import Raw
-    from mne.pick import pick_types
+    from mne import pick_types
     import os
 
 

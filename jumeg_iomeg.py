@@ -86,8 +86,8 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200, filter_order=2, njob
     if not raw_fname.endswith('-meg.fif') and not eeg_fname.endswith('-eeg.fif'):
         logger.warning('Files names are not standard. Please use standard file name extensions.')
 
-    raw = mne.fiff.Raw(raw_fname, preload=True)
-    eeg = mne.fiff.Raw(eeg_fname, preload=True)
+    raw = mne.io.Raw(raw_fname, preload=True)
+    eeg = mne.io.Raw(eeg_fname, preload=True)
     
     # Filter both signals
     filter_type = 'butter'
