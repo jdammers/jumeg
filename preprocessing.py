@@ -81,7 +81,7 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
         print name
         # load raw data
         raw = mne.io.Raw(fname,preload=True)
-        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
 
         # stim events
         stim_events = mne.find_events(raw, stim_channel=name_stim) 
@@ -204,7 +204,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         ica = ICA(n_components=n_components, max_pca_components=None)
         ica.decompose_raw(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
         # save ICA object 
-        fnica_out = fname[0:len(fname)-4]+'.ica.fif'
+        fnica_out = fname[0:len(fname)-4]+'-ica.fif'
         ica.save(fnica_out)
 
 
@@ -238,14 +238,14 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         name  = os.path.split(fnica)[1]
         basename = fnica[0:len(fnica)-4]
         fnclean = basename+'.fif'
-        fnica = basename+',ica.fif'
+        fnica = basename+'-ica.fif'
         fnica_ar = basename+',ica-performance'
         print ">>>> perform artifact rejection on :"
         print '   '+name
 
         # load filtered data
         meg_raw = mne.io.Raw(fnclean,preload=True)#read the filtered raw data
-        picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnica)#read the ica component from filtered raw data
         
@@ -256,7 +256,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
                                 flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
         ica.exclude += list(ic_ecg) + list(ic_eog)
         # ica.plot_topomap(ic_artifacts)
-        ica.save(fnica)  # save again to store excluded
+       # ica.save(fnica)  # save again to store excluded
         #After ECG and EOG rejection, another ICA processing will need to be conducted again,
         #Wether overwrite the ica file or made a new ica file end with ',2nd'?
         # clean and save MEG data 
@@ -267,14 +267,17 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         print npca
         meg_clean = ica.pick_sources_raw(meg_raw, exclude=ica.exclude,
                                             n_pca_components=npca)
+        #meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
+         #                                   n_pca_components=npca)
         meg_clean.save(fnclean, overwrite=True)
-        #Second ICA processing, here if I overwrite the existing ica file, 
-        #then I think line 259th is redundant
-        apply_ica(fnclean, n_components=0.99, decim=None)
         # plot ECG, EOG averages before and after ICA 
         print ">>>> create performance image..."
         plot_performance_artifact_rejection(meg_raw, ica, fnica_ar,
                                 show=False, verbose=False)
+        #Second ICA processing, here if I overwrite the existing ica file, 
+        #then I think line 259th is redundant
+        apply_ica(fnclean, n_components=0.99, decim=None)
+        
 
 
 
@@ -321,6 +324,7 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
                             meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
     eog_ver_scores = ica.find_sources_raw(meg_raw, \
                         target=eog_ver_filtered, score_func=score_func)
+    #_, eog_ver_scores = ica.find_bads_eog(meg_raw, ch_name=name_eog_ver)
     ic_eog_ver = np.where(np.abs(eog_ver_scores) >= thresh)[0] +1  # plus 1 for any()
     if not ic_eog_ver.any(): 
         ic_eog_ver = np.array([0])
@@ -331,6 +335,7 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
                             meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
     eog_hor_scores = ica.find_sources_raw(meg_raw, \
                         target=eog_hor_filtered, score_func=score_func)
+    #_, eog_hor_scores = ica.find_bads_eog(meg_raw, ch_name=name_eog_hor)
     ic_eog_hor = np.where(np.abs(eog_hor_scores) >= thresh)[0] +1 # plus 1 for any()
     if not ic_eog_hor.any(): 
         ic_eog_hor = np.array([0])
@@ -450,7 +455,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     tmin_eog = -0.4
     tmax_eog =  0.4
 
-    picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
+    picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
     meg_clean = ica.pick_sources_raw(meg_raw,n_pca_components=ica.n_components_)
 
     # plotting parameter
