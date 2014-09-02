@@ -1,5 +1,9 @@
+'''
+Utilities module
+'''
 import mne
 import sys
+import os
 import numpy as np
 import scipy as sci
 from mne.utils import logger
@@ -16,7 +20,8 @@ def check_jumeg_standards(fname):
     elif fname.endswith('-meg.fif') or fname.endswith('-eeg.fif'):
         print 'Raw FIF file with only MEG or only EEG data.'
     elif fname.split('-')[-1] == 'raw.fif':
-        print 'Raw FIF file - Subject %s, Experiment %s, Data %s, Time %s, Trial number %s.' \
+        print 'Raw FIF file - Subject %s, Experiment %s, Data %s, Time %s, \
+               Trial number %s.' \
               %(fname.split('_')[0], fname.split('_')[1], fname.split('_')[2], \
                 fname.split('_')[3], fname.split('_')[4])
         print 'Processing identifier in the file %s.' \
@@ -38,18 +43,21 @@ def check_jumeg_standards(fname):
 
 def mark_bads_batch(subject_list, subjects_dir=None):
     '''
-    Opens all raw files ending with -raw.fif in subjects directory for marking bads.
+    Opens all raw files ending with -raw.fif in subjects 
+    directory for marking bads.
 
     Parameters
     ----------
     subject_list: List of subjects. 
-    subjects_dir: The subjects directory. If None, the default SUBJECTS_DIR from environment will be considered.
+    subjects_dir: The subjects directory. If None, the default SUBJECTS_DIR 
+                  from environment will be considered.
 
     Output
     ------
-    The raw files with bads marked are saved with _bcc (for bad channels checked) added to the file name. 
+    The raw files with bads marked are saved with _bcc (for bad channels checked)
+    added to the file name. 
     '''
-    for subj in subjects:
+    for subj in subject_list:
         print "For subject %s"%(subj)
         if not subjects_dir: SUBJECTS_DIR = os.environ['SUBJECTS_DIR']
         dirname = SUBJECTS_DIR+'/'+subj
@@ -59,13 +67,15 @@ def mark_bads_batch(subject_list, subjects_dir=None):
                 raw = mne.io.Raw(dirname+'/'+raw_fname)
                 raw.plot(block=True)
                 print 'The bad channels marked are'+raw.info['bads']
-                raw.save(raw.info['filename'].split('/')[-1].split('.')[0]+'_bcc-raw.fif')
+                raw.save(raw.info['filename'].split('/')[-1].split('.')[0]+ \
+                         '_bcc-raw.fif')
                 return
 
 def rescale_artifact_to_signal(signal, artifact):
     ''' 
     Rescales artifact (ECG/EOG) to signal for plotting purposes 
-    For evoked data, pass signal.data.mean(axis=0) and artifact.data.mean(axis=0).
+    For evoked data, pass signal.data.mean(axis=0) and
+    artifact.data.mean(axis=0).
     '''
     b = (signal.max() - signal.min()) / (artifact.max() + artifact.min())
     a = signal.max()
@@ -82,7 +92,8 @@ def update_description(raw, comment):
 
 def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
     ''' 
-    This function extracts specified duration of raw data and write it into a fif file.
+    This function extracts specified duration of raw data 
+    and write it into a fif file.
     Five mins of data will be extracted by default.
 
     Parameters

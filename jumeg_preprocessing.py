@@ -269,7 +269,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
             npca = picks.size
         print npca
         meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
-                                            n_pca_components=npca)
+                              n_pca_components=npca)
         meg_clean.save(fnclean, overwrite=True)
 
         # plot ECG, EOG averages before and after ICA 
@@ -359,9 +359,12 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
 #  determine cardiac related ICs
 # 
 #######################################################
-def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
-    name_ecg = 'ECG 001', use_CTPS=True, score_func = 'pearsonr', thresh=0.3):
-
+def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3, \
+                    name_ecg = 'ECG 001', use_CTPS=True, \
+                    score_func = 'pearsonr', thresh=0.3):
+    '''
+    Identify components with cardiac artefacts
+    '''
     import mne, ctps
     import numpy as np
 
@@ -371,8 +374,8 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
     ica_raw = ica.get_sources(meg_raw)
     ica_raw.filter(l_freq=flow, h_freq=fhigh, n_jobs=2, method='fft')
     # get R-peak indices in ECG signal
-    idx_R_peak, _, _ = mne.preprocessing.find_ecg_events(meg_raw,
-                        ch_name=name_ecg, event_id=event_id_ecg,
+    idx_R_peak, _, _ = mne.preprocessing.find_ecg_events(meg_raw, \
+                        ch_name=name_ecg, event_id=event_id_ecg, \
                         l_freq=flow, h_freq=fhigh,verbose=False)
 
 
@@ -380,14 +383,15 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
     # default method:  CTPS
     #           else:  correlation
     # -----------------------------------
-    if (use_CTPS):
+    if use_CTPS:
         # create epochs
         picks = np.arange(ica.n_components_)
-        ica_epochs = mne.Epochs(ica_raw, events=idx_R_peak, event_id=event_id_ecg,
-                                tmin=tmin, tmax=tmax, baseline=None, 
+        ica_epochs = mne.Epochs(ica_raw, events=idx_R_peak, \
+                                event_id=event_id_ecg, tmin=tmin, \
+                                tmax=tmax, baseline=None, \
                                 proj=False, picks=picks, verbose=False)
         # compute CTPS
-        _,pk,_ = ctps.compute_ctps(ica_epochs.get_data())
+        _, pk, _ = ctps.compute_ctps(ica_epochs.get_data())
 
         pk_max = np.max(pk, axis=1)
         idx_ecg = np.where(pk_max >= thresh)[0]
@@ -412,12 +416,14 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
 # 
 #######################################################
 def calc_performance(evoked_raw, evoked_clean):
-    """ Gives a measure of the performance of the artifact reduction. Percentage value returned as output. """
+    ''' Gives a measure of the performance of the artifact reduction. 
+        Percentage value returned as output. 
+    '''
     from jumeg import jumeg_math as jmath
 
     diff = evoked_raw.data - evoked_clean.data
     rms_diff = jmath.calc_rms(diff, average=1)
-    rms_meg  = jmath.calc_rms(evoked_raw.data, average=1)
+    rms_meg = jmath.calc_rms(evoked_raw.data, average=1)
     arp = (rms_diff / rms_meg) * 100.0
     return arp
 
@@ -431,10 +437,12 @@ def calc_performance(evoked_raw, evoked_clean):
 #            of the ICA artifact rejection
 # 
 #######################################################
-def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
+def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
                                         show=False, verbose=False):
 
-    """ Creates a performance image of the data before and after the cleaning process. """
+    ''' Creates a performance image of the data before 
+    and after the cleaning process.
+    '''
 
     import mne
     from jumeg import jumeg_math as jmath
@@ -452,7 +460,8 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     tmax_eog =  0.4
 
     picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
-    meg_clean = ica.apply(meg_raw, n_pca_components=ica.n_components_)
+    #meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_components_)
+    meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_pca_components)
 
     # plotting parameter
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -473,7 +482,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
             baseline = (None, None)
             event_id = event_id_ecg
             idx_event, _, _ = mne.preprocessing.find_ecg_events(meg_raw,
-                                event_id, ch_name=name_ecg,  verbose=verbose)
+                                event_id, ch_name=name_ecg, verbose=verbose)
             idx_ref_chan = meg_raw.ch_names.index(name_ecg)
             tmin = tmin_ecg
             tmax = tmax_ecg
@@ -641,7 +650,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             ptarr = []
             pkmax_arr = []
             for ifreq in range(nfreq):            
-                ica_raw = ica.sources_as_raw(raw)
+                ica_raw = ica.get_sources(raw)
                 flow,fhigh = freqs[ifreq][0],freqs[ifreq][1]
                 bp = str(flow)+'_'+str(fhigh)
                 # filter ICA data and create epochs
