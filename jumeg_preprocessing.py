@@ -460,8 +460,8 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
     tmax_eog =  0.4
 
     picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
-    #meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_components_)
-    meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_pca_components)
+    # Why is the parameter below n_components_ instead of n_pca_components?
+    meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_components_)
 
     # plotting parameter
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
