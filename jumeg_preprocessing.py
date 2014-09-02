@@ -3,7 +3,7 @@
 # apply filter on (raw) data
 #
 #################################################################
-def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):    
+def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
     
     """ Applies the MNE butterworth filter to a list of raw files. """
 
@@ -30,9 +30,10 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
         #     iir_params={'ftype': filter_type, 'order': order})
         print ">>>> writing filtered data to disk..."
-        name_raw = fname[0:len(fname)-4]
+        #name_raw = fname[0:len(fname)-4]
+        name_raw = fname.split('-')[0]
         fnfilt = name_raw+',bp' + "%d-%dHz" % (flow, fhigh)
-        fnfilt = fnfilt + '.fif'
+        fnfilt = fnfilt + '-raw.fif'
         print 'saving: '+ fnfilt
         raw.save(fnfilt, overwrite=True)
 
@@ -76,18 +77,18 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
     # loop across raw files
     fnavg = []    # collect output filenames
     for fname in fnlist:        
-        name  = os.path.split(fname)[1]
+        name = os.path.split(fname)[1]
         print '>>> average raw data'
         print name
         # load raw data
-        raw = mne.io.Raw(fname,preload=True)
-        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
+        raw = mne.io.Raw(fname, preload=True)
+        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
 
         # stim events
         stim_events = mne.find_events(raw, stim_channel=name_stim) 
         nevents = len(stim_events)
         
-        if (nevents > 0):
+        if nevents > 0:
             # for a specific event ID
             if event_id:
                 ix = np.where(stim_events[:,2] == event_id)[0]
@@ -151,7 +152,9 @@ def plot_average(filenames, save_plot=True, show_plot=False):
         name = fnavg[0:len(fnavg)-4] 
         basename = os.path.splitext(os.path.basename(name))[0]
         print fnavg
-        avg = mne.io.read_evoked(fnavg)
+        # mne.read_evokeds provides a list or a single evoked based on the condition.
+        # here we assume only one evoked is returned (requires further handling)
+        avg = mne.read_evokeds(fnavg)[0]
         ymin, ymax = avg.data.min(), avg.data.max()
         ymin  *= factor*1.1
         ymax  *= factor*1.1
@@ -199,10 +202,10 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         print ">>>> perform ICA signal decomposition on :  "+name
         # load filtered data
         raw = mne.io.Raw(fname,preload=True)
-        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = ICA(n_components=n_components, max_pca_components=None)
-        ica.decompose_raw(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
+        ica.fit(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
         # save ICA object 
         fnica_out = fname[0:len(fname)-4]+'.ica'
         ica.save(fnica_out)
@@ -234,25 +237,26 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
             fnlist = list(fname_ica)
 
     # loop across all filenames
-    for fnica in fnlist:        
+    for fnica in fnlist:
         name  = os.path.split(fnica)[1]
-        basename = fnica[0:len(fnica)-4]
-        fnfilt = basename+'.fif'
-        fnclean = basename+',ica.fif'
+        #basename = fnica[0:len(fnica)-4]
+        basename = fnica.strip('-ica.fif')
+        fnfilt = basename+'-raw.fif'
+        fnclean = basename+',ar-raw.fif'
         fnica_ar = basename+',ica-performance'
         print ">>>> perform artifact rejection on :"
         print '   '+name
 
         # load filtered data
         meg_raw = mne.io.Raw(fnfilt,preload=True)
-        picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnica)
         
         # get ECG and EOG related components
-        ic_ecg = get_ics_cardiac(meg_raw, ica, 
+        ic_ecg = get_ics_cardiac(meg_raw, ica,
                                 flow=flow_ecg, fhigh=fhigh_ecg, thresh=threshold)
-        ic_eog = get_ics_ocular(meg_raw, ica, 
+        ic_eog = get_ics_ocular(meg_raw, ica,
                                 flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
         ica.exclude += list(ic_ecg) + list(ic_eog)
         # ica.plot_topomap(ic_artifacts)
@@ -264,8 +268,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         else:
             npca = picks.size
         print npca
-        meg_clean = ica.pick_sources_raw(meg_raw, exclude=ica.exclude,
-                                            n_pca_components=npca)
+        meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
+                              n_pca_components=npca)
         meg_clean.save(fnclean, overwrite=True)
 
         # plot ECG, EOG averages before and after ICA 
@@ -298,14 +302,14 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
 
     # vertical EOG
     # idx_eog_ver = [meg_raw.ch_names.index(name_eog_ver)]
-    # eog_scores = ica.find_sources_raw(meg_raw, meg_raw[idx_eog_ver][0])
+    # eog_scores = ica.score_sources(meg_raw, meg_raw[idx_eog_ver][0])
     # eogv_idx = np.where(np.abs(eog_scores) > thresh)[0]
     # ica.exclude += list(eogv_idx)
     # ica.plot_topomap(eog_idx)
     
     # horizontal EOG
     # idx_eog_hor = [meg_raw.ch_names.index(name_eog_hor)]
-    # eog_scores = ica.find_sources_raw(meg_raw, meg_raw[idx_eog_hor][0])
+    # eog_scores = ica.score_sources(meg_raw, meg_raw[idx_eog_hor][0])
     # eogh_idx = np.where(np.abs(eog_scores) > thresh)[0]
     # ica.exclude += list(eogh_idx)
     # ica.plot_topomap(eog_idx)
@@ -316,7 +320,7 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     idx_eog_ver = [meg_raw.ch_names.index(name_eog_ver)]
     eog_ver_filtered = mne.filter.band_pass_filter(meg_raw[idx_eog_ver, :][0], \
                             meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
-    eog_ver_scores = ica.find_sources_raw(meg_raw, \
+    eog_ver_scores = ica.score_sources(meg_raw, \
                         target=eog_ver_filtered, score_func=score_func)
     ic_eog_ver = np.where(np.abs(eog_ver_scores) >= thresh)[0] +1  # plus 1 for any()
     if not ic_eog_ver.any(): 
@@ -326,7 +330,7 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     idx_eog_hor = [meg_raw.ch_names.index(name_eog_hor)]
     eog_hor_filtered = mne.filter.band_pass_filter(meg_raw[idx_eog_hor, :][0], \
                             meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
-    eog_hor_scores = ica.find_sources_raw(meg_raw, \
+    eog_hor_scores = ica.score_sources(meg_raw, \
                         target=eog_hor_filtered, score_func=score_func)
     ic_eog_hor = np.where(np.abs(eog_hor_scores) >= thresh)[0] +1 # plus 1 for any()
     if not ic_eog_hor.any(): 
@@ -355,20 +359,23 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
 #  determine cardiac related ICs
 # 
 #######################################################
-def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
-    name_ecg = 'ECG 001', use_CTPS=True, score_func = 'pearsonr', thresh=0.3):
-
+def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3, \
+                    name_ecg = 'ECG 001', use_CTPS=True, \
+                    score_func = 'pearsonr', thresh=0.3):
+    '''
+    Identify components with cardiac artefacts
+    '''
     import mne, ctps
     import numpy as np
 
     event_id_ecg = 999
 
     # get and filter ICA signals
-    ica_raw = ica.sources_as_raw(meg_raw)
+    ica_raw = ica.get_sources(meg_raw)
     ica_raw.filter(l_freq=flow, h_freq=fhigh, n_jobs=2, method='fft')
     # get R-peak indices in ECG signal
-    idx_R_peak, _, _ = mne.preprocessing.find_ecg_events(meg_raw,
-                        ch_name=name_ecg, event_id=event_id_ecg,
+    idx_R_peak, _, _ = mne.preprocessing.find_ecg_events(meg_raw, \
+                        ch_name=name_ecg, event_id=event_id_ecg, \
                         l_freq=flow, h_freq=fhigh,verbose=False)
 
 
@@ -376,14 +383,15 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
     # default method:  CTPS
     #           else:  correlation
     # -----------------------------------
-    if (use_CTPS):
+    if use_CTPS:
         # create epochs
         picks = np.arange(ica.n_components_)
-        ica_epochs = mne.Epochs(ica_raw, events=idx_R_peak, event_id=event_id_ecg,
-                                tmin=tmin, tmax=tmax, baseline=None, 
+        ica_epochs = mne.Epochs(ica_raw, events=idx_R_peak, \
+                                event_id=event_id_ecg, tmin=tmin, \
+                                tmax=tmax, baseline=None, \
                                 proj=False, picks=picks, verbose=False)
         # compute CTPS
-        _,pk,_ = ctps.compute_ctps(ica_epochs.get_data())
+        _, pk, _ = ctps.compute_ctps(ica_epochs.get_data())
 
         pk_max = np.max(pk, axis=1)
         idx_ecg = np.where(pk_max >= thresh)[0]
@@ -392,7 +400,7 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
         idx_ecg = [meg_raw.ch_names.index(name_ecg)]
         ecg_filtered = mne.filter.band_pass_filter(meg_raw[idx_ecg, :][0], \
                                 meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
-        ecg_scores = ica.find_sources_raw(meg_raw, \
+        ecg_scores = ica.score_sources(meg_raw, \
                             target=ecg_filtered, score_func=score_func)
         idx_ecg = np.where(np.abs(ecg_scores) >= thresh)[0]
 
@@ -408,12 +416,14 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
 # 
 #######################################################
 def calc_performance(evoked_raw, evoked_clean):
-    """ Gives a measure of the performance of the artifact reduction. Percentage value returned as output. """
-    from jumeg import math as jmath
+    ''' Gives a measure of the performance of the artifact reduction. 
+        Percentage value returned as output. 
+    '''
+    from jumeg import jumeg_math as jmath
 
     diff = evoked_raw.data - evoked_clean.data
     rms_diff = jmath.calc_rms(diff, average=1)
-    rms_meg  = jmath.calc_rms(evoked_raw.data, average=1)
+    rms_meg = jmath.calc_rms(evoked_raw.data, average=1)
     arp = (rms_diff / rms_meg) * 100.0
     return arp
 
@@ -427,13 +437,15 @@ def calc_performance(evoked_raw, evoked_clean):
 #            of the ICA artifact rejection
 # 
 #######################################################
-def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
+def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
                                         show=False, verbose=False):
 
-    """ Creates a performance image of the data before and after the cleaning process. """
+    ''' Creates a performance image of the data before 
+    and after the cleaning process.
+    '''
 
     import mne
-    from jumeg import math as jmath
+    from jumeg import jumeg_math as jmath
     import matplotlib.pylab as pl
     import numpy as np
 
@@ -447,8 +459,9 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     tmin_eog = -0.4
     tmax_eog =  0.4
 
-    picks = mne.pick.pick_types(meg_raw.info, meg=True, exclude='bads')
-    meg_clean = ica.pick_sources_raw(meg_raw,n_pca_components=ica.n_components_)
+    picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
+    # Why is the parameter below n_components_ instead of n_pca_components?
+    meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_components_)
 
     # plotting parameter
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -469,7 +482,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
             baseline = (None, None)
             event_id = event_id_ecg
             idx_event, _, _ = mne.preprocessing.find_ecg_events(meg_raw,
-                                event_id, ch_name=name_ecg,  verbose=verbose)
+                                event_id, ch_name=name_ecg, verbose=verbose)
             idx_ref_chan = meg_raw.ch_names.index(name_ecg)
             tmin = tmin_ecg
             tmax = tmax_ecg
@@ -577,14 +590,14 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
-        trig_name = 'trigger'    
+        trig_name = 'trigger'
     else:
         if name_stim == 'STI 013':   # response
             trig_name = 'response'
         else:
             trig_name = 'auxillary'
 
-    # check list of filenames        
+    # check list of filenames
     if isinstance(fname_ica, list):
         fnlist = fname_ica
     else:
@@ -594,24 +607,24 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             fnlist = list(fname_ica)
 
     # loop across all filenames
-    for fnica in fnlist:        
+    for fnica in fnlist:
         name  = os.path.split(fnica)[1]
-        fname = fnica[0:len(fnica)-4]
-        fnraw = fname+'.fif'
-        basename = os.path.splitext(os.path.basename(fnica))[0]
-
+        #fname = fnica[0:len(fnica)-4]
+        basename = fnica.strip('-ica.fif')
+        fnraw = basename+'-raw.fif'
+        #basename = os.path.splitext(os.path.basename(fnica))[0]
         # load cleaned data
         raw = mne.io.Raw(fnraw,preload=True)
-        picks = mne.pick.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
 
-        # read (second) ICA  
+        # read (second) ICA
         print ">>>> working on: "+basename
         ica = mne.preprocessing.read_ica(fnica)
         ica_picks = np.arange(ica.n_components_)
         ncomp = len(ica_picks)
 
         # stim events
-        stim_events = mne.find_events(raw, stim_channel=name_stim)  
+        stim_events = mne.find_events(raw, stim_channel=name_stim)
         nevents = len(stim_events)
 
         if (nevents > 0):
@@ -637,7 +650,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             ptarr = []
             pkmax_arr = []
             for ifreq in range(nfreq):            
-                ica_raw = ica.sources_as_raw(raw)
+                ica_raw = ica.get_sources(raw)
                 flow,fhigh = freqs[ifreq][0],freqs[ifreq][1]
                 bp = str(flow)+'_'+str(fhigh)
                 # filter ICA data and create epochs
@@ -683,7 +696,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             dctps['times'] = times
             dctps['tmin'] = ica_epochs.tmin
             dctps['tmax'] = ica_epochs.tmax
-            fnctps = fname + ',ctps-'+trig_name
+            fnctps = basename + ',ctps-'+trig_name
             np.save(fnctps, dctps)
             # Note; loading example: dctps = np.load(fnctps).items()
         else:
@@ -806,7 +819,7 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
     from mne import compute_raw_data_covariance as cp_covariance
     from mne import write_cov
     from mne.io import Raw
-    from mne.pick import pick_types
+    from mne import pick_types
     import os
 
 
