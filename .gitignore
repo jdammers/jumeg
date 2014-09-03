@@ -1,3 +1,22 @@
+*.py[cod]
+*.so
+*.fif
+*.tar.gz
+*.log
+*.stc
+*~
+.#*
+*.swp
+*.lprof
+*.npy
+*.zip
+*.fif.gz
+*.nii.gz
+*.tar.*
+*.egg*
+*.tmproj
+*.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
