@@ -207,7 +207,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         ica = ICA(n_components=n_components, max_pca_components=None)
         ica.fit(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
         # save ICA object 
-        fnica_out = fname[0:len(fname)-4]+'.ica'
+        fnica_out = fname[0:len(fname)-4]+'-ica.fif'
         ica.save(fnica_out)
 
 
@@ -269,7 +269,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
             npca = picks.size
         print npca
         meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
-                              n_pca_components=npca)
+                              n_pca_components=npca, copy=True)
         meg_clean.save(fnclean, overwrite=True)
 
         # plot ECG, EOG averages before and after ICA 
@@ -461,7 +461,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
 
     picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
     # Why is the parameter below n_components_ instead of n_pca_components?
-    meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_components_)
+    meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_components_, copy=True)
 
     # plotting parameter
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -473,7 +473,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
     pl.ioff()
     pl.figure('performance image', figsize=(xFigSize, 12))
     pl.clf()
-    
+
 
     # ECG, EOG:  loop over all artifact events
     for i in range(nrange):
@@ -574,10 +574,10 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     import mne, ctps, os
     import numpy as np
 
-    from jumeg import filter_ws
+    from jumeg import jumeg_filter_ws
 
 
-    fiws = filter_ws.Filter_WS()
+    fiws = jumeg_filter_ws.Filter_WS()
     fiws.filter_type        = 'bp'   # bp, lp, hp
     fiws.dcoffset           = True
     fiws.filter_attenuation_factor = 1
