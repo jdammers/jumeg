@@ -551,10 +551,10 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     import mne, ctps, os
     import numpy as np
 
-    from jumeg import jumeg_filter_ws
+    from jumeg.filter import jumeg_filter
 
 
-    fiws = jumeg_filter_ws.Filter_WS()
+    fiws = jumeg_filter.jumeg_filter(filter_method="ws")
     fiws.filter_type        = 'bp'   # bp, lp, hp
     fiws.dcoffset           = True
     fiws.filter_attenuation_factor = 1
@@ -644,8 +644,8 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
                 fiws.sampling_frequency = raw.info['sfreq']
                 fiws.fcut1              = flow
                 fiws.fcut2              = fhigh
-                fiws.init_filter_kernel(data_length)
-                fiws.init_filter(data_length)
+                #fiws.init_filter_kernel(data_length)
+                #fiws.init_filter(data_length)
                 for ichan in ica_picks:
                     fiws.apply_filter(ica_raw._data[ichan,:])
 
