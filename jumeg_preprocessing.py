@@ -5,7 +5,7 @@
 #################################################################
 def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
     
-    """ Applies the MNE butterworth filter to a list of raw files. """
+    ''' Applies the MNE butterworth filter to a list of raw files. '''
 
     import mne
 
@@ -38,9 +38,6 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         raw.save(fnfilt, overwrite=True)
 
 
-
-
-
 #######################################################
 # 
 #  apply average on list of files
@@ -49,7 +46,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
     tmin=-0.2, tmax=0.4, baseline = (None,0), save_plot=True, show_plot=False):
 
-    """ Performs averaging to a list of raw files. """
+    ''' Performs averaging to a list of raw files. '''
 
     import mne, os
     import numpy as np
@@ -119,10 +116,6 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
             print '>>> Warning: Event not found in file: '+fname   
 
 
-
-
-
-
 #######################################################
 # 
 #  plot average from a list of files
@@ -130,7 +123,7 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
 #######################################################
 def plot_average(filenames, save_plot=True, show_plot=False):
 
-    """ Plot Signal average from a list of averaged files. """
+    ''' Plot Signal average from a list of averaged files. '''
 
     import mne, os
     import matplotlib.pylab as pl
@@ -172,16 +165,13 @@ def plot_average(filenames, save_plot=True, show_plot=False):
     pl.ion()  # switch on (interactive) plot visualisation
 
 
-
-
-
 #######################################################
 # 
 #  apply ICA for artifact rejection
 # 
 #######################################################
 def apply_ica(fname_filtered, n_components=0.99, decim=None):
-    """ Applies ICA to a list of (filtered) raw files. """
+    ''' Applies ICA to a list of (filtered) raw files. '''
 
     import mne
     from mne.preprocessing import ICA
@@ -212,10 +202,6 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         ica.save(fnica_out)
 
 
-
-
-
-
 #######################################################
 # 
 #  apply ICA-cleaning for artifact rejection
@@ -224,7 +210,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
 def apply_ica_cleaning(fname_ica, n_pca_components=None, 
     flow_ecg=10, fhigh_ecg=20, flow_eog=1, fhigh_eog=10, threshold=0.3):
 
-    """ Performs artifact rejection based on ICA to a list of (ICA) files. """
+    ''' Performs artifact rejection based on ICA to a list of (ICA) files. '''
 
 
     import mne, os
@@ -278,7 +264,6 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         print ">>>> create performance image..."
         plot_performance_artifact_rejection(meg_raw, ica, fnica_ar,
                                 show=False, verbose=False)
-
 
 
 #######################################################
@@ -352,10 +337,6 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     return idx_eog
 
 
-
-
-
-
 #######################################################
 # 
 #  determine cardiac related ICs
@@ -410,8 +391,6 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3, \
     return idx_ecg
 
 
-
-
 #######################################################
 # 
 #  calculate the performance of artifact rejection
@@ -428,9 +407,6 @@ def calc_performance(evoked_raw, evoked_clean):
     rms_meg = jmath.calc_rms(evoked_raw.data, average=1)
     arp = (rms_diff / rms_meg) * 100.0
     return arp
-
-
-
 
 
 #######################################################
@@ -562,7 +538,6 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
     pl.ion()
 
 
-
 #######################################################
 # 
 #  apply CTPS (for brain responses)
@@ -571,7 +546,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
 def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     tmin=-0.2, tmax=0.4, name_stim='STI 014', event_id =None, baseline=(None,0)):
 
-    """ Applies CTPS to a list of ICA files. """
+    ''' Applies CTPS to a list of ICA files. '''
 
     import mne, ctps, os
     import numpy as np
@@ -674,9 +649,6 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
                 for ichan in ica_picks:
                     fiws.apply_filter(ica_raw._data[ichan,:])
 
-                
-
-
 
                 ica_epochs = mne.Epochs(ica_raw, events=stim_events,
                         event_id=event_id, tmin=tmin, tmax=tmax, verbose=False,
@@ -705,7 +677,6 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             event_id=None
 
 
-
 #######################################################
 # 
 #  Select ICs from CTPS anaysis (for brain responses)
@@ -713,7 +684,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 #######################################################
 def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 
-    """ Select ICs based on CTPS analysis. """
+    ''' Select ICs based on CTPS analysis. '''
 
     import mne, os, ctps, string
     import numpy as np
@@ -790,7 +761,6 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
     pl.ion()  # switch on (interactive) plot visualisation
 
 
-
 #######################################################
 #                                                     #
 # interface for creating the noise-covariance matrix  #
@@ -798,7 +768,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 #######################################################
 def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
 
-    """
+    '''
     Creates the noise covariance matrix from an
     empty room file.
 
@@ -813,7 +783,7 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
             If not None, override default verbose level
             (see mne.verbose).
             default: verbose=None
-    """
+    '''
 
     # -------------------------------------------
     # import necessary modules
