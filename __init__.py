@@ -15,4 +15,4 @@ from . import jumeg_preprocessing
 from . import jumeg_math
 from . import jumeg_iomeg
 from . import jumeg_utils
-from . import jumeg_filter_ws
+from .filter import jumeg_filter
