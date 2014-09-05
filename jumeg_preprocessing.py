@@ -241,7 +241,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         name  = os.path.split(fnica)[1]
         #basename = fnica[0:len(fnica)-4]
         basename = fnica.strip('-ica.fif')
-        fnfilt = basename+'-raw.fif'
+       # fnfilt = basename+'-raw.fif'
+        fnfilt = basename + '.fif'
         fnclean = basename+',ar-raw.fif'
         fnica_ar = basename+',ica-performance'
         print ">>>> perform artifact rejection on :"
@@ -611,7 +612,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
         name  = os.path.split(fnica)[1]
         #fname = fnica[0:len(fnica)-4]
         basename = fnica.strip('-ica.fif')
-        fnraw = basename+'-raw.fif'
+        fnraw = basename+'.fif'
         #basename = os.path.splitext(os.path.basename(fnica))[0]
         # load cleaned data
         raw = mne.io.Raw(fnraw,preload=True)
