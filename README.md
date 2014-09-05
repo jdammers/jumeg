@@ -34,7 +34,7 @@ Add the main repository to your git using the below command:
    ```
    git remote add upstream https://github.com/jdammers/jumeg
    ```
-Updating to the latest master version:
+Updating to the latest master version (where upstream is main repository - jdammers/jumeg):
    ```
    git checkout master
    git pull upstream master
@@ -48,7 +48,7 @@ Making some changes and updating it to the web server:
 
 3. Check your changes using "git status". 
 
-4. Add these changed files to git and commit it to the web server:
+4. Add these changed files to git and commit it to the web server (where origin is your fork of the main repo eg. pravsripad/jumeg):
    ```
    git add <file1> <file2>
    git commit -m"Some useful comments" <file1> <file2>
