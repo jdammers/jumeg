@@ -30,3 +30,8 @@ fica_name = fclean.strip('-raw.fif') + '-ica.fif'
 #jumeg.jumeg_preprocessing.apply_ctps(fica_name)
 fctps_name = '109925_CAU01A_100715_0842_2_c,rfDC,bp1-45Hz,ctps-trigger.npy'
 #jumeg.jumeg_preprocessing.apply_ctps_select_ic(fctps_name)
+
+# noise-covariance matrix functions
+#fempty_name = '109925_CAU01A_100715_0842_2_c,rfDC-empty.fif'
+#fcov_name =   '109925_CAU01A_100715_0842_2_c,rfDC,bp1-45Hz-empty-cov.fif'
+#jumeg.jumeg_preprocessing.apply_create_noise_covariance(fempty_name, fcov_name, verbose=None)

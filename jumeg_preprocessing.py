@@ -33,7 +33,8 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         #name_raw = fname[0:len(fname)-4]
         name_raw = fname.split('-')[0]
         fnfilt = name_raw+',bp' + "%d-%dHz" % (flow, fhigh)
-        fnfilt = fnfilt + '-raw.fif'
+        fnfilt = fnfilt + '-' + fname.split('-')[1]
+        #fnfilt = fnfilt + '-raw.fif'
         print 'saving: '+ fnfilt
         raw.save(fnfilt, overwrite=True)
 
@@ -774,6 +775,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
             pl.ylim([0,0.5])
             pl.text(2,0.45, 'ICs: '+str(ix+1))
         ic_sel = np.unique(ic_sel)
+        return ic_sel
         nic = np.size(ic_sel)
         info = 'ICs (all): '+str(ic_sel).strip('[]')
         fig.text(0.02,0.01, info,transform=ax.transAxes)
@@ -788,9 +790,44 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
         fnfig = name+'-ic_selection.png'
         pl.savefig(fnfig,dpi=100)
     pl.ion()  # switch on (interactive) plot visualisation
+    
+##################################################
+#                                                #
+# Recompose the interest brain components        #
+#                                                #
+##################################################
+def apply_recompose_select_ic(fname_ica, n_pca_components=None,
+                name_stim='STI 014', event_id =None, baseline=(None,0)):
 
+    """ Performs interest components recomposing on ICA to a list of (ICA) files. """
+    
+    import mne, os
 
+    if isinstance(fname_ica, list):
+        fnlist = fname_ica
+    else:
+        if isinstance(fname_ica, str):
+            fnlist = list([fname_ica]) 
+        else:
+            fnlist = list(fname_ica)
 
+    # loop across all filenames
+    for fnica in fnlist:
+        name  = os.path.split(fnica)[1]
+        #basename = fnica[0:len(fnica)-4]
+        basename = fnica.strip('-ica.fif')
+        fnfilt = basename+'-raw.fif'
+        #fnfilt = basename + '.fif'
+        fnclean = basename+',ar-raw.fif'
+        fnica_ar = basename+',ica-performance'
+        print ">>>> perform artifact rejection on :"
+        print '   '+name
+
+        # load filtered data
+        meg_raw = mne.io.Raw(fnfilt,preload=True)
+        picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
+        # ICA decomposition
+        ica = mne.preprocessing.read_ica(fnica)
 #######################################################
 #                                                     #
 # interface for creating the noise-covariance matrix  #
@@ -855,7 +892,11 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
         print ">>> create noise covariance using file: " 
         path_in , name  = os.path.split(fn_in)
         print name
-
+        apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
+        #fn_in = fn_in[0:len(fn_in)-4]
+        fn_in = fn_in.split('-')[0]+',bp1-45Hz-empty.fif'
+        # read in data
+        raw_empty = Raw(fn_in, verbose=verbose)
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
 
