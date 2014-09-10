@@ -196,10 +196,8 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         picks = mne.pick_types(raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = ICA(n_components=n_components, max_pca_components=None)
-        ica.fit(raw, picks=picks, decim=decim)
 
-        # For filtered data, reject parameter can be used as below.
-        # ica.fit(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
+        ica.fit(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
 
         # save ICA object 
         fnica_out = fname.strip('-raw.fif') + '-ica.fif'
