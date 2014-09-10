@@ -171,6 +171,7 @@ def plot_average(filenames, save_plot=True, show_plot=False):
 # 
 #######################################################
 def apply_ica(fname_filtered, n_components=0.99, decim=None):
+
     ''' Applies ICA to a list of (filtered) raw files. '''
 
     import mne
@@ -195,10 +196,14 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         picks = mne.pick_types(raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = ICA(n_components=n_components, max_pca_components=None)
-        ica.fit(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
+        ica.fit(raw, picks=picks, decim=decim)
+
+        # For filtered data, reject parameter can be used as below.
+        # ica.fit(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
+
         # save ICA object 
         fnica_out = fname.strip('-raw.fif') + '-ica.fif'
-      # fnica_out = fname[0:len(fname)-4]+'-ica.fif'
+        # fnica_out = fname[0:len(fname)-4]+'-ica.fif'
         ica.save(fnica_out)
 
 
@@ -211,7 +216,6 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
     flow_ecg=10, fhigh_ecg=20, flow_eog=1, fhigh_eog=10, threshold=0.3):
 
     ''' Performs artifact rejection based on ICA to a list of (ICA) files. '''
-
 
     import mne, os
 
@@ -247,7 +251,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         ic_eog = get_ics_ocular(meg_raw, ica,
                                 flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
         ica.exclude += list(ic_ecg) + list(ic_eog)
-        # ica.plot_topomap(ic_artifacts)
+        # ica.plot_topomap(ic_artefacts)
         ica.save(fnica)  # save again to store excluded
 
         # clean and save MEG data 
@@ -275,13 +279,12 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     name_eog_hor = 'EOG 001', name_eog_ver = 'EOG 002',
     score_func = 'pearsonr', thresh=0.3):
 
+    '''
+    Find Independent Components related to ocular artefacts
+    '''
+
     import mne
     import numpy as np
-
-    # -----------------------------------
-    # ICs related to ocular artifacts
-    # -----------------------------------
-
 
     # Note: when using the following:
     #   - the filter settings are different
@@ -301,7 +304,6 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     # ica.exclude += list(eogh_idx)
     # ica.plot_topomap(eog_idx)
     # print [eogv_idx, eogh_idx]
-
 
     # vertical EOG
     idx_eog_ver = [meg_raw.ch_names.index(name_eog_ver)]
