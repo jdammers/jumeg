@@ -6,8 +6,8 @@ import numpy as np
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 04.09.2014
- version    : 0.0213
+ last update: 17.09.2014
+ version    : 0.0313
 ---------------------------------------------------------------------- 
  Window Sinc Filter are taken from:
  The Scientist and Engineer's Guide to Digital Signal Processing
@@ -17,9 +17,12 @@ import numpy as np
 ----------------------------------------------------------------------
  Butterworth filter design from  KD
 ----------------------------------------------------------------------
+oo interface to mne filter functions
+----------------------------------------------------------------------
  Dependency:
   numpy
   scipy
+  mmne
 ----------------------------------------------------------------------
  How to use the jumeg filter
 ---------------------------------------------------------------------- 
@@ -83,14 +86,21 @@ from jumeg.filter.jumeg_filter import jumeg_filter
 
 '''
 
-def jumeg_filter(filter_method="bw",filter_type='bp', fcut1=1.0, fcut2=45.0, remove_dcoffset=True, sampling_frequency=1017.25, filter_window='blackmann', notch=np.array([]), notch_width=1.0, order=4):
-
+def jumeg_filter(filter_method="bw",filter_type='bp',fcut1=1.0,fcut2=45.0,remove_dcoffset=True,sampling_frequency=1017.25,
+                 filter_window='blackmann',notch=np.array([]),notch_width=1.0,order=4,njobs=4,
+                 mne_filter_method='fft',mne_filter_length='10s',trans_bandwith=0.5):
+    
     if filter_method.lower() == "bw"  :
        from jumeg.filter.jumeg_filter_bw import JuMEG_Filter_Bw
        return JuMEG_Filter_Bw(filter_type=filter_type,fcut1=fcut1, fcut2=fcut2, remove_dcoffset=remove_dcoffset, sampling_frequency=sampling_frequency,notch=notch, notch_width=notch_width,order=order)   	  
-    else:
+    elif filter_method.lower() == "ws"  :
        from jumeg.filter.jumeg_filter_ws import JuMEG_Filter_Ws
        return JuMEG_Filter_Ws(filter_type=filter_type,fcut1=fcut1, fcut2=fcut2, remove_dcoffset=remove_dcoffset, sampling_frequency=sampling_frequency, filter_window=filter_window)
-       #, notch=notch, notch_width=notch_width)  
-                
+       #, notch=notch, notch_width=notch_width)
+    else : 
+       from jumeg.filter.jumeg_filter_mne import JuMEG_Filter_MNE
+       return JuMEG_Filter_MNE(filter_type=filter_type,njobs=njobs,fcut1=fcut1,fcut2=fcut2,remove_dcoffset=True,sampling_frequency=sampling_frequency,
+                               mne_filter_method=mne_filter_method,mne_filter_length=mne_filter_length,trans_bandwith=trans_bandwith,notch=notch,notch_width=notch_width)
+
   
+    

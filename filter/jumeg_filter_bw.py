@@ -7,7 +7,7 @@ import scipy.fftpack as scipack # import fft,ifft
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 02.09.2014
+ last update: 17.09.2014
  version    : 0.0113
 ---------------------------------------------------------------------- 
  Butterworth filter design from  KD
@@ -263,5 +263,6 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
     #--- retain dc offset       
          if (self.remove_dcoffset == False ): 
             data += dmean
-            print "DC removed"
+            if self.verbose:
+               print "DC removed"
          return data

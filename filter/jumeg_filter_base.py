@@ -24,32 +24,35 @@ import time
 
 class JuMEG_Filter_Base(object):
      def __init__ (self):
-         self._jumeg_filter_base_version   = 0.0113
+        self._jumeg_filter_base_version   = 0.0113
          
-         self._sampling_frequency          = 1017.25
-         self._filter_type                 = "bp" #lp,hp,bp,notch
+        self._sampling_frequency          = 1017.25
+        self._filter_type                 = "bp" #lp,hp,bp,notch
                 
-         self._fcut1                       = 1.0
-         self._fcut2                       = 45.0
+        self._fcut1                       = 1.0
+        self._fcut2                       = 45.0
          
 #---
-         self._filter_notch                = np.array([])
-         self._filter_notch_width          = 1.0
+        self._filter_notch                = np.array([])
+        self._filter_notch_width          = 1.0
          
-         self._settling_time_factor        = 5.0
-         self._filter_kernel_length_factor = 16.0  
-        
+        self._settling_time_factor        = 5.0
+        self._filter_kernel_length_factor = 16.0
+#---
+        self._filter_attenuation_factor   = 1  # 1, 2
+        self._filter_window               = 'blackmann' # blackmann, kaiser, hamming
+        self._kaiser_beta                 = 16 #  for kaiser window  
 #---   flags    
-         self._remove_dcoffset             = True
-         self._filter_kernel_isinit        = False
-         self._verbose                     = False
+        self._remove_dcoffset             = True
+        self._filter_kernel_isinit        = False
+        self._verbose                     = False
 #---         
         
 #---   data      
-         self._data                        = np.array([])
-         self._data_mean                   = 0.0
-         self._data_plane_isinit           = False
-         self._data_plane_data_in          = np.array([])
+        self._data                        = np.array([])
+        self._data_mean                   = 0.0
+        self._data_plane_isinit           = False
+        self._data_plane_data_in          = np.array([])
         
          
 #--- version
@@ -178,6 +181,15 @@ class JuMEG_Filter_Base(object):
          return self._filter_window
    
      filter_window = property(_get_filter_window,_set_filter_window)
+
+#--- kaiser_beta beat value for kaiser window e.g. 8.6 9.5 14 ...    
+     def _set_kaiser_beta(self,value):
+         self._kaiser_beta=value
+       
+     def _get_kaiser_beta(self):
+         return self._kaiser_beta
+       
+     kaiser_beta = property(_get_kaiser_beta,_set_kaiser_beta)
      
 #--- filter_kernel_data   
      def _set_filter_kernel_data(self,d):
@@ -390,13 +402,14 @@ class JuMEG_Filter_Base(object):
 #---------------------------------------------------------# 
      def calc_data_mean(self,data):
          """
-            return mean from data
+            return mean from data use last axis
            
             input: data => signal of one channel
          """  
          
-         self.data_mean = np.mean(data)
-         
+         self.data_mean = np.mean(data, axis = -1)
+         #self.data_mean = np.mean(data)
+        
          return (self.data_mean)  
          
 #---------------------------------------------------------# 
@@ -411,8 +424,11 @@ class JuMEG_Filter_Base(object):
          #self.calc_data_mean_std(data);
          
          self.calc_data_mean(data);
-         data -= self.data_mean # ptr to data
-        
+         if self.data_mean.size == 1 :
+              data -= self.data_mean
+         else :
+              data -= self.data_mean[:, np.newaxis] 
+     
          return self.data_mean  
 
  
@@ -456,10 +472,10 @@ class JuMEG_Filter_Base(object):
        """apply filter """
        
        self.data = data 
-    
+       
        if self.verbose :
-		     t0 = time.time()
-		     print"===> Start apply filter"
+           t0 = time.time()
+           print"===> Start apply filter"
        
        if not( self.filter_isinit() ): 
             self.init_filter()
@@ -475,7 +491,7 @@ class JuMEG_Filter_Base(object):
             self.do_apply_filter( data )  
        
        if self.verbose :
-             print"===> Done apply filter %d" %( time.time() -t0 )
+            print"===> Done apply filter %d" %( time.time() -t0 )
 
 #---------------------------------------------------------# 
 #--- destroy                     -------------------------#

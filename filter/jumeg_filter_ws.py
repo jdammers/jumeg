@@ -5,7 +5,7 @@ import numpy as np
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 02.09.2014
+ last update: 17.09.2014
  version    : 0.0113
 ---------------------------------------------------------------------- 
  Taken from:
@@ -31,13 +31,10 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
          self._filter_type                 = filter_type #lp, bp, hp
          self._fcut1                       = fcut1
          self._fcut2                       = fcut2
-#---
-         self._filter_attenuation_factor   = 1  # 1, 2
-         self._filter_window               = filter_window # hamming, blackmann, kaiser
-         self._kaiser_beta                 = 9.5 # 8.6  for kaiser window
 #---      
          self._filter_kernel_data_rfft     = np.array([])
          self._filter_kernel_length_factor = kernel_length_factor
+         self._filter_attenuation_factor   = 1
          self._settling_time_factor        = settling_time_factor
 #--               
          self._remove_dcoffset             = remove_dcoffset
@@ -48,14 +45,6 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
        
      version = property(_get_version)
                              
-#--- kaiser_beta beat value for kaiser window e.g. 8.6 9.5 14 ...    
-     def _set_kaiser_beta(self,value):
-         self._kaiser_beta=value
-       
-     def _get_kaiser_beta(self):
-         return self._kaiser_beta
-       
-     kaiser_beta = property(_get_kaiser_beta,_set_kaiser_beta)
 
 #--- filter_kernel_data_rfft     
      def _get_filter_kernel_data_rfft(self):
@@ -204,6 +193,7 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
          
          self.calc_filter_data_length( self.data_length )
          fkd                                  = np.zeros( self.filter_data_length,np.float64 )
+      #   self.filter_kernel_data.astype( np.complex64 )
          fkd[0:self.filter_kernel_data.size ] = self.filter_kernel_data.copy()   
     
         #--- factor 2 => ws  ~ -148 dB depends on window
