@@ -6,10 +6,10 @@ import mne
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 17.09.2014
- version    : 0.0113
+ last update: 30.09.2014
+ version    : 0.0314
 ---------------------------------------------------------------------- 
- jumeg oo filter interface to the MNE filter types
+ jumeg obj filter interface to the MNE filter types
  mne.low_pass_filter
  mne.high_pass_filter
  mne.band_pass_filter
@@ -28,7 +28,8 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
                    
          super(JuMEG_Filter_MNE, self).__init__()
          
-         self._jumeg_filter_ws_version     = 0.0113
+         self._jumeg_filter_ws_version     = 0.0314
+         self._filter_method               = 'mne'
          
          self._mne_filter_method           = mne_filter_method  #fft
          self._mne_filter_length           = mne_filter_length
@@ -36,7 +37,7 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
          self._mne_trans_bandwith          = trans_bandwith
          
          self._sampling_frequency          = sampling_frequency
-         self._filter_type                 = filter_type #lp, bp, hp
+         self._filter_type                 = filter_type #lp, hp, bp, br,bs, notch
          self._fcut1                       = fcut1
          self._fcut2                       = fcut2
 #---
@@ -58,7 +59,6 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
          return self._jumeg_filter_ws_version
        
      version = property(_get_version)
-
 
 #--- MNE filter values
 
@@ -101,13 +101,16 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
 #---------------------------------------------------------# 
 #--- apply_filter MNE           -------------------------#
 #---------------------------------------------------------# 
-     def apply_filter(self,data):
+     def apply_filter(self,data,picks=None):
        """apply mne filter """
        
-       self.data = data 
-     
-       dmean = self.calc_remove_dcoffset(data)
-      
+       #if picks == None :
+       #       picks = np.arange( self.data.shape[0] )
+       
+       self.data = data
+       
+       dmean  = self.calc_remove_dcoffset(data)
+ 
        Fs    = self.sampling_frequency
        njobs = self.mne_njobs        
        fcut1 = self.fcut1
@@ -122,26 +125,29 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
           print"===> Start apply mne filter"
        
        if   self.filter_type =='lp' :
-            mne.filter.low_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
-                                       iir_params = None,picks = None,n_jobs = njobs,copy = False,verbose = v)
-                    
+            data[:,:] = mne.filter.low_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
+                                       iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
+       
        elif self.filter_type =='hp' :
-            mne.filter.high_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
-                                        iir_params = None,picks = None,n_jobs = njobs,copy = False,verbose = v)
+            data[:,: ] = mne.filter.high_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
+                                        iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
       
        elif self.filter_type =='bp' :
-            mne.filter.band_pass_filter(data,Fs,fcut1,fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,method = method,
-                                        iir_params = None,picks = None,n_jobs = njobs,copy = False,verbose = v)
+            data[:,:] = mne.filter.band_pass_filter(data,Fs,fcut1,fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,method = method,iir_params = None,picks = None,n_jobs = njobs,copy = False,verbose = v)
+                                      
        
-                             
-       elif self.filter_type =='bs' :
-            mne.filter.band_stop_filter(data,Fs,fcut1,fcut2,filter_length = fl,trans_bandwidth = tbw,method = method,
-                                        iir_params = None,picks = None,n_jobs = njobs,copy = False,verbose = v)
-    
-       elif self.filter_type == 'notch' :      
-            mne.filter.notch_filter(data,Fs,self.filter_notch,filter_length = fl,notch_widths = self.filter_notch_width,trans_bandwidth=1,method = method,
-                                    iir_params = None,picks = None,n_jobs = njobs,copy = False,verbose = v,mt_bandwidth = None,p_value = 0.05)                       
+       elif self.filter_type in ['bs','br'] :
+            data[:,:] = mne.filter.band_stop_filter(data,Fs,fcut1,fcut2,filter_length = fl,trans_bandwidth = tbw,method = method,
+                                        iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
 
+#--- apply notches
+       if (self.filter_notch.size) or (self.filter_type == 'notch'):
+           data[:,: ] = mne.filter.notch_filter(data,Fs,self.filter_notch,filter_length = fl,notch_widths = self.filter_notch_width,trans_bandwidth=1,method = method,
+                                    iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v,mt_bandwidth = None,p_value = 0.05) 
+                                    
+    
+      #data = data.astype(data_type_orig)
+       
 #--- retain dc offset       
        if ( self.remove_dcoffset == False) : 
             if dmean.size == 1 :

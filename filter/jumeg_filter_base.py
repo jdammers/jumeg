@@ -6,8 +6,8 @@ import time
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 04.09.2014
- version    : 0.0213
+ last update: 30.09.2014
+ version    : 0.0314
 ---------------------------------------------------------------------- 
  Window sinc filter taken from:
  The Scientist and Engineer's Guide to Digital Signal Processing
@@ -24,11 +24,12 @@ import time
 
 class JuMEG_Filter_Base(object):
      def __init__ (self):
-        self._jumeg_filter_base_version   = 0.0113
+        self._jumeg_filter_base_version   = 0.0314
          
         self._sampling_frequency          = 1017.25
         self._filter_type                 = "bp" #lp,hp,bp,notch
-                
+        self._filter_method               = None
+        
         self._fcut1                       = 1.0
         self._fcut2                       = 45.0
          
@@ -69,6 +70,12 @@ class JuMEG_Filter_Base(object):
          return self._verbose
        
      verbose = property(_get_verbose, _set_verbose)
+     
+#--- filter method bw,ws,mne
+     def _get_filter_method(self):
+         return self._filter_method
+     
+     filter_method = property(_get_filter_method)
      
 #--- filter_kernel_isinit check for call init fct.
      def _set_filter_kernel_isinit(self,value):
@@ -347,9 +354,27 @@ class JuMEG_Filter_Base(object):
          return self._filter_name_extention
         
      filter_name_postfix = property(_get_filter_name_postfix)    
-              
 
+#--- filter_info
+     def _get_filter_info_string(self):
+         """return info string with filter parameters """ 
+         self._filter_info_string = self.filter_method +" ---> "+self.filter_type
+         
+         if self.filter_type == 'bp ' :
+            self._filter_info_string += "%0.1f-%0.1f Hz" % (self.fcut1,self.fcut2)
+         else:
+            self._filter_info_string += "%0.1f Hz" % (self.fcut1)
 
+         if self.filter_notch.size :
+            self._filter_info_string += ",apply notch"
+         
+         if ( self.remove_dcoffset ):
+          self._filter_info_string +=",remove DC offset"
+         
+         return self._filter_info_string
+     
+     filter_info = property(_get_filter_info_string)  
+ 
 #---------------------------------------------------------# 
 #--- calc_notches                -------------------------#
 #---------------------------------------------------------# 
@@ -360,9 +385,15 @@ class JuMEG_Filter_Base(object):
              input: notch frequency , maximum harmonic frequency
          """
          
+         if self.sampling_frequency == None :
+             srate = 1000
+         else :
+             srate = self.sampling_frequency
+             
          if  not nfreq_max :
-            nfreq_max = self.sampling_frequency / 2 -1
-     
+            nfreq_max = srate/ 2.5 -1
+            
+         self.filter_notch = np.array([])
          self.filter_notch = np.arange(nfreq,nfreq_max+1,nfreq) 
   
          return self.filter_notch  
@@ -468,7 +499,7 @@ class JuMEG_Filter_Base(object):
 #---------------------------------------------------------# 
 #--- apply_filter                -------------------------#
 #---------------------------------------------------------# 
-     def apply_filter(self,data):
+     def apply_filter(self,data, picks=None):
        """apply filter """
        
        self.data = data 
@@ -481,12 +512,12 @@ class JuMEG_Filter_Base(object):
             self.init_filter()
            
        if data.ndim > 1 :
-      
-           for ichan in range( self.data.shape[0] ):
+           if picks == None :
+              picks = np.arange( self.data.shape[0] )
+           for ichan in picks:
                self.do_apply_filter( self.data[ichan,:] )
                if self.verbose :
                     print"===> ch %d" %(ichan)    
-      
        else:
             self.do_apply_filter( data )  
        
@@ -497,14 +528,28 @@ class JuMEG_Filter_Base(object):
 #--- destroy                     -------------------------#
 #---------------------------------------------------------# 
      def destroy(self):
-         # print self.data_plane
-
-         del self._data_plane
-         del self._data_plane_data_in 
-         del self._data_plane_data_out 
-         del self._filter_kernel_data_cplx 
-         del self._filter_kernel_data_cplx_sqrt 
-         del self._filter_kernel_data 
+         self.filter_kernel_isinit = False
+         self.data_plane_isinit    = False
+         
+         self._data_plane                   = None
+         self._data_plane_data_in           = None
+         self._data_plane_data_out          = None
+         self._data_plane_pre               = None
+         self._data_plane_post              = None
+         self._data_plane_cplx              = None
+         self._data                         = None
+         
+         self._filter_kernel_data_cplx      = None
+         self._filter_kernel_data_cplx_sqrt = None
+         self._filter_kernel_data           = None
+         
+         # d = np.array([])
+         #del self._data_plane
+         #del self._data_plane_data_in 
+         #del self._data_plane_data_out 
+         #del self._filter_kernel_data_cplx 
+         #del self._filter_kernel_data_cplx_sqrt 
+         #del self._filter_kernel_data 
          #print self.data_plane
 
          return 1

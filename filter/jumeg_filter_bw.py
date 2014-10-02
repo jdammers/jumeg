@@ -7,10 +7,11 @@ import scipy.fftpack as scipack # import fft,ifft
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 17.09.2014
- version    : 0.0113
+ last update: 30.09.2014
+ version    : 0.0314
 ---------------------------------------------------------------------- 
- Butterworth filter design from  KD
+ Butterworth filter design from  KD,JD
+ Oppenheim, Schafer, "Discrete-Time Signal Processing"
 ----------------------------------------------------------------------
 
 '''
@@ -21,8 +22,9 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
      def __init__ (self,filter_type='bp',fcut1=1.0,fcut2=200.0,remove_dcoffset=True,sampling_frequency=1017.25,
                         notch=np.array([]),notch_width=1.0,order=4.0,settling_time_factor=5.0):
          super(JuMEG_Filter_Bw, self).__init__()
-         self._jumeg_filter_ws_version     = 0.0113
-        
+         self._jumeg_filter_ws_version     = 0.0314
+         self._filter_method               = 'bw'
+         
          self._sampling_frequency              = sampling_frequency
          self._filter_type                     = filter_type #lp, bp, hp
          self._fcut1                           = fcut1
@@ -251,18 +253,18 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
          self.data_plane_data_pre[:] = data[self.data_plane_data_pre.size :0:-1 ]    
          self.data_plane_data_post[:]= data[data.size -2: data.size -2 - self.data_plane_data_post.size :-1]
          
-         
     #--- copy data at right place in data plane array       
          self.data_plane_data_in[:] = data
-       # self.data_plane[:]         = scipack.ifft( scipack.fft( self.data_plane.astype( np.complex64 ) ) * self.filter_kernel_data_cplx_sqrt ).real
-       
+    
+    #--- filter : apply fft to complex data_plane; fft-convolution with filter kernel; ifft to transform back into time domain     
          self.data_plane_cplx[:]    = scipack.ifft( scipack.fft( self.data_plane_cplx ) * self.filter_kernel_data_cplx_sqrt )
-    #--- copy filtered data back 
+         
+    #--- copy filtered real part data back 
          data[:] = self.data_plane_data_in
 
     #--- retain dc offset       
          if (self.remove_dcoffset == False ): 
             data += dmean
             if self.verbose:
-               print "DC removed"
+               print " ---> NO DC Offset correction !!!"
          return data

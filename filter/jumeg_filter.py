@@ -6,8 +6,8 @@ import numpy as np
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 17.09.2014
- version    : 0.0313
+ last update: 30.09.2014
+ version    : 0.0314
 ---------------------------------------------------------------------- 
  Window Sinc Filter are taken from:
  The Scientist and Engineer's Guide to Digital Signal Processing
@@ -15,73 +15,94 @@ import numpy as np
  Chapter 16: Window-Sinc Filter
  http://www.dspguide.com/ch16.htm
 ----------------------------------------------------------------------
- Butterworth filter design from  KD
+ Butterworth filter design from  KD,JD
+ Oppenheim, Schafer, "Discrete-Time Signal Processing"
 ----------------------------------------------------------------------
-oo interface to mne filter functions
+ OBJ interface to MNE filter functions
 ----------------------------------------------------------------------
  Dependency:
   numpy
   scipy
-  mmne
+  mne
 ----------------------------------------------------------------------
  How to use the jumeg filter
 ---------------------------------------------------------------------- 
 
-from jumeg.filter.jumeg_filter import jumeg_filter
+from jumeg.filter import jumeg_filter
 
-===> make a window sinc bp 1-45 Hz with dc offset correction
-  filter_type = "bp"
-  fcut1       = 1.0
-  fcut2       = 45.0
-  srate       = 1017.25
-  fiws_bp = jumeg_filter( filter_method="ws",filter_type=filter_type,fcut1=fcut1, fcut2=fcut2, remove_dcoffset=True, sampling_frequency=srate)
+#===> set some global values
+ftype = "bp"
+fcut1 =  1.0
+fcut2 = 45.0
+srate = 1017.25 # sampling rate in Hz
 
----> apply changes to default parameter  
-  fiws_bp.filter_window               = "hamming"
-  fiws_bp.filter_kernel_length_factor = 8.0
-  fiws_bp.settling_time_factor        = 3.0
-  fiws_bp.sampling_frequency          = 1017.25
- 
-===> make a window sinc  hp 5 Hz
-  filter_type = "hp"
-  fcut1       =  5.0
-  fiws_hp     = jumeg_filter( filter_method="ws",filter_type=filter_type,fcut1=fcut1,remove_dcoffset=True, sampling_frequency=srate)
-  
-===> make a window sinc  lp 25 Hz
-  filter_type = "lp"
-  fcut1       = 25.0
-  fiws_lp     = jumeg_filter( filter_method="ws",filter_type=filter_type,fcut1=fcut1,remove_dcoffset=True, sampling_frequency=srate)
-  
-  
-===> apply the filter  !!! works inplace;loop over all channels!!!
-  data_bp = data_channel.copy()
-  data_lp = data_channel.copy()
-  data_hp = data_channel.copy()
- 
-  fiws_bp.apply_filter( data_bp )
-  fiws_lp.apply_filter( data_lp )
-  fiws_hp.apply_filter( data_hp )
- 
-   
-===> make a butter  bp 1-45 Hz with dc offset correction and notches at 50,100,150,200 Hz
-  filter_type = "bp"
-  fcut1       = 1.0
-  fcut2       = 45.0
-  srate       = 1017.25
-  
-  notch_start = 50
-  notch_end   = 200
-  notch       = numpy.arange(notch_start,notch_end,notch_start) 
-  
-  fibw_bp = jumeg_filter( filter_method="bw",filter_type=filter_type,fcut1=fcut1, fcut2=fcut2, remove_dcoffset=True, sampling_frequency=srate,notch=notch)
-  
-  or instead of notch =  <np.array> 
-  fibw_bp.calc_notches(50) # => 50,100 ... samplig frequency /2
-  
-  
-  fibw_bp.apply_filter( data_channels )
-  
-----------------------------------------------------------------------
+#---> make some notches
+notch_start = 50
+notch_end   = 200
+notch       = np.arange(notch_start,notch_end+1,notch_start) 
+
+#===> make an MNE FIR FFT filter, bp1-45 OOcall to the MNE filter class
+fi_mne_bp = jumeg_filter(filter_method="mne",filter_type=ftype,fcut1=fcut1,fcut2=fcut2,remove_dcoffset=True,sampling_frequency=srate,notch=notch)
+
+#---> or apply notches from 50 100 150 250 300 ... 450 
+fi_mne_bp.calc_notches(50)
+
+#---> or apply notches from 50 100 150
+fi_mne_bp.calc_notches(50,150)
+
+#---> apply filter works inpalce !!!
+fi_mne_bp.apply_filter(data)
+
+
+#===> make a butter bp1-45 Hz with dc offset correction and notches at 50,100,150,200 Hz
+fi_bw_bp = jumeg_filter( filter_method="bw",filter_type=ftype,fcut1=fcut1,fcut2=fcut2,remove_dcoffset=True,sampling_frequency=srate,notch=notch)
+
+#---> or apply notches from 50 100 150 250 300 ... 450 
+fi_bw_bp.calc_notches(50)
+
+#---> apply filter works inpalce !!!   
+fi_bw_bp.apply_filter(data)
+
+
+#===> make a window sinc bp 1-45 Hz with dc offset correction
+fi_ws_bp  = jumeg_filter( filter_method="ws",filter_type=ftype,fcut1=fcut1,fcut2=fcut2, remove_dcoffset=True, sampling_frequency=srate)
+
+#---> change some filter parameter  
+fi_ws_bp.filter_window               = "hamming"
+fi_ws_bp.filter_kernel_length_factor = 8.0
+fi_ws_bp.settling_time_factor        = 3.0
+
+#---> apply filter works inpalce !!!   
+fi_ws_bp.apply_filter(data)
+
+
+#=== make some filter objects
+fi_bw_obj = []
+for i in range(0,2):
+  fi_bw_obj.append = jumeg_filter( filter_method="bw",filter_type=ftype,fcut1=fcut1,fcut2=fcut2,remove_dcoffset=True,sampling_frequency=srate,notch=notch)
+
+#---> change the Obj filter parameter
+#- obj1 => low-pass 35Hz
+fi_bw_obj[0].fcut1      = 35.0
+fi_bw_obj[0].filter_type='lp'
+
+#- obj2 => high-pass 10Hz
+fi_bw_obj[1].fcut1      = 10.0
+fi_bw_obj[1].filter_type='hp'
+
+#- obj3 => band-pass 10-30Hz
+fi_bw_obj[2].fcut1      = 10.0
+fi_bw_obj[2].fcut2      = 30.0
+fi_bw_obj[3].filter_type='bp'
+
+#--->apply the filter to your data , !!! works inplace !!!
+for i in range(0,2):
+    fi_bw_obj[i].apply_filter(data[i,:])
+
+#--->finaly get the obj related filter name postfix e.g. to save the filterd data
+fi_bw_obj[0].filter_name_postfix
+filp35Hz
+#----------------------------------------------------------------------
  ende gut alles gut
 
 '''
@@ -103,4 +124,5 @@ def jumeg_filter(filter_method="bw",filter_type='bp',fcut1=1.0,fcut2=45.0,remove
                                mne_filter_method=mne_filter_method,mne_filter_length=mne_filter_length,trans_bandwith=trans_bandwith,notch=notch,notch_width=notch_width)
 
   
-    
+if __name__ == "__main__":
+     jumeg_filter(**kwargv)

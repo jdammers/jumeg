@@ -1,7 +1,10 @@
 import numpy as np
+from scipy.signal import firwin2,freqz,get_window
+from scipy.signal import kaiser_beta, kaiser_atten, kaiserord, \
+        firwin, firwin2, freqz, remez
 '''
 ----------------------------------------------------------------------
---- JuMEG Filter_Ws             --------------------------------------
+--- JuMEG Filter_Wopti             --------------------------------------
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
@@ -20,7 +23,7 @@ import numpy as np
 '''
 from jumeg.filter.jumeg_filter_base import JuMEG_Filter_Base
 
-class JuMEG_Filter_Ws(JuMEG_Filter_Base):
+class JuMEG_Filter_Wopti(JuMEG_Filter_Base):
      def __init__ (self,filter_type='bp',fcut1=1.0,fcut2=200.0,remove_dcoffset=True,sampling_frequency=1017.25,filter_window='blackmann',
                    kernel_length_factor=16.0,settling_time_factor=5.0): #, notch=np.array([]),notch_width=1.0):
          super(JuMEG_Filter_Ws, self).__init__()
@@ -299,4 +302,16 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
              
      
          return data
+         
+         
+ H = firwin2(N, freq, gain)[np.newaxis, :]
+
+        att_db, att_freq = _filter_attenuation(H, freq, gain)
+        if att_db < min_att_db:
+            att_freq *= Fs / 2
+            warnings.warn('Attenuation at stop frequency %0.1fHz is only '
+                          '%0.1fdB.' % (att_freq, att_db))
+
+        # Make zero-phase filter function
+        B = np.abs(fft(H)).ravel()
 
