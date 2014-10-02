@@ -51,7 +51,7 @@ fi_mne_bp.calc_notches(50)
 fi_mne_bp.calc_notches(50,150)
 
 #---> apply filter works inpalce !!!
-fi_mne_bp.apply_filter(data)
+fi_mne_bp.apply_filter(raw._data,picks)
 
 
 #===> make a butter bp1-45 Hz with dc offset correction and notches at 50,100,150,200 Hz
@@ -61,7 +61,7 @@ fi_bw_bp = jumeg_filter( filter_method="bw",filter_type=ftype,fcut1=fcut1,fcut2=
 fi_bw_bp.calc_notches(50)
 
 #---> apply filter works inpalce !!!   
-fi_bw_bp.apply_filter(data)
+fi_bw_bp.apply_filter(raw._data,picks)
 
 
 #===> make a window sinc bp 1-45 Hz with dc offset correction
