@@ -104,23 +104,22 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
      def apply_filter(self,data,picks=None):
        """apply mne filter """
        
-       #if picks == None :
-       #       picks = np.arange( self.data.shape[0] )
+       if picks == None :
+          picks = np.arange( self.data.shape[0] )
        
-       self.data = data
-       
-       dmean  = self.calc_remove_dcoffset(data)
- 
-       Fs    = self.sampling_frequency
-       njobs = self.mne_njobs        
-       fcut1 = self.fcut1
-       fcut2 = self.fcut2
-       fl    = self.mne_filter_length
-       tbw   = self.mne_trans_bandwith
+       # self.data = data
+       dmean  = self.calc_remove_dcoffset(data[picks, :])
+       Fs     = self.sampling_frequency
+       njobs  = self.mne_njobs        
+       fcut1  = self.fcut1
+       fcut2  = self.fcut2
+       fl     = self.mne_filter_length
+       tbw    = self.mne_trans_bandwith
        method = self.mne_filter_method
        v      = self.verbose
 
        if self.verbose :
+          import time
           t0 = time.time()
           print"===> Start apply mne filter"
        
@@ -129,11 +128,12 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
                                        iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
        
        elif self.filter_type =='hp' :
-            data[:,: ] = mne.filter.high_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
+            data[:, :] = mne.filter.high_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
                                         iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
-      
+            
        elif self.filter_type =='bp' :
-            data[:,:] = mne.filter.band_pass_filter(data,Fs,fcut1,fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,method = method,iir_params = None,picks = None,n_jobs = njobs,copy = False,verbose = v)
+            data[:,:] = mne.filter.band_pass_filter(data,Fs,fcut1,fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,
+                                                    method = method,iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
                                       
        
        elif self.filter_type in ['bs','br'] :
@@ -151,9 +151,9 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
 #--- retain dc offset       
        if ( self.remove_dcoffset == False) : 
             if dmean.size == 1 :
-                  data += dmean
+                  data[picks, :] += dmean
             else :
-                  data += dmean[:, np.newaxis]
+                  data[picks, :] += dmean[:, np.newaxis]
              
        if self.verbose :
            print"===> Done apply mne filter %d" %( time.time() -t0 )

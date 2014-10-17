@@ -452,9 +452,8 @@ class JuMEG_Filter_Base(object):
          
             input: data => signal of one channel
          """ 
-         #self.calc_data_mean_std(data);
          
-         self.calc_data_mean(data);
+         self.calc_data_mean(data)
          if self.data_mean.size == 1 :
               data -= self.data_mean
          else :
@@ -525,6 +524,26 @@ class JuMEG_Filter_Base(object):
             print"===> Done apply filter %d" %( time.time() -t0 )
 
 #---------------------------------------------------------# 
+#--- reset                       -------------------------#
+#---------------------------------------------------------# 
+     def reset(self):
+         self.filter_kernel_isinit = False
+         self.data_plane_isinit    = False
+         
+         self._data_plane                   = None
+         self._data_plane_data_in           = None
+         self._data_plane_data_out          = None
+         self._data_plane_pre               = None
+         self._data_plane_post              = None
+         self._data_plane_cplx              = None
+         self._data                         = None
+         
+         self._filter_kernel_data_cplx      = None
+         self._filter_kernel_data_cplx_sqrt = None
+         self._filter_kernel_data           = None
+         return 1
+        
+#---------------------------------------------------------# 
 #--- destroy                     -------------------------#
 #---------------------------------------------------------# 
      def destroy(self):
@@ -544,12 +563,12 @@ class JuMEG_Filter_Base(object):
          self._filter_kernel_data           = None
          
          # d = np.array([])
-         #del self._data_plane
-         #del self._data_plane_data_in 
-         #del self._data_plane_data_out 
-         #del self._filter_kernel_data_cplx 
-         #del self._filter_kernel_data_cplx_sqrt 
-         #del self._filter_kernel_data 
+         del self._data_plane
+         del self._data_plane_data_in 
+         del self._data_plane_data_out 
+         del self._filter_kernel_data_cplx 
+         del self._filter_kernel_data_cplx_sqrt 
+         del self._filter_kernel_data 
          #print self.data_plane
 
          return 1
