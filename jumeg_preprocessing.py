@@ -79,7 +79,7 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
         print name
         # load raw data
         raw = mne.io.Raw(fname, preload=True)
-        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
 
         # stim events
         stim_events = mne.find_events(raw, stim_channel=name_stim) 
@@ -193,7 +193,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         print ">>>> perform ICA signal decomposition on :  "+name
         # load filtered data
         raw = mne.io.Raw(fname,preload=True)
-        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
         # ICA decomposition
         ica = ICA(n_components=n_components, max_pca_components=None)
 
@@ -239,7 +239,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 
         # load filtered data
         meg_raw = mne.io.Raw(fnfilt,preload=True)
-        picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(meg_raw.info, meg=True, ref_meg=False, exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnica)
         
@@ -437,8 +437,9 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
     tmin_eog = -0.4
     tmax_eog =  0.4
 
-    picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
-    # Why is the parameter below n_components_ instead of n_pca_components?
+    picks = mne.pick_types(meg_raw.info, meg=True, ref_meg=False, exclude='bads')
+    # as we defined x% of the explained variance as noise (e.g. 5%)
+    # we will remove  this noise from the data 
     meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_components_, copy=True)
 
     # plotting parameter
@@ -592,7 +593,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
         #basename = os.path.splitext(os.path.basename(fnica))[0]
         # load cleaned data
         raw = mne.io.Raw(fnraw,preload=True)
-        picks = mne.pick_types(raw.info, meg=True, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
 
         # read (second) ICA
         print ">>>> working on: "+basename
@@ -830,7 +831,7 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
         raw_empty = Raw(fn_in, verbose=verbose)
 
         # pick MEG channels only
-        picks = pick_types(raw_empty.info, meg=True, eeg=False, stim=False,
+        picks = pick_types(raw_empty.info, meg=True, ref_meg=False, eeg=False, stim=False,
                            eog=False, exclude='bads')
 
         # calculate noise-covariance matrix
