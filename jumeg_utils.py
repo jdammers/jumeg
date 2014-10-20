@@ -9,35 +9,48 @@ import scipy as sci
 from mne.utils import logger
 
 
-def check_jumeg_standards(fname):
+def check_jumeg_standards(fnames):
     '''
     Checks for file name extension and provides information on type of file
 
-    fname: str
+    fnames: str or list
     '''
-    if fname == '' or not fname.endswith('.fif'):
-        print 'Empty string or not a FIF format filename.'
-    elif fname.endswith('-meg.fif') or fname.endswith('-eeg.fif'):
-        print 'Raw FIF file with only MEG or only EEG data.'
-    elif fname.split('-')[-1] == 'raw.fif':
-        print 'Raw FIF file - Subject %s, Experiment %s, Data %s, Time %s, \
-               Trial number %s.' \
-              %(fname.split('_')[0], fname.split('_')[1], fname.split('_')[2], \
-                fname.split('_')[3], fname.split('_')[4])
-        print 'Processing identifier in the file %s.' \
-              %(fname.strip('-raw.fif').split('_')[-1])
-    elif fname.split('-')[-1] == 'ica.fif':
-        print 'FIF file storing ICA session.'
-    elif fname.split('-')[-1] == 'evoked.fif':
-        print 'FIF file with averages.'
-    elif fname.split('-')[-1] == 'epochs.fif':
-        print 'FIF file with epochs.'
-    elif fname.split('-')[-1] == 'empty.fif':
-        print 'Empty room FIF file.'
+
+    if isinstance(fnames, list):
+        fname_list = fnames
     else:
-        print 'No known file info available. Filename does not follow conventions.'
-    
-    print 'Please verify if the information is correct and make the appropriate changes!'
+        if isinstance(fnames, str):
+            fname_list = list([fnames])
+        else:
+            fname_list = list(fnames)
+
+    print fname_list
+    # loop across all filenames
+    for fname in fname_list:
+        print fname
+        if fname == '' or not fname.endswith('.fif'):
+            print 'Empty string or not a FIF format filename.'
+        elif fname.endswith('-meg.fif') or fname.endswith('-eeg.fif'):
+            print 'Raw FIF file with only MEG or only EEG data.'
+        elif fname.split('-')[-1] == 'raw.fif':
+            print 'Raw FIF file - Subject %s, Experiment %s, Data %s, Time %s, \
+                   Trial number %s.' \
+                  %(fname.split('_')[0], fname.split('_')[1], fname.split('_')[2], \
+                    fname.split('_')[3], fname.split('_')[4])
+            print 'Processing identifier in the file %s.' \
+                  %(fname.strip('-raw.fif').split('_')[-1])
+        elif fname.split('-')[-1] == 'ica.fif':
+            print 'FIF file storing ICA session.'
+        elif fname.split('-')[-1] == 'evoked.fif':
+            print 'FIF file with averages.'
+        elif fname.split('-')[-1] == 'epochs.fif':
+            print 'FIF file with epochs.'
+        elif fname.split('-')[-1] == 'empty.fif':
+            print 'Empty room FIF file.'
+        else:
+            print 'No known file info available. Filename does not follow conventions.'
+        
+        print 'Please verify if the information is correct and make the appropriate changes!'
     return
 
 
