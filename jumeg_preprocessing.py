@@ -827,9 +827,10 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014', show=False):
     Function showing performance of signal with brain responses from
     selected components only. Plots the evoked (avg) signal of original
     data and brain responses only data along with difference between them.
-
+    
     fn_ctps_ics: str
-    show: bool
+    stim_ch: str (default STI 014)
+    show: bool (default False)
     '''
 
     import mne
