@@ -12,13 +12,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
     filter_type = 'butter'
     filt_method = 'fft'
 
-    if isinstance(fname_raw, list):
-        fnraw = fname_raw
-    else:
-        if isinstance(fname_raw, str):
-            fnraw = list([fname_raw]) 
-        else:
-            fnraw = list(fname_raw)
+    fnraw = get_files_from_list(fname_raw)
 
     # loop across all filenames
     for fname in fnraw:        
@@ -52,7 +46,6 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
     import numpy as np
     import matplotlib.pylab as pl
 
-
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
         trig_name = 'trigger'    
@@ -62,14 +55,7 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
         else:
             trig_name = 'trigger'
 
-    # check list of filenames        
-    if isinstance(filenames, list):
-        fnlist = filenames
-    else:
-        if isinstance(filenames, str):
-            fnlist = list([filenames]) 
-        else:
-            fnlist = list(filenames)
+    fnlist = get_files_from_list(filenames)
 
     # loop across raw files
     fnavg = []    # collect output filenames
@@ -82,7 +68,7 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
 
         # stim events
-        stim_events = mne.find_events(raw, stim_channel=name_stim) 
+        stim_events = mne.find_events(raw, stim_channel=name_stim, consecutive=True)
         nevents = len(stim_events)
         
         if nevents > 0:
@@ -128,15 +114,7 @@ def plot_average(filenames, save_plot=True, show_plot=False):
     import mne, os
     import matplotlib.pylab as pl
 
-
-    # check list of filenames        
-    if isinstance(filenames, list):
-        fname = filenames
-    else:
-        if isinstance(filenames, str):
-            fname = list([filenames]) 
-        else:
-            fname = list(filenames)
+    fname = get_files_from_list(filenames)
 
     # plot averages
     pl.ioff()  # switch off (interactive) plot visualisation
@@ -178,14 +156,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
     from mne.preprocessing import ICA
     import os
 
-
-    if isinstance(fname_filtered, list):
-        fnfilt = fname_filtered
-    else:
-        if isinstance(fname_filtered, str):
-            fnfilt = list([fname_filtered]) 
-        else:
-            fnfilt = list(fname_filtered)
+    fnfilt = get_files_from_list(fname_filtered)
 
     # loop across all filenames
     for fname in fnfilt:                    
@@ -217,13 +188,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 
     import mne, os
 
-    if isinstance(fname_ica, list):
-        fnlist = fname_ica
-    else:
-        if isinstance(fname_ica, str):
-            fnlist = list([fname_ica]) 
-        else:
-            fnlist = list(fname_ica)
+    fnlist = get_files_from_list(fname_ica)
 
     # loop across all filenames
     for fnica in fnlist:
@@ -276,7 +241,6 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     name_eog_hor = 'EOG 001', name_eog_ver = 'EOG 002',
     score_func = 'pearsonr', thresh=0.3):
-
     '''
     Find Independent Components related to ocular artefacts
     '''
@@ -417,8 +381,8 @@ def calc_performance(evoked_raw, evoked_clean):
 #######################################################
 def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
                                         show=False, verbose=False):
-
-    ''' Creates a performance image of the data before 
+    '''
+    Creates a performance image of the data before
     and after the cleaning process.
     '''
 
@@ -439,7 +403,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
 
     picks = mne.pick_types(meg_raw.info, meg=True, ref_meg=False, exclude='bads')
     # as we defined x% of the explained variance as noise (e.g. 5%)
-    # we will remove  this noise from the data 
+    # we will remove this noise from the data
     meg_clean = ica.apply(meg_raw, exclude=ica.exclude, n_pca_components=ica.n_components_, copy=True)
 
     # plotting parameter
@@ -447,12 +411,10 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig, \
     xFigSize = 12
     nrange = 2
 
-
     # ToDo:  How can we avoid popping up the window if show=False ?
     pl.ioff()
     pl.figure('performance image', figsize=(xFigSize, 12))
     pl.clf()
-
 
     # ECG, EOG:  loop over all artifact events
     for i in range(nrange):
@@ -565,7 +527,6 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     print freqs
     print nfreq
 
-
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
         trig_name = 'trigger'
@@ -575,14 +536,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
         else:
             trig_name = 'auxillary'
 
-    # check list of filenames
-    if isinstance(fname_ica, list):
-        fnlist = fname_ica
-    else:
-        if isinstance(fname_ica, str):
-            fnlist = list([fname_ica]) 
-        else:
-            fnlist = list(fname_ica)
+    fnlist = get_files_from_list(fname_ica)
 
     # loop across all filenames
     for fnica in fnlist:
@@ -602,7 +556,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
         ncomp = len(ica_picks)
 
         # stim events
-        stim_events = mne.find_events(raw, stim_channel=name_stim)
+        stim_events = mne.find_events(raw, stim_channel=name_stim, consecutive=True)
         nevents = len(stim_events)
 
         if (nevents > 0):
@@ -691,14 +645,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
     import numpy as np
     import matplotlib.pylab as pl
 
-    # check list of filenames        
-    if isinstance(fname_ctps, list):
-        fnlist = fname_ctps
-    else:
-        if isinstance(fname_ctps, str):
-            fnlist = list([fname_ctps]) 
-        else:
-            fnlist = list(fname_ctps)
+    fnlist = get_files_from_list(fname_ctps)
 
     # loop across all filenames
     pl.ioff()  # switch off (interactive) plot visualisation
@@ -774,13 +721,7 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
     import mne, os
     import numpy as np
 
-    if isinstance(fname_ctps_ics, list):
-        fnlist = fname_ctps_ics
-    else:
-        if isinstance(fname_ctps_ics, str):
-            fnlist = list([fname_ctps_ics])
-        else:
-            fnlist = list(fname_ctps_ics)
+    fnlist = get_files_from_list(fname_ctps_ics)
 
     # loop across all filenames
     for fn_ctps_ics in fnlist:
@@ -810,8 +751,9 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
             npca = picks.size
 
         meg_clean = ica.apply(meg_raw, include=ctps_include_ics, n_pca_components=npca, copy=True)
+        if not meg_clean.info['description']: meg_clean.info['description'] = ''
         meg_clean.info['description'] += 'Raw recomposed from ctps selected ICA components\
-                                          for brain responses only.'
+                                             for brain responses only.'
         meg_clean.save(fnclean, overwrite=True)
         plot_compare_brain_responses(fn_ctps_ics)
 
@@ -821,7 +763,8 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
 #  Plot and compare recomposed brain response data only.
 #
 #######################################################
-def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014', show=False):
+def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
+                                 tmin=-0.4, tmax=0.4, event_id=1, show=False):
 
     '''
     Function showing performance of signal with brain responses from
@@ -848,14 +791,16 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014', show=False):
     raw_orig = mne.io.Raw(fnfilt, preload=True)
     raw_br = mne.io.Raw(fnclean, preload=True)
 
-    events = mne.find_events(raw_orig, stim_channel=stim_ch)
-    events = mne.find_events(raw_br, stim_channel=stim_ch)
+    events = mne.find_events(raw_orig, stim_channel=stim_ch, consecutive=True)
+    events = mne.find_events(raw_br, stim_channel=stim_ch, consecutive=True)
 
     picks_orig = mne.pick_types(raw_orig.info, meg=True, exclude='bads')
     picks_br = mne.pick_types(raw_br.info, meg=True, exclude='bads')
 
-    epochs_orig = mne.Epochs(raw_orig, events=events, event_id=1, tmin=-0.4, tmax=0.4, picks=picks_orig, preload=True)
-    epochs_br = mne.Epochs(raw_br, events=events, event_id=1, tmin=-0.4, tmax=0.4, picks=picks_br, preload=True)
+    epochs_orig = mne.Epochs(raw_orig, events, event_id,
+                             tmin=tmin, tmax=tmax, picks=picks_orig, preload=True)
+    epochs_br = mne.Epochs(raw_br, events, event_id,
+                           tmin=tmin, tmax=tmax, picks=picks_br, preload=True)
 
     evoked_orig = epochs_orig.average()
     evoked_br = epochs_br.average()
@@ -915,29 +860,16 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
     from mne import pick_types
     import os
 
+    fner = get_files_from_list(fname_empty_room)
 
-    if isinstance(fname_empty_room, list):
-        fner = fname_empty_room
-    else:
-        if isinstance(fname_empty_room, str):
-            fner = list([fname_empty_room]) 
-        else:
-            fner = list(fname_empty_room)
     nfiles = len(fner)
 
-    if isinstance(fname_out, list):
-        fnout = fname_out
-    else:
-        if isinstance(fname_out, str):
-            fnout = list([fname_out]) 
-        else:
-            fnout = list(fname_out)
+    fnout = get_files_from_list(fname_out)
+
     if (len(fnout) != nfiles):
         print ">>> Error (create_noise_covariance_matrix):"
         print "    Number of in/out files do not match"
-        print
         exit()
-    
 
     # loop across all filenames
     for ifile in range(nfiles):
@@ -959,3 +891,20 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
 
         # write noise-covariance matrix to disk
         write_cov(fn_out, noise_cov_mat)
+
+
+#######################################################
+#                                                     #
+# small utility function to handle file lists         #
+#                                                     #
+#######################################################
+def get_files_from_list(fin):
+    ''' Return files as iterables lists '''
+    if isinstance(fin, list):
+        fout = fin
+    else:
+        if isinstance(fin, str):
+            fout = list([fin])
+        else:
+            fout = list(fin)
+    return fout
