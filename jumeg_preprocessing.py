@@ -813,6 +813,7 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
         meg_clean.info['description'] += 'Raw recomposed from ctps selected ICA components\
                                           for brain responses only.'
         meg_clean.save(fnclean, overwrite=True)
+        plot_compare_brain_responses(fn_ctps_ics)
 
 
 #######################################################
