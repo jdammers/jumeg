@@ -763,6 +763,59 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 
 
 #######################################################
+#
+#  apply ICA recomposition to select brain responses
+#
+#######################################################
+def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, include=None):
+
+    ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files. '''
+
+    import mne, os
+    import numpy as np
+
+    if isinstance(fname_ctps_ics, list):
+        fnlist = fname_ctps_ics
+    else:
+        if isinstance(fname_ctps_ics, str):
+            fnlist = list([fname_ctps_ics])
+        else:
+            fnlist = list(fname_ctps_ics)
+
+    # loop across all filenames
+    for fn_ctps_ics in fnlist:
+        basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
+        #basename = fnica.strip('-ica.fif')
+        fnfilt = basename+'-raw.fif'
+        fnarica = basename+'-ica.fif'
+        fnclean = basename+',ctpsbr_npca-raw.fif'
+        print ">>>> perform ICA recomposition for :"
+        print '   '+fnfilt
+
+        # load filtered and artefact removed data
+        meg_raw = mne.io.Raw(fnfilt,preload=True)
+        picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
+        # ICA decomposition
+        ica = mne.preprocessing.read_ica(fnarica)
+
+        # Get brain response components
+        ctps_include_ics = np.loadtxt(fn_ctps_ics, dtype=int, delimiter=',')
+
+        # clean and save MEG data
+        if n_pca_components:
+            npca = n_pca_components
+        else:
+            npca = picks.size
+            #npca = ica.n_components_
+        print npca
+
+        meg_clean = ica.apply(meg_raw, include=ctps_include_ics, n_pca_components=npca, copy=True)
+        meg_clean.info['description'] += 'Raw recomposed from ctps selected ICA components\
+                                          for brain responses only.'
+        meg_clean.save(fnclean, overwrite=True)
+
+
+#######################################################
 #                                                     #
 # interface for creating the noise-covariance matrix  #
 #                                                     #
