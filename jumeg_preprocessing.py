@@ -257,7 +257,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
             npca = n_pca_components
         else:
             npca = picks.size
-        print npca
+
         meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
                               n_pca_components=npca, copy=True)
         meg_clean.save(fnclean, overwrite=True)
@@ -788,7 +788,7 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
         #basename = fnica.strip('-ica.fif')
         fnfilt = basename+'-raw.fif'
         fnarica = basename+'-ica.fif'
-        fnclean = basename+',ctpsbr_npca-raw.fif'
+        fnclean = basename+',ctpsbr-raw.fif'
         print ">>>> perform ICA recomposition for :"
         print '   '+fnfilt
 
@@ -808,13 +808,76 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
             npca = n_pca_components
         else:
             npca = picks.size
-            #npca = ica.n_components_
-        print npca
 
         meg_clean = ica.apply(meg_raw, include=ctps_include_ics, n_pca_components=npca, copy=True)
         meg_clean.info['description'] += 'Raw recomposed from ctps selected ICA components\
                                           for brain responses only.'
         meg_clean.save(fnclean, overwrite=True)
+
+
+#######################################################
+#
+#  Plot and compare recomposed brain response data only.
+#
+#######################################################
+def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014', show=False):
+
+    '''
+    Function showing performance of signal with brain responses from
+    selected components only. Plots the evoked (avg) signal of original
+    data and brain responses only data along with difference between them.
+
+    fn_ctps_ics: str
+    show: bool
+    '''
+
+    import mne
+    import matplotlib.pylab as pl
+
+    pl.ioff()
+    if show: pl.ion()
+
+    # Construct file names.
+    basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
+    fnfilt = basename+'-raw.fif'
+    fnclean = basename+',ctpsbr-raw.fif'
+
+    # Read raw, calculate events, epochs, and evoked.
+    raw_orig = mne.io.Raw(fnfilt, preload=True)
+    raw_br = mne.io.Raw(fnclean, preload=True)
+
+    events = mne.find_events(raw_orig, stim_channel=stim_ch)
+    events = mne.find_events(raw_br, stim_channel=stim_ch)
+
+    picks_orig = mne.pick_types(raw_orig.info, meg=True, exclude='bads')
+    picks_br = mne.pick_types(raw_br.info, meg=True, exclude='bads')
+
+    epochs_orig = mne.Epochs(raw_orig, events=events, event_id=1, tmin=-0.4, tmax=0.4, picks=picks_orig, preload=True)
+    epochs_br = mne.Epochs(raw_br, events=events, event_id=1, tmin=-0.4, tmax=0.4, picks=picks_br, preload=True)
+
+    evoked_orig = epochs_orig.average()
+    evoked_br = epochs_br.average()
+
+    # Make the comparison plot.
+    pl.figure('Compare raw data')
+    ax1 = pl.subplot(3, 1, 1)
+    evoked_orig.plot(axes=ax1)
+    ax1.set_title('Original raw signal')
+
+    ax2 = pl.subplot(3, 1, 2)
+    ax2.set_ylim(ax1.get_ylim())
+    evoked_br.plot(axes=ax2)
+    ax2.set_title('Signal with brain responses from selected components only')
+
+    ax3 = pl.subplot(3, 1, 3)
+    ax3.set_ylim(ax1.get_ylim())
+    evoked_diff = evoked_orig - evoked_br
+    evoked_diff.plot(axes=ax3)
+    ax3.set_title('Difference signal')
+
+    pl.tight_layout()
+    pl.savefig('plot_compare_'+basename+',ctpsbr.png')
+    pl.ion()
 
 
 #######################################################
