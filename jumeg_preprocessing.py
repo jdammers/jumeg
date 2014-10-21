@@ -800,6 +800,8 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
 
         # Get brain response components
         ctps_include_ics = np.loadtxt(fn_ctps_ics, dtype=int, delimiter=',')
+        # The text file contains ICA component numbers, subtract 1 for the indices. 
+        ctps_include_ics -= 1
 
         # clean and save MEG data
         if n_pca_components:
