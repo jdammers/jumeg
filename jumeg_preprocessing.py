@@ -830,6 +830,7 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
 
     pl.tight_layout()
     pl.savefig('plot_compare_' + basename + ',ctpsbr.png')
+    pl.close('Compare raw data')
     pl.ion()
 
 
