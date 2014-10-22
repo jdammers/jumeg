@@ -27,7 +27,11 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         #name_raw = fname[0:len(fname)-4]
         name_raw = fname.split('-')[0]
         fnfilt = name_raw + ',bp' + "%d-%dHz" % (flow, fhigh)
-        fnfilt = fnfilt + '-raw.fif'
+        # If empty room file, sav accordingly. (suffix -empty.fif)
+        if fname.split('-')[1] == 'empty.fif':
+            fnfilt = fnfilt + '-empty.fif'
+        else:
+            fnfilt = fnfilt + '-raw.fif'
         print 'saving: ' + fnfilt
         raw.save(fnfilt, overwrite=True)
 
@@ -885,6 +889,11 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
         print ">>> create noise covariance using file: " 
         path_in , name = os.path.split(fn_in)
         print name
+
+        # filter empty room raw data
+        apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
+        # rconstruct empty room file name accordingly
+        fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
 
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
