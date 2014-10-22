@@ -4,7 +4,7 @@
 #
 #################################################################
 def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
-    
+
     ''' Applies the MNE butterworth filter to a list of raw files. '''
 
     import mne
@@ -15,12 +15,12 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
     fnraw = get_files_from_list(fname_raw)
 
     # loop across all filenames
-    for fname in fnraw:        
+    for fname in fnraw:
         print ">>> filter raw data: %0.1f - %0.1fHz..." % (flow, fhigh)
         # load raw data
-        raw = mne.io.Raw(fname,preload=True)
+        raw = mne.io.Raw(fname, preload=True)
         # filter raw data
-        raw.filter(flow, fhigh,n_jobs=njobs,method=filt_method)
+        raw.filter(flow, fhigh, n_jobs=njobs, method=filt_method)
         # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
         #     iir_params={'ftype': filter_type, 'order': order})
         print ">>>> writing filtered data to disk..."
@@ -33,18 +33,18 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 
 
 #######################################################
-# 
+#
 #  apply average on list of files
-# 
+#
 #######################################################
-def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
+def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
     tmin=-0.2, tmax=0.4, baseline = (None,0), save_plot=True, show_plot=False):
 
     ''' Performs averaging to a list of raw files. '''
 
-    import mne, os
+    import mne
+    import os
     import numpy as np
-    import matplotlib.pylab as pl
 
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
@@ -65,19 +65,21 @@ def apply_average(filenames, name_stim='STI 014', event_id =None, postfix=None,
         print name
         # load raw data
         raw = mne.io.Raw(fname, preload=True)
-        picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, ref_meg=False,
+                               exclude='bads')
 
         # stim events
-        stim_events = mne.find_events(raw, stim_channel=name_stim, consecutive=True)
+        stim_events = mne.find_events(raw, stim_channel=name_stim,
+                                      consecutive=True)
         nevents = len(stim_events)
-        
+
         if nevents > 0:
             # for a specific event ID
             if event_id:
-                ix = np.where(stim_events[:,2] == event_id)[0]
-                stim_events = stim_events[ix,:]
+                ix = np.where(stim_events[:, 2] == event_id)[0]
+                stim_events = stim_events[ix, :]
             else:
-                event_id = stim_events[0,2]  
+                event_id = stim_events[0, 2]
                 
             epochs = mne.Epochs(raw, events=stim_events,
                         event_id=event_id, tmin=tmin, tmax=tmax,
@@ -111,7 +113,8 @@ def plot_average(filenames, save_plot=True, show_plot=False):
 
     ''' Plot Signal average from a list of averaged files. '''
 
-    import mne, os
+    import mne
+    import os
     import matplotlib.pylab as pl
 
     fname = get_files_from_list(filenames)
@@ -129,7 +132,7 @@ def plot_average(filenames, save_plot=True, show_plot=False):
         ymin, ymax = avg.data.min(), avg.data.max()
         ymin  *= factor*1.1
         ymax  *= factor*1.1
-        fig = pl.figure(basename,figsize=(10,8), dpi=100) 
+        fig = pl.figure(basename,figsize=(10, 8), dpi=100) 
         pl.clf()
         pl.ylim([ymin, ymax])
         pl.xlim([avg.times.min(), avg.times.max()])
@@ -138,7 +141,7 @@ def plot_average(filenames, save_plot=True, show_plot=False):
 
         # save figure
         fnfig = os.path.splitext(fnavg)[0]+'.png'
-        pl.savefig(fnfig,dpi=100)
+        pl.savefig(fnfig, dpi=100)
 
     pl.ion()  # switch on (interactive) plot visualisation
 
@@ -163,7 +166,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         name  = os.path.split(fname)[1]
         print ">>>> perform ICA signal decomposition on :  "+name
         # load filtered data
-        raw = mne.io.Raw(fname,preload=True)
+        raw = mne.io.Raw(fname, preload=True)
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
         # ICA decomposition
         ica = ICA(n_components=n_components, max_pca_components=None)
@@ -181,12 +184,14 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
 #  apply ICA-cleaning for artifact rejection
 # 
 #######################################################
-def apply_ica_cleaning(fname_ica, n_pca_components=None, 
-    flow_ecg=10, fhigh_ecg=20, flow_eog=1, fhigh_eog=10, threshold=0.3):
+def apply_ica_cleaning(fname_ica, n_pca_components=None,
+                       flow_ecg=10, fhigh_ecg=20, flow_eog=1,
+                       fhigh_eog=10, threshold=0.3):
 
     ''' Performs artifact rejection based on ICA to a list of (ICA) files. '''
 
-    import mne, os
+    import mne
+    import os
 
     fnlist = get_files_from_list(fname_ica)
 
@@ -203,14 +208,14 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         print '   '+name
 
         # load filtered data
-        meg_raw = mne.io.Raw(fnfilt,preload=True)
+        meg_raw = mne.io.Raw(fnfilt, preload=True)
         picks = mne.pick_types(meg_raw.info, meg=True, ref_meg=False, exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnica)
         
         # get ECG and EOG related components
         ic_ecg = get_ics_cardiac(meg_raw, ica,
-                                flow=flow_ecg, fhigh=fhigh_ecg, thresh=threshold)
+                                 flow=flow_ecg, fhigh=fhigh_ecg, thresh=threshold)
         ic_eog = get_ics_ocular(meg_raw, ica,
                                 flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
         ica.exclude += list(ic_ecg) + list(ic_eog)
@@ -239,8 +244,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 # 
 #######################################################
 def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
-    name_eog_hor = 'EOG 001', name_eog_ver = 'EOG 002',
-    score_func = 'pearsonr', thresh=0.3):
+                   name_eog_hor = 'EOG 001', name_eog_ver = 'EOG 002',
+                   score_func = 'pearsonr', thresh=0.3):
     '''
     Find Independent Components related to ocular artefacts
     '''
@@ -517,7 +522,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     from jumeg.filter import jumeg_filter
 
 
-    fiws = jumeg_filter.jumeg_filter(filter_method="ws")
+    fiws = jumeg_filter.jumeg_filter(filter_method="bw")
     fiws.filter_type        = 'bp'   # bp, lp, hp
     fiws.dcoffset           = True
     fiws.filter_attenuation_factor = 1
