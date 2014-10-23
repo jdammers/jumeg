@@ -27,7 +27,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         #name_raw = fname[0:len(fname)-4]
         name_raw = fname.split('-')[0]
         fnfilt = name_raw + ',bp' + "%d-%dHz" % (flow, fhigh)
-        fnfilt = fnfilt + '-raw.fif'
+        fnfilt = fnfilt + '-' + fname.split('-')[1]
         print 'saving: ' + fnfilt
         raw.save(fnfilt, overwrite=True)
 
@@ -839,7 +839,8 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
 # interface for creating the noise-covariance matrix  #
 #                                                     #
 #######################################################
-def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
+def apply_create_noise_covariance(fname_empty_room, filter_id=True, verbose=None):
+
 
     '''
     Creates the noise covariance matrix from an
@@ -849,9 +850,8 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
         ----------
         fname_empty_room : String containing the filename
             of the empty room file (must be a fif-file)
-        fname_out : String containing the output filename
-            of the noise-covariance estimation (must also
-            be a fif-file)
+        filter_id: whether need to filter the empty room file
+                   or not. True for filterring, False for unfilterring
         verbose : bool, str, int, or None
             If not None, override default verbose level
             (see mne.verbose).
@@ -871,21 +871,25 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
 
     nfiles = len(fner)
 
-    fnout = get_files_from_list(fname_out)
+   # fnout = get_files_from_list(fname_out)
 
-    if (len(fnout) != nfiles):
-        print ">>> Error (create_noise_covariance_matrix):"
-        print "    Number of in/out files do not match"
-        exit()
+   # if (len(fnout) != nfiles):
+    #    print ">>> Error (create_noise_covariance_matrix):"
+     #   print "    Number of in/out files do not match"
+      #  exit()
 
     # loop across all filenames
     for ifile in range(nfiles):
         fn_in = fner[ifile]
-        fn_out = fnout[ifile]
+        #fn_out = fnout[ifile]
         print ">>> create noise covariance using file: " 
         path_in , name = os.path.split(fn_in)
         print name
-
+        if filter_id == True:
+            apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
+            fn_in = fn_in.split('-')[0]+',bp1-45Hz-emptyroom.fif'
+        # read in data
+        fn_out = fn_in.strip('.fif') + ',cov.fif'
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
 
