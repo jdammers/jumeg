@@ -838,7 +838,7 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
 # interface for creating the noise-covariance matrix  #
 #                                                     #
 #######################################################
-def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
+def apply_create_noise_covariance(fname_empty_room, require_filter=True, verbose=None):
 
     '''
     Creates the noise covariance matrix from an
@@ -848,9 +848,9 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
         ----------
         fname_empty_room : String containing the filename
             of the empty room file (must be a fif-file)
-        fname_out : String containing the output filename
-            of the noise-covariance estimation (must also
-            be a fif-file)
+        require_filter: bool
+            If true, the empy room file is filtered before calculating
+            the covariance matrix. (Beware, filter settings are fixed.)
         verbose : bool, str, int, or None
             If not None, override default verbose level
             (see mne.verbose).
@@ -870,25 +870,22 @@ def apply_create_noise_covariance(fname_empty_room, fname_out, verbose=None):
 
     nfiles = len(fner)
 
-    fnout = get_files_from_list(fname_out)
-
-    if (len(fnout) != nfiles):
-        print ">>> Error (create_noise_covariance_matrix):"
-        print "    Number of in/out files do not match"
-        exit()
-
     # loop across all filenames
     for ifile in range(nfiles):
         fn_in = fner[ifile]
-        fn_out = fnout[ifile]
         print ">>> create noise covariance using file: " 
         path_in , name = os.path.split(fn_in)
         print name
 
-        # filter empty room raw data
-        apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
-        # rconstruct empty room file name accordingly
-        fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
+        if require_filter == True:
+            # filter empty room raw data
+            print "Filtering from 1-45Hz..."
+            apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
+            # reconstruct empty room file name accordingly
+            fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
+
+        # file name for saving noise_cov
+        fn_out = fn_in.strip('.fif') + ',cov.fif'
 
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
