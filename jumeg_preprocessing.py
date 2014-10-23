@@ -24,14 +24,9 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
         #     iir_params={'ftype': filter_type, 'order': order})
         print ">>>> writing filtered data to disk..."
-        #name_raw = fname[0:len(fname)-4]
         name_raw = fname.split('-')[0]
         fnfilt = name_raw + ',bp' + "%d-%dHz" % (flow, fhigh)
-        # If empty room file, sav accordingly. (suffix -empty.fif)
-        if fname.split('-')[1] == 'empty.fif':
-            fnfilt = fnfilt + '-empty.fif'
-        else:
-            fnfilt = fnfilt + '-raw.fif'
+        fnfilt = fnfilt + '-' + fname.split('-')[1]
         print 'saving: ' + fnfilt
         raw.save(fnfilt, overwrite=True)
 
