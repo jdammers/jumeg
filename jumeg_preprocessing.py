@@ -841,20 +841,19 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
 def apply_create_noise_covariance(fname_empty_room, require_filter=True, verbose=None):
 
     '''
-    Creates the noise covariance matrix from an
-    empty room file.
+    Creates the noise covariance matrix from an empty room file.
 
-        Parameters
-        ----------
-        fname_empty_room : String containing the filename
-            of the empty room file (must be a fif-file)
-        require_filter: bool
-            If true, the empy room file is filtered before calculating
-            the covariance matrix. (Beware, filter settings are fixed.)
-        verbose : bool, str, int, or None
-            If not None, override default verbose level
-            (see mne.verbose).
-            default: verbose=None
+    Parameters
+    ----------
+    fname_empty_room : String containing the filename
+        of the empty room file (must be a fif-file)
+    require_filter: bool
+        If true, the empy room file is filtered before calculating
+        the covariance matrix. (Beware, filter settings are fixed.)
+    verbose : bool, str, int, or None
+        If not None, override default verbose level
+        (see mne.verbose).
+        default: verbose=None
     '''
 
     # -------------------------------------------
@@ -878,14 +877,14 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True, verbose
         print name
 
         if require_filter == True:
+            print "Filtering with preset settings..."
             # filter empty room raw data
-            print "Filtering from 1-45Hz..."
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
             fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
 
         # file name for saving noise_cov
-        fn_out = fn_in.strip('.fif') + ',cov.fif'
+        fn_out = fn_in.split('-')[0] + ',empty-cov.fif'
 
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
