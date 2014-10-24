@@ -5,8 +5,8 @@ import numpy as np
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 02.09.2014
- version    : 0.0113
+ last update: 30.09.2014
+ version    : 0.0314
 ---------------------------------------------------------------------- 
  Taken from:
  The Scientist and Engineer's Guide to Digital Signal Processing
@@ -25,19 +25,16 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
                    kernel_length_factor=16.0,settling_time_factor=5.0): #, notch=np.array([]),notch_width=1.0):
          super(JuMEG_Filter_Ws, self).__init__()
          
-         self._jumeg_filter_ws_version     = 0.0113
-        
+         self._jumeg_filter_ws_version     = 0.0314
+         self._filter_method               = 'ws'
          self._sampling_frequency          = sampling_frequency
          self._filter_type                 = filter_type #lp, bp, hp
          self._fcut1                       = fcut1
          self._fcut2                       = fcut2
-#---
-         self._filter_attenuation_factor   = 1  # 1, 2
-         self._filter_window               = filter_window # hamming, blackmann, kaiser
-         self._kaiser_beta                 = 9.5 # 8.6  for kaiser window
 #---      
          self._filter_kernel_data_rfft     = np.array([])
          self._filter_kernel_length_factor = kernel_length_factor
+         self._filter_attenuation_factor   = 1
          self._settling_time_factor        = settling_time_factor
 #--               
          self._remove_dcoffset             = remove_dcoffset
@@ -48,14 +45,6 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
        
      version = property(_get_version)
                              
-#--- kaiser_beta beat value for kaiser window e.g. 8.6 9.5 14 ...    
-     def _set_kaiser_beta(self,value):
-         self._kaiser_beta=value
-       
-     def _get_kaiser_beta(self):
-         return self._kaiser_beta
-       
-     kaiser_beta = property(_get_kaiser_beta,_set_kaiser_beta)
 
 #--- filter_kernel_data_rfft     
      def _get_filter_kernel_data_rfft(self):
@@ -204,6 +193,7 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
          
          self.calc_filter_data_length( self.data_length )
          fkd                                  = np.zeros( self.filter_data_length,np.float64 )
+      #   self.filter_kernel_data.astype( np.complex64 )
          fkd[0:self.filter_kernel_data.size ] = self.filter_kernel_data.copy()   
     
         #--- factor 2 => ws  ~ -148 dB depends on window
@@ -297,7 +287,7 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
     #--- copy data at right place in data plane array            
          self.data_plane_data_in[:] = data
     
-    #--- apply fft to data_plane; multiply with cplx filter kernel; apply ifft to get back to signal space
+    #--- filter : apply real-fft to data_plane; fft-convolution with filter kernel; irfft to transform back into time domain
          self.data_plane[:] = np.fft.irfft( np.fft.rfft( self.data_plane ) * self.filter_kernel_data_rfft )
                      
     #--- copy filtered data back at right place in data array !!! M-1 kernel shift !!!
