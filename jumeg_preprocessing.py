@@ -37,7 +37,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 #
 #######################################################
 def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
-                  tmin=-0.2, tmax=0.4, baseline = (None, 0),
+                  tmin=-0.2, tmax=0.4, baseline = (None, 0), proj=False,
                   save_plot=True, show_plot=False):
 
     ''' Performs averaging to a list of raw files. '''
@@ -83,7 +83,7 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
 
             epochs = mne.Epochs(raw, events=stim_events,
                         event_id=event_id, tmin=tmin, tmax=tmax,
-                        picks=picks, preload=True, baseline=baseline)
+                        picks=picks, preload=True, baseline=baseline, proj=proj)
             avg = epochs.average()
 
             # save averaged data
@@ -312,7 +312,7 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
 #
 #######################################################
 def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
-                    name_ecg = 'ECG 001', use_CTPS=True,
+                    name_ecg = 'ECG 001', use_CTPS=True, proj=False,
                     score_func = 'pearsonr', thresh=0.3):
     '''
     Identify components with cardiac artefacts
@@ -340,9 +340,9 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
         # create epochs
         picks = np.arange(ica.n_components_)
         ica_epochs = mne.Epochs(ica_raw, events=idx_R_peak,
-                                event_id=event_id_ecg, tmin=tmin,
-                                tmax=tmax, baseline=None,
-                                proj=False, picks=picks, verbose=False)
+            event_id=event_id_ecg, tmin=tmin, tmax=tmax, baseline=None,
+            proj=proj, picks=picks, verbose=False)
+
         # compute CTPS
         _, pk, _ = ctps.compute_ctps(ica_epochs.get_data())
 
@@ -385,7 +385,7 @@ def calc_performance(evoked_raw, evoked_clean):
 #
 #######################################################
 def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
-                                        show=False, verbose=False):
+                                        show=False, proj=False, verbose=False):
     '''
     Creates a performance image of the data before
     and after the cleaning process.
@@ -451,11 +451,11 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
 
         # average the signals
         raw_epochs = mne.Epochs(meg_raw, idx_event, event_id, tmin, tmax,
-                            picks=picks, baseline=baseline, verbose=verbose)
+                            picks=picks, baseline=baseline, proj=proj, verbose=verbose)
         cleaned_epochs = mne.Epochs(meg_clean, idx_event, event_id, tmin, tmax,
-                            picks=picks, baseline=baseline, verbose=verbose)
-        ref_epochs = mne.Epochs(meg_raw, idx_event, event_id, tmin, tmax,
-                            picks=[idx_ref_chan], baseline=baseline, verbose=verbose)
+                            picks=picks, baseline=baseline, proj=proj, verbose=verbose)
+        ref_epochs = mne.Epochs(meg_raw, idx_event, event_id, tmin, tmax, picks=[idx_ref_chan],
+                            baseline=baseline, proj=proj, verbose=verbose)
 
         raw_epochs_avg = raw_epochs.average()
         cleaned_epochs_avg = cleaned_epochs.average()
@@ -512,7 +512,8 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
 # 
 #######################################################
 def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
-    tmin=-0.2, tmax=0.4, name_stim='STI 014', event_id =None, baseline=(None, 0)):
+            tmin=-0.2, tmax=0.4, name_stim='STI 014', event_id =None, 
+            baseline=(None, 0), proj=False,):
 
     ''' Applies CTPS to a list of ICA files. '''
 
@@ -611,7 +612,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 
                 ica_epochs = mne.Epochs(ica_raw, events=stim_events,
                         event_id=event_id, tmin=tmin, tmax=tmax, verbose=False,
-                        picks=ica_picks, baseline=baseline)
+                        picks=ica_picks, baseline=baseline, proj=proj)
                 # compute CTPS
                 _, pk, pt = ctps.compute_ctps(ica_epochs.get_data())
                 pkmax = pk.max(1)
@@ -769,7 +770,7 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
 #
 #######################################################
 def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
-                                 tmin=-0.4, tmax=0.4, event_id=1, show=False):
+                        tmin=-0.4, tmax=0.4, event_id=1, proj=False, show=False):
 
     '''
     Function showing performance of signal with brain responses from
@@ -802,9 +803,9 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     picks_orig = mne.pick_types(raw_orig.info, meg=True, exclude='bads')
     picks_br = mne.pick_types(raw_br.info, meg=True, exclude='bads')
 
-    epochs_orig = mne.Epochs(raw_orig, events, event_id,
+    epochs_orig = mne.Epochs(raw_orig, events, event_id, proj=proj, 
                              tmin=tmin, tmax=tmax, picks=picks_orig, preload=True)
-    epochs_br = mne.Epochs(raw_br, events, event_id,
+    epochs_br = mne.Epochs(raw_br, events, event_id, proj=proj, 
                            tmin=tmin, tmax=tmax, picks=picks_br, preload=True)
 
     evoked_orig = epochs_orig.average()
