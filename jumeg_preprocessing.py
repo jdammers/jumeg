@@ -196,8 +196,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         for ECG and EOG rejection 
         (Beware, filtered settings are fixed.)'''
         
-    import mne
-    import os,np
+    import mne,os
+    import numpy as np
 
     fnlist = get_files_from_list(fname_ica)
 
