@@ -186,12 +186,18 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
 #######################################################
 def apply_ica_cleaning(fname_ica, n_pca_components=None,
                        flow_ecg=10, fhigh_ecg=20, flow_eog=1,
-                       fhigh_eog=10, threshold=0.3):
-
-    ''' Performs artifact rejection based on ICA to a list of (ICA) files. '''
-
-    import mne
-    import os
+                       fhigh_eog=10, threshold=0.3, 
+                       apply_to_unfiltered=False):
+    #
+    ''' Performs artifact rejection based on ICA to a list of (ICA) files. 
+        
+        apply_to_unfiltered: bool
+        If true, the unfiltered raw file uses ICA index from filtered raw file,
+        for ECG and EOG rejection 
+        (Beware, filtered settings are fixed.)'''
+        
+    import mne,os
+    import numpy as np
 
     fnlist = get_files_from_list(fname_ica)
 
@@ -227,7 +233,20 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
             npca = n_pca_components
         else:
             npca = picks.size
-
+        if apply_to_unfiltered:
+            # define new filenames
+            basename = fnica.strip(',bp1-45Hz-ica.fif')
+            fn_unfiltered = basename + '-raw.fif'
+            fnclean = basename+',unfilt,ar-raw.fif'
+            fnica_ar = basename+',unfilt,ica-performance'
+            
+            # read in raw unfiltered data
+            meg_raw = mne.io.Raw(fn_unfiltered,preload=True)
+            picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
+            #Remove the possible electrical noise
+            meg_raw.notch_filter(np.arange(50, 406, 50), picks=picks, n_jobs=1)
+            meg_raw.notch_filter(np.arange(60, 406, 60), picks=picks, n_jobs=1)
+            
         meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
                               n_pca_components=npca, copy=True)
         meg_clean.save(fnclean, overwrite=True)
