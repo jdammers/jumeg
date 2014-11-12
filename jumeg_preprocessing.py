@@ -151,7 +151,8 @@ def plot_average(filenames, save_plot=True, show_plot=False):
 #  apply ICA for artifact rejection
 #
 #######################################################
-def apply_ica(fname_filtered, n_components=0.99, decim=None):
+def apply_ica(fname_filtered, n_components=0.99, decim=None,
+              reject={'mag': 5e-12}, ica_method='fastica'):
 
     ''' Applies ICA to a list of (filtered) raw files. '''
 
@@ -169,12 +170,12 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         raw = mne.io.Raw(fname, preload=True)
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
         # ICA decomposition
-        ica = ICA(n_components=n_components, max_pca_components=None)
+        ica = ICA(method=ica_method, n_components=n_components, max_pca_components=None)
 
-        ica.fit(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
+        ica.fit(raw, picks=picks, decim=decim, reject=reject)
 
         # save ICA object
-        fnica_out = fname.strip('-raw.fif') + '-ica.fif'
+        fnica_out = fname[:-8] + '-ica.fif'
         # fnica_out = fname[0:len(fname)-4]+'-ica.fif'
         ica.save(fnica_out)
 
@@ -185,8 +186,10 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
 #
 #######################################################
 def apply_ica_cleaning(fname_ica, n_pca_components=None,
-                       flow_ecg=10, fhigh_ecg=20, flow_eog=1,
-                       fhigh_eog=10, threshold=0.3, apply_to_unfiltered=None):
+                       name_ecg = 'ECG 001', flow_ecg=10, fhigh_ecg=20,
+                       name_eog_hor='EOG 001', name_eog_ver='EOG 002',
+                       flow_eog=1, fhigh_eog=10, threshold=0.3,
+                       unfiltered=False, notch_filter=True, notch_freq=50):
 
     ''' Performs artifact rejection based on ICA to a list of (ICA) files. '''
 
@@ -214,10 +217,11 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         ica = mne.preprocessing.read_ica(fnica)
 
         # get ECG and EOG related components
-        ic_ecg = get_ics_cardiac(meg_raw, ica,
+        ic_ecg = get_ics_cardiac(meg_raw, ica, name_ecg=name_ecg,
                                  flow=flow_ecg, fhigh=fhigh_ecg, thresh=threshold)
-        ic_eog = get_ics_ocular(meg_raw, ica,
-                                flow=flow_eog, fhigh=fhigh_eog, thresh=threshold)
+        ic_eog = get_ics_ocular(meg_raw, ica, name_eog_hor=name_eog_hor,
+                                name_eog_ver=name_eog_ver, flow=flow_eog,
+                                fhigh=fhigh_eog, thresh=threshold)
         ica.exclude += list(ic_ecg) + list(ic_eog)
         # ica.plot_topomap(ic_artefacts)
         ica.save(fnica)  # save again to store excluded
@@ -230,7 +234,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 
         # check if cleaning should be applied
         # to unfiltered data
-        if apply_to_unfiltered:
+        if unfiltered:
             # adjust filenames to unfiltered data
             basename = basename[:basename.rfind(',')]
             fnfilt = basename + '-raw.fif'
@@ -240,6 +244,15 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
             # load raw unfiltered data
             meg_raw = mne.io.Raw(fnfilt, preload=True)
 
+            # apply notch filter
+            if notch_filter:
+
+                from jumeg.filter import jumeg_filter
+
+                # generate and apply filter
+                fi_mne_notch = jumeg_filter(filter_method="mne", remove_dcoffset=False)
+                fi_mne_notch.calc_notches(notch_freq)
+                fi_mne_notch.apply_filter(meg_raw._data, picks=picks)
 
 
         # apply cleaning
@@ -309,7 +322,7 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
                                  meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
         eog_hor_scores = ica.score_sources(meg_raw, \
                             target=eog_hor_filtered, score_func=score_func)
-        ic_eog_hor = np.where(np.abs(eog_hor_scores) >= thresh)[0] +1 # plus 1 for any()
+        ic_eog_hor = np.where(np.abs(eog_hor_scores) >= thresh)[0] + 1 # plus 1 for any()
         if not ic_eog_hor.any():
             ic_eog_hor = np.array([0])
     else:
@@ -573,8 +586,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 
     import mne, ctps, os
     import numpy as np
-
-    from jumeg.filter import jumeg_filter
+    import jumeg.filter as jumeg_filter
 
     fiws = jumeg_filter.jumeg_filter(filter_method="bw")
     fiws.filter_type = 'bp'   # bp, lp, hp
@@ -773,7 +785,8 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 #  apply ICA recomposition to select brain responses
 #
 #######################################################
-def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, include=None):
+def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None,
+                                    include=None, stim_ch='STI 014', plot=True):
 
     ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files. '''
 
@@ -815,7 +828,10 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
         meg_clean.info['description'] += 'Raw recomposed from ctps selected ICA components\
                                              for brain responses only.'
         meg_clean.save(fnclean, overwrite=True)
-        plot_compare_brain_responses(fn_ctps_ics)
+
+        if plot:
+            plot_compare_brain_responses(fn_ctps_ics, stim_ch=stim_ch)
+
 
 
 #######################################################
