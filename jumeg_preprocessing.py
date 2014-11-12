@@ -189,11 +189,13 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
                        name_ecg = 'ECG 001', flow_ecg=10, fhigh_ecg=20,
                        name_eog_hor='EOG 001', name_eog_ver='EOG 002',
                        flow_eog=1, fhigh_eog=10, threshold=0.3,
-                       unfiltered=False, notch_filter=True, notch_freq=50):
+                       unfiltered=False, notch_filter=True, notch_freq=50,
+                       notch_width=None):
 
     ''' Performs artifact rejection based on ICA to a list of (ICA) files. '''
 
     import mne
+    import numpy as np
     import os
 
     fnlist = get_files_from_list(fname_ica)
@@ -250,8 +252,23 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
                 from jumeg.filter import jumeg_filter
 
                 # generate and apply filter
-                fi_mne_notch = jumeg_filter(filter_method="mne", remove_dcoffset=False)
-                fi_mne_notch.calc_notches(notch_freq)
+                # check if array of frequencies is given
+                if type(notch_freq) in (tuple, list):
+                    notch = np.array(notch_freq)
+                elif type(np.ndarray) == np.ndarray:
+                    notch = notch_freq
+                # or a single frequency
+                else:
+                    notch = np.array([])
+
+                fi_mne_notch = jumeg_filter(filter_method="mne", remove_dcoffset=False,
+                                            notch=notch, notch_width=notch_width)
+
+                # if only a single frequency is given generate optimal
+                # filter parameter to also remove the harmonics
+                if not type(notch_freq) in (tuple, list, np.ndarray):
+                    fi_mne_notch.calc_notches(notch_freq)
+
                 fi_mne_notch.apply_filter(meg_raw._data, picks=picks)
 
 
