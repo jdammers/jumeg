@@ -151,7 +151,8 @@ def plot_average(filenames, save_plot=True, show_plot=False):
 #  apply ICA for artifact rejection
 #
 #######################################################
-def apply_ica(fname_filtered, n_components=0.99, decim=None):
+def apply_ica(fname_filtered, n_components=0.99, decim=None,
+              reject={'mag': 5e-12}, ica_method='fastica'):
 
     ''' Applies ICA to a list of (filtered) raw files. '''
 
@@ -169,9 +170,10 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
         raw = mne.io.Raw(fname, preload=True)
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
         # ICA decomposition
-        ica = ICA(n_components=n_components, max_pca_components=None)
+        ica = ICA(method=ica_method, n_components=n_components,
+                  max_pca_components=None)
 
-        ica.fit(raw, picks=picks, decim=decim, reject={'mag': 5e-12})
+        ica.fit(raw, picks=picks, decim=decim, reject=reject)
 
         # save ICA object
         fnica_out = fname.strip('-raw.fif') + '-ica.fif'
@@ -185,12 +187,16 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None):
 #
 #######################################################
 def apply_ica_cleaning(fname_ica, n_pca_components=None,
-                       flow_ecg=10, fhigh_ecg=20, flow_eog=1,
-                       fhigh_eog=10, threshold=0.3):
+                       name_ecg='ECG 001', flow_ecg=10, fhigh_ecg=20,
+                       name_eog_hor='EOG 001', name_eog_ver='EOG 002',
+                       flow_eog=1, fhigh_eog=10, threshold=0.3,
+                       unfiltered=False, notch_filter=True, notch_freq=50,
+                       notch_width=None):
 
     ''' Performs artifact rejection based on ICA to a list of (ICA) files. '''
 
     import mne
+    import numpy as np
     import os
 
     fnlist = get_files_from_list(fname_ica)
@@ -228,6 +234,45 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         else:
             npca = picks.size
 
+        # check if cleaning should be applied
+        # to unfiltered data
+        if unfiltered:
+            # adjust filenames to unfiltered data
+            basename = basename[:basename.rfind(',')]
+            fnfilt = basename + '-raw.fif'
+            fnclean = basename + ',ar-raw.fif'
+            fnica_ar = basename + ',ica-performance'
+
+            # load raw unfiltered data
+            meg_raw = mne.io.Raw(fnfilt, preload=True)
+
+            # apply notch filter
+            if notch_filter:
+
+                from jumeg.filter import jumeg_filter
+
+                # generate and apply filter
+                # check if array of frequencies is given
+                if type(notch_freq) in (tuple, list):
+                    notch = np.array(notch_freq)
+                elif type(np.ndarray) == np.ndarray:
+                    notch = notch_freq
+                # or a single frequency
+                else:
+                    notch = np.array([])
+
+                fi_mne_notch = jumeg_filter(filter_method="mne", remove_dcoffset=False,
+                                            notch=notch, notch_width=notch_width)
+
+                # if only a single frequency is given generate optimal
+                # filter parameter to also remove the harmonics
+                if not type(notch_freq) in (tuple, list, np.ndarray):
+                    fi_mne_notch.calc_notches(notch_freq)
+
+                fi_mne_notch.apply_filter(meg_raw._data, picks=picks)
+
+
+        # apply cleaning
         meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
                               n_pca_components=npca, copy=True)
         meg_clean.save(fnclean, overwrite=True)
@@ -273,24 +318,33 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     # print [eogv_idx, eogh_idx]
 
     # vertical EOG
-    idx_eog_ver = [meg_raw.ch_names.index(name_eog_ver)]
-    eog_ver_filtered = mne.filter.band_pass_filter(meg_raw[idx_eog_ver, :][0],\
-                            meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
-    eog_ver_scores = ica.score_sources(meg_raw,\
-                        target=eog_ver_filtered, score_func=score_func)
-    ic_eog_ver = np.where(np.abs(eog_ver_scores) >= thresh)[0] +1  #plus 1 for any()
-    if not ic_eog_ver.any():
+    if name_eog_ver in meg_raw.ch_names:
+        idx_eog_ver = [meg_raw.ch_names.index(name_eog_ver)]
+        eog_ver_filtered = mne.filter.band_pass_filter(meg_raw[idx_eog_ver, :][0], \
+                                meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
+        eog_ver_scores = ica.score_sources(meg_raw,\
+                            target=eog_ver_filtered, score_func=score_func)
+        ic_eog_ver = np.where(np.abs(eog_ver_scores) >= thresh)[0] +1  # plus 1 for any()
+        if not ic_eog_ver.any():
+             ic_eog_ver = np.array([0])
+    else:
+        print ">>>> NOTE: No vertical EOG channel found!"
         ic_eog_ver = np.array([0])
 
     # horizontal EOG
-    idx_eog_hor = [meg_raw.ch_names.index(name_eog_hor)]
-    eog_hor_filtered = mne.filter.band_pass_filter(meg_raw[idx_eog_hor, :][0], \
-                            meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
-    eog_hor_scores = ica.score_sources(meg_raw, \
-                        target=eog_hor_filtered, score_func=score_func)
-    ic_eog_hor = np.where(np.abs(eog_hor_scores) >= thresh)[0] +1 # plus 1 for any()
-    if not ic_eog_hor.any():
+    if name_eog_hor in meg_raw.ch_names:
+        idx_eog_hor = [meg_raw.ch_names.index(name_eog_hor)]
+        eog_hor_filtered = mne.filter.band_pass_filter(meg_raw[idx_eog_hor, :][0], \
+                                 meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
+        eog_hor_scores = ica.score_sources(meg_raw, \
+                            target=eog_hor_filtered, score_func=score_func)
+        ic_eog_hor = np.where(np.abs(eog_hor_scores) >= thresh)[0] + 1 # plus 1 for any()
+        if not ic_eog_hor.any():
+            ic_eog_hor = np.array([0])
+    else:
+        print ">>>> NOTE: No horizontal EOG channel found!"
         ic_eog_hor = np.array([0])
+
 
     # combine both
     idx_eog = []
@@ -323,39 +377,45 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
 
     event_id_ecg = 999
 
-    # get and filter ICA signals
-    ica_raw = ica.get_sources(meg_raw)
-    ica_raw.filter(l_freq=flow, h_freq=fhigh, n_jobs=2, method='fft')
-    # get R-peak indices in ECG signal
-    idx_R_peak, _, _ = mne.preprocessing.find_ecg_events(meg_raw,
-                        ch_name=name_ecg, event_id=event_id_ecg,
-                        l_freq=flow, h_freq=fhigh,verbose=False)
+    if name_ecg in meg_raw.ch_names:
+        # get and filter ICA signals
+        ica_raw = ica.get_sources(meg_raw)
+        ica_raw.filter(l_freq=flow, h_freq=fhigh, n_jobs=2, method='fft')
+        # get R-peak indices in ECG signal
+        idx_R_peak, _, _ = mne.preprocessing.find_ecg_events(meg_raw,
+                            ch_name=name_ecg, event_id=event_id_ecg,
+                            l_freq=flow, h_freq=fhigh,verbose=False)
 
 
-    # -----------------------------------
-    # default method:  CTPS
-    #           else:  correlation
-    # -----------------------------------
-    if use_CTPS:
-        # create epochs
-        picks = np.arange(ica.n_components_)
-        ica_epochs = mne.Epochs(ica_raw, events=idx_R_peak,
-            event_id=event_id_ecg, tmin=tmin, tmax=tmax, baseline=None,
-            proj=proj, picks=picks, verbose=False)
+        # -----------------------------------
+        # default method:  CTPS
+        #           else:  correlation
+        # -----------------------------------
+        if use_CTPS:
+            # create epochs
+            picks = np.arange(ica.n_components_)
+            ica_epochs = mne.Epochs(ica_raw, events=idx_R_peak,
+                                    event_id=event_id_ecg, tmin=tmin,
+                                    tmax=tmax, baseline=None,
+                                    proj=False, picks=picks, verbose=False)
+            # compute CTPS
+            _, pk, _ = ctps.compute_ctps(ica_epochs.get_data())
 
-        # compute CTPS
-        _, pk, _ = ctps.compute_ctps(ica_epochs.get_data())
+            pk_max = np.max(pk, axis=1)
+            idx_ecg = np.where(pk_max >= thresh)[0]
+        else:
+            # use correlation
+            idx_ecg = [meg_raw.ch_names.index(name_ecg)]
+            ecg_filtered = mne.filter.band_pass_filter(meg_raw[idx_ecg, :][0],
+                                    meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
+            ecg_scores = ica.score_sources(meg_raw,
+                                target=ecg_filtered, score_func=score_func)
+            idx_ecg = np.where(np.abs(ecg_scores) >= thresh)[0]
 
-        pk_max = np.max(pk, axis=1)
-        idx_ecg = np.where(pk_max >= thresh)[0]
     else:
-        # use correlation
-        idx_ecg = [meg_raw.ch_names.index(name_ecg)]
-        ecg_filtered = mne.filter.band_pass_filter(meg_raw[idx_ecg, :][0],
-                                meg_raw.info['sfreq'], Fp1=flow, Fp2=fhigh)
-        ecg_scores = ica.score_sources(meg_raw,
-                            target=ecg_filtered, score_func=score_func)
-        idx_ecg = np.where(np.abs(ecg_scores) >= thresh)[0]
+        print ">>>> NOTE: No ECG channel found!"
+        idx_ecg = np.array([0])
+
 
     return idx_ecg
 
@@ -413,16 +473,32 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
 
     # plotting parameter
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    xFigSize = 12
-    nrange = 2
+    # check if ECG and EOG was recorded in addition
+    # to the MEG data
+    ch_names = meg_raw.info['ch_names']
+
+    # ECG
+    if name_ecg in ch_names:
+        nstart = 0
+        nrange = 1
+    else:
+        nstart = 1
+        nrange = 1
+
+    # EOG
+    if name_eog_ver in ch_names:
+        nrange = 2
+
+    yFigSize = 6 * nrange
+
 
     # ToDo:  How can we avoid popping up the window if show=False ?
     pl.ioff()
-    pl.figure('performance image', figsize=(xFigSize, 12))
+    pl.figure('performance image', figsize=(12, yFigSize))
     pl.clf()
 
     # ECG, EOG:  loop over all artifact events
-    for i in range(nrange):
+    for i in range(nstart, nrange):
         # get event indices
         if i == 0:
             baseline = (None, None)
@@ -444,8 +520,8 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
             idx_ref_chan = meg_raw.ch_names.index(name_eog_ver)
             tmin = tmin_eog
             tmax = tmax_eog
-            pl1 = nrange * 100 + 23
-            pl2 = nrange * 100 + 24
+            pl1 = nrange * 100 + 21 + (nrange - nstart - 1) * 2
+            pl2 = nrange * 100 + 22 + (nrange - nstart - 1) * 2
             text1 = "OA: original data"
             text2 = "OA: cleaned data"
 
