@@ -859,20 +859,16 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     show: bool (default False)
     '''
 
-    import mne,os
+    import mne
     import matplotlib.pylab as pl
-
     pl.ioff()
     if show: pl.ion()
 
     # Construct file names.
-    path = os.path.dirname(fn_ctps_ics)
-    name = os.path.basename(fn_ctps_ics)
-    name = name.rsplit('ctps')[0].rstrip(',')
     basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
     fnfilt = basename + '-raw.fif'
     fnclean = basename + ',ctpsbr-raw.fif'
-
+    fnout_fig = fn_ctps_ics.split('-ic_selection.txt')[0] + ',ctpsbr'
     # Read raw, calculate events, epochs, and evoked.
     raw_orig = mne.io.Raw(fnfilt, preload=True)
     raw_br = mne.io.Raw(fnclean, preload=True)
@@ -909,9 +905,10 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     ax3.set_title('Difference signal')
 
     pl.tight_layout()
-    pl.savefig(path + '/plot_compare_' + name + ',ctpsbr.png')
+    pl.savefig(fnout_fig + '.tif', format='tif')
     pl.close('Compare raw data')
     pl.ion()
+
 
 
 #######################################################
