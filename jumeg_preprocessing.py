@@ -802,7 +802,6 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
     ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files. '''
 
     import mne
-    import os
     import numpy as np
 
     fnlist = get_files_from_list(fname_clean_raw)
