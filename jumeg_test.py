@@ -23,8 +23,8 @@ fclean = raw_fname.split('-')[0] + ',bp1-45Hz-raw.fif'
 #jumeg.jumeg_preprocessing.apply_ica(fclean)
 
 fica_name = fclean.strip('-raw.fif') + '-ica.fif'
-jumeg.jumeg_utils.check_jumeg_standards(fica_name)
-jumeg.jumeg_preprocessing.apply_ica_cleaning(fica_name)
+#jumeg.jumeg_utils.check_jumeg_standards(fica_name)
+#jumeg.jumeg_preprocessing.apply_ica_cleaning(fica_name)
 
 # CTPS Functions
 
