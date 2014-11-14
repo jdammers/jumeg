@@ -24,9 +24,9 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
         #     iir_params={'ftype': filter_type, 'order': order})
         print ">>>> writing filtered data to disk..."
-        name_raw = fname.split('-')[0]
+        name_raw = fname[:fname.rfind('-')] #fname.split('-')[0]
         fnfilt = name_raw + ',bp' + "%d-%dHz" % (flow, fhigh)
-        fnfilt = fnfilt + '-' + fname.split('-')[1]
+        fnfilt = fnfilt + fname[fname.rfind('-'):] #fname.split('-')[1]
         print 'saving: ' + fnfilt
         raw.save(fnfilt, overwrite=True)
 
@@ -261,7 +261,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
                 else:
                     notch = np.array([])
 
-                fi_mne_notch = jumeg_filter(filter_method="mne", remove_dcoffset=False,
+                fi_mne_notch = jumeg_filter(filter_method="mne", filter_type='notch',
+                                            remove_dcoffset=False,
                                             notch=notch, notch_width=notch_width)
 
                 # if only a single frequency is given generate optimal
@@ -577,7 +578,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         pl.show()
 
     # save image
-    pl.savefig(fnout_fig + '.tif', format='tif')
+    pl.savefig(fnout_fig + '.png', format='png')
     pl.close('performance image')
     pl.ion()
 

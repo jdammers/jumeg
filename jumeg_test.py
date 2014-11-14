@@ -15,6 +15,7 @@ if not os.path.isfile(raw_fname):
 
 fclean = raw_fname.split('-')[0] + ',bp1-45Hz-raw.fif'
 
+
 # Evoked Functions
 #jumeg.jumeg_preprocessing.apply_average(fclean)
 
