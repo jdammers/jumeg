@@ -176,7 +176,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
         ica.fit(raw, picks=picks, decim=decim, reject=reject)
 
         # save ICA object
-        fnica_out = fname.strip('-raw.fif') + '-ica.fif'
+        fnica_out = fname.strip('raw.fif') + 'ica.fif'
         # fnica_out = fname[0:len(fname)-4]+'-ica.fif'
         ica.save(fnica_out)
 
@@ -861,7 +861,6 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
 
     import mne
     import matplotlib.pylab as pl
-
     pl.ioff()
     if show: pl.ion()
 
@@ -869,7 +868,7 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
     fnfilt = basename + '-raw.fif'
     fnclean = basename + ',ctpsbr-raw.fif'
-
+    fnout_fig = fn_ctps_ics.split('-ic_selection.txt')[0] + ',ctpsbr'
     # Read raw, calculate events, epochs, and evoked.
     raw_orig = mne.io.Raw(fnfilt, preload=True)
     raw_br = mne.io.Raw(fnclean, preload=True)
@@ -906,9 +905,10 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     ax3.set_title('Difference signal')
 
     pl.tight_layout()
-    pl.savefig('plot_compare_' + basename + ',ctpsbr.png')
+    pl.savefig(fnout_fig + '.tif', format='tif')
     pl.close('Compare raw data')
     pl.ion()
+
 
 
 #######################################################
@@ -962,7 +962,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True, verbose
             fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
 
         # file name for saving noise_cov
-        fn_out = fn_in.split('-')[0] + ',empty-cov.fif'
+        fn_out = fn_in.split('.fif')[0] + '-cov.fif'
 
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
