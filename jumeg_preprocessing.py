@@ -796,7 +796,8 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 #  apply ICA recomposition to select brain responses
 #
 #######################################################
-def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, include=None):
+def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None, 
+                                    conditions=['trigger'],include=None):
 
     ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files. '''
 
@@ -804,41 +805,48 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None, inclu
     import os
     import numpy as np
 
-    fnlist = get_files_from_list(fname_ctps_ics)
+    fnlist = get_files_from_list(fname_clean_raw)
 
     # loop across all filenames
-    for fn_ctps_ics in fnlist:
-        basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
-        #basename = fnica.strip('-ica.fif')
-        fnfilt = basename + '-raw.fif'
+    for fn_clean in fnlist:
+        basename = fn_clean.split('-raw.fif')[0]
+        fnfilt = fn_clean
         fnarica = basename + '-ica.fif'
-        fnclean = basename + ',ctpsbr-raw.fif'
-        print ">>>> perform ICA recomposition for :"
-        print '   ' + fnfilt
-
         # load filtered and artefact removed data
         meg_raw = mne.io.Raw(fnfilt, preload=True)
         picks = mne.pick_types(meg_raw.info, meg=True, exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnarica)
-
-        # Get brain response components
-        ctps_include_ics = np.loadtxt(fn_ctps_ics, dtype=int, delimiter=',')
-        # The text file contains ICA component numbers, subtract 1 for the indices.
-        ctps_include_ics -= 1
-
+        if len(conditions) == 1:
+            event = conditions[0]
+            fn_ics_eve = basename + ',ctps-' + event + '-ic_selection.txt'
+            ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
+            fnclean_eve = fn_ics_eve.split('ctps')[0] + '%s,ctpsbr-raw.fif' %event
+            ctps_ics = ctps_ics_eve - 1
+            descrip_id = event
+        elif len(conditions) > 1:
+            ctps_ics = []
+            descrip_id = ''
+            for event in conditions:
+                fn_ics_eve = basename + ',ctps-' + event + '-ic_selection.txt'
+                ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
+                ctps_ics += (list(ctps_ics_eve-1))
+                descrip_id += ',' + event
+            #To keep the index unique
+            ctps_ics = list(set(ctps_ics))
+            fnclean_eve = fn_ics_eve.split(',ctps')[0] + '%s,ctpsbr-raw.fif' %descrip_id
+            
         # clean and save MEG data
         if n_pca_components:
             npca = n_pca_components
         else:
             npca = picks.size
-
-        meg_clean = ica.apply(meg_raw, include=ctps_include_ics, n_pca_components=npca, copy=True)
-        if not meg_clean.info['description']: meg_clean.info['description'] = ''
-        meg_clean.info['description'] += 'Raw recomposed from ctps selected ICA components\
-                                             for brain responses only.'
-        meg_clean.save(fnclean, overwrite=True)
-        plot_compare_brain_responses(fn_ctps_ics)
+        meg_clean = ica.apply(meg_raw, include=ctps_ics, n_pca_components=npca, copy=True)
+        if not meg_clean.info['description']: 
+            meg_clean.info['description'] = ''
+            meg_clean.info['description'] += 'Raw recomposed from ctps selected ICA components\
+                                                for %s.' %descrip_id    
+        meg_clean.save(fnclean_eve, overwrite=True)
 
 
 #######################################################
