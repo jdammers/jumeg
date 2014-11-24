@@ -784,7 +784,12 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
                                     conditions=['trigger'], include=None):
 
-    ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files. '''
+    ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files.
+        fname_clean_raw: raw data after ECG and EOG rejection.
+        n_pca_commonents: ICA's recomposition parameter.
+        conditions: the event kind to recompose the raw data, it can be 'trigger', 
+                    'response' or include both conditions.
+    '''
 
     fnlist = get_files_from_list(fname_clean_raw)
 
@@ -836,7 +841,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
                                               ICA components for brain\
                                               responses only.'
         meg_clean.save(fnclean_eve, overwrite=True)
-        plot_compare_brain_responses(fname_clean_eve)
+        plot_compare_brain_responses(fname_clean_raw, fnclean_eve)
 
 
 #######################################################
@@ -844,8 +849,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
 #  Plot and compare recomposed brain response data only.
 #
 #######################################################
-def plot_compare_brain_responses(fname_orig, fname_new, stim_ch='STI 014',
-                                 tmin=-0.4, tmax=0.4, event_id=1,
+def plot_compare_brain_responses(fname_orig, fname_new,event_id=1,
                                  proj=False, show=False):
 
     '''
@@ -861,11 +865,25 @@ def plot_compare_brain_responses(fname_orig, fname_new, stim_ch='STI 014',
     pl.ioff()
     if show:
         pl.ion()
-
+    
+    # Get the stimulus channel for special event from the fname_new
+    #make a judgment, whether this raw data include more than one kind of event.
+    #if True, use the first event as the start point of the epoches. 
+    #Adjust the size of the time window based on different connditions
+    stim_name = fname_new.rsplit(',ctpsbr')[0].rsplit('ar,')[1]
+    if ',' in stim_name:
+        stim_ch = 'STI 014'
+        tmin, tmax = 0.0, 0.6
+    elif stim_name == 'trigger':
+        stim_ch = 'STI 014'
+        tmin, tmax = 0.0, 0.3
+    elif stim_name == 'response':
+        stim_ch = 'STI 013'
+        tmin, tmax = -0.15, 0.15
     # Construct file names.
     basename = fname_new.split('-raw.fif')[0]
     fnout_fig = basename + '.png'
-
+    
     # Read raw, calculate events, epochs, and evoked.
     raw_orig = mne.io.Raw(fname_orig, preload=True)
     raw_br = mne.io.Raw(fname_new, preload=True)
