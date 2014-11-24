@@ -712,8 +712,6 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 
     ''' Select ICs based on CTPS analysis. '''
 
-    import string
-
     fnlist = get_files_from_list(fname_ctps)
 
     # loop across all filenames
@@ -783,22 +781,24 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 #  apply ICA recomposition to select brain responses
 #
 #######################################################
-def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None,
-                                    include=None):
+def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
+                                    conditions=['trigger'], include=None):
 
-    ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files. '''
+    ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files.
+        fname_clean_raw: raw data after ECG and EOG rejection.
+        n_pca_commonents: ICA's recomposition parameter.
+        conditions: the event kind to recompose the raw data, it can be 'trigger', 
+                    'response' or include both conditions.
+    '''
 
-    fnlist = get_files_from_list(fname_ctps_ics)
+    fnlist = get_files_from_list(fname_clean_raw)
 
     # loop across all filenames
-    for fn_ctps_ics in fnlist:
-        basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
-        #basename = fnica.strip('-ica.fif')
-        fnfilt = basename + '-raw.fif'
+    for fn_clean in fnlist:
+        #basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
+        basename = fn_clean.split('-raw.fif')[0]
+        fnfilt = fn_clean
         fnarica = basename + '-ica.fif'
-        fnclean = basename + ',ctpsbr-raw.fif'
-        print ">>>> perform ICA recomposition for :"
-        print '   ' + fnfilt
 
         # load filtered and artefact removed data
         meg_raw = mne.io.Raw(fnfilt, preload=True)
@@ -806,10 +806,26 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None,
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnarica)
 
-        # Get brain response components
-        ctps_include_ics = np.loadtxt(fn_ctps_ics, dtype=int, delimiter=',')
-        # The text file contains ICA component numbers, subtract 1 for the indices.
-        ctps_include_ics -= 1
+        if len(conditions) == 1:
+            event = conditions[0]
+            fn_ics_eve = basename + ',ctps-' + event + '-ic_selection.txt'
+            ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
+            fnclean_eve = fn_ics_eve.split('ctps')[0] +\
+                '%s,ctpsbr-raw.fif' % event
+            ctps_ics = ctps_ics_eve - 1
+            descrip_id = event
+        elif len(conditions) > 1:
+            ctps_ics = []
+            descrip_id = ''
+            for event in conditions:
+                fn_ics_eve = basename + ',ctps-' + event + '-ic_selection.txt'
+                ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
+                ctps_ics += (list(ctps_ics_eve - 1))
+                descrip_id += ',' + event
+            #To keep the index unique
+            ctps_ics = list(set(ctps_ics))
+            fnclean_eve = fn_ics_eve.split(',ctps')[0] +\
+                '%s,ctpsbr-raw.fif' % descrip_id
 
         # clean and save MEG data
         if n_pca_components:
@@ -817,14 +833,15 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None,
         else:
             npca = picks.size
 
-        meg_clean = ica.apply(meg_raw, include=ctps_include_ics, n_pca_components=npca,
+        meg_clean = ica.apply(meg_raw, include=ctps_ics, n_pca_components=npca,
                               copy=True)
         if not meg_clean.info['description']:
             meg_clean.info['description'] = ''
-        meg_clean.info['description'] += 'Raw recomposed from ctps selected\
-                                          ICA components for brain responses only.'
-        meg_clean.save(fnclean, overwrite=True)
-        plot_compare_brain_responses(fn_ctps_ics)
+            meg_clean.info['description'] += 'Raw recomposed from ctps selected\
+                                              ICA components for brain\
+                                              responses only.'
+        meg_clean.save(fnclean_eve, overwrite=True)
+        plot_compare_brain_responses(fname_clean_raw, fnclean_eve)
 
 
 #######################################################
@@ -832,8 +849,8 @@ def apply_ica_select_brain_response(fname_ctps_ics, n_pca_components=None,
 #  Plot and compare recomposed brain response data only.
 #
 #######################################################
-def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
-                                 tmin=-0.4, tmax=0.4, event_id=1,
+def plot_compare_brain_responses(fname_orig, fname_new,event_id=1,
+                                 tmin=-0.5, tmax=0.5,
                                  proj=False, show=False):
 
     '''
@@ -841,7 +858,7 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     selected components only. Plots the evoked (avg) signal of original
     data and brain responses only data along with difference between them.
 
-    fn_ctps_ics: str
+    fname_orig, fname_new: str
     stim_ch: str (default STI 014)
     show: bool (default False)
     '''
@@ -849,16 +866,25 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     pl.ioff()
     if show:
         pl.ion()
-
+    
+    # Get the stimulus channel for special event from the fname_new
+    #make a judgment, whether this raw data include more than one kind of event.
+    #if True, use the first event as the start point of the epoches. 
+    #Adjust the size of the time window based on different connditions
+    stim_name = fname_new.rsplit(',ctpsbr')[0].rsplit('ar,')[1]
+    if ',' in stim_name:
+        stim_ch = 'STI 014'
+    elif stim_name == 'trigger':
+        stim_ch = 'STI 014'
+    elif stim_name == 'response':
+        stim_ch = 'STI 013'
     # Construct file names.
-    basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
-    fnfilt = basename + '-raw.fif'
-    fnclean = basename + ',ctpsbr-raw.fif'
-    fnout_fig = basename + ',ctpsbr.tif'
-
+    basename = fname_new.split('-raw.fif')[0]
+    fnout_fig = basename + '.png'
+    
     # Read raw, calculate events, epochs, and evoked.
-    raw_orig = mne.io.Raw(fnfilt, preload=True)
-    raw_br = mne.io.Raw(fnclean, preload=True)
+    raw_orig = mne.io.Raw(fname_orig, preload=True)
+    raw_br = mne.io.Raw(fname_new, preload=True)
 
     events = mne.find_events(raw_orig, stim_channel=stim_ch, consecutive=True)
     events = mne.find_events(raw_br, stim_channel=stim_ch, consecutive=True)
@@ -892,7 +918,7 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     ax3.set_title('Difference signal')
 
     pl.tight_layout()
-    pl.savefig(fnout_fig, format='tif')
+    pl.savefig(fnout_fig, format='png')
     pl.close('Compare raw data')
     pl.ion()
 
