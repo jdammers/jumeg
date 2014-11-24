@@ -850,6 +850,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
 #
 #######################################################
 def plot_compare_brain_responses(fname_orig, fname_new,event_id=1,
+                                 tmin=-0.5, tmax=0.5,
                                  proj=False, show=False):
 
     '''
@@ -873,13 +874,10 @@ def plot_compare_brain_responses(fname_orig, fname_new,event_id=1,
     stim_name = fname_new.rsplit(',ctpsbr')[0].rsplit('ar,')[1]
     if ',' in stim_name:
         stim_ch = 'STI 014'
-        tmin, tmax = 0.0, 0.6
     elif stim_name == 'trigger':
         stim_ch = 'STI 014'
-        tmin, tmax = 0.0, 0.3
     elif stim_name == 'response':
         stim_ch = 'STI 013'
-        tmin, tmax = -0.15, 0.15
     # Construct file names.
     basename = fname_new.split('-raw.fif')[0]
     fnout_fig = basename + '.png'
