@@ -836,7 +836,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
                                               ICA components for brain\
                                               responses only.'
         meg_clean.save(fnclean_eve, overwrite=True)
-        plot_compare_brain_responses(fn_ctps_ics)
+        plot_compare_brain_responses(fname_clean_eve)
 
 
 #######################################################
@@ -844,7 +844,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
 #  Plot and compare recomposed brain response data only.
 #
 #######################################################
-def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
+def plot_compare_brain_responses(fname_orig, fname_new, stim_ch='STI 014',
                                  tmin=-0.4, tmax=0.4, event_id=1,
                                  proj=False, show=False):
 
@@ -853,7 +853,7 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     selected components only. Plots the evoked (avg) signal of original
     data and brain responses only data along with difference between them.
 
-    fn_ctps_ics: str
+    fname_orig, fname_new: str
     stim_ch: str (default STI 014)
     show: bool (default False)
     '''
@@ -863,14 +863,12 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
         pl.ion()
 
     # Construct file names.
-    basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
-    fnfilt = basename + '-raw.fif'
-    fnclean = basename + ',ctpsbr-raw.fif'
-    fnout_fig = basename + ',ctpsbr.tif'
+    basename = fname_new.split('-raw.fif')[0]
+    fnout_fig = basename + '.png'
 
     # Read raw, calculate events, epochs, and evoked.
-    raw_orig = mne.io.Raw(fnfilt, preload=True)
-    raw_br = mne.io.Raw(fnclean, preload=True)
+    raw_orig = mne.io.Raw(fname_orig, preload=True)
+    raw_br = mne.io.Raw(fname_new, preload=True)
 
     events = mne.find_events(raw_orig, stim_channel=stim_ch, consecutive=True)
     events = mne.find_events(raw_br, stim_channel=stim_ch, consecutive=True)
@@ -904,7 +902,7 @@ def plot_compare_brain_responses(fn_ctps_ics, stim_ch='STI 014',
     ax3.set_title('Difference signal')
 
     pl.tight_layout()
-    pl.savefig(fnout_fig, format='tif')
+    pl.savefig(fnout_fig, format='png')
     pl.close('Compare raw data')
     pl.ion()
 
