@@ -432,12 +432,45 @@ def calc_performance(evoked_raw, evoked_clean):
 
 #######################################################
 #
+#  calculate the frequency-correlation value
+#
+#######################################################
+def calc_frequency_correlation(evoked_raw, evoked_clean):
+
+    """
+    Function to estimate the frequency-correlation value
+    as introduced by Krishnaveni et al. (2006),
+    Journal of Neural Engineering.
+    """
+
+    # transform signal to frequency range
+    fft_raw = np.fft.fft(evoked_raw.data)
+    fft_cleaned = np.fft.fft(evoked_clean.data)
+
+    # get numerator
+    numerator = np.sum(np.abs(np.real(fft_raw) * np.real(fft_cleaned)) + \
+                       np.abs(np.imag(fft_raw) * np.imag(fft_cleaned)))
+
+    # get denominator
+    denominator = np.sqrt(np.sum(np.abs(fft_raw) ** 2) * \
+                          np.sum(np.abs(fft_cleaned) ** 2))
+
+    fc = numerator/denominator * 100.
+
+    # return results
+    return fc
+
+
+
+#######################################################
+#
 #  make/save plots to show the performance
 #            of the ICA artifact rejection
 #
 #######################################################
 def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
-                                        show=False, proj=False, verbose=False):
+                                        meg_clean=None, show=False,
+                                        proj=False, verbose=False):
     '''
     Creates a performance image of the data before
     and after the cleaning process.
@@ -460,9 +493,13 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
                            exclude='bads')
     # as we defined x% of the explained variance as noise (e.g. 5%)
     # we will remove this noise from the data
-    meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
-                          n_pca_components=ica.n_components_,
-                          copy=True)
+    if meg_clean:
+        meg_clean_given = True
+    else:
+        meg_clean_given = False
+        meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
+                              n_pca_components=ica.n_components_,
+                              copy=True)
 
     # plotting parameter
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -560,9 +597,16 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         pl.ylim(1.1 * ymin, 1.1 * ymax)
         # print some info
         #ToDo: would be nice to add info about ica.excluded
-        textstr1 = 'Performance: %f\nNum of components used: %d\nn_pca_components: %f'\
-                   % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
-                      ica.n_components_, ica.n_pca_components)
+        if meg_clean_given:
+            textstr1 = 'Performance: %f\nFrequency Correlation: %f'\
+                       % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
+                          calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg))
+        else:
+            textstr1 = 'Performance: %f\nFrequency Correlation: %f\nNum of components used: %d\nn_pca_components: %f'\
+                       % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
+                          calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
+                          ica.n_components_, ica.n_pca_components)
+
         pl.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
                 verticalalignment='top', bbox=props)
 
@@ -756,7 +800,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
             pl.bar(x, pkmax, color='steelblue')
             pl.bar(x[ix], pkmax[ix], color='red')
             pl.title(trig_name + frange, fontsize='small')
-            pl.xlim([1, ncomp])
+            pl.xlim([1, ncomp+1])
             pl.ylim([0, 0.5])
             pl.text(2, 0.45, 'ICs: ' + str(ix + 1))
         ic_sel = np.unique(ic_sel)
