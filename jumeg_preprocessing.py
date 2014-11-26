@@ -175,7 +175,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
         ica.fit(raw, picks=picks, decim=decim, reject=reject)
 
         # save ICA object
-        fnica_out = fname.strip('raw.fif') + 'ica.fif'
+        fnica_out = fname[:fname.rfind('-raw.fif')] + '-ica.fif'
         # fnica_out = fname[0:len(fname)-4]+'-ica.fif'
         ica.save(fnica_out)
 
@@ -200,7 +200,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
     for fnica in fnlist:
         name = os.path.split(fnica)[1]
         #basename = fnica[0:len(fnica)-4]
-        basename = fnica.strip('-ica.fif')
+        basename = fnica[:fnica.rfind('-ica.fif')]
         fnfilt = basename + '-raw.fif'
         #fnfilt = basename + '.fif'
         fnclean = basename + ',ar-raw.fif'
@@ -427,7 +427,36 @@ def calc_performance(evoked_raw, evoked_clean):
     rms_diff = jmath.calc_rms(diff, average=1)
     rms_meg = jmath.calc_rms(evoked_raw.data, average=1)
     arp = (rms_diff / rms_meg) * 100.0
-    return arp
+    return np.round(arp)
+
+
+#######################################################
+#
+#  calculate the frequency-correlation value
+#
+#######################################################
+def calc_frequency_correlation(evoked_raw, evoked_clean):
+
+    """
+    Function to estimate the frequency-correlation value
+    as introduced by Krishnaveni et al. (2006),
+    Journal of Neural Engineering.
+    """
+
+    # transform signal to frequency range
+    fft_raw = np.fft.fft(evoked_raw.data)
+    fft_cleaned = np.fft.fft(evoked_clean.data)
+
+    # get numerator
+    numerator = np.sum(np.abs(np.real(fft_raw) * np.real(fft_cleaned)) + \
+                       np.abs(np.imag(fft_raw) * np.imag(fft_cleaned)))
+
+    # get denominator
+    denominator = np.sqrt(np.sum(np.abs(fft_raw) ** 2) * \
+                          np.sum(np.abs(fft_cleaned) ** 2))
+
+    return np.round(numerator/denominator * 100.)
+
 
 
 #######################################################
@@ -437,7 +466,8 @@ def calc_performance(evoked_raw, evoked_clean):
 #
 #######################################################
 def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
-                                        show=False, proj=False, verbose=False):
+                                        meg_clean=None, show=False,
+                                        proj=False, verbose=False):
     '''
     Creates a performance image of the data before
     and after the cleaning process.
@@ -460,9 +490,13 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
                            exclude='bads')
     # as we defined x% of the explained variance as noise (e.g. 5%)
     # we will remove this noise from the data
-    meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
-                          n_pca_components=ica.n_components_,
-                          copy=True)
+    if meg_clean:
+        meg_clean_given = True
+    else:
+        meg_clean_given = False
+        meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
+                              n_pca_components=ica.n_components_,
+                              copy=True)
 
     # plotting parameter
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -560,9 +594,16 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         pl.ylim(1.1 * ymin, 1.1 * ymax)
         # print some info
         #ToDo: would be nice to add info about ica.excluded
-        textstr1 = 'Performance: %f\nNum of components used: %d\nn_pca_components: %f'\
-                   % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
-                      ica.n_components_, ica.n_pca_components)
+        if meg_clean_given:
+            textstr1 = 'Performance: %f\nFrequency Correlation: %f'\
+                       % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
+                          calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg))
+        else:
+            textstr1 = 'Performance: %f\nFrequency Correlation: %f\n# ICs: %d\nn_pca_components: %f'\
+                       % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
+                          calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
+                          ica.n_components_, ica.n_pca_components)
+
         pl.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
                 verticalalignment='top', bbox=props)
 
@@ -613,7 +654,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     for fnica in fnlist:
         name = os.path.split(fnica)[1]
         #fname = fnica[0:len(fnica)-4]
-        basename = fnica.strip('-ica.fif')
+        basename = fnica[:fnica.rfind('-ica.fif')]
         fnraw = basename + '-raw.fif'
         #basename = os.path.splitext(os.path.basename(fnica))[0]
         # load cleaned data
@@ -756,7 +797,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
             pl.bar(x, pkmax, color='steelblue')
             pl.bar(x[ix], pkmax[ix], color='red')
             pl.title(trig_name + frange, fontsize='small')
-            pl.xlim([1, ncomp])
+            pl.xlim([1, ncomp+1])
             pl.ylim([0, 0.5])
             pl.text(2, 0.45, 'ICs: ' + str(ix + 1))
         ic_sel = np.unique(ic_sel)
@@ -973,7 +1014,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
             fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
 
         # file name for saving noise_cov
-        fn_out = fn_in.rstrip('-empty.fif') + ',empty-cov.fif'
+        fn_out = fn_in[:fn_in.rfind('-empty.fif')] + ',empty-cov.fif'
 
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
