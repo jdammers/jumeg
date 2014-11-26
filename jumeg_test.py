@@ -14,7 +14,7 @@ if not os.path.isfile(raw_fname):
 # Filter functions
 #jumeg.jumeg_preprocessing.apply_filter(raw_fname)
 
-fclean = raw_fname[:raw_fname.rfind('-')] + ',bp1-45Hz-raw.fif'
+fclean = raw_fname.strip('-raw.fif') + ',bp1-45Hz-raw.fif'
 
 # Evoked functions
 #jumeg.jumeg_preprocessing.apply_average(fclean)

@@ -455,10 +455,7 @@ def calc_frequency_correlation(evoked_raw, evoked_clean):
     denominator = np.sqrt(np.sum(np.abs(fft_raw) ** 2) * \
                           np.sum(np.abs(fft_cleaned) ** 2))
 
-    fc = numerator/denominator * 100.
-
-    # return results
-    return fc
+    return (numerator/denominator * 100.)
 
 
 
@@ -602,7 +599,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
                        % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg))
         else:
-            textstr1 = 'Performance: %f\nFrequency Correlation: %f\nNum of components used: %d\nn_pca_components: %f'\
+            textstr1 = 'Performance: %f\nFrequency Correlation: %f\n# ICs: %d\nn_pca_components: %f'\
                        % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
                           ica.n_components_, ica.n_pca_components)

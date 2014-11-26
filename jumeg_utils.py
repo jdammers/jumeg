@@ -54,6 +54,34 @@ def check_jumeg_standards(fnames):
     return
 
 
+def get_sytem_type(info):
+    """
+    Function to get type of the system used to record
+    the processed MEG data
+    """
+    from mne.io.constants import FIFF
+    chs = info.get('chs')
+    coil_types = set([ch['coil_type'] for ch in chs])
+    channel_types = set([ch['kind'] for ch in chs])
+    has_4D_mag = FIFF.FIFFV_COIL_MAGNES_MAG in coil_types
+    ctf_other_types = (FIFF.FIFFV_COIL_CTF_REF_MAG,
+                       FIFF.FIFFV_COIL_CTF_REF_GRAD,
+                       FIFF.FIFFV_COIL_CTF_OFFDIAG_REF_GRAD)
+    has_CTF_grad = (FIFF.FIFFV_COIL_CTF_GRAD in coil_types or
+                    (FIFF.FIFFV_MEG_CH in channel_types and
+                     any([k in ctf_other_types for k in coil_types])))
+    if has_4D_mag:
+        system_type = 'magnesWH3600'
+    elif has_CTF_grad:
+        system_type = 'CTF-275'
+    else:
+        # ToDo: Expand method to also cope with other systems!
+        print "System type not known!"
+        system_type = None
+
+    return system_type
+
+
 def mark_bads_batch(subject_list, subjects_dir=None):
     '''
     Opens all raw files ending with -raw.fif in subjects 
