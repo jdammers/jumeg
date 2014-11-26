@@ -14,14 +14,14 @@ if not os.path.isfile(raw_fname):
 # Filter functions
 #jumeg.jumeg_preprocessing.apply_filter(raw_fname)
 
-fclean = raw_fname.strip('-raw.fif') + ',bp1-45Hz-raw.fif'
+fclean = raw_fname[:raw_fname.rfind('-raw.fif')] + ',bp1-45Hz-raw.fif'
 
 # Evoked functions
 #jumeg.jumeg_preprocessing.apply_average(fclean)
 
 # ICA functions
 #jumeg.jumeg_preprocessing.apply_ica(fclean)
-fica_name = fclean.strip('-raw.fif') + '-ica.fif'
+fica_name = fclean[:fclean.rfind('-raw.fif')] + '-ica.fif'
 
 # Perform ECG/EOG rejection using ICA
 #jumeg.jumeg_preprocessing.apply_ica_cleaning(fica_name)

@@ -175,7 +175,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
         ica.fit(raw, picks=picks, decim=decim, reject=reject)
 
         # save ICA object
-        fnica_out = fname.strip('raw.fif') + 'ica.fif'
+        fnica_out = fname[:fname.rfind('-raw.fif')] + '-ica.fif'
         # fnica_out = fname[0:len(fname)-4]+'-ica.fif'
         ica.save(fnica_out)
 
@@ -200,7 +200,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
     for fnica in fnlist:
         name = os.path.split(fnica)[1]
         #basename = fnica[0:len(fnica)-4]
-        basename = fnica.strip('-ica.fif')
+        basename = fnica[:fnica.rfind('-ica.fif')]
         fnfilt = basename + '-raw.fif'
         #fnfilt = basename + '.fif'
         fnclean = basename + ',ar-raw.fif'
@@ -427,7 +427,7 @@ def calc_performance(evoked_raw, evoked_clean):
     rms_diff = jmath.calc_rms(diff, average=1)
     rms_meg = jmath.calc_rms(evoked_raw.data, average=1)
     arp = (rms_diff / rms_meg) * 100.0
-    return arp
+    return np.round(arp)
 
 
 #######################################################
@@ -455,7 +455,7 @@ def calc_frequency_correlation(evoked_raw, evoked_clean):
     denominator = np.sqrt(np.sum(np.abs(fft_raw) ** 2) * \
                           np.sum(np.abs(fft_cleaned) ** 2))
 
-    return (numerator/denominator * 100.)
+    return np.round(numerator/denominator * 100.)
 
 
 
@@ -654,7 +654,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     for fnica in fnlist:
         name = os.path.split(fnica)[1]
         #fname = fnica[0:len(fnica)-4]
-        basename = fnica.strip('-ica.fif')
+        basename = fnica[:fnica.rfind('-ica.fif')]
         fnraw = basename + '-raw.fif'
         #basename = os.path.splitext(os.path.basename(fnica))[0]
         # load cleaned data
@@ -1014,7 +1014,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
             fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
 
         # file name for saving noise_cov
-        fn_out = fn_in.rstrip('-empty.fif') + ',empty-cov.fif'
+        fn_out = fn_in[:fn_in.rfind('-empty.fif')] + ',empty-cov.fif'
 
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
