@@ -46,4 +46,39 @@ def calc_rms(data, average=None, rmsmean=None):
             rms = np.sqrt(np.sum(np.sum(powe, 1)/nchan)/ntsl)
     else: return -1
     return rms
-    
+
+
+##################################################
+#
+# sigmoidal function
+#
+##################################################
+def sigm_func(x, a0=1., a1=1.):
+    """
+    Sigmoidal function
+    """
+    return 1.0 / (1.0 + a0 * np.exp(-1.0 * a1 * x))
+
+
+##################################################
+#
+# calculates the Taeger-Kaiser-Energy-Operator
+#
+##################################################
+def calc_tkeo(signal):
+    """
+    Returns the Taeger-Kaiser-Energy-Operator:
+       Y(n) = X^2(n) - X(n+1) * X(n-1)
+    """
+
+    # estimate tkeo
+    s1       = signal ** 2.
+    s2       = np.roll(signal, 1) * np.roll(signal, -1)
+    tkeo     = s1 -s2
+
+    # set first and last element to zero
+    tkeo[0]  = 0.
+    tkeo[-1] = 0.
+
+    # return results
+    return tkeo

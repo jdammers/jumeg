@@ -595,11 +595,11 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         # print some info
         #ToDo: would be nice to add info about ica.excluded
         if meg_clean_given:
-            textstr1 = 'Performance: %f\nFrequency Correlation: %f'\
+            textstr1 = 'Performance: %d\nFrequency Correlation: %d'\
                        % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg))
         else:
-            textstr1 = 'Performance: %f\nFrequency Correlation: %f\n# ICs: %d\nn_pca_components: %f'\
+            textstr1 = 'Performance: %d\nFrequency Correlation: %d\n# ICs: %d\nExplained Var.: %d'\
                        % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
                           ica.n_components_, ica.n_pca_components)
@@ -890,8 +890,8 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
 #  Plot and compare recomposed brain response data only.
 #
 #######################################################
-def plot_compare_brain_responses(fname_orig, fname_new,event_id=1,
-                                 tmin=-0.5, tmax=0.5,
+def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
+                                 tmin=-0.2, tmax=0.5, stim_name=None,
                                  proj=False, show=False):
 
     '''
@@ -912,16 +912,26 @@ def plot_compare_brain_responses(fname_orig, fname_new,event_id=1,
     #make a judgment, whether this raw data include more than one kind of event.
     #if True, use the first event as the start point of the epoches. 
     #Adjust the size of the time window based on different connditions
-    stim_name = fname_new.rsplit(',ctpsbr')[0].rsplit('ar,')[1]
+    basename = fname_new.split('-raw.fif')[0]
+
+    # if stim_name is given we assume that the input data are raw and
+    # cleaned data ('cleaned' means data were cardiac and ocular artifacts
+    # were rejected)
+    if stim_name:
+        fnout_fig = basename + '-' + stim_name + '.png'
+    else:
+        stim_name = fname_new.rsplit(',ctpsbr')[0].rsplit('ar,')[1]
+        # Construct file names.
+        fnout_fig = basename + '.png'
+
+
     if ',' in stim_name:
         stim_ch = 'STI 014'
     elif stim_name == 'trigger':
         stim_ch = 'STI 014'
     elif stim_name == 'response':
         stim_ch = 'STI 013'
-    # Construct file names.
-    basename = fname_new.split('-raw.fif')[0]
-    fnout_fig = basename + '.png'
+
     
     # Read raw, calculate events, epochs, and evoked.
     raw_orig = mne.io.Raw(fname_orig, preload=True)
@@ -941,24 +951,39 @@ def plot_compare_brain_responses(fname_orig, fname_new,event_id=1,
     evoked_orig = epochs_orig.average()
     evoked_br = epochs_br.average()
 
+    times = evoked_orig.times * 1e3
+    if np.max(evoked_orig.data) < 1:
+        factor = 1e15
+    else:
+        factor = 1
+    ymin = np.min(evoked_orig.data) * factor
+    ymax = np.max(evoked_orig.data) * factor
+
     # Make the comparison plot.
-    pl.figure('Compare raw data')
-    ax1 = pl.subplot(3, 1, 1)
-    evoked_orig.plot(axes=ax1)
-    ax1.set_title('Original raw signal')
+    pl.figure('Compare raw data', figsize=(14, 5))
+    pl.subplot(1, 2, 1)
+    pl.plot(times, evoked_orig.data.T * factor, 'k', linewidth=0.5)
+    pl.plot(times, evoked_br.data.T*factor, 'r', linewidth=0.5)
+    pl.title('Signal before (black) and after (red) cleaning')
+    pl.xlim(times[0], times[len(times) - 1])
+    pl.ylim(1.1 * ymin, 1.1 * ymax)
 
-    ax2 = pl.subplot(3, 1, 2)
-    ax2.set_ylim(ax1.get_ylim())
-    evoked_br.plot(axes=ax2)
-    ax2.set_title('Signal with brain responses from selected components only')
+    # print out some information
+    textstr1 = 'Performance: %d\nFrequency Correlation: %d'\
+               % (calc_performance(evoked_orig, evoked_br),
+                  calc_frequency_correlation(evoked_orig, evoked_br))
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    pl.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
+            verticalalignment='top', bbox=props)
 
-    ax3 = pl.subplot(3, 1, 3)
-    ax3.set_ylim(ax1.get_ylim())
+
+    pl.subplot(1, 2, 2)
     evoked_diff = evoked_orig - evoked_br
-    evoked_diff.plot(axes=ax3)
-    ax3.set_title('Difference signal')
+    pl.plot(times, evoked_diff.data.T * factor, 'k', linewidth=0.5)
+    pl.title('Difference signal')
+    pl.xlim(times[0], times[len(times) - 1])
+    pl.ylim(1.1 * ymin, 1.1 * ymax)
 
-    pl.tight_layout()
     pl.savefig(fnout_fig, format='png')
     pl.close('Compare raw data')
     pl.ion()
