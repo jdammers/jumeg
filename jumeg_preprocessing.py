@@ -891,7 +891,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
 #
 #######################################################
 def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
-                                 tmin=-0.5, tmax=0.5, stim_name=None,
+                                 tmin=-0.2, tmax=0.5, stim_name=None,
                                  proj=False, show=False):
 
     '''

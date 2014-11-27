@@ -30,7 +30,6 @@ fica_name = fclean[:fclean.rfind('-raw.fif')] + '-ica.fif'
 # OCARTA cleaning
 from jumeg.decompose import ocarta
 ocarta_obj = ocarta.JuMEG_ocarta()
-fn_perf_img = fica_name = fclean.strip('-raw.fif') + ',ocarta_performance'
 ocarta_obj.fit(fclean, unfiltered=False, verbose=True)
 
 # CTPS functions
