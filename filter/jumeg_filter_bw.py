@@ -20,7 +20,7 @@ from jumeg.filter.jumeg_filter_base import JuMEG_Filter_Base
 class JuMEG_Filter_Bw(JuMEG_Filter_Base):
      
      def __init__ (self,filter_type='bp',fcut1=1.0,fcut2=200.0,remove_dcoffset=True,sampling_frequency=1017.25,
-                        notch=np.array([]),notch_width=1.0,order=4.0,settling_time_factor=5.0):
+                        notch=np.array([]),notch_width=2.0,order=4.0,settling_time_factor=5.0):
          super(JuMEG_Filter_Bw, self).__init__()
          self._jumeg_filter_ws_version     = 0.0314
          self._filter_method               = 'bw'
@@ -244,7 +244,7 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
 #--- do_apply_filter             -------------------------#
 #---------------------------------------------------------# 
      def do_apply_filter(self,data):  
-             
+           
          dmean = self.calc_remove_dcoffset(data) 
   
          self.data_plane_cplx.fill(0.0) 

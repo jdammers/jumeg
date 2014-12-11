@@ -6,7 +6,7 @@ import time
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 30.09.2014
+ last update: 06.11.2014
  version    : 0.0314
 ---------------------------------------------------------------------- 
  Window sinc filter taken from:
@@ -219,7 +219,12 @@ class JuMEG_Filter_Base(object):
 
 #---- notch
      def _set_filter_notch (self,value):
-         self._filter_notch = value
+         self._filter_notch = np.array([])
+         if isinstance(value, (np.ndarray)) :
+           self._filter_notch = value
+         else :
+            self._filter_notch = np.array([value])
+            
          self.filter_kernel_isinit = False
          
      def _get_filter_notch(self):
@@ -373,8 +378,21 @@ class JuMEG_Filter_Base(object):
          
          return self._filter_info_string
      
-     filter_info = property(_get_filter_info_string)  
- 
+     filter_info = property(_get_filter_info_string)
+     
+     def update_info_filter_settings(self,raw):
+         """ update raw info filter settings low-,highpass
+             input: raw obj
+         """
+         if self.filter_type == 'bp' :
+            raw.info['lowpass'] = self.fcut1
+            raw.info['highpass']= self.fcut2
+         elif self.filter_type == 'lp' :
+            raw.info['lowpass'] = self.fcut1
+         elif self.filter_type == 'hp' :
+            raw.info['highpass']= self.fcut1
+           
+
 #---------------------------------------------------------# 
 #--- calc_notches                -------------------------#
 #---------------------------------------------------------# 
@@ -397,7 +415,6 @@ class JuMEG_Filter_Base(object):
          self.filter_notch = np.arange(nfreq,nfreq_max+1,nfreq) 
   
          return self.filter_notch  
-
 
 #---------------------------------------------------------# 
 #--- calc_zero_padding           -------------------------#
