@@ -6,8 +6,8 @@ import numpy as np
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 30.09.2014
- version    : 0.0314
+ last update: 11.12.2014
+ version    : 0.03141
 ---------------------------------------------------------------------- 
  Window Sinc Filter are taken from:
  The Scientist and Engineer's Guide to Digital Signal Processing

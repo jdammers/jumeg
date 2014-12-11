@@ -5,8 +5,8 @@ import numpy as np
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 30.09.2014
- version    : 0.0314
+ last update: 11.12.2014
+ version    : 0.03141
 ---------------------------------------------------------------------- 
  Taken from:
  The Scientist and Engineer's Guide to Digital Signal Processing
@@ -14,7 +14,8 @@ import numpy as np
  Chapter 16: Window-Sinc Filter
  http://www.dspguide.com/ch16.htm
 ----------------------------------------------------------------------
-
+ Butterworth filter design from  KD,JD
+ Oppenheim, Schafer, "Discrete-Time Signal Processing"
 ----------------------------------------------------------------------
 
 '''
@@ -192,7 +193,7 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
          """
          
          self.calc_filter_data_length( self.data_length )
-         fkd                                  = np.zeros( self.filter_data_length,np.float64 )
+         fkd = np.zeros( self.filter_data_length,np.float64 )
       #   self.filter_kernel_data.astype( np.complex64 )
          fkd[0:self.filter_kernel_data.size ] = self.filter_kernel_data.copy()   
     
