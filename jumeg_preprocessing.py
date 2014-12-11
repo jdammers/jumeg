@@ -23,7 +23,7 @@ ext_icap = ',ica-performance'     # figure extension provided by the routine
 ext_empty_raw = '-empty.fif'
 ext_empty_cov = ',empty-cov.fif'
 prefix_filt = ',fibp'             # for now bp only 
-prefix_ctps = ',ica,ctps-'        # e.g.: "...,ica,ctps-trigger.npy"
+prefix_ctps = ',ctpsbr-'        # e.g.: "...,ica,ctps-trigger.npy"
 
 
 
@@ -43,7 +43,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 
     # loop across all filenames
     for fname in fnraw:
-        print ">>> filter raw data: %0.1f - %0.1fHz..." % (flow, fhigh)
+        print ">>> filter raw data: %0.1f - %0.1f..." % (flow, fhigh)
         # load raw data
         raw = mne.io.Raw(fname, preload=True)
         # filter raw data
@@ -52,7 +52,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         #     iir_params={'ftype': filter_type, 'order': order})
         print ">>>> writing filtered data to disk..."
         name_raw = fname[:fname.rfind('-')]  # fname.split('-')[0]
-        fnfilt = name_raw + prefix_filt + "%d-%dHz" % (flow, fhigh)
+        fnfilt = name_raw + prefix_filt + "%d-%d" % (flow, fhigh)
         fnfilt = fnfilt + fname[fname.rfind('-'):]  # fname.split('-')[1]
         print 'saving: ' + fnfilt
         raw.save(fnfilt, overwrite=True)
@@ -812,7 +812,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
                     ic_sel = ix + 1
 
             # do construct names for title, fnout_fig, fnout_ctps
-            frange = ' @' + str(freqs[ifreq][0]) + '-' + str(freqs[ifreq][1]) + 'Hz'
+            frange = ' @' + str(freqs[ifreq][0]) + '-' + str(freqs[ifreq][1])
             x = np.arange(ncomp) + 1
             # do make bar plots for ctps thresh level plots
             ax = fig.add_subplot(nrow, 2, ifreq + 1)
@@ -873,8 +873,8 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
             event = conditions[0]
             fn_ics_eve = basename + prefix_ctps + event + '-ic_selection.txt'
             ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
-            fnclean_eve = fn_ics_eve.split('ctps')[0] +\
-                '%s,ctps-raw.fif' % event
+            fnclean_eve = fn_ics_eve.split('ctpsbr')[0] +\
+                '%s,ctpsbr-raw.fif' % event
             ctps_ics = ctps_ics_eve - 1
             descrip_id = event
         elif len(conditions) > 1:
@@ -887,8 +887,8 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
                 descrip_id += ',' + event
             #To keep the index unique
             ctps_ics = list(set(ctps_ics))
-            fnclean_eve = fn_ics_eve.split(',ctps')[0] +\
-                '%s,ctps-raw.fif' % descrip_id
+            fnclean_eve = fn_ics_eve.split(',ctpsbr')[0] +\
+                '%s,ctpsbr-raw.fif' % descrip_id
 
         # clean and save MEG data
         if n_pca_components:
@@ -1058,7 +1058,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
             # filter empty room raw data
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
-            fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
+            fn_in = fn_in.split('-')[0] + ',bp1-45-empty.fif'
 
         # file name for saving noise_cov
         fn_out = fn_in[:fn_in.rfind(ext_empty_raw)] + ext_empty_cov
