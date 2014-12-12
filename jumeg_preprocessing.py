@@ -869,26 +869,18 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnarica)
 
-        if len(conditions) == 1:
-            event = conditions[0]
+        # loop across different event IDs
+        ctps_ics = []
+        descrip_id = ''
+        for event in conditions:
             fn_ics_eve = basename + prefix_ctps + event + '-ic_selection.txt'
             ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
-            fnclean_eve = fn_ics_eve.split('ctpsbr')[0] +\
-                '%s,ctpsbr-raw.fif' % event
-            ctps_ics = ctps_ics_eve - 1
-            descrip_id = event
-        elif len(conditions) > 1:
-            ctps_ics = []
-            descrip_id = ''
-            for event in conditions:
-                fn_ics_eve = basename + prefix_ctps + event + '-ic_selection.txt'
-                ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
-                ctps_ics += (list(ctps_ics_eve - 1))
-                descrip_id += ',' + event
-            #To keep the index unique
-            ctps_ics = list(set(ctps_ics))
-            fnclean_eve = fn_ics_eve.split(',ctpsbr')[0] +\
-                '%s,ctpsbr-raw.fif' % descrip_id
+            ctps_ics += (list(ctps_ics_eve - 1))
+            descrip_id += ',' + event
+        #To keep the index unique
+        ctps_ics = list(set(ctps_ics))
+        fnclean_eve = fn_ics_eve.split(',ctpsbr')[0] +\
+            '%s,ctpsbr-raw.fif' % descrip_id
 
         # clean and save MEG data
         if n_pca_components:
