@@ -6,8 +6,8 @@ import mne
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 30.09.2014
- version    : 0.0314
+ last update: 11.12.2014
+ version    : 0.03141
 ---------------------------------------------------------------------- 
  jumeg obj filter interface to the MNE filter types
  mne.low_pass_filter
@@ -104,9 +104,9 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
      def apply_filter(self,data,picks=None):
        """apply mne filter """
        
-       if picks == None :
-          picks = np.arange( self.data.shape[0] )
-       
+       if picks is None:
+          picks = np.arange(data.shape[0])
+  
        # self.data = data
        dmean  = self.calc_remove_dcoffset(data[picks, :])
        Fs     = self.sampling_frequency
@@ -134,7 +134,7 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
        elif self.filter_type =='bp' :
             data[:,:] = mne.filter.band_pass_filter(data,Fs,fcut1,fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,
                                                     method = method,iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
-                                      
+                                     
        
        elif self.filter_type in ['bs','br'] :
             data[:,:] = mne.filter.band_stop_filter(data,Fs,fcut1,fcut2,filter_length = fl,trans_bandwidth = tbw,method = method,
@@ -149,6 +149,7 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
       #data = data.astype(data_type_orig)
        
 #--- retain dc offset       
+      
        if ( self.remove_dcoffset == False) : 
             if dmean.size == 1 :
                   data[picks, :] += dmean

@@ -1,4 +1,4 @@
-l#!/usr/bin/env python
+#!/usr/bin/env python
 
 """
     meg94t mne preproctest
