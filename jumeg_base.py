@@ -180,7 +180,8 @@ class JuMEG_Base(object):
                      preload=True will load and return empty-room-raw obj instead of raw
              return: full empty room filename, empty-room-raw obj or raw depends on preload option
          '''
-         
+         import glob
+
          fname_empty_room = None
          
          if raw is not None:
@@ -199,15 +200,14 @@ class JuMEG_Base(object):
             # get path to scan from p
             path_scan    = p.split( pdf[2] )[0] 
             # get session dat from file 
-            session_date = fn.split('_')[2]
+            session_date = pdf.split('_')[2]
                           
            #--- TODO: may check for the latest or earliest empty-room file
             #session_time = fn.split('_')[3]
-               
             fname_empty_room = glob.glob( path_scan + session_date +'*/*/*.empty.fif' )[0]
                
          if preload:
-            return( fname_empty_room, mne.io.Raw(name_empty_room, preload=True) )   
+            return( fname_empty_room, mne.io.Raw(fname_empty_room, preload=True) )
         
          return fname_empty_room
     
