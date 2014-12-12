@@ -6,8 +6,8 @@ import time
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 06.11.2014
- version    : 0.0314
+ last update: 11.12.2014
+ version    : 0.03141
 ---------------------------------------------------------------------- 
  Window sinc filter taken from:
  The Scientist and Engineer's Guide to Digital Signal Processing
@@ -144,7 +144,8 @@ class JuMEG_Filter_Base(object):
 #--- filter_kernel_length
      def _get_filter_kernel_length(self):
          try:
-            self._filter_kernel_length = self.sampling_frequency * self.filter_kernel_length_factor
+            self._filter_kernel_length = np.ceil( self.sampling_frequency ) * self.filter_kernel_length_factor
+            
          finally: 
                return self._filter_kernel_length
 
@@ -528,7 +529,7 @@ class JuMEG_Filter_Base(object):
             self.init_filter()
            
        if data.ndim > 1 :
-           if picks == None :
+           if picks is None :
               picks = np.arange( self.data.shape[0] )
            for ichan in picks:
                self.do_apply_filter( self.data[ichan,:] )

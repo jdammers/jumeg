@@ -7,8 +7,8 @@ import scipy.fftpack as scipack # import fft,ifft
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 30.09.2014
- version    : 0.0314
+ last update: 11.12.2014
+ version    : 0.03141
 ---------------------------------------------------------------------- 
  Butterworth filter design from  KD,JD
  Oppenheim, Schafer, "Discrete-Time Signal Processing"
