@@ -657,9 +657,8 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     fiws.filter_attenuation_factor = 1
 
     nfreq = len(freqs)
+    print '>>> CTPS calculation on: ', freqs
 
-    print freqs
-    print nfreq
 
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
