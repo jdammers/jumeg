@@ -6,13 +6,32 @@ import matplotlib.pyplot as pl
 import mne
 import ctps
 
+
+#################################################################
+#
+# filename conventions 
+#
+# >>> I assume that this will be provided in a different way <<<
+# >>> probably by Frank's new routines (?) <<<
+#
+#################################################################
+ext_raw = '-raw.fif'
+ext_ave = '-ave.fif'
+ext_ica = '-ica.fif'
+ext_clean = ',ar-raw.fif'
+ext_icap = ',ica-performance'     # figure extension provided by the routine
+ext_empty_raw = '-empty.fif'
+ext_empty_cov = ',empty-cov.fif'
+prefix_filt = ',fibp'             # for now bp only 
+prefix_ctps = ',ctpsbr-'        # e.g.: "...,ica,ctps-trigger.npy"
+
+
+
 #################################################################
 #
 # apply filter on (raw) data
 #
 #################################################################
-
-
 def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 
     ''' Applies the MNE butterworth filter to a list of raw files. '''
@@ -24,7 +43,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 
     # loop across all filenames
     for fname in fnraw:
-        print ">>> filter raw data: %0.1f - %0.1fHz..." % (flow, fhigh)
+        print ">>> filter raw data: %0.1f - %0.1f..." % (flow, fhigh)
         # load raw data
         raw = mne.io.Raw(fname, preload=True)
         # filter raw data
@@ -33,7 +52,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
         #     iir_params={'ftype': filter_type, 'order': order})
         print ">>>> writing filtered data to disk..."
         name_raw = fname[:fname.rfind('-')]  # fname.split('-')[0]
-        fnfilt = name_raw + ',bp' + "%d-%dHz" % (flow, fhigh)
+        fnfilt = name_raw + prefix_filt + "%d-%d" % (flow, fhigh)
         fnfilt = fnfilt + fname[fname.rfind('-'):]  # fname.split('-')[1]
         print 'saving: ' + fnfilt
         raw.save(fnfilt, overwrite=True)
@@ -92,10 +111,14 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
             avg = epochs.average()
 
             # save averaged data
-            if (postfix):
-                fnout = fname[0:len(fname) - 4] + postfix + '.fif'
+            if (fname.rfind(ext_raw) > -1):
+                nchar = 8
             else:
-                fnout = fname[0:len(fname) - 4] + ',avg,' + trig_name + '.fif'
+                nchar = 4
+            if (postfix):
+                fnout = fname[0:len(fname) - nchar] + postfix + '.fif'
+            else:
+                fnout = fname[0:len(fname) - nchar] + ',' + trig_name + ext_ave
 
             avg.save(fnout)
             print 'saved:' + fnout
@@ -114,7 +137,7 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
 #  plot average from a list of files
 #
 #######################################################
-def plot_average(filenames, save_plot=True, show_plot=False):
+def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
 
     ''' Plot Signal average from a list of averaged files. '''
 
@@ -142,7 +165,7 @@ def plot_average(filenames, save_plot=True, show_plot=False):
 
         # save figure
         fnfig = os.path.splitext(fnavg)[0] + '.png'
-        pl.savefig(fnfig, dpi=100)
+        pl.savefig(fnfig, dpi=dpi)
 
     pl.ion()  # switch on (interactive) plot visualisation
 
@@ -175,7 +198,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
         ica.fit(raw, picks=picks, decim=decim, reject=reject)
 
         # save ICA object
-        fnica_out = fname[:fname.rfind('-raw.fif')] + '-ica.fif'
+        fnica_out = fname[:fname.rfind(ext_raw)] + ext_ica
         # fnica_out = fname[0:len(fname)-4]+'-ica.fif'
         ica.save(fnica_out)
 
@@ -200,11 +223,10 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
     for fnica in fnlist:
         name = os.path.split(fnica)[1]
         #basename = fnica[0:len(fnica)-4]
-        basename = fnica[:fnica.rfind('-ica.fif')]
-        fnfilt = basename + '-raw.fif'
-        #fnfilt = basename + '.fif'
-        fnclean = basename + ',ar-raw.fif'
-        fnica_ar = basename + ',ica-performance'
+        basename = fnica[:fnica.rfind(ext_ica)]
+        fnfilt = basename + ext_raw
+        fnclean = basename + ext_clean
+        fnica_ar = basename + ext_icap
         print ">>>> perform artifact rejection on :"
         print '   ' + name
 
@@ -234,9 +256,9 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         if unfiltered:
             # adjust filenames to unfiltered data
             basename = basename[:basename.rfind(',')]
-            fnfilt = basename + '-raw.fif'
-            fnclean = basename + ',ar-raw.fif'
-            fnica_ar = basename + ',ica-performance'
+            fnfilt = basename + ext_raw
+            fnclean = basename + ext_clean
+            fnica_ar = basename + ext_icap
 
             # load raw unfiltered data
             meg_raw = mne.io.Raw(fnfilt, preload=True)
@@ -602,7 +624,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
             textstr1 = 'Performance: %d\nFrequency Correlation: %d\n# ICs: %d\nExplained Var.: %d'\
                        % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
-                          ica.n_components_, ica.n_pca_components)
+                          ica.n_components_, ica.n_components*100)
 
         pl.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
                 verticalalignment='top', bbox=props)
@@ -635,9 +657,8 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     fiws.filter_attenuation_factor = 1
 
     nfreq = len(freqs)
+    print '>>> CTPS calculation on: ', freqs
 
-    print freqs
-    print nfreq
 
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
@@ -654,8 +675,8 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     for fnica in fnlist:
         name = os.path.split(fnica)[1]
         #fname = fnica[0:len(fnica)-4]
-        basename = fnica[:fnica.rfind('-ica.fif')]
-        fnraw = basename + '-raw.fif'
+        basename = fnica[:fnica.rfind(ext_ica)]
+        fnraw = basename + ext_raw
         #basename = os.path.splitext(os.path.basename(fnica))[0]
         # load cleaned data
         raw = mne.io.Raw(fnraw, preload=True)
@@ -737,7 +758,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             dctps['times'] = times
             dctps['tmin'] = ica_epochs.tmin
             dctps['tmax'] = ica_epochs.tmax
-            fnctps = basename + ',ctps-' + trig_name
+            fnctps = basename + prefix_ctps + trig_name
             np.save(fnctps, dctps)
             # Note; loading example: dctps = np.load(fnctps).items()
         else:
@@ -790,7 +811,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
                     ic_sel = ix + 1
 
             # do construct names for title, fnout_fig, fnout_ctps
-            frange = ' @' + str(freqs[ifreq][0]) + '-' + str(freqs[ifreq][1]) + 'Hz'
+            frange = ' @' + str(freqs[ifreq][0]) + '-' + str(freqs[ifreq][1])
             x = np.arange(ncomp) + 1
             # do make bar plots for ctps thresh level plots
             ax = fig.add_subplot(nrow, 2, ifreq + 1)
@@ -837,9 +858,9 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
     # loop across all filenames
     for fn_clean in fnlist:
         #basename = fn_ctps_ics.rsplit('ctps')[0].rstrip(',')
-        basename = fn_clean.split('-raw.fif')[0]
+        basename = fn_clean.split(ext_raw)[0]
         fnfilt = fn_clean
-        fnarica = basename + '-ica.fif'
+        fnarica = basename + ext_ica
 
         # load filtered and artefact removed data
         meg_raw = mne.io.Raw(fnfilt, preload=True)
@@ -847,26 +868,18 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnarica)
 
-        if len(conditions) == 1:
-            event = conditions[0]
-            fn_ics_eve = basename + ',ctps-' + event + '-ic_selection.txt'
+        # loop across different event IDs
+        ctps_ics = []
+        descrip_id = ''
+        for event in conditions:
+            fn_ics_eve = basename + prefix_ctps + event + '-ic_selection.txt'
             ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
-            fnclean_eve = fn_ics_eve.split('ctps')[0] +\
-                '%s,ctpsbr-raw.fif' % event
-            ctps_ics = ctps_ics_eve - 1
-            descrip_id = event
-        elif len(conditions) > 1:
-            ctps_ics = []
-            descrip_id = ''
-            for event in conditions:
-                fn_ics_eve = basename + ',ctps-' + event + '-ic_selection.txt'
-                ctps_ics_eve = np.loadtxt(fn_ics_eve, dtype=int, delimiter=',')
-                ctps_ics += (list(ctps_ics_eve - 1))
-                descrip_id += ',' + event
-            #To keep the index unique
-            ctps_ics = list(set(ctps_ics))
-            fnclean_eve = fn_ics_eve.split(',ctps')[0] +\
-                '%s,ctpsbr-raw.fif' % descrip_id
+            ctps_ics += (list(ctps_ics_eve - 1))
+            descrip_id += ',' + event
+        #To keep the index unique
+        ctps_ics = list(set(ctps_ics))
+        fnclean_eve = fn_ics_eve.split(',ctpsbr')[0] +\
+            '%s,ctpsbr-raw.fif' % descrip_id
 
         # clean and save MEG data
         if n_pca_components:
@@ -1036,10 +1049,10 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
             # filter empty room raw data
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
-            fn_in = fn_in.split('-')[0] + ',bp1-45Hz-empty.fif'
+            fn_in = fn_in.split('-')[0] + ',bp1-45-empty.fif'
 
         # file name for saving noise_cov
-        fn_out = fn_in[:fn_in.rfind('-empty.fif')] + ',empty-cov.fif'
+        fn_out = fn_in[:fn_in.rfind(ext_empty_raw)] + ext_empty_cov
 
         # read in data
         raw_empty = Raw(fn_in, verbose=verbose)
