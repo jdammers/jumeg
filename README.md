@@ -110,3 +110,11 @@ Please follow the below file name conventions when writing and reading your code
       
    e.g. ```109925_CAU01A_100715_0842_2_c,rfDC,bp1-45,ar,happy-evoked.png``` would indicate a plot of averages over 'happy condition' for 1 to 45 Hz band passed data. 
 
+11. Raw file after artifact rejection, and CTPS based brain components selected, e.g., based on trigger or response based components (after ICA/CTPS on cleaned data) - ```109925_CAU01A_100715_0842_2_c,rfDC,bp1-45,ar,ctpsbr-trigger-raw.fif```.
+   
+   (,ctpsbr-trigger)
+   (,ctpsbr-response)
+
+If you choose a combination of different phase-locked components then simply add
+
+   (,ctpsbr)
