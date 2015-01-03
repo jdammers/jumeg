@@ -161,7 +161,12 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
     logger.warning('The file name is not saved in standard form.')
     return
 
-def make_surrogates_sklearn(epochs):
+#######################################################
+#                                                     
+# make surrogates from Epochs
+#                                                     
+#######################################################
+def make_surrogates_epochs(epochs, check_power=False):
     ''' 
     Make surrogate epochs using sklearn. Destroy time-phase relationship for each trial.
     
@@ -173,39 +178,182 @@ def make_surrogates_sklearn(epochs):
     ------
     Surrogate Epochs object
     '''
+    from sklearn.utils import check_random_state
+
     surrogate = epochs.copy()
     surr = surrogate.get_data()
     for trial in range(len(surrogate)):
-        for channel in range(len(surrogate.ch_names)):
-            from sklearn.utils import check_random_state
+        for channel in range(len(surrogate.ch_names)):            
             rng = check_random_state(channel)
             order = np.argsort(rng.randn(len(surrogate.times)))
             surr[trial, channel, :] = surr[trial, channel, order]
     surrogate._data = surr
-    ps1 = np.abs(np.fft.fft(surr))**2
-    ps2 = np.abs(np.fft.fft(epochs.get_data()))**2
-    assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
+    if (check_power):
+        ps1 = np.abs(np.fft.fft(surr))**2
+        ps2 = np.abs(np.fft.fft(epochs.get_data()))**2
+        assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
+
     return surrogate
     
-def make_surrogates_shuffling(epochs):
-    ''' 
-    Make surrogate epochs by simply shuffling. Destroy time-phase relationship for each trial.
+# def make_surrogates_epoch_numpy(epochs):
+#     ''' 
+#     Make surrogate epochs by simply shuffling. Destroy time-phase relationship for each trial.
     
+#     Parameters
+#     ----------
+#     Epochs Object.
+
+#     Output
+#     ------
+#     Surrogate Epochs object
+#     '''
+#     surrogate = epochs.copy()
+#     surr = surrogate.get_data()
+#     for trial in range(len(epochs)):
+#         for channel in range(len(epochs.ch_names)):
+#             np.random.shuffle(surr[trial, channel, :])
+#     surrogate._data = surr
+#     ps1 = np.abs(np.fft.fft(surr))**2
+#     ps2 = np.abs(np.fft.fft(epochs.get_data()))**2
+#     assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
+#     return surrogate
+
+
+#######################################################
+#                                                     
+# make surrogates CTPS phase trials
+#                                                     
+#######################################################
+def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4, 
+                        verbose=None):
+    ''' calculate surrogates from an array of (phase) trials 
+        by means of shuffling the phase
+
     Parameters
     ----------
-    Epochs Object.
+    phase_trial : 4d ndarray of dimension [nfreqs x ntrials x nchan x nsamples]
 
-    Output
-    ------
-    Surrogate Epochs object
+    Optional:
+    nrepeat: 
+
+    mode: 2 different modi are allowed.
+        'mode=shuffle' whill randomly shuffle the phase values. This is the default
+        'mode=shift' whill randomly shift the phase values
+    n_jobs: number of cpu nodes to use
+    verbose:  verbose level (does not work yet)
+    fnout: 'fnout=filename' will save the surrogates to (numpy) file
+
+
+    Returns
+    -------
+    pt : shuffled phase trials
+
     '''
-    surrogate = epochs.copy()
-    surr = surrogate.get_data()
-    for trial in range(len(epochs)):
-        for channel in range(len(epochs.ch_names)):
-            np.random.shuffle(surr[trial, channel, :])
-    surrogate._data = surr
-    ps1 = np.abs(np.fft.fft(surr))**2
-    ps2 = np.abs(np.fft.fft(epochs.get_data()))**2
-    assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
-    return surrogate
+
+    from joblib import Parallel, delayed
+    from mne.parallel import parallel_func
+    from mne.preprocessing.ctps_ import kuiper
+    from jumeg_math import shuffle_data
+    
+    nfreq, ntrials, nsources, nsamples  = phase_array.shape
+    ks = np.zeros((nfreq,nrepeat,nsources, nsamples))        # Kuiper's stat
+    pk = np.zeros((nfreq,nrepeat,nsources, nsamples))        # significance value of ks
+
+
+    # create surrogates:  parallised over nrepeats 
+    parallel, my_kuiper, _ = parallel_func(kuiper, n_jobs, verbose=verbose)
+    for ifreq in range(nfreq):
+        for isource in range(nsources):
+            #print ">>> working on frequency: ",bp[ifreq,:],"   source: ",isource+1  
+            print ">>> working on frequency range: ",ifreq+1,"   source: ",isource+1  
+            pt = phase_array[ifreq, :, isource, :]  # extract [ntrials, nsamp]   
+
+            # surrogate phase trails:  shuffle phase values for all repititions
+            pt_s = Parallel(n_jobs=n_jobs, verbose=0)(delayed(shuffle_data)
+                (pt, mode='shuffle') for i in range(nrepeat)) 
+           
+            # calculate Kuiper's statistics for each phase array
+            out = parallel(my_kuiper(i) for i in pt_s)
+            
+            # store stat and pk in different arrays
+            out = np.array(out)
+            #ks[ifreq,:,isource,:] = out[:,0,:]  # is actually not needed
+            pk[ifreq,:,isource,:] = out[:,1,:]  # [nrepeat, pk_idx, nsamp]
+
+    return ks, pk
+
+
+#######################################################
+#                                                     
+# calc stats on CTPS surrogates
+#                                                     
+#######################################################
+def get_stats_surrogates_ctps(pksarr, verbose=False):
+    ''' calculates some stats on the CTPS pk values obtain from surrogate tests. 
+
+    Parameters
+    ----------
+    pksarr : 4d ndarray of dimension [nfreq x nrepeat x nsources x nsamples]
+
+    Optional:
+    verbose:  print some information on stdout 
+
+
+    Returns
+    -------
+    stats : stats info stored in a python dictionary 
+
+    '''
+
+    import os
+    import numpy as np
+
+    nfreq, nrepeat, nsources, nsamples = pksarr.shape
+    pks = np.reshape(pksarr, (nfreq, nrepeat*nsources*nsamples))  # [nsource * nrepeat, nbp]
+
+    # stats for each frequency band
+    pks_max = pks.max(axis=1)
+    pks_min = pks.min(axis=1)
+    pks_mean = pks.mean(axis=1)
+    pks_std = pks.std(axis=1)
+   
+    # global stats
+    pks_max_global = pks.max()
+    pks_min_global = pks.min()
+    pks_mean_global = pks.mean()
+    pks_std_global = pks.std()
+
+    pks_pct99_global = np.percentile(pksarr,99)
+
+    # collect info and store into dictionary
+    stats = {
+        'path':  os.getcwd(),
+        'fname': 'CTPS surrogates',
+        'nrepeat': nrepeat,
+        'nfreq': nfreq,
+        'nsources': nsources,
+        'nsamples': nsamples,
+        'pks_min': pks_min,
+        'pks_max': pks_max,
+        'pks_mean': pks_mean,
+        'pks_std': pks_std,
+        'pks_min_global': pks_min_global,
+        'pks_max_global': pks_max_global,
+        'pks_mean_global': pks_mean_global,
+        'pks_std_global': pks_std_global,
+        'pks_pct99_global': pks_pct99_global
+        }
+
+
+    # mean and std dev
+    if (verbose):
+        print '>>> Stats from CTPS surrogates <<<'
+        for i in range(nfreq):
+            #print ">>> filter raw data: %0.1f - %0.1f..." % (flow, fhigh)
+            print 'freq: ',i+1,'max/mean/std: ', pks_max[i], pks_mean[i], pks_std[i]  
+        print    
+        print 'overall stats:'
+        print 'max/mean/std: ', pks_global_max, pks_global_mean, pks_global_std          
+        print '99th percentile: ', pks_global_pct99 
+
+    return stats

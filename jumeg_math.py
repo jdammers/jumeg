@@ -1,6 +1,5 @@
 import numpy as np
 
-
 ##################################################
 # 
 # Function to rescale data
@@ -70,7 +69,6 @@ def calc_tkeo(signal):
     Returns the Taeger-Kaiser-Energy-Operator:
        Y(n) = X^2(n) - X(n+1) * X(n-1)
     """
-
     # estimate tkeo
     s1       = signal ** 2.
     s2       = np.roll(signal, 1) * np.roll(signal, -1)
@@ -82,6 +80,7 @@ def calc_tkeo(signal):
 
     # return results
     return tkeo
+
 
 ##################################################
 #
@@ -103,7 +102,6 @@ def shuffle_data (data_trials, mode='shuffle'):
 
     '''
 
-    import numpy as np
     np.random.seed()     # for parallel processing it needs to be re-initialized
     ntrials, nsamples = data_trials.shape
 
