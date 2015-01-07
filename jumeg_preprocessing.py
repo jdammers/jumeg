@@ -802,7 +802,6 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
     import os, time
     from jumeg_utils import make_surrogates_ctps, get_stats_surrogates_ctps
 
-
     fnlist = get_files_from_list(fname_ctps)
 
     # loop across all filenames

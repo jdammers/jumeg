@@ -309,9 +309,7 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
     from mne.preprocessing.ctps_ import kuiper
     
     nfreq, ntrials, nsources, nsamples  = phase_array.shape
-    # ks = np.zeros((nfreq,nrepeat,nsources, nsamples))        # Kuiper's stat
-    pk = np.zeros((nfreq,nrepeat,nsources, nsamples))        # significance value of ks
-
+    pk = np.zeros((nfreq,nrepeat,nsources, nsamples), dtype='float32')
 
     # create surrogates:  parallised over nrepeats 
     parallel, my_kuiper, _ = parallel_func(kuiper, n_jobs, verbose=verbose)
@@ -334,11 +332,10 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
             out = parallel(my_kuiper(i) for i in pt_s)
             
             # store stat and pk in different arrays
-            out = np.array(out)
+            out = np.array(out,dtype='float32')
             # ks[ifreq,:,isource,:] = out[:,0,:]  # is actually not needed
             pk[ifreq,:,isource,:] = out[:,1,:]  # [nrepeat, pk_idx, nsamp]
 
-    # return ks, pk
     return pk
 
 
