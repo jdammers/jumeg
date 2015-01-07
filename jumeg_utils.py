@@ -297,8 +297,6 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
         'mode=shift' whill randomly shift the phase values
     n_jobs: number of cpu nodes to use
     verbose:  verbose level (does not work yet)
-    fnout: 'fnout=filename' will save the surrogates to (numpy) file
-
 
     Returns
     -------
@@ -311,7 +309,7 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
     from mne.preprocessing.ctps_ import kuiper
     
     nfreq, ntrials, nsources, nsamples  = phase_array.shape
-    ks = np.zeros((nfreq,nrepeat,nsources, nsamples))        # Kuiper's stat
+    # ks = np.zeros((nfreq,nrepeat,nsources, nsamples))        # Kuiper's stat
     pk = np.zeros((nfreq,nrepeat,nsources, nsamples))        # significance value of ks
 
 
@@ -337,10 +335,11 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
             
             # store stat and pk in different arrays
             out = np.array(out)
-            #ks[ifreq,:,isource,:] = out[:,0,:]  # is actually not needed
+            # ks[ifreq,:,isource,:] = out[:,0,:]  # is actually not needed
             pk[ifreq,:,isource,:] = out[:,1,:]  # [nrepeat, pk_idx, nsamp]
 
-    return ks, pk
+    # return ks, pk
+    return pk
 
 
 #######################################################

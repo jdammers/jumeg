@@ -819,7 +819,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
         phase_trials = dctps['pt']  # [nfreq, ntrials, nsources, nsamples]
         # create surrogate tests
         t_start = time.time()
-        _, pks = make_surrogates_ctps(phase_trials,nrepeat=nrepeat,
+        pks = make_surrogates_ctps(phase_trials,nrepeat=nrepeat,
             mode=mode,verbose=None)
 
         # perform stats on surrogates
