@@ -769,7 +769,8 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 #  Perform CTPS surrogates tests
 #
 #######################################################
-def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000, save=True):
+def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
+    mode='shuffle', save=True):
 
     ''' 
     Perform CTPS surrogate tests to estimate the significance level 
@@ -788,6 +789,10 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000, save=True):
     Options:
     nrepeat: number of repetitions used to estimate the pk threshold
              default is 1000
+
+    mode: 2 different modi are allowed.
+        'mode=shuffle' whill randomly shuffle the phase values. This is the default
+        'mode=shift' whill randomly shift the phase values
 
     Return
     ------
@@ -814,7 +819,8 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000, save=True):
         phase_trials = dctps['pt']  # [nfreq, ntrials, nsources, nsamples]
         # create surrogate tests
         t_start = time.time()
-        _, pks = make_surrogates_ctps(phase_trials,nrepeat=nrepeat, verbose=None)
+        _, pks = make_surrogates_ctps(phase_trials,nrepeat=nrepeat,
+            mode=mode,verbose=None)
 
         # perform stats on surrogates
         stats = get_stats_surrogates_ctps(pks, verbose=False)
@@ -825,6 +831,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000, save=True):
         info.append('nrepeat: '+ str(stats['nrepeat']))
         info.append('nsamples: '+ str(stats['nsamples']))
         info.append('nsources: '+ str(stats['nsources']))
+        info.append('permutation mode: '+ mode)
         # info for each freq. band of the current data set
         info.append('# stats for each frequency band:')
         line_f    = 'freqs (Hz):'

@@ -161,6 +161,62 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
     logger.warning('The file name is not saved in standard form.')
     return
 
+##################################################
+#
+# destroy phase/time info by shuffling on 2D arrays
+#
+##################################################
+def shuffle_data (data_trials, seed=None):
+    ''' Shuffling the time information (phase) of any data array
+    Parameters
+    ----------
+    data_trials : 2d ndarray of dimension [ntrials x nsamples]
+                  In each trial samples are randomly shuffled
+    Returns
+    -------
+    s_trial : shuffled (phase) trials
+
+    '''
+
+    np.random.seed(seed=None)   # for parallel processing => re-initialized
+    ntrials, nsamples = data_trials.shape
+
+    # shuffle all phase entries
+    dt = data_trials.flatten()
+    np.random.shuffle(dt)       
+    dt = dt.reshape(ntrials,nsamples)
+
+    return dt
+
+##################################################
+#
+# destroy phase/time info by shifting on 2D arrays
+#
+##################################################
+def shift_data (data_trials, seed=None):
+    ''' Shuffling the time information (phase) of any data array
+    Parameters
+    ----------
+    data_trials : 2d ndarray of dimension [ntrials x nsamples]
+                  In each trial samples are randomly shifted
+
+    Returns
+    -------
+    s_trial : shuffled (phase) trials
+
+    '''
+
+    np.random.seed(seed=None)   # for parallel processing => re-initialized
+    ntrials, nsamples = data_trials.shape
+
+    # random phase shifts for each trial
+    dt = np.zeros((ntrials, nsamples), dtype=data_trials.dtype)
+    shift = np.random.permutation(np.arange(ntrials))
+    for itrial in range(ntrials):
+        dt[itrial,:] = np.roll(data_trials[itrial,:], shift[itrial]) 
+
+    return dt
+
 #######################################################
 #                                                     
 # make surrogates from Epochs
@@ -253,7 +309,6 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
     from joblib import Parallel, delayed
     from mne.parallel import parallel_func
     from mne.preprocessing.ctps_ import kuiper
-    from jumeg_math import shuffle_data
     
     nfreq, ntrials, nsources, nsamples  = phase_array.shape
     ks = np.zeros((nfreq,nrepeat,nsources, nsamples))        # Kuiper's stat
@@ -268,10 +323,15 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
             print ">>> working on frequency range: ",ifreq+1,"   source: ",isource+1  
             pt = phase_array[ifreq, :, isource, :]  # extract [ntrials, nsamp]   
 
-            # surrogate phase trails:  shuffle phase values for all repititions
-            pt_s = Parallel(n_jobs=n_jobs, verbose=0)(delayed(shuffle_data)
-                (pt, mode='shuffle') for i in range(nrepeat)) 
-           
+            if(mode=='shuffle'):
+                # shuffle phase values for all repititions
+                pt_s = Parallel(n_jobs=n_jobs, verbose=0)(delayed(shuffle_data)
+                    (pt) for i in range(nrepeat)) 
+            else: 
+                # shift all phase values for all repititions
+                pt_s = Parallel(n_jobs=n_jobs, verbose=0)(delayed(shift_data)
+                    (pt) for i in range(nrepeat)) 
+
             # calculate Kuiper's statistics for each phase array
             out = parallel(my_kuiper(i) for i in pt_s)
             
