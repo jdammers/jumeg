@@ -770,7 +770,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 #
 #######################################################
 def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
-    mode='shuffle', save=True):
+    mode='shuffle', save=True, n_jobs=4):
 
     ''' 
     Perform CTPS surrogate tests to estimate the significance level 
@@ -819,7 +819,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
         # create surrogate tests
         t_start = time.time()
         pks = make_surrogates_ctps(phase_trials,nrepeat=nrepeat,
-            mode=mode,verbose=None)
+            mode=mode,verbose=None,n_jobs=n_jobs)
 
         # perform stats on surrogates
         stats = get_stats_surrogates_ctps(pks, verbose=False)
