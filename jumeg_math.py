@@ -1,6 +1,5 @@
 import numpy as np
 
-
 ##################################################
 # 
 # Function to rescale data
@@ -70,7 +69,6 @@ def calc_tkeo(signal):
     Returns the Taeger-Kaiser-Energy-Operator:
        Y(n) = X^2(n) - X(n+1) * X(n-1)
     """
-
     # estimate tkeo
     s1       = signal ** 2.
     s2       = np.roll(signal, 1) * np.roll(signal, -1)

@@ -751,18 +751,145 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             pkarr = np.array(pkarr)
             ptarr = np.array(ptarr)
             pkmax_arr = np.array(pkmax_arr)
-            dctps['pk'] = pkarr
-            dctps['pt'] = ptarr
-            dctps['pkmax'] = pkmax_arr
+            dctps['pk'] = np.float32(pkarr)
+            dctps['pt'] = np.float32(ptarr)
+            dctps['pkmax'] = np.float32(pkmax_arr)
             dctps['nsamp'] = len(times)
-            dctps['times'] = times
-            dctps['tmin'] = ica_epochs.tmin
-            dctps['tmax'] = ica_epochs.tmax
+            dctps['times'] = np.float32(times)
+            dctps['tmin'] = np.float32(ica_epochs.tmin)
+            dctps['tmax'] = np.float32(ica_epochs.tmax)
             fnctps = basename + prefix_ctps + trig_name
             np.save(fnctps, dctps)
             # Note; loading example: dctps = np.load(fnctps).items()
         else:
             event_id = None
+
+#######################################################
+#
+#  Perform CTPS surrogates tests
+#
+#######################################################
+def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
+    mode='shuffle', save=True, n_jobs=4):
+
+    ''' 
+    Perform CTPS surrogate tests to estimate the significance level 
+    for CTPS anaysis (a proper pK value ist estimated).
+
+    It is most likely that the statistical reliability of this test
+    is best improved by increasing the number of repetitions, while the
+    number of different experiments/subjects have minor effects only
+
+    Parameters
+    ----------
+    fname_ctps:  CTPS filename (or list of filenames)
+
+    fnout: Output (text) filename to store surrogate stats across all files
+
+    Options:
+    nrepeat: number of repetitions used to estimate the pk threshold
+             default is 1000
+
+    mode: 2 different modi are allowed.
+        'mode=shuffle' whill randomly shuffle the phase values. This is the default
+        'mode=shift' whill randomly shift the phase values
+
+    Return
+    ------
+    info string array containing the statistical values about the surrogate analysis
+
+    '''
+    import os, time
+    from jumeg_utils import make_surrogates_ctps, get_stats_surrogates_ctps
+
+    fnlist = get_files_from_list(fname_ctps)
+
+    # loop across all filenames
+    ifile = 1
+    sep = '=========================================================================='
+    info = [sep,'#','# Statistical analysis on CTPS surrogates','#',sep]  
+    for fnctps in fnlist:
+        path = os.path.dirname(fnctps)
+        basename = os.path.basename(fnctps)
+        name = os.path.splitext(basename)[0]
+        print '>>> calc. surrogates based on: ' + basename
+        # load CTPS data
+        dctps = np.load(fnctps).item()
+        phase_trials = dctps['pt']  # [nfreq, ntrials, nsources, nsamples]
+        # create surrogate tests
+        t_start = time.time()
+        pks = make_surrogates_ctps(phase_trials,nrepeat=nrepeat,
+            mode=mode,verbose=None,n_jobs=n_jobs)
+
+        # perform stats on surrogates
+        stats = get_stats_surrogates_ctps(pks, verbose=False)
+        info.append(sep)
+        info.append(path)
+        info.append(basename)
+        info.append('nfreq: '+ str(stats['nfreq']))
+        info.append('nrepeat: '+ str(stats['nrepeat']))
+        info.append('nsamples: '+ str(stats['nsamples']))
+        info.append('nsources: '+ str(stats['nsources']))
+        info.append('permutation mode: '+ mode)
+        # info for each freq. band of the current data set
+        info.append('# stats for each frequency band:')
+        line_f    = 'freqs (Hz):'
+        line_max  = 'pk max:    '
+        line_mean = 'pk mean:   '
+        line_min  = 'pk min:    '
+        for i in range(stats['nfreq']):
+            flow, fhigh = dctps['freqs'][i]
+            line_f    += str('%5d-%d ' % (flow,fhigh))
+            line_max  += str('%8.3f' % stats['pks_max'][i])
+            line_mean += str('%8.3f' % stats['pks_mean'][i])
+            line_min  += str('%8.3f' % stats['pks_min'][i])
+        info.append(line_f)
+        info.append(line_min)
+        info.append(line_mean)
+        info.append(line_max)
+        # across freq. bands
+        pks_min = stats['pks_min_global']
+        pks_mean = stats['pks_mean_global']
+        pks_std = stats['pks_std_global']
+        pks_pct = stats['pks_pct99_global']
+        pks_max = stats['pks_max_global']
+        info.append('# stats across all frequency bands:')
+        info.append('pk min:  '+ str('%8.3f' % pks_min))
+        info.append('pk mean: '+ str('%8.3f' % stats['pks_mean_global']))
+        info.append('pk std:  '+ str('%8.3f' % stats['pks_std_global']))
+        info.append('pk pct99:'+ str('%8.3f' % stats['pks_pct99_global']))
+        info.append('pk max:  '+ str('%8.3f' % stats['pks_max_global']))
+
+
+        # combine global stats values of different ctps files into one global analysis
+        if (ifile > 1):
+            pks_all = np.concatenate((pks_all, pks.flatten()))
+        else:
+            pks_all = pks.flatten()
+        ifile += 1
+
+    if (ifile > 1):        
+        info.append(sep)
+        info.append('#')
+        info.append('# stats across all files:')
+        info.append('#')
+        info.append('pk min:  '+ str('%8.3f' % pks_all.min()))
+        info.append('pk mean: '+ str('%8.3f' % pks_all.mean()))
+        info.append('pk std:  '+ str('%8.3f' % pks_all.std()))
+        info.append('pk pct99:'+ str('%8.3f' % np.percentile(pks_all,99)))
+        info.append('pk max:  '+ str('%8.3f' % pks_all.max()))
+
+    info.append('#')
+    duration = (time.time() - t_start)/ 60.0   # in minutes
+    info.append('duration [min]: %0.2f' %duration)
+    info.append('#')
+    info.append(sep)
+    
+    # save surrogate stats
+    if (save):
+        np.savetxt(fnout, info, fmt='%s')
+
+    return info
 
 
 #######################################################
