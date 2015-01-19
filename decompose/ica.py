@@ -107,7 +107,7 @@ def infomax_array(data_orig, explainedVar=1.0, overwrite=None,
     # -------------------------------------------
     if verbose:
         print "     ... perform centering and whitening ..."
-    data, pca = whitening(data, npc=max_pca_components, explainedVar=explainedVar)
+    data, pca = whitening(data.T, npc=max_pca_components, explainedVar=explainedVar)
 
 
     # -------------------------------------------
@@ -117,6 +117,7 @@ def infomax_array(data_orig, explainedVar=1.0, overwrite=None,
                                w_change=wchange, anneal_deg=annealdeg, anneal_step=annealstep,
                                extended=extended, n_subgauss=n_subgauss, kurt_size=kurt_size,
                                max_iter=maxsteps, verbose=verbose)
+
 
     activations = np.dot(weights, data.T)
 
@@ -202,7 +203,7 @@ def whitening(data, npc=None, explainedVar=None):
 
         Parameters
         ----------
-        X : data array [nchan, ntsl] for decomposition.
+        X : data array [ntsl, nchan] for decomposition.
         npc : int | None
             The number of components used for PCA decomposition. If None, no
             dimension reduction will be applied and max_pca_components will equal
@@ -233,7 +234,7 @@ def whitening(data, npc=None, explainedVar=None):
     # -------------------------------------------
     # check input data
     # -------------------------------------------
-    nchan, ntsl = data.shape
+    ntsl, nchan = data.shape
 
     if (nchan < 2) or (ntsl < nchan):
         raise ValueError('Data size too small!')
@@ -245,21 +246,17 @@ def whitening(data, npc=None, explainedVar=None):
     X = data.copy()
     whiten = False
     n_components = npc
-    dmean = X.mean(axis=-1)
-    stddev = np.std(X, axis=-1)
-    X = (X - dmean[:, np.newaxis]) / stddev[:, np.newaxis]
-
+    dmean = X.mean(axis=0)
+    stddev = np.std(X, axis=0)
+    X = (X - dmean[np.newaxis, :]) / stddev[np.newaxis, :]
 
     pca = RandomizedPCA(n_components=n_components, whiten=whiten,
                         copy=True)
 
-    full_var = np.var(X, axis=1).sum()
-
-
     # -------------------------------------------
     # perform whitening
     # -------------------------------------------
-    whitened_data = pca.fit_transform(X.T)
+    whitened_data = pca.fit_transform(X)
 
 
     # -------------------------------------------
@@ -273,7 +270,8 @@ def whitening(data, npc=None, explainedVar=None):
     # -------------------------------------------
     if explainedVar:
         # compute explained variance manually
-        explained_variance_ratio_ = pca.explained_variance_ / full_var
+        explained_variance_ratio_ = pca.explained_variance_
+        explained_variance_ratio_ /= explained_variance_ratio_.sum()
         npc = np.sum(explained_variance_ratio_.cumsum() <= explainedVar)
     elif npc is None:
         npc = nchan

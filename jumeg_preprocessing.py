@@ -493,6 +493,10 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     '''
     Creates a performance image of the data before
     and after the cleaning process.
+
+    returns array of performance values:
+        perf_art_rej[0] --> performance related to cardiac artifacts
+        perf_art_rej[1] --> performance related to ocular artifacts
     '''
 
     from mne.preprocessing import find_ecg_events, find_eog_events
@@ -537,6 +541,8 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     # EOG
     if name_eog_ver in ch_names:
         nrange = 2
+
+    perf_art_rej = np.zeros(2)
 
     yFigSize = 6 * nrange
 
@@ -616,13 +622,15 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         pl.ylim(1.1 * ymin, 1.1 * ymax)
         # print some info
         #ToDo: would be nice to add info about ica.excluded
+
+        perf_art_rej[i] = calc_performance(raw_epochs_avg, cleaned_epochs_avg)
         if meg_clean_given:
             textstr1 = 'Performance: %d\nFrequency Correlation: %d'\
-                       % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
+                       % (perf_art_rej[i],
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg))
         else:
             textstr1 = 'Performance: %d\nFrequency Correlation: %d\n# ICs: %d\nExplained Var.: %d'\
-                       % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
+                       % (perf_art_rej[i],
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
                           ica.n_components_, ica.n_components*100)
 
@@ -636,6 +644,9 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     pl.savefig(fnout_fig + '.png', format='png')
     pl.close('performance image')
     pl.ion()
+
+    return perf_art_rej
+
 
 
 #######################################################
