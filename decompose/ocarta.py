@@ -694,7 +694,7 @@ class JuMEG_ocarta(object):
     def _get_thresh_ecg(self):
         return self._thresh_ca
 
-    thresh_ecg = property(_get_thresh_ecg, _get_thresh_ecg)
+    thresh_ecg = property(_get_thresh_ecg, _set_thresh_ecg)
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
