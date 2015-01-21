@@ -7,12 +7,11 @@
 #
 # License: Simplified BSD
 
-
-from .jumeg_preprocessing import (get_ics_cardiac, get_ics_ocular,
-                            plot_performance_artifact_rejection)
 import ctps
+
 from . import jumeg_preprocessing 
 from . import jumeg_math
 from . import jumeg_iomeg
 from . import jumeg_utils
+from . import jumeg_plot
 from .filter import jumeg_filter

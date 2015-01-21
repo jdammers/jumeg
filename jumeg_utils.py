@@ -9,6 +9,24 @@ import scipy as sci
 from mne.utils import logger
 
 
+def get_files_from_list(fin):
+    '''
+    Small utility to handle file lists.
+
+    fin: str or list
+
+    Returns: Files as iterables lists
+    '''
+    if isinstance(fin, list):
+        fout = fin
+    else:
+        if isinstance(fin, str):
+            fout = list([fin])
+        else:
+            fout = list(fin)
+    return fout
+
+
 def check_jumeg_standards(fnames):
     '''
     Checks for file name extension and provides information on type of file
