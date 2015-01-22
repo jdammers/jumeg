@@ -1,9 +1,13 @@
+'''
+Math functions for jumeg
+'''
+
 import numpy as np
 
 ##################################################
-# 
+#
 # Function to rescale data
-# 
+#
 ##################################################
 def rescale(data_arr, minval, maxval):
     """ Function to rescale an array to the desired range. """
@@ -19,13 +23,13 @@ def rescale(data_arr, minval, maxval):
 
 
 ##################################################
-# 
+#
 # Function to calculate the RMS-value
-# 
+#
 ##################################################
 def calc_rms(data, average=None, rmsmean=None):
-    ''' Calculate the rms value of the signal. 
-        Ported from Dr. J. Dammers IDL code. 
+    ''' Calculate the rms value of the signal.
+        Ported from Dr. J. Dammers IDL code.
     '''
     # check input
     sz      = np.shape(data)
@@ -80,3 +84,49 @@ def calc_tkeo(signal):
 
     # return results
     return tkeo
+
+
+#######################################################
+#
+#  calculate the performance of artifact rejection
+#
+#######################################################
+def calc_performance(evoked_raw, evoked_clean):
+    ''' Gives a measure of the performance of the artifact reduction.
+        Percentage value returned as output.
+    '''
+    from jumeg import jumeg_math as jmath
+
+    diff = evoked_raw.data - evoked_clean.data
+    rms_diff = jmath.calc_rms(diff, average=1)
+    rms_meg = jmath.calc_rms(evoked_raw.data, average=1)
+    arp = (rms_diff / rms_meg) * 100.0
+    return np.round(arp)
+
+
+#######################################################
+#
+#  calculate the frequency-correlation value
+#
+#######################################################
+def calc_frequency_correlation(evoked_raw, evoked_clean):
+
+    """
+    Function to estimate the frequency-correlation value
+    as introduced by Krishnaveni et al. (2006),
+    Journal of Neural Engineering.
+    """
+
+    # transform signal to frequency range
+    fft_raw = np.fft.fft(evoked_raw.data)
+    fft_cleaned = np.fft.fft(evoked_clean.data)
+
+    # get numerator
+    numerator = np.sum(np.abs(np.real(fft_raw) * np.real(fft_cleaned)) + \
+                       np.abs(np.imag(fft_raw) * np.imag(fft_cleaned)))
+
+    # get denominator
+    denominator = np.sqrt(np.sum(np.abs(fft_raw) ** 2) * \
+                          np.sum(np.abs(fft_cleaned) ** 2))
+
+    return np.round(numerator / denominator * 100.)

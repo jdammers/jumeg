@@ -1,8 +1,7 @@
 '''
-Utilities module
+Utilities module for jumeg
 '''
 import mne
-import sys
 import os
 import numpy as np
 import scipy as sci
@@ -53,10 +52,10 @@ def check_jumeg_standards(fnames):
         elif fname.split('-')[-1] == 'raw.fif':
             print 'Raw FIF file - Subject %s, Experiment %s, Data %s, Time %s, \
                    Trial number %s.' \
-                  %(fname.split('_')[0], fname.split('_')[1], fname.split('_')[2], \
+                  % (fname.split('_')[0], fname.split('_')[1], fname.split('_')[2], \
                     fname.split('_')[3], fname.split('_')[4])
             print 'Processing identifier in the file %s.' \
-                  %(fname.strip('-raw.fif').split('_')[-1])
+                  % (fname.strip('-raw.fif').split('_')[-1])
         elif fname.split('-')[-1] == 'ica.fif':
             print 'FIF file storing ICA session.'
         elif fname.split('-')[-1] == 'evoked.fif':
@@ -67,7 +66,7 @@ def check_jumeg_standards(fnames):
             print 'Empty room FIF file.'
         else:
             print 'No known file info available. Filename does not follow conventions.'
-        
+
         print 'Please verify if the information is correct and make the appropriate changes!'
     return
 
@@ -102,19 +101,19 @@ def get_sytem_type(info):
 
 def mark_bads_batch(subject_list, subjects_dir=None):
     '''
-    Opens all raw files ending with -raw.fif in subjects 
+    Opens all raw files ending with -raw.fif in subjects
     directory for marking bads.
 
     Parameters
     ----------
-    subject_list: List of subjects. 
-    subjects_dir: The subjects directory. If None, the default SUBJECTS_DIR 
+    subject_list: List of subjects.
+    subjects_dir: The subjects directory. If None, the default SUBJECTS_DIR
                   from environment will be considered.
 
     Output
     ------
     The raw files with bads marked are saved with _bcc (for bad channels checked)
-    added to the file name. 
+    added to the file name.
     '''
     for subj in subject_list:
         print "For subject %s"%(subj)
@@ -130,9 +129,10 @@ def mark_bads_batch(subject_list, subjects_dir=None):
                          '_bcc-raw.fif')
                 return
 
+
 def rescale_artifact_to_signal(signal, artifact):
-    ''' 
-    Rescales artifact (ECG/EOG) to signal for plotting purposes 
+    '''
+    Rescales artifact (ECG/EOG) to signal for plotting purposes
     For evoked data, pass signal.data.mean(axis=0) and
     artifact.data.mean(axis=0).
     '''
@@ -141,25 +141,28 @@ def rescale_artifact_to_signal(signal, artifact):
     rescaled_artifact = artifact * b + a
     return rescaled_artifact / 1e15
 
+
 def peak_counter(signal):
     ''' Simple peak counter using scipy argrelmax function. '''
     return sci.signal.argrelmax(signal)[0].shape
+
 
 def update_description(raw, comment):
     ''' Updates the raw description with the comment provided. '''
     raw.info['description'] = str(raw.info['description']) + ' ; ' + comment
 
+
 def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
-    ''' 
-    This function extracts specified duration of raw data 
+    '''
+    This function extracts specified duration of raw data
     and write it into a fif file.
     Five mins of data will be extracted by default.
 
     Parameters
     ----------
 
-    raw: Raw object. 
-    start_time: Time to extract data from in seconds. Default is 60.0 seconds. 
+    raw: Raw object.
+    start_time: Time to extract data from in seconds. Default is 60.0 seconds.
     stop_time: Time up to which data is to be extracted. Default is 360.0 seconds.
 
     '''
@@ -172,12 +175,13 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
     start_idx = raw.time_as_index(start_time)
     stop_idx = raw.time_as_index(stop_time)
     data, times = raw[:, start_idx:stop_idx]
-    raw._data,raw._times = data, times
+    raw._data, raw._times = data, times
     dur = int((stop_time - start_time) / 60)
     raw.save(raw.info['filename'].split('/')[-1].split('.')[0]+'_'+str(dur)+'m.fif')
     # For the moment, simply warn.
     logger.warning('The file name is not saved in standard form.')
     return
+
 
 ##################################################
 #
@@ -201,7 +205,7 @@ def shuffle_data (data_trials, seed=None):
 
     # shuffle all phase entries
     dt = data_trials.flatten()
-    np.random.shuffle(dt)       
+    np.random.shuffle(dt)
     dt = dt.reshape(ntrials,nsamples)
 
     return dt
@@ -231,19 +235,20 @@ def shift_data (data_trials, seed=None):
     dt = np.zeros((ntrials, nsamples), dtype=data_trials.dtype)
     shift = np.random.permutation(np.arange(ntrials))
     for itrial in range(ntrials):
-        dt[itrial,:] = np.roll(data_trials[itrial,:], shift[itrial]) 
+        dt[itrial,:] = np.roll(data_trials[itrial,:], shift[itrial])
 
     return dt
 
+
 #######################################################
-#                                                     
+#
 # make surrogates from Epochs
-#                                                     
+#
 #######################################################
 def make_surrogates_epochs(epochs, check_power=False):
-    ''' 
+    '''
     Make surrogate epochs using sklearn. Destroy time-phase relationship for each trial.
-    
+
     Parameters
     ----------
     Epochs Object.
@@ -257,20 +262,20 @@ def make_surrogates_epochs(epochs, check_power=False):
     surrogate = epochs.copy()
     surr = surrogate.get_data()
     for trial in range(len(surrogate)):
-        for channel in range(len(surrogate.ch_names)):            
+        for channel in range(len(surrogate.ch_names)):
             rng = check_random_state(channel)
             order = np.argsort(rng.randn(len(surrogate.times)))
             surr[trial, channel, :] = surr[trial, channel, order]
     surrogate._data = surr
     if (check_power):
-        ps1 = np.abs(np.fft.fft(surr))**2
-        ps2 = np.abs(np.fft.fft(epochs.get_data()))**2
+        ps1 = np.abs(np.fft.fft(surr)) ** 2
+        ps2 = np.abs(np.fft.fft(epochs.get_data())) ** 2
         assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
 
     return surrogate
-    
+
 # def make_surrogates_epoch_numpy(epochs):
-#     ''' 
+#     '''
 #     Make surrogate epochs by simply shuffling. Destroy time-phase relationship for each trial.
     
 #     Parameters
@@ -294,9 +299,9 @@ def make_surrogates_epochs(epochs, check_power=False):
 
 
 #######################################################
-#                                                     
+#
 # make surrogates CTPS phase trials
-#                                                     
+#
 #######################################################
 def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4, 
                         verbose=None):
@@ -308,7 +313,7 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
     phase_trial : 4d ndarray of dimension [nfreqs x ntrials x nchan x nsamples]
 
     Optional:
-    nrepeat: 
+    nrepeat:
 
     mode: 2 different modi are allowed.
         'mode=shuffle' whill randomly shuffle the phase values. This is the default
@@ -329,22 +334,22 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
     nfreq, ntrials, nsources, nsamples  = phase_array.shape
     pk = np.zeros((nfreq,nrepeat,nsources, nsamples), dtype='float32')
 
-    # create surrogates:  parallised over nrepeats 
+    # create surrogates:  parallised over nrepeats
     parallel, my_kuiper, _ = parallel_func(kuiper, n_jobs, verbose=verbose)
     for ifreq in range(nfreq):
         for isource in range(nsources):
-            #print ">>> working on frequency: ",bp[ifreq,:],"   source: ",isource+1  
-            print ">>> working on frequency range: ",ifreq+1,"   source: ",isource+1  
-            pt = phase_array[ifreq, :, isource, :]  # extract [ntrials, nsamp]   
+            #print ">>> working on frequency: ",bp[ifreq,:],"   source: ",isource+1
+            print ">>> working on frequency range: ",ifreq+1,"   source: ",isource+1
+            pt = phase_array[ifreq, :, isource, :]  # extract [ntrials, nsamp]
 
             if(mode=='shuffle'):
                 # shuffle phase values for all repititions
                 pt_s = Parallel(n_jobs=n_jobs, verbose=0)(delayed(shuffle_data)
-                    (pt) for i in range(nrepeat)) 
-            else: 
+                    (pt) for i in range(nrepeat))
+            else:
                 # shift all phase values for all repititions
                 pt_s = Parallel(n_jobs=n_jobs, verbose=0)(delayed(shift_data)
-                    (pt) for i in range(nrepeat)) 
+                    (pt) for i in range(nrepeat))
 
             # calculate Kuiper's statistics for each phase array
             out = parallel(my_kuiper(i) for i in pt_s)
@@ -358,24 +363,24 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
 
 
 #######################################################
-#                                                     
+#
 # calc stats on CTPS surrogates
-#                                                     
+#
 #######################################################
 def get_stats_surrogates_ctps(pksarr, verbose=False):
-    ''' calculates some stats on the CTPS pk values obtain from surrogate tests. 
+    ''' calculates some stats on the CTPS pk values obtain from surrogate tests.
 
     Parameters
     ----------
     pksarr : 4d ndarray of dimension [nfreq x nrepeat x nsources x nsamples]
 
     Optional:
-    verbose:  print some information on stdout 
+    verbose:  print some information on stdout
 
 
     Returns
     -------
-    stats : stats info stored in a python dictionary 
+    stats : stats info stored in a python dictionary
 
     '''
 
@@ -383,25 +388,25 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
     import numpy as np
 
     nfreq, nrepeat, nsources, nsamples = pksarr.shape
-    pks = np.reshape(pksarr, (nfreq, nrepeat*nsources*nsamples))  # [nsource * nrepeat, nbp]
+    pks = np.reshape(pksarr, (nfreq, nrepeat*nsources*nsamples)) # [nsource * nrepeat, nbp]
 
     # stats for each frequency band
     pks_max = pks.max(axis=1)
     pks_min = pks.min(axis=1)
     pks_mean = pks.mean(axis=1)
     pks_std = pks.std(axis=1)
-   
+
     # global stats
     pks_max_global = pks.max()
     pks_min_global = pks.min()
     pks_mean_global = pks.mean()
     pks_std_global = pks.std()
 
-    pks_pct99_global = np.percentile(pksarr,99)
+    pks_pct99_global = np.percentile(pksarr, 99)
 
     # collect info and store into dictionary
     stats = {
-        'path':  os.getcwd(),
+        'path': os.getcwd(),
         'fname': 'CTPS surrogates',
         'nrepeat': nrepeat,
         'nfreq': nfreq,
@@ -424,10 +429,241 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
         print '>>> Stats from CTPS surrogates <<<'
         for i in range(nfreq):
             #print ">>> filter raw data: %0.1f - %0.1f..." % (flow, fhigh)
-            print 'freq: ',i+1,'max/mean/std: ', pks_max[i], pks_mean[i], pks_std[i]  
-        print    
+            print 'freq: ',i+1,'max/mean/std: ', pks_max[i], pks_mean[i], pks_std[i]
+        print
         print 'overall stats:'
-        print 'max/mean/std: ', pks_global_max, pks_global_mean, pks_global_std          
-        print '99th percentile: ', pks_global_pct99 
+        print 'max/mean/std: ', pks_global_max, pks_global_mean, pks_global_std
+        print '99th percentile: ', pks_global_pct99
 
     return stats
+
+
+###########################################################
+#
+# These functions copied from NIPY (http://nipy.org/nitime)
+#
+###########################################################
+def threshold_arr(cmat, threshold=0.0, threshold2=None):
+    """Threshold values from the input array.
+
+    Parameters
+    ----------
+    cmat : array
+
+    threshold : float, optional.
+      First threshold.
+
+    threshold2 : float, optional.
+      Second threshold.
+
+    Returns
+    -------
+    indices, values: a tuple with ndim+1
+
+    Examples
+    --------
+    >>> np.set_printoptions(precision=4)  # For doctesting
+    >>> a = np.linspace(0,0.2,5)
+    >>> a
+    array([ 0.  ,  0.05,  0.1 ,  0.15,  0.2 ])
+    >>> threshold_arr(a,0.1)
+    (array([3, 4]), array([ 0.15,  0.2 ]))
+
+    With two thresholds:
+    >>> threshold_arr(a,0.1,0.2)
+    (array([0, 1]), array([ 0.  ,  0.05]))
+    """
+    # Select thresholds
+    if threshold2 is None:
+        th_low = -np.inf
+        th_hi = threshold
+    else:
+        th_low = threshold
+        th_hi = threshold2
+
+    # Mask out the values we are actually going to use
+    idx = np.where((cmat < th_low) | (cmat > th_hi))
+    vals = cmat[idx]
+
+    return idx + (vals,)
+
+
+def thresholded_arr(arr, threshold=0.0, threshold2=None, fill_val=np.nan):
+    """Threshold values from the input matrix and return a new matrix.
+
+    Parameters
+    ----------
+    arr : array
+
+    threshold : float
+      First threshold.
+
+    threshold2 : float, optional.
+      Second threshold.
+
+    Returns
+    -------
+    An array shaped like the input, with the values outside the threshold
+    replaced with fill_val.
+
+    Examples
+    --------
+    """
+    a2 = np.empty_like(arr)
+    a2.fill(fill_val)
+    mth = threshold_arr(arr, threshold, threshold2)
+    idx, vals = mth[:-1], mth[-1]
+    a2[idx] = vals
+
+    return a2
+
+
+def rescale_arr(arr, amin, amax):
+    """Rescale an array to a new range.
+
+    Return a new array whose range of values is (amin,amax).
+
+    Parameters
+    ----------
+    arr : array-like
+
+    amin : float
+      new minimum value
+
+    amax : float
+      new maximum value
+
+    Examples
+    --------
+    >>> a = np.arange(5)
+
+    >>> rescale_arr(a,3,6)
+    array([ 3.  ,  3.75,  4.5 ,  5.25,  6.  ])
+    """
+
+    # old bounds
+    m = arr.min()
+    M = arr.max()
+    # scale/offset
+    s = float(amax - amin) / (M - m)
+    d = amin - s * m
+
+    # Apply clip before returning to cut off possible overflows outside the
+    # intended range due to roundoff error, so that we can absolutely guarantee
+    # that on output, there are no values > amax or < amin.
+    return np.clip(s * arr + d, amin, amax)
+
+
+def mask_indices(n, mask_func, k=0):
+    """Return the indices to access (n,n) arrays, given a masking function.
+
+    Assume mask_func() is a function that, for a square array a of size (n,n)
+    with a possible offset argument k, when called as mask_func(a,k) returns a
+    new array with zeros in certain locations (functions like triu() or tril()
+    do precisely this).  Then this function returns the indices where the
+    non-zero values would be located.
+
+    Parameters
+    ----------
+    n : int
+      The returned indices will be valid to access arrays of shape (n,n).
+
+    mask_func : callable
+      A function whose api is similar to that of numpy.tri{u,l}.  That is,
+      mask_func(x,k) returns a boolean array, shaped like x.  k is an optional
+      argument to the function.
+
+    k : scalar
+      An optional argument which is passed through to mask_func().  Functions
+      like tri{u,l} take a second argument that is interpreted as an offset.
+
+    Returns
+    -------
+    indices : an n-tuple of index arrays.
+      The indices corresponding to the locations where mask_func(ones((n,n)),k)
+      is True.
+
+    Examples
+    --------
+    These are the indices that would allow you to access the upper triangular
+    part of any 3x3 array:
+    >>> iu = mask_indices(3,np.triu)
+
+    For example, if `a` is a 3x3 array:
+    >>> a = np.arange(9).reshape(3,3)
+    >>> a
+    array([[0, 1, 2],
+           [3, 4, 5],
+           [6, 7, 8]])
+
+    Then:
+    >>> a[iu]
+    array([0, 1, 2, 4, 5, 8])
+
+    An offset can be passed also to the masking function.  This gets us the
+    indices starting on the first diagonal right of the main one:
+    >>> iu1 = mask_indices(3,np.triu,1)
+
+    with which we now extract only three elements:
+    >>> a[iu1]
+    array([1, 2, 5])
+    """
+    m = np.ones((n, n), int)
+    a = mask_func(m, k)
+    return np.where(a != 0)
+
+
+def triu_indices(n, k=0):
+    """Return the indices for the upper-triangle of an (n,n) array.
+
+    Parameters
+    ----------
+    n : int
+      Sets the size of the arrays for which the returned indices will be valid.
+
+    k : int, optional
+      Diagonal offset (see triu() for details).
+
+    Examples
+    --------
+    Commpute two different sets of indices to access 4x4 arrays, one for the
+    upper triangular part starting at the main diagonal, and one starting two
+    diagonals further right:
+
+    >>> iu1 = triu_indices(4)
+    >>> iu2 = triu_indices(4,2)
+
+    Here is how they can be used with a sample array:
+    >>> a = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]])
+    >>> a
+    array([[ 1,  2,  3,  4],
+           [ 5,  6,  7,  8],
+           [ 9, 10, 11, 12],
+           [13, 14, 15, 16]])
+
+    Both for indexing:
+    >>> a[iu1]
+    array([ 1,  2,  3,  4,  6,  7,  8, 11, 12, 16])
+
+    And for assigning values:
+    >>> a[iu1] = -1
+    >>> a
+    array([[-1, -1, -1, -1],
+           [ 5, -1, -1, -1],
+           [ 9, 10, -1, -1],
+           [13, 14, 15, -1]])
+
+    These cover almost the whole array (two diagonals right of the main one):
+    >>> a[iu2] = -10
+    >>> a
+    array([[ -1,  -1, -10, -10],
+           [  5,  -1,  -1, -10],
+           [  9,  10,  -1,  -1],
+           [ 13,  14,  15,  -1]])
+
+    See also
+    --------
+    - tril_indices : similar function, for lower-triangular.
+    - mask_indices : generic function accepting an arbitrary mask function.
+    """
+    return mask_indices(n, np.triu, k)

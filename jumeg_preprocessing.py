@@ -12,7 +12,7 @@ from jumeg.jumeg_plot import (plot_average, plot_performance_artifact_rejection,
 
 #################################################################
 #
-# filename conventions 
+# filename conventions
 #
 # >>> I assume that this will be provided in a different way <<<
 # >>> probably by Frank's new routines (?) <<<
@@ -25,7 +25,7 @@ ext_clean = ',ar-raw.fif'
 ext_icap = ',ica-performance'     # figure extension provided by the routine
 ext_empty_raw = '-empty.fif'
 ext_empty_cov = ',empty-cov.fif'
-prefix_filt = ',fibp'             # for now bp only 
+prefix_filt = ',fibp'             # for now bp only
 prefix_ctps = ',ctpsbr-'        # e.g.: "...,ica,ctps-trigger.npy"
 
 
@@ -155,7 +155,8 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
         print ">>>> perform ICA signal decomposition on :  " + name
         # load filtered data
         raw = mne.io.Raw(fname, preload=True)
-        picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
+        picks = mne.pick_types(raw.info, meg=True, ref_meg=False,
+                               exclude='bads')
         # ICA decomposition
         ica = ICA(method=ica_method, n_components=n_components,
                   max_pca_components=None)
@@ -187,7 +188,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
     # loop across all filenames
     for fnica in fnlist:
         name = os.path.split(fnica)[1]
-        #basename = fnica[0:len(fnica)-4]
+        # basename = fnica[0:len(fnica)-4]
         basename = fnica[:fnica.rfind(ext_ica)]
         fnfilt = basename + ext_raw
         fnclean = basename + ext_clean
@@ -197,7 +198,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 
         # load filtered data
         meg_raw = mne.io.Raw(fnfilt, preload=True)
-        picks = mne.pick_types(meg_raw.info, meg=True, ref_meg=False, exclude='bads')
+        picks = mne.pick_types(meg_raw.info, meg=True, ref_meg=False,
+                               exclude='bads')
         # ICA decomposition
         ica = mne.preprocessing.read_ica(fnica)
 
@@ -401,53 +403,6 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
 
 #######################################################
 #
-#  calculate the performance of artifact rejection
-#
-#######################################################
-def calc_performance(evoked_raw, evoked_clean):
-    ''' Gives a measure of the performance of the artifact reduction.
-        Percentage value returned as output.
-    '''
-    from jumeg import jumeg_math as jmath
-
-    diff = evoked_raw.data - evoked_clean.data
-    rms_diff = jmath.calc_rms(diff, average=1)
-    rms_meg = jmath.calc_rms(evoked_raw.data, average=1)
-    arp = (rms_diff / rms_meg) * 100.0
-    return np.round(arp)
-
-
-#######################################################
-#
-#  calculate the frequency-correlation value
-#
-#######################################################
-def calc_frequency_correlation(evoked_raw, evoked_clean):
-
-    """
-    Function to estimate the frequency-correlation value
-    as introduced by Krishnaveni et al. (2006),
-    Journal of Neural Engineering.
-    """
-
-    # transform signal to frequency range
-    fft_raw = np.fft.fft(evoked_raw.data)
-    fft_cleaned = np.fft.fft(evoked_clean.data)
-
-    # get numerator
-    numerator = np.sum(np.abs(np.real(fft_raw) * np.real(fft_cleaned)) + \
-                       np.abs(np.imag(fft_raw) * np.imag(fft_cleaned)))
-
-    # get denominator
-    denominator = np.sqrt(np.sum(np.abs(fft_raw) ** 2) * \
-                          np.sum(np.abs(fft_cleaned) ** 2))
-
-    return np.round(numerator/denominator * 100.)
-
-
-
-#######################################################
-#
 #  apply CTPS (for brain responses)
 #
 #######################################################
@@ -578,10 +533,10 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 #
 #######################################################
 def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
-    mode='shuffle', save=True):
+                          mode='shuffle', save=True):
 
     ''' 
-    Perform CTPS surrogate tests to estimate the significance level 
+    Perform CTPS surrogate tests to estimate the significance level
     for CTPS anaysis (a proper pK value ist estimated).
 
     It is most likely that the statistical reliability of this test
@@ -615,7 +570,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
     # loop across all filenames
     ifile = 1
     sep = '=========================================================================='
-    info = [sep,'#','# Statistical analysis on CTPS surrogates','#',sep]  
+    info = [sep,'#','# Statistical analysis on CTPS surrogates','#',sep]
     for fnctps in fnlist:
         path = os.path.dirname(fnctps)
         basename = os.path.basename(fnctps)
@@ -676,7 +631,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
             pks_all = pks.flatten()
         ifile += 1
 
-    if (ifile > 1):        
+    if (ifile > 1):
         info.append(sep)
         info.append('#')
         info.append('# stats across all files:')
@@ -784,7 +739,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
     ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files.
         fname_clean_raw: raw data after ECG and EOG rejection.
         n_pca_commonents: ICA's recomposition parameter.
-        conditions: the event kind to recompose the raw data, it can be 'trigger', 
+        conditions: the event kind to recompose the raw data, it can be 'trigger',
                     'response' or include both conditions.
     '''
 
@@ -831,8 +786,6 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
                                               responses only.'
         meg_clean.save(fnclean_eve, overwrite=True)
         plot_compare_brain_responses(fname_clean_raw, fnclean_eve)
-
-
 
 
 #######################################################
@@ -899,4 +852,3 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
 
         # write noise-covariance matrix to disk
         write_cov(fn_out, noise_cov_mat)
-

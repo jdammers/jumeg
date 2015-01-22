@@ -1,17 +1,21 @@
+'''
+Plotting functions for jumeg.
+'''
 import os
 import numpy as np
 import matplotlib.pylab as pl
+import matplotlib.ticker as ticker
 import mne
-from jumeg.jumeg_utils import get_files_from_list
+from mpl_toolkits.axes_grid import make_axes_locatable
+from jumeg.jumeg_utils import (get_files_from_list, thresholded_arr,
+                               triu_indices)
 from jumeg.jumeg_base import jumeg_base
+from jumeg_math import (calc_performance,
+                        calc_frequency_correlation)
 
-#################################################################
-#
-# plot_powerspectrum
-#
-#################################################################
-def plot_powerspectrum(fname,raw=None,picks=None,dir_plots="plots",
-                       tmin=None,tmax=None,fmin=0.0,fmax=450.0,n_fft=4096):
+
+def plot_powerspectrum(fname, raw=None, picks=None, dir_plots="plots",
+                       tmin=None, tmax=None, fmin=0.0, fmax=450.0, n_fft=4096):
         '''
 
         '''
@@ -22,37 +26,32 @@ def plot_powerspectrum(fname,raw=None,picks=None,dir_plots="plots",
 
         if raw is None:
             assert os.path.isfile(fname), 'ERROR: file not found: ' + fname
-            raw = mne.io.Raw(fname,preload=True)
+            raw = mne.io.Raw(fname, preload=True)
 
-        if picks is None :
+        if picks is None:
             picks = jumeg_base.pick_meg_nobads(raw)
 
-        dir_plots  = os.path.join( os.path.dirname(fname),dir_plots )
+        dir_plots = os.path.join(os.path.dirname(fname), dir_plots)
         base_fname = os.path.basename(fname).strip('.fif')
 
         mkpath(dir_plots)
 
         file_name = fname.split('/')[-1]
-        fnfig = dir_plots +'/'+ base_fname + '-psds.png'
+        fnfig = dir_plots + '/' + base_fname + '-psds.png'
 
         pl.figure()
         pl.title('PSDS ' + file_name)
         ax = pl.axes()
-        fig = raw.plot_psds(fmin=fmin,fmax=fmax,n_fft=n_fft,n_jobs=1,proj=False,ax=ax,
-                            color=(0, 0, 1),picks=picks, area_mode='range')
+        fig = raw.plot_psds(fmin=fmin, fmax=fmax, n_fft=n_fft, n_jobs=1, proj=False, ax=ax,
+                            color=(0, 0, 1), picks=picks, area_mode='range')
         pl.ioff()
-        #pl.ion()
+        # pl.ion()
         fig.savefig(fnfig)
         pl.close()
 
         return fname
 
 
-#######################################################
-#
-#  plot average from a list of files
-#
-#######################################################
 def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
 
     ''' Plot Signal average from a list of averaged files. '''
@@ -86,12 +85,6 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
     pl.ion()  # switch on (interactive) plot visualisation
 
 
-#######################################################
-#
-#  make/save plots to show the performance
-#            of the ICA artifact rejection
-#
-#######################################################
 def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
                                         meg_clean=None, show=False,
                                         proj=False, verbose=False):
@@ -143,11 +136,11 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     if name_eog_ver in ch_names:
         nrange = 2
 
-    yFigSize = 6 * nrange
+    y_figsize = 6 * nrange
 
     # ToDo:  How can we avoid popping up the window if show=False ?
     pl.ioff()
-    pl.figure('performance image', figsize=(12, yFigSize))
+    pl.figure('performance image', figsize=(12, y_figsize))
     pl.clf()
 
     # ECG, EOG:  loop over all artifact events
@@ -156,7 +149,8 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         if i == 0:
             baseline = (None, None)
             event_id = event_id_ecg
-            idx_event, _, _ = find_ecg_events(meg_raw, event_id, ch_name=name_ecg,
+            idx_event, _, _ = find_ecg_events(meg_raw, event_id,
+                                              ch_name=name_ecg,
                                               verbose=verbose)
             idx_ref_chan = meg_raw.ch_names.index(name_ecg)
             tmin = tmin_ecg
@@ -180,11 +174,14 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
 
         # average the signals
         raw_epochs = mne.Epochs(meg_raw, idx_event, event_id, tmin, tmax,
-                                picks=picks, baseline=baseline, proj=proj, verbose=verbose)
+                                picks=picks, baseline=baseline, proj=proj,
+                                verbose=verbose)
         cleaned_epochs = mne.Epochs(meg_clean, idx_event, event_id, tmin, tmax,
-                                    picks=picks, baseline=baseline, proj=proj, verbose=verbose)
-        ref_epochs = mne.Epochs(meg_raw, idx_event, event_id, tmin, tmax, picks=[idx_ref_chan],
-                                baseline=baseline, proj=proj, verbose=verbose)
+                                    picks=picks, baseline=baseline, proj=proj,
+                                    verbose=verbose)
+        ref_epochs = mne.Epochs(meg_raw, idx_event, event_id, tmin, tmax,
+                                picks=[idx_ref_chan], baseline=baseline,
+                                proj=proj, verbose=verbose)
 
         raw_epochs_avg = raw_epochs.average()
         cleaned_epochs_avg = cleaned_epochs.average()
@@ -220,7 +217,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         pl.xlim(times[0], times[len(times) - 1])
         pl.ylim(1.1 * ymin, 1.1 * ymax)
         # print some info
-        #ToDo: would be nice to add info about ica.excluded
+        # ToDo: would be nice to add info about ica.excluded
         if meg_clean_given:
             textstr1 = 'Performance: %d\nFrequency Correlation: %d'\
                        % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
@@ -229,7 +226,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
             textstr1 = 'Performance: %d\nFrequency Correlation: %d\n# ICs: %d\nExplained Var.: %d'\
                        % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
-                          ica.n_components_, ica.n_components*100)
+                          ica.n_components_, ica.n_components * 100)
 
         pl.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
                 verticalalignment='top', bbox=props)
@@ -243,11 +240,6 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     pl.ion()
 
 
-#######################################################
-#
-#  Plot and compare recomposed brain response data only.
-#
-#######################################################
 def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
                                  tmin=-0.2, tmax=0.5, stim_name=None,
                                  proj=False, show=False):
@@ -267,9 +259,9 @@ def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
         pl.ion()
 
     # Get the stimulus channel for special event from the fname_new
-    #make a judgment, whether this raw data include more than one kind of event.
-    #if True, use the first event as the start point of the epoches.
-    #Adjust the size of the time window based on different connditions
+    # make a judgment, whether this raw data include more than one kind of event.
+    # if True, use the first event as the start point of the epoches.
+    # Adjust the size of the time window based on different connditions
     basename = fname_new.split('-raw.fif')[0]
 
     # if stim_name is given we assume that the input data are raw and
@@ -343,3 +335,169 @@ def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
     pl.savefig(fnout_fig, format='png')
     pl.close('Compare raw data')
     pl.ion()
+
+
+###########################################################
+#
+# These functions copied from NIPY (http://nipy.org/nitime)
+#
+###########################################################
+def drawmatrix_channels(in_m, channel_names=None, fig=None, x_tick_rot=0,
+                        size=None, cmap=pl.cm.RdBu_r, colorbar=True,
+                        color_anchor=None, title=None):
+    r"""Creates a lower-triangle of the matrix of an nxn set of values. This is
+    the typical format to show a symmetrical bivariate quantity (such as
+    correlation or coherence between two different ROIs).
+
+    Parameters
+    ----------
+
+    in_m: nxn array with values of relationships between two sets of rois or
+    channels
+
+    channel_names (optional): list of strings with the labels to be applied to
+    the channels in the input. Defaults to '0','1','2', etc.
+
+    fig (optional): a matplotlib figure
+
+    cmap (optional): a matplotlib colormap to be used for displaying the values
+    of the connections on the graph
+
+    title (optional): string to title the figure (can be like '$\alpha$')
+
+    color_anchor (optional): determine the mapping from values to colormap
+        if None, min and max of colormap correspond to min and max of in_m
+        if 0, min and max of colormap correspond to max of abs(in_m)
+        if (a,b), min and max of colormap correspond to (a,b)
+
+    Returns
+    -------
+
+    fig: a figure object
+
+    """
+    N = in_m.shape[0]
+    ind = np.arange(N)  # the evenly spaced plot indices
+
+    def channel_formatter(x, pos=None):
+        thisind = np.clip(int(x), 0, N - 1)
+        return channel_names[thisind]
+
+    if fig is None:
+        fig = pl.figure()
+
+    if size is not None:
+
+        fig.set_figwidth(size[0])
+        fig.set_figheight(size[1])
+
+    w = fig.get_figwidth()
+    h = fig.get_figheight()
+
+    ax_im = fig.add_subplot(1, 1, 1)
+
+    #If you want to draw the colorbar:
+    if colorbar:
+        divider = make_axes_locatable(ax_im)
+        ax_cb = divider.new_vertical(size="10%", pad=0.1, pack_start=True)
+        fig.add_axes(ax_cb)
+
+    #Make a copy of the input, so that you don't make changes to the original
+    #data provided
+    m = in_m.copy()
+
+    #Null the upper triangle, so that you don't get the redundant and the
+    #diagonal values:
+    idx_null = triu_indices(m.shape[0])
+    m[idx_null] = np.nan
+
+    #Extract the minimum and maximum values for scaling of the
+    #colormap/colorbar:
+    max_val = np.nanmax(m)
+    min_val = np.nanmin(m)
+
+    if color_anchor is None:
+        color_min = min_val
+        color_max = max_val
+    elif color_anchor == 0:
+        bound = max(abs(max_val), abs(min_val))
+        color_min = -bound
+        color_max = bound
+    else:
+        color_min = color_anchor[0]
+        color_max = color_anchor[1]
+
+    #The call to imshow produces the matrix plot:
+    im = ax_im.imshow(m, origin='upper', interpolation='nearest',
+                      vmin=color_min, vmax=color_max, cmap=cmap)
+
+    #Formatting:
+    ax = ax_im
+    ax.grid(True)
+    #Label each of the cells with the row and the column:
+    if channel_names is not None:
+        for i in range(0, m.shape[0]):
+            if i < (m.shape[0] - 1):
+                ax.text(i - 0.3, i, channel_names[i], rotation=x_tick_rot)
+            if i > 0:
+                ax.text(-1, i + 0.3, channel_names[i],
+                        horizontalalignment='right')
+
+        ax.set_axis_off()
+        ax.set_xticks(np.arange(N))
+        ax.xaxis.set_major_formatter(ticker.FuncFormatter(channel_formatter))
+        fig.autofmt_xdate(rotation=x_tick_rot)
+        ax.set_yticks(np.arange(N))
+        ax.set_yticklabels(channel_names)
+        ax.set_ybound([-0.5, N - 0.5])
+        ax.set_xbound([-0.5, N - 1.5])
+
+    #Make the tick-marks invisible:
+    for line in ax.xaxis.get_ticklines():
+        line.set_markeredgewidth(0)
+
+    for line in ax.yaxis.get_ticklines():
+        line.set_markeredgewidth(0)
+
+    ax.set_axis_off()
+
+    if title is not None:
+        ax.set_title(title)
+
+    #The following produces the colorbar and sets the ticks
+    if colorbar:
+        #Set the ticks - if 0 is in the interval of values, set that, as well
+        #as the maximal and minimal values:
+        if min_val < 0:
+            ticks = [color_min, min_val, 0, max_val, color_max]
+        #Otherwise - only set the minimal and maximal value:
+        else:
+            ticks = [color_min, min_val, max_val, color_max]
+
+        #This makes the colorbar:
+        cb = fig.colorbar(im, cax=ax_cb, orientation='horizontal',
+                          cmap=cmap,
+                          norm=im.norm,
+                          boundaries=np.linspace(color_min, color_max, 256),
+                          ticks=ticks,
+                          format='%.2f')
+
+    # Set the current figure active axis to be the top-one, which is the one
+    # most likely to be operated on by users later on
+    fig.sca(ax)
+
+    return fig
+
+
+def draw_matrix(mat, th1=None, th2=None, clim=None, cmap=None):
+    """Draw a matrix, optionally thresholding it.
+    """
+    if th1 is not None:
+        m2 = thresholded_arr(mat, th1, th2)
+    else:
+        m2 = mat
+    ax = pl.matshow(m2, cmap=cmap)
+    if clim is not None:
+        ax.set_clim(*clim)
+    pl.colorbar()
+    return ax
