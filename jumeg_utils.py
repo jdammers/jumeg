@@ -183,17 +183,19 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
 #
 ##################################################
 def shuffle_data (data_trials, seed=None):
-    ''' Shuffling the time information (phase) of any data array
+    '''
+    Shuffling the time points of any data array.
+    WARNING: This function simply reorders the time points and does not
+    perform shuffling of the phases.
+
     Parameters
     ----------
     data_trials : 2d ndarray of dimension [ntrials x nsamples]
                   In each trial samples are randomly shuffled
     Returns
     -------
-    s_trial : shuffled (phase) trials
-
+    s_trial : shuffled (time points only) trials
     '''
-
     np.random.seed(seed=None)   # for parallel processing => re-initialized
     ntrials, nsamples = data_trials.shape
 
@@ -211,7 +213,11 @@ def shuffle_data (data_trials, seed=None):
 #
 ##################################################
 def shift_data(data_trials, seed=None):
-    ''' Shuffling the time information (phase) of any data array
+    '''
+    Shuffling the time points of any data array.
+    WARNING: This function simply shifts the time points and does not
+    perform shuffling of the phases in the frequency domain.
+
     Parameters
     ----------
     data_trials : 2d ndarray of dimension [ntrials x nsamples]
@@ -220,7 +226,6 @@ def shift_data(data_trials, seed=None):
     Returns
     -------
     s_trial : shuffled (phase) trials
-
     '''
 
     np.random.seed(seed=None)   # for parallel processing => re-initialized
@@ -242,8 +247,9 @@ def shift_data(data_trials, seed=None):
 #######################################################
 def make_surrogates_epochs(epochs, check_power=False):
     '''
-    Make surrogate epochs using sklearn. Destroy time-phase relationship for each trial.
-    
+    Make surrogate epochs using sklearn. Destroy each trial by shuffling the time points only.
+    The shuffling is performed in the time domain only.
+
     Parameters
     ----------
     Epochs Object.
@@ -265,9 +271,38 @@ def make_surrogates_epochs(epochs, check_power=False):
     if (check_power):
         ps1 = np.abs(np.fft.fft(surr)) ** 2
         ps2 = np.abs(np.fft.fft(epochs.get_data())) ** 2
-        assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
+        assert np.array_equal(ps1, ps2), 'The power content does not match. Error.'
 
     return surrogate
+
+
+def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
+    '''
+    Make surrogate epochs using sklearn. Destroy phase information in each trial by randomization.
+    The phases values are randomized in teh frequency domain.
+
+    Parameters
+    ----------
+    Epochs Object.
+
+    Output
+    ------
+    Surrogate Epochs object
+    '''
+
+    surrogate = epochs.copy()
+    surr = surrogate.get_data()
+    for trial in range(len(surrogate)):
+        for channel in range(len(surrogate.ch_names)):
+            surr[trial, channel, :] = randomize_phase(surr[trial, channel, :], random_state=channel)
+    surrogate._data = surr
+    if (check_power):
+        ps1 = np.abs(np.fft.fft(surr)) ** 2
+        ps2 = np.abs(np.fft.fft(epochs.get_data())) ** 2
+        assert np.array_equal(ps1, ps2), 'The power content does not match. Error.'
+
+    return surrogate
+
     
 # def make_surrogates_epoch_numpy(epochs):
 #     '''
@@ -289,7 +324,7 @@ def make_surrogates_epochs(epochs, check_power=False):
 #     surrogate._data = surr
 #     ps1 = np.abs(np.fft.fft(surr))**2
 #     ps2 = np.abs(np.fft.fft(epochs.get_data()))**2
-#     assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
+#     assert np.aray_equal(ps1, ps2), 'The power content does not match. Error.'
 #     return surrogate
 
 
@@ -661,3 +696,93 @@ def triu_indices(n, k=0):
     - mask_indices : generic function accepting an arbitrary mask function.
     """
     return mask_indices(n, np.triu, k)
+
+
+# Function obtained from scot (https://github.com/scot-dev/scot)
+# Used to randomize the phase values of a signal.
+def randomize_phase(data, random_state=None):
+    '''
+    Phase randomization.
+
+    This function randomizes the input array's spectral phase along the first dimension.
+
+    Parameters
+    ----------
+    data : array_like
+        Input array
+
+    Returns
+    -------
+    out : ndarray
+        Array of same shape as `data`.
+
+    Notes
+    -----
+    The algorithm randomizes the phase component of the input's complex fourier transform.
+
+    Examples
+    --------
+    .. plot::
+        :include-source:
+
+        from pylab import *
+        from scot.datatools import randomize_phase
+        np.random.seed(1234)
+        s = np.sin(np.linspace(0,10*np.pi,1000)).T
+        x = np.vstack([s, np.sign(s)]).T
+        y = randomize_phase(x)
+        subplot(2,1,1)
+        title('Phase randomization of sine wave and rectangular function')
+        plot(x), axis([0,1000,-3,3])
+        subplot(2,1,2)
+        plot(y), axis([0,1000,-3,3])
+        plt.show()
+    '''
+    from sklearn.utils import check_random_state
+    data = np.asarray(data)
+    data_freq = np.fft.rfft(data, axis=0)
+    rng = check_random_state(random_state)
+    data_freq = np.abs(data_freq) * np.exp(1j * rng.random_sample(data_freq.shape) * 2 * np.pi)
+    return np.fft.irfft(data_freq, data.shape[0], axis=0)
+
+
+def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False, raw_fname='output.fif'):
+    '''
+    A function that can be used to quickly create a raw object with the
+    data provided.
+
+    Inspired from https://gist.github.com/dengemann/e9b45f2ff3e3380907d3
+
+    Parameters
+    ----------
+    data: ndarray, shape (n_channels, n_times)
+    ch_types: list eg. ['misc'], ['eeg'] or ['meg']
+    sfreq: float
+        Sampling frequency.
+    ch_names: list
+        List of channel names.
+    save : bool
+        If True, the raw object will be saved as a fif. file.
+    raw_fname : str
+        If save is True, the name of the saved fif file.
+
+    Returns
+    -------
+    raw : Instance of mne.io.Raw
+
+    Example
+    -------
+
+    rng = np.random.RandomState(42)
+    data = rng.random_sample((248, 2000))
+    sfreq = 1e3
+    ch_types = ['misc'] * 248
+    ch_names = ['MISC {:03d}'.format(i + 1) for i in range(len(ch_types))]
+    raw = create_dummy_raw(data, ch_types, sfreq, ch_names)
+
+    '''
+    info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+    raw = mne.io.RawArray(data, info)
+    if save:
+        raw.save(raw_fname)
+    return raw
