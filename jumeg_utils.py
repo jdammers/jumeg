@@ -786,3 +786,49 @@ def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False, raw_fname='out
     if save:
         raw.save(raw_fname)
     return raw
+
+
+def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False, epochs_fname='output-epo.fif'):
+    '''
+    A function that can be used to quickly create an Epochs object with the
+    data provided.
+
+    Inspired from https://gist.github.com/dengemann/e9b45f2ff3e3380907d3
+
+    Parameters
+    ----------
+    data: ndarray, shape (n_channels, n_times)
+    events: ndarray (n_events, 3)
+        As returned by mne.find_events
+    ch_types: list eg. ['misc'], ['eeg'] or ['meg']
+    sfreq: float
+        Sampling frequency.
+    ch_names: list
+        List of channel names.
+    save : bool
+        If True, the epochs object will be saved as a fif. file.
+    epochs_fname : str
+        If save is True, the name of the saved fif file.
+
+    Returns
+    -------
+    epochs : Instance of mne.Epochs
+
+    Example
+    -------
+
+    rng = np.random.RandomState(42)
+    data = rng.random_sample((248, 2000))
+    sfreq = 1e3
+    ch_types = ['misc'] * 248
+    ch_names = ['MISC {:03d}'.format(i + 1) for i in range(len(ch_types))]
+    # make event with - event id 42, 10 events of duration 100 s each, 0 stim signal
+    events = np.array((np.arange(0, 1000, 100), np.zeros((10)), np.array([42] * 10))).T
+    epochs = create_dummy_epochs(data, events, ch_types, sfreq, ch_names)
+
+    '''
+    info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+    epochs = mne.EpochsArray(data, info, events)
+    if save:
+        epochs.save(epochs_fname)
+    return epochs
