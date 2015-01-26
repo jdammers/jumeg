@@ -277,6 +277,36 @@ def make_surrogates_epochs(epochs, check_power=False):
     return surrogate
 
 
+def make_fftsurr_epochs(epochs, check_power=False):
+    '''
+    Make surrogate epochs using sklearn. Destroy each trial by shuffling the phase information.
+    The shuffling is performed in the frequency domain only using fftsurr function from mlab.
+
+    Parameters
+    ----------
+    Epochs Object.
+
+    Output
+    ------
+    Surrogate Epochs object
+    '''
+    from matplotlib.mlab import fftsurr
+
+    surrogate = epochs.copy()
+    surr = surrogate.get_data()
+    for trial in range(len(surrogate)):
+        for channel in range(len(surrogate.ch_names)):
+            surr[trial, channel, :] = fftsurr(surr[trial, channel, :])
+    surrogate._data = surr
+    if check_power:
+        from mne.time_frequency import compute_epochs_psd
+        ps1, _ = compute_epochs_psd(epochs, epochs.picks)
+        ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
+        assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
+
+    return surrogate
+
+
 def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
     '''
     Make surrogate epochs using sklearn. Destroy phase information in each trial by randomization.
@@ -295,7 +325,7 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
     surr = surrogate.get_data()
     for trial in range(len(surrogate)):
         for channel in range(len(surrogate.ch_names)):
-            surr[trial, channel, :] = randomize_phase(surr[trial, channel, :], random_state=channel)
+            surr[trial, channel, :] = randomize_phase(surr[trial, channel, :])
     surrogate._data = surr
     if check_power:
         from mne.time_frequency import compute_epochs_psd
