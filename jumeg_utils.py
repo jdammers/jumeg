@@ -182,7 +182,7 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
 # destroy phase/time info by shuffling on 2D arrays
 #
 ##################################################
-def shuffle_data (data_trials, seed=None):
+def shuffle_data(data_trials, seed=None):
     '''
     Shuffling the time points of any data array.
     WARNING: This function simply reorders the time points and does not
@@ -268,10 +268,11 @@ def make_surrogates_epochs(epochs, check_power=False):
             order = np.argsort(rng.randn(len(surrogate.times)))
             surr[trial, channel, :] = surr[trial, channel, order]
     surrogate._data = surr
-    if (check_power):
-        ps1 = np.abs(np.fft.fft(surr)) ** 2
-        ps2 = np.abs(np.fft.fft(epochs.get_data())) ** 2
-        assert np.array_equal(ps1, ps2), 'The power content does not match. Error.'
+    if check_power:
+        from mne.time_frequency import compute_epochs_psd
+        ps1, _ = compute_epochs_psd(epochs, epochs.picks)
+        ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
+        assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
 
     return surrogate
 
@@ -296,10 +297,12 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
         for channel in range(len(surrogate.ch_names)):
             surr[trial, channel, :] = randomize_phase(surr[trial, channel, :], random_state=channel)
     surrogate._data = surr
-    if (check_power):
-        ps1 = np.abs(np.fft.fft(surr)) ** 2
-        ps2 = np.abs(np.fft.fft(epochs.get_data())) ** 2
-        assert np.array_equal(ps1, ps2), 'The power content does not match. Error.'
+    if check_power:
+        from mne.time_frequency import compute_epochs_psd
+        ps1, _ = compute_epochs_psd(epochs, epochs.picks)
+        ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
+        # np.array_equal does not pass the assertion, due to minor changes in power.
+        assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
 
     return surrogate
 
