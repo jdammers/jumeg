@@ -55,7 +55,7 @@ def usage():
 
     jumeg_preproc_test01.py --exp=TEST01 -s /data/exp/TEST01/mne --plist= /data/exp/TEST01/doc --flist=test01.txt -r -v
 
-    jumeg_preproc_test01.py --exp MEG94T -s /localdata/frank/data/MEG94T/mne --plist=/localdata/frank/data/MEG94T/doc --flist=meg94t_Gr_Static_0T_test.txt  -v -r
+    jumeg_preproc_test01.py --exp MEG94T -s /localdata/frank/data/MEG94T/mne --plist=/localdata/frank/data/MEG94T/doc --flist=meg94t_Gr_Static_0T_test.txt -v -r
     """
     print usage
     sys.exit()
@@ -283,14 +283,29 @@ def main(argv):
               print tmp_pp_brs.ctps
               print"\n\n"
 
-           jppd.apply_ctps_brain_responses_data(fname_oca,raw=raw,fname_ica=fname_oca_ica,ica_raw=None,
+           (fname_oca,raw,fhdf)=jppd.apply_ctps_brain_responses_data(fname_oca,raw=raw,fname_ica=fname_oca_ica,ica_raw=None,
                                                        condition_list=condition_list,**tmp_pp_brs.ctps)
 
            print"\n\n==> PP Info: done apply ctp for brain responses\n  ---> " + fname_oca
-         
-     #--- epocher avg  & time frequency epochs
-     #jumeg_epocher.apply_averager(fname_oca,raw=raw,fname_ica=fname_oa_ica, epocher     ICAobj)
-     
+
+        else:
+           fhdf = None
+
+    #--- brain response ctps ica cleaning
+    #--- run for global ics, all ctp-ics-condition  create raw,epochs,average
+        if tmp_pp_brs.clean.do_run :
+           tmp_pp_brs.clean['verbose'] = verbose
+
+           print"\n===> PP Info: start brainresponse cleaning"
+           print"File  : " + fname_oca
+           if verbose :
+              print"Parameters:"
+              print tmp_pp_brs.clean
+              print"\n\n"
+
+
+           jppd.apply_ctps_brain_responses_cleaning_data(fname_oca,raw=raw,fname_ica=fname_oca_ica,ica_raw=None,fhdf=fhdf,
+                                                         condition_list=condition_list,**tmp_pp_brs.clean)
 
 
 if __name__ == "__main__":
