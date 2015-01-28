@@ -126,3 +126,38 @@ def calc_frequency_correlation(evoked_raw, evoked_clean):
                           np.sum(np.abs(fft_cleaned) ** 2))
 
     return np.round(numerator / denominator * 100.)
+
+##################################################
+#
+# Function calculate overlapping frequency windows
+# fb 19.12.2014
+#
+##################################################
+def calc_sliding_window(fmin, fmax, fstep):
+    '''
+    Calculate 50% overlapping frequency windows
+    input:
+    fmin    : start frequency
+    fmax    : end frequency
+    fstep   : window range f0<>f1
+
+    return:  numpy array two dims with pairs of frequncy windows
+
+    sliding window e.g. calculate frequency windos
+    calc_sliding_window(4, 32, 8)
+    out:
+    array([[ 4, 12],
+       [ 8, 16],
+       [12, 20],
+       [16, 24],
+       [20, 28],
+       [24, 32],
+       [28, 36],
+       [32, 40]])
+
+    '''
+    if fmin > 0:
+       return np.array([ np.arange(fmin,fmax+1,fstep/2),np.arange(fmin + fstep,fmax+ fstep+fmin,fstep/2) ]).T
+    else:
+       fmin = 1
+       return np.array([ np.arange(fmin,fmax+1,fstep/2),np.arange(fmin + fstep,fmax+ fstep+fmin,fstep/2) ]).T -1
