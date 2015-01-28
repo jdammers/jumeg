@@ -1,0 +1,208 @@
+{
+"info":{
+          "time":"01-01-2015  00:00:01",
+          "user": "fboers",
+          "version": "20150101"
+         },
+"experiment":{
+              "name" : "MEG94T",
+              "ids"  : [101716,109887,110058,201231,202747,204260,204265,204340,205017,205098,205347,205382,205386,205399,205707,205720,206688,206720,206766,206788,207079],
+              "mri"  : {
+                        "path":{
+                                "brain"        : "mrdata/iso/brain",
+                                "dicom"        : "mrdata/dicom",
+                                "iso"          : "mrdata/iso",
+                                "mask"         : "mrdata/iso/mask",
+                                "mni"          : "mrdata/iso/mni",
+                                "mni_trafo"    : "mrdata/iso/mni_trafo",
+                                "mrdata"       : "mrdata",
+                                "mri"          : "mrdata/iso/mri",
+                                "mri_orig"     : "mrdata/mri_orig",
+                                "segmentation" : "mrdata/segmentation"
+                               }
+                      },
+                  "path":{
+                       "experiment" : "/data/meg_store2/exp/MEG94T",
+                       "stage"      : "/data/meg_store2/exp/MEG94T",
+                       "mne"        : "mne",
+                       "empty_room" : "empty_room",
+                       "eeg"        : "eeg",
+                       "mft"        : "mft",
+                       "doc"        : "doc",
+                       "source"     : "source",
+                       "stimuli"    : "stimuli"
+                      }, 
+              "stimulus":{
+                           "stim_channel" : "STI 014",
+                           "start_code"   : 128,
+                           "stopt_code"   : 128
+                          },
+
+              "data_preprocessing":{
+                "raw":{
+                  "epocher": {
+                              "template_name": "MEG94T",
+                              "fif_extention": ".fif",
+                              "do_run": false,
+                              "verbose": false,
+                              "save": true
+                             },
+                  "noise_covariance": {
+                                        "filter_parameter": {
+                                                              "filter_method": "bw",
+                                                              "filter_type": "hp",
+                                                              "fcut1": 1.0,
+                                                              "fcut2": null,
+                                                              "notch": 50.0,
+                                                              "notch_max": 400.0,
+                                                              "order": 4,
+                                                              "remove_dcoffset": false,
+                                                              "njobs": 4,
+                                                              "fif_extention": "-empty.fif",
+                                                              "picks": null,
+                                                              "overwrite": false,
+                                                              "do_run": true,
+                                                              "verbose": false,
+                                                              "save": false
+                                                            },
+                                        "do_filter": true,
+                                        "do_run": false,
+                                        "save": true
+                                      },
+                  "filter": {
+                              "filter_method": "bw",
+                              "filter_type": "hp",
+                              "fcut1": 1.0,
+                              "fcut2": null,
+                              "notch": 50,
+                              "notch_max": 400,
+                              "order": 4,
+                              "remove_dcoffset": false,
+                              "njobs": 4,
+                              "fif_extention": "-raw.fif",
+                              "fif_postfix": "fihp1n",
+                              "picks": null,
+                              "overwrite": true,
+                              "do_run": false,
+                              "verbose": false,
+                              "save": true
+                             },
+                  "average": {
+                              "template_name": "MEG94T",
+                              "do_run": false,
+                              "do_average": false,
+                              "verbose": false,
+                              "save": true
+                            },
+                  "ocarta": {
+                              "global_parameter": {
+                                                    "name_ecg": "ECG 001",
+                                                    "ecg_freq": [
+                                                      10,
+                                                      20
+                                                    ],
+                                                    "thresh_ecg": 0.4,
+                                                    "name_eog": "EOG 002",
+                                                    "eog_freq": [
+                                                      1,
+                                                      10
+                                                    ],
+                                                    "seg_length": 30.0,
+                                                    "shift_length": 10.0,
+                                                    "percentile_eog": 80,
+                                                    "npc": null,
+                                                    "explVar": 0.95,
+                                                    "lrate": null,
+                                                    "maxsteps": 50
+                                                  },
+                              "fit_parameter": {
+                                                "name_ecg": "ECG 001",
+                                                "ecg_freq": [
+                                                  10,
+                                                  20
+                                                ],
+                                                "thresh_ecg": 0.4,
+                                                "name_eog": "EOG 002",
+                                                "eog_freq": [
+                                                  1,
+                                                  10
+                                                ],
+                                                "seg_length": 30.0,
+                                                "shift_length": 10.0,
+                                                "npc": null,
+                                                "explVar": 0.95,
+                                                "lrate": null,
+                                                "maxsteps": 50,
+                                                "denoising": null,
+                                                "unfiltered": false,
+                                                "notch_filter": true,
+                                                "notch_freq": 50,
+                                                "notch_width": null,
+                                                "plot_template_OA": false,
+                                                "verbose": false
+                                              },
+                                              "template_name": "MEG94T",
+                              "fif_extention": ".fif",
+                              "fif_postfix": "ocarta-raw",
+                              "verbose": false,
+                              "do_run": false
+                            }},
+                  "brainresponse":{
+                                    "ica": {
+                                              "global_parameter": {
+                                                "max_pca_components": null,
+                                                "n_pca_components": null,
+                                                "noise_cov": null,
+                                                "random_state": null,
+                                                "method": "fastica",
+                                                "fit_params": null,
+                                                "max_iter": 200,
+                                                "n_components": 0.99,
+                                                "verbose": false
+                                              },
+                                              "fit_parameter": {
+                                                "reject": {"mag": 5e-12},
+                                                "decim": null,
+                                                "start": null,
+                                                "stop": null,
+                                                "flat": null,
+                                                "tstep": 2.0,
+                                                "verbose": false
+                                              },
+                                              "fif_extention": ".fif",
+                                              "fif_postfix": "-ica",
+                                              "do_run": false,
+                                              "verbose": false,
+                                              "save": true
+                                            },
+                                    "ctps": {
+                                              "template_name": "MEG94T",
+                                              "exclude_events":{ "eog_events":{ "tmin":-0.4,"tmax":0.4 } },
+                                              "filter_method": "bw",
+                                              "fmin": 4,
+                                              "fmax": 200,
+                                              "fstep": 8,
+                                              "njobs": 4,
+                                              "remove_dcoffset": false,
+                                              "do_update":false,
+                                              "do_select":false,
+                                              "do_run": false,
+                                              "verbose": false,
+                                              "save": true
+                                            },
+                                    "clean":{
+                                              "njobs": 4,
+                                              "template_name": "MEG94T",
+                                              "fif_extention": ".fif",
+                                              "fif_postfix": "ctpsbr",
+                                              "clean_global":{"save_raw":true,"save_epochs":true,"save_evoked":true},
+                                              "clean_condition":{"save_raw":true,"save_epochs":true,"save_evoked":true},
+                                              "do_run": true,
+                                              "verbose": false
+                                            }
+        }
+      }
+    }
+ }
+
+

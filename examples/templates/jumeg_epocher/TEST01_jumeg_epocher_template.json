@@ -8,10 +8,12 @@
            "baseline"         : [null,0],
            "stimulus_channel" : "stimulus",
            "response_channel" : "response",
-           "epocher_row"      : "stim_tsl_onset",
-                      
+           "marker_channel"   : "stimulus",
+           "marker_type"      : "onset",
            "response_matching": true,
-         
+           "response_matching_type": "hit",
+           "ctps"             : {"time_pre":-0.20,"time_post":0.50,"baseline":[null,0]},
+           "reject"           : {"mag": 5e-12},
            "stimulus":{
                        "events":{
                                   "stim_channel"   : "STI 014",
@@ -47,7 +49,7 @@
 "LLst":{
          "condition"          : "LLst",
          "postfix"            : "LLst",
-         "average_channel"    : "stimulus",
+         "marker_channel"     : "stimulus",
          "stimulus"           : {"events":{"output":"onset"},"event_id":1},
          "response_matching"  : true,
          "response"           : {"event_id":8}
@@ -55,19 +57,21 @@
 "LLrt":{
          "condition"           : "LLrt",
          "postfix"             : "LLrt",
-         "average_channel"     : "response",
+         "marker_channel"      : "response",
+         "marker_type"         : "rt_onset",
          "stimulus"            : {"events":{"output":"onset"},"event_id":1},
          "response_matching"   : true,
          "response"            : {"event_id":8},
          "baseline"            : [0.4,0.6],
          "time_pre"            : -0.90,
-         "time_post"           :  0.20
-       },
+         "time_post"           :  0.20,
+         "ctps"                : {"time_pre":-0.90,"time_post":0.20,"baseline":null}
+        },
 
 "LRst":{
          "condition"          : "LRst",
          "postfix"            : "LRst",
-         "average_channel"    : "stimulus",
+         "marker_channel"     : "stimulus",
          "stimulus"           : {"events":{"output":"onset"},"event_id":2},
          "response_matching"  : true,
          "response"           : {"event_id":64}
@@ -75,19 +79,21 @@
 "LRrt":{
          "condition"           : "LRrt",
          "postfix"             : "LRrt",
-         "averager_channel"    : "response",
+         "marker_channel"      : "response",
+         "marker_type"         : "rt_onset",
          "stimulus"            : {"events":{"output":"onset"},"event_id":2},
          "response_matching"   : true,
          "response"            : {"event_id":64},
          "baseline"            : [0.4,0.6],
          "time_pre"            : -0.90,
-         "time_post"           :  0.20
-       },
+         "time_post"           :  0.20,
+         "ctps"                : {"time_pre":-0.90,"time_post":0.20,"baseline":null}
+        },
 
 "RRst":{
          "condition"          : "RRst",
          "postfix"            : "RRst",
-         "averager_channel"   : "stimulus",
+         "marker_channel"     : "stimulus",
          "stimulus"           : {"events":{"output":"onset"},"event_id":3},
          "response_matching"  : true,
          "response"           : {"event_id":64}
@@ -95,18 +101,20 @@
 "RRrt":{
          "condition"           : "RRrt",
          "postfix"             : "RRrt",
-         "averager_channel"    : "response",
+         "marker_channel"      : "response",
+         "marker_type"         : "rt_onset",
          "stimulus"            : {"events":{"output":"onset"},"event_id":3},
          "response_matching"   : true,
          "response"            : {"event_id":64},
          "baseline"            : [0.4,0.6],
          "time_pre"            : -0.90,
-         "time_post"           :  0.20
+         "time_post"           :  0.20,
+         "ctps"                : {"time_pre":-0.90,"time_post":0.20,"baseline":null}
        },
 "RLst":{
          "condition"          : "RLst",
          "postfix"            : "RLst",
-         "averager_channel"   : "stimulus",
+         "marker_channel"     : "stimulus",
          "stimulus"           : {"events":{"output":"onset"},"event_id":4},
          "response_matching"  : true,
          "response"           : {"event_id":8}
@@ -114,14 +122,16 @@
 "RLrt":{
          "condition"           : "RLrt",
          "postfix"             : "RLrt",
-         "averager_channel"    : "response",
+         "marker_channel"      : "response",
+         "marker_type"         : "rt_onset",
          "stimulus"            : {"events":{"output":"onset"},"event_id":4},
          "response_matching"   : true,
          "response"            : {"event_id":8},
          "baseline"            : [0.4,0.6],
          "time_pre"            : -0.90,
-         "time_post"           :  0.20
-       }
+         "time_post"           :  0.20,
+         "ctps"                : {"time_pre":-0.90,"time_post":0.20,"baseline":null}
+        }
 }
 
 
