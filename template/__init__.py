@@ -3,4 +3,4 @@
 #--- part of JuMEG project
 #--- License: Simplified BSD
 
-from .jumeg_template import experiment, epocher
+from .jumeg_template import experiment

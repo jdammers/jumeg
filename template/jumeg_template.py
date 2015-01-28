@@ -1,6 +1,7 @@
 import glob, os, re, sys
 import json
-# from pprint import pprint
+from jumeg.jumeg_base import JuMEG_Base_Basic
+
 
 '''
 ----------------------------------------------------------------------
@@ -32,7 +33,44 @@ from jumeg.template.jumeg_template import experiment,averager
 
 '''
 
-__version__ = 0.0001
+__version__ = 0.003141
+
+
+"""
+ Helper function
+ http://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-of-unicode-ones-from-json-in-python
+ work around json unicode-utf8 and python-2.x string conversion
+"""
+def _decode_list(data):
+    rv = []
+    for item in data:
+        if isinstance(item, unicode):
+            item = item.encode('utf-8')
+        elif isinstance(item, list):
+            item = _decode_list(item)
+        elif isinstance(item, dict):
+            item = _decode_dict(item)
+        rv.append(item)
+    return rv
+
+"""
+ Helper function
+ http://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-of-unicode-ones-from-json-in-python
+ work around json unicode-utf8 and python-2.x string conversion
+"""
+def _decode_dict(data):
+    rv = {}
+    for key, value in data.iteritems():
+        if isinstance(key, unicode):
+           key = key.encode('utf-8')
+        if isinstance(value, unicode):
+           value = value.encode('utf-8')
+        elif isinstance(value, list):
+             value = _decode_list(value)
+        elif isinstance(value, dict):
+             value = _decode_dict(value)
+        rv[key] = value
+    return rv
 
 
 '''
@@ -53,6 +91,9 @@ class dict2obj(dict):
                for idx, it in enumerate(item):
                     if isinstance(it, dict):
                         item[idx] = dict2obj(it)
+                    #elif isinstance(it, unicode):
+                    #     it = it.encode('utf-8')
+
             elif isinstance(item, dict):
                 self[key] = dict2obj(item)
 
@@ -62,126 +103,131 @@ class dict2obj(dict):
             return self[key]
         else:
             return None
-            
-    
-       
-#import os
-#import inspect
-#print 'inspect.getfile(os) is:', inspect.getfile(os)
 
-class JuMEG_Template(object):
-    def __init__ (self):
-        self._JUMEG_PATH_TEMPLATE = os.path.abspath( os.path.dirname(__file__) ) + '/../examples/templates'
-        self._template_path    = os.getenv('JUMEG_PATH_TEMPLATE',self._JUMEG_PATH_TEMPLATE)
-        self._template_name    = "test"
-        self._template_list    = []
-        self._template_postfix = "template"
-        self._template_suffix  = '.json'
-        self._template_dic     = {}
-        self._template_data    = dict()
-        self._verbose          = False
-        self._subject_id       = None
-        
-        self.update_template_name_list()
- 
-#--- verbose    
-    def _set_verbose(self,value):
-         self._verbose = value
+class JuMEG_Template(JuMEG_Base_Basic):
+    def __init__ (self,template_name='DEFAULT'):
+        super(JuMEG_Template, self).__init__()
 
-    def _get_verbose(self):
-         return self._verbose
-    verbose = property(_get_verbose, _set_verbose)
-    
-#--- subject id    
-    def _set_subject_id(self,value):
-         self._subject_id = value
+        #self.__template_path     = os.getenv('JUMEG_PATH_TEMPLATE',self.__JUMEG_PATH_TEMPLATE)
+        self.__template_name     = template_name
+        self.__template_list     = []
+        self.__template_name_list= []
+        self.__template_postfix  = "template"
+        self.__template_suffix   = '.json'
+        self.__template_dic      = {}
+        self.__template_data     = dict()
+        self.__verbose           = False
+        self.__template_isUpdate = False
 
-    def _get_subject_id(self):
-         return self._subject_id
-    verbose = property(_get_subject_id, _set_subject_id)
 
-#--- template name    
-    def _get_template_data(self):
-         return  self._template_data
-    
-    def _set_template_data(self, value):
-         self._template_data = value
-    template_data = property(_get_template_data,_set_template_data)
-    
-#--- template name    
-    def _get_template_name(self):
-         return  self._template_name
-    
-    def _set_template_name(self, value):
-         self._template_name = value
-    template_name = property(_get_template_name,_set_template_name)
-#---  
-    def _get_template_path(self):
-         return  self._template_path
-    
-    def _set_template_path(self, value):
-         self._template_path = value
-    template_path = property(_get_template_path,_set_template_path)
-#---  
-    def _get_template_postfix(self):
-         return  self._template_postfix
-    
-    def _set_template_postfix(self, value):
-         self._template_postfix = value
-    template_postfix = property(_get_template_postfix,_set_template_postfix)
+        self.__template_path = self.template_path_default
+        self.template_update_name_list()
 
-#---  
-    def _get_template_suffix(self):
-         return  self._template_suffix
+#---
+    def __get_template_path_default(self):
+        return os.path.abspath( os.path.dirname(__file__) ) + '/../examples/templates'
+    template_path_default = property(__get_template_path_default)
+
+#--- template name
+    def __get_template_name(self):
+        return self.__template_name
+
+    def __set_template_name(self, value):
+         self.__template_name = value
+    template_name = property(__get_template_name,__set_template_name)
+
+#--- template path
+    def __get_template_path(self):
+        return self.__template_path
+
+    def __set_template_path(self,v):
+        self.__template_path = v
+    template_path = property(__get_template_path,__set_template_path)
+
+#--- template data
+    def __get_template_data(self):
+        return  self.__template_data
+
+    def __set_template_data(self, value):
+        self.__template_data = value
+    template_data = property(__get_template_data,__set_template_data)
+
+#--- template_postfix
+    def __get_template_postfix(self):
+        return self.__template_postfix
+    def __set_template_postfix(self,v):
+        self.__template_postfix = v
+    template_postfix = property(__get_template_postfix,__set_template_postfix)
+
+#--- template_suffix
+    def __get_template_suffix(self):
+        return  self.__template_suffix
     
-    def _set_template_suffix(self, value):
-         self._template_suffix = value
-    template_suffix = property(_get_template_suffix,_set_template_suffix)
-#--- 
-    def get_template_name_from_list(*args):
+    def __set_template_suffix(self, value):
+        self.__template_suffix = value
+    template_suffix = property(__get_template_suffix,__set_template_suffix)
+
+#---template_isUpdate
+    def __get_template_isUpdate(self):
+        return self.__template_isUpdate
+    template_isUpdate = property(__get_template_isUpdate)
+
+#---
+    def template_get_name_from_list(*args):
         if type( args[1] ) == int :
-           return args[0]._template_name_list[ args[1] ]  # self = args[0]
+           return args[0].__template_name_list[ args[1] ]  # self = args[0]
         else :
-           return args[0]._template_name_list  
+           return args[0].__template_name_list
     
-    def _get_template_name_list(self):
-         return self._template_name_list  
+    def __get_template_name_list(self):
+         return self.__template_name_list
    
-    def _set_template_name_list(self,value):
-         self._template_name_list = value
-    template_name_list = property(_get_template_name_list,_set_template_name_list)
+    def __set_template_name_list(self,value):
+         self.__template_name_list = value
+    template_name_list = property(__get_template_name_list,__set_template_name_list)
     
-    def update_template_name_list(self):
+    def template_update_name_list(self):
          """ read experiment template dir & update experiment names """
          self.template_name_list = []
-         flist = glob.glob( self._template_path + '/*' + self._template_postfix + self._template_suffix)
-         pat = re.compile( (self.template_path + '|/|'+ '_' + self.template_postfix + self._template_suffix) )
+         flist = glob.glob( self.template_path + '/*' + self.template_postfix + self.template_suffix)
+         pat = re.compile( (self.template_path + '|/|'+ '_' + self.template_postfix + self.template_suffix) )
          self.template_name_list = pat.sub('', str.join(',',flist) ).split(',')
 #---
 
-    def _get_template_file_name(self):
-         return  self.template_name +"_"+ self._template_postfix +"_"+ self._tempalte_suffix
-    template_file_name = property(_get_template_file_name)
+    def __get_template_file_name(self):
+         return  self.template_name +"_"+ self.template_postfix +"_"+ self.tempalte_suffix
+    template_file_name = property(__get_template_file_name)
     
     
-    def _get_full_template_file_name(self):
-        return self._template_path + '/' + self.template_name +'_'+ self._template_postfix + self._template_suffix
-    full_template_file_name = property(_get_full_template_file_name)
+    def __get_full_template_file_name(self):
+        return self.template_path + '/' + self.template_name +'_'+ self.template_postfix + self.template_suffix
+    template_full_file_name = property(__get_full_template_file_name)
 
-    def update_template_file(self):
+    def template_update_file(self):
           self.template_data = dict()
+          self.__template_isUpdate = False
+
           # print self.full_template_file_name 
-          f = open( self.full_template_file_name )
+          f = open( self.template_full_file_name )
           self.template_data = json.load(f)
+
+          #--- convert unicode -utf8 to python-2.x string
+          self.template_data = _decode_dict(self.template_data)
+
+          #self.template_data = _filter_data(self.template_data)
           f.close()
+
+          self.__template_isUpdate = True
+
           #self.exp_obj = dict2obj( self._template_dic_yaml )
+
           return self.template_data
           
-    def get_as_obj(self):
+    def template_get_as_obj(self):
           # return dict2obj( self._template_dic_yaml )
           return dict2obj( self.template_data )
     
-    def update_and_merge_dict(self, d, u, depth=-1):
+    def template_update_and_merge_dict(self, d, u, depth=-1):
         """
         copy from:
         http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
@@ -194,7 +240,7 @@ class JuMEG_Template(object):
         import collections
         for k, v in u.iteritems():
             if isinstance(v, collections.Mapping) and not depth == 0:
-               r = self.update_and_merge_dict(d.get(k, {}), v, depth=max(depth - 1, -1))
+               r = self.template_update_and_merge_dict(d.get(k, {}), v, depth=max(depth - 1, -1))
                d[k] = r
             elif isinstance(d, collections.Mapping):
                d[k] = u[k]
@@ -202,8 +248,11 @@ class JuMEG_Template(object):
                d = {k: u[k]}
         
         return d
-       
-    def update_and_merge_obj(self, d, u, depth=-1):
+
+
+      # obj = json.loads(s, object_hook=_decode_dict)
+
+    def template_update_and_merge_obj(self, d, u, depth=-1):
         """
         copy from:
         http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
@@ -219,12 +268,13 @@ class JuMEG_Template(object):
       #def __init__(self, **entries): 
       # self.__dict__.update(entries)
 
-    def read_json(self,fjson):
+    def template_read_json(self,fjson):
         d = dict()
         if ( os.path.isfile( fjson ) ):
             FID = open( fjson )
             try:
                 d = json.load(FID)
+                d = _decode_dict(d)
             except:
                 d = dict()
                 print"\n\n!!! ERROR NO JSON File Format:\n  ---> " + fjson
@@ -232,7 +282,7 @@ class JuMEG_Template(object):
             FID.close()
         return d
         
-    def write_json(self,fjson, d):
+    def template_write_json(self,fjson, d):
         with open(fjson, 'wb') as FOUT:
              json.dump(d,FOUT, sort_keys=True)   
              # json.dump(d,FOUT, sort_keys=True,indent=4, separators=(',', ': ') )   
@@ -242,22 +292,24 @@ class JuMEG_Template(object):
 class JuMEG_Template_Experiments(JuMEG_Template):
     def __init__ (self):
         super(JuMEG_Template_Experiments, self).__init__()
-        self._JUMEG_PATH_TEMPLATE_EXPERIMENTS = self._JUMEG_PATH_TEMPLATE+'/jumeg_experiments'
-        self._template_path    = os.getenv('JUMEG_PATH_TEMPLATE_EXPERIMENTS',self._JUMEG_PATH_TEMPLATE_EXPERIMENTS)
-        self._template_name    = 'default'
-        self._template_list    = []
-        self._template_postfix = 'jumeg_experiment_template'
-      
+        self.template_path    = os.getenv('JUMEG_PATH_TEMPLATE_EXPERIMENTS',self.template_path_default + '/jumeg_experiments')
+        self.template_name    = 'default'
+        self.template_postfix = 'jumeg_experiment_template'
 
+
+
+'''
 class JuMEG_Template_Epocher(JuMEG_Template):
     def __init__ (self):
         super(JuMEG_Template_Epocher, self).__init__()
-        self._JUMEG_PATH_TEMPLATE_EPOCHER = self._JUMEG_PATH_TEMPLATE +'/jumeg_epocher'
-        self._template_path    = os.getenv('JUMEG_PATH_TEMPLATE_EPOCHER',self._JUMEG_PATH_TEMPLATE_EPOCHER)
-        self._template_name    = 'default'
-        self._template_list    = []
-        self._template_postfix = 'jumeg_epocher_template'
+        self.__JUMEG_PATH_TEMPLATE_EPOCHER = self._JUMEG_PATH_TEMPLATE + '/jumeg_epocher'
+        self.template_path    = os.getenv('JUMEG_PATH_TEMPLATE_EPOCHER',self._JUMEG_PATH_TEMPLATE_EPOCHER)
+        self.template_name    = 'default'
+        self.template_list    = []
+        self.template_postfix = 'jumeg_epocher_template'
       
+template_epocher  = JuMEG_Template_Epocher()
+
 
 #jumeg_template_experiment = JuMEG_Template_Experiments()
 #jumeg_template_averager   = JuMEG_Template_Averager()
@@ -265,5 +317,8 @@ class JuMEG_Template_Epocher(JuMEG_Template):
 #jumeg_template_experiment = JuMEG_Template_Experiments()
 #jumeg_template_epocher    = JuMEG_Template_Epocher()
 
+'''
+
 experiment = JuMEG_Template_Experiments()
-epocher    = JuMEG_Template_Epocher()
+
+
