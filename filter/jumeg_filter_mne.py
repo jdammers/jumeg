@@ -28,75 +28,67 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
                    
          super(JuMEG_Filter_MNE, self).__init__()
          
-         self._jumeg_filter_ws_version     = 0.0314
-         self._filter_method               = 'mne'
+         self.__jumeg_filter_mne_version    = 0.0314
+         self.__filter_method               = 'mne'
          
-         self._mne_filter_method           = mne_filter_method  #fft
-         self._mne_filter_length           = mne_filter_length
-         self._mne_njobs                   = njobs
-         self._mne_trans_bandwith          = trans_bandwith
+         self.__mne_filter_method           = mne_filter_method  #fft
+         self.__mne_filter_length           = mne_filter_length
+         self.__mne_njobs                   = njobs
+         self.__mne_trans_bandwith          = trans_bandwith
          
-         self._sampling_frequency          = sampling_frequency
-         self._filter_type                 = filter_type #lp, hp, bp, br,bs, notch
-         self._fcut1                       = fcut1
-         self._fcut2                       = fcut2
+         self.sampling_frequency          = sampling_frequency
+         self.filter_type                 = filter_type #lp, hp, bp, br,bs, notch
+         self.fcut1                       = fcut1
+         self.fcut2                       = fcut2
 #---
-         self._filter_notch                = notch
-         self._filter_notch_width          = notch_width
+         self.filter_notch                = notch
+         self.filter_notch_width          = notch_width
 
-#---
-#         self._filter_attenuation_factor   = 1  # 1, 2
-#         self._filter_window               = filter_window # hamming, blackmann, kaiser
- 
-#---
-#         self._filter_kernel_length_factor = kernel_length_factor
-#         self._settling_time_factor        = settling_time_factor
-#--               
-         self._remove_dcoffset             = remove_dcoffset
+         self.remove_dcoffset             = remove_dcoffset
          
 #--- version
-     def _get_version(self):  
-         return self._jumeg_filter_ws_version
+     def __get_version(self):  
+         return self.__jumeg_filter_ws_version
        
-     version = property(_get_version)
+     version = property(__get_version)
 
 #--- MNE filter values
 
 #--- MNE number of parallel jobs    
-     def _set_mne_njobs(self,value):
-         self._mne_njobs = value
+     def __set_mne_njobs(self,value):
+         self.__mne_njobs = value
        
-     def _get_mne_njobs(self):
-         return self._mne_njobs
+     def __get_mne_njobs(self):
+         return self.__mne_njobs
        
-     mne_njobs = property(_get_mne_njobs,_set_mne_njobs)
+     mne_njobs = property(__get_mne_njobs,__set_mne_njobs)
      
 #--- MNE filter_method  fft   
-     def _set_mne_filter_method(self,value):
-         self._mne_filter_method = value
+     def __set_mne_filter_method(self,value):
+         self.__mne_filter_method = value
        
-     def _get_mne_filter_method(self):
-         return self._mne_filter_method
+     def __get_mne_filter_method(self):
+         return self.__mne_filter_method
     
-     mne_filter_method = property(_get_mne_filter_method,_set_mne_filter_method)
+     mne_filter_method = property(__get_mne_filter_method,__set_mne_filter_method)
 
 #--- MNE filter_length e.g. '10s' None     
-     def _set_mne_filter_length(self,value):
-         self._mne_filter_length = value
+     def __set_mne_filter_length(self,value):
+         self.__mne_filter_length = value
        
-     def _get_mne_filter_length(self):
-         return self._mne_filter_length
+     def __get_mne_filter_length(self):
+         return self.__mne_filter_length
     
-     mne_filter_length = property(_get_mne_filter_length,_set_mne_filter_length)
+     mne_filter_length = property(__get_mne_filter_length,__set_mne_filter_length)
 
 #--- MNE trans_bandwith  0.5     
-     def _set_mne_trans_bandwith(self,value):
-         self._mne_trans_bandwith = value
+     def __set_mne_trans_bandwith(self,value):
+         self.__mne_trans_bandwith = value
        
-     def _get_mne_trans_bandwith(self):
-         return self._mne_trans_bandwith
+     def __get_mne_trans_bandwith(self):
+         return self.__mne_trans_bandwith
     
-     mne_trans_bandwith = property(_get_mne_trans_bandwith,_set_mne_trans_bandwith)
+     mne_trans_bandwith = property(__get_mne_trans_bandwith,__set_mne_trans_bandwith)
 
 #---------------------------------------------------------# 
 #--- apply_filter MNE           -------------------------#

@@ -26,45 +26,46 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
                    kernel_length_factor=16.0,settling_time_factor=5.0): #, notch=np.array([]),notch_width=1.0):
          super(JuMEG_Filter_Ws, self).__init__()
          
-         self._jumeg_filter_ws_version     = 0.0314
-         self._filter_method               = 'ws'
-         self._sampling_frequency          = sampling_frequency
-         self._filter_type                 = filter_type #lp, bp, hp
-         self._fcut1                       = fcut1
-         self._fcut2                       = fcut2
+         self.__jumeg_filter_ws_version   = 0.0314
+         self.__filter_method             = 'ws'
+
+         self.sampling_frequency          = sampling_frequency
+         self.filter_type                 = filter_type #lp, bp, hp
+         self.fcut1                       = fcut1
+         self.fcut2                       = fcut2
 #---      
-         self._filter_kernel_data_rfft     = np.array([])
-         self._filter_kernel_length_factor = kernel_length_factor
-         self._filter_attenuation_factor   = 1
-         self._settling_time_factor        = settling_time_factor
+         self.__filter_kernel_data_rfft   = np.array([])
+         self.__filter_kernel_length_factor = kernel_length_factor
+         self.filter_attenuation_factor   = 1
+         self.settling_time_factor        = settling_time_factor
 #--               
-         self._remove_dcoffset             = remove_dcoffset
+         self.remove_dcoffset             = remove_dcoffset
          
 #--- version
-     def _get_version(self):  
-         return self._jumeg_filter_ws_version
+     def __get_version(self):  
+         return self.__jumeg_filter_ws_version
        
-     version = property(_get_version)
+     version = property(__get_version)
                              
 
 #--- filter_kernel_data_rfft     
-     def _get_filter_kernel_data_rfft(self):
-         return self._filter_kernel_data_rfft
+     def __get_filter_kernel_data_rfft(self):
+         return self.__filter_kernel_data_rfft
 
-     filter_kernel_data_rfft = property(_get_filter_kernel_data_rfft)
+     filter_kernel_data_rfft = property(__get_filter_kernel_data_rfft)
 
 #---- filter_attenuation_factor
-     def _set_filter_attenuation_factor(self,value):
+     def __set_filter_attenuation_factor(self,value):
          if value < 2 :
-            self._filter_attenuation_factor = 1
+            self.__filter_attenuation_factor = 1
          else :
-            self._filter_attenuation_factor = 2
+            self.__filter_attenuation_factor = 2
          self.filter_kernel_isinit = False 
          
-     def _get_filter_attenuation_factor(self):
-         return self._filter_attenuation_factor 
+     def __get_filter_attenuation_factor(self):
+         return self.__filter_attenuation_factor 
   
-     filter_attenuation_factor = property(_get_filter_attenuation_factor,_set_filter_attenuation_factor)
+     filter_attenuation_factor = property(__get_filter_attenuation_factor,__set_filter_attenuation_factor)
   
 #---------------------------------------------------------# 
 #--- calc_sinc_filter_data       -------------------------#
@@ -200,10 +201,10 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
         #--- factor 2 => ws  ~ -148 dB depends on window
          if self.filter_attenuation_factor == 2 :
             fkd_cplx = np.fft.rfft( fkd )
-            self._filter_kernel_data_rfft = fkd_cplx * fkd_cplx
+            self.__filter_kernel_data_rfft = fkd_cplx * fkd_cplx
          else :
         #--- factor 1 => ws  ~ -74 dB depends on window
-            self._filter_kernel_data_rfft = np.fft.rfft( fkd )              
+            self.__filter_kernel_data_rfft = np.fft.rfft( fkd )              
                        
          return self.filter_kernel_data_rfft
  
