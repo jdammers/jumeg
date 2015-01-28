@@ -1,11 +1,45 @@
-import os
+#import os
 import mne
 
-from jumeg.ctps import ctps
-from jumeg.decompose import ocarta_offline, _find_eog_events,  qrs_detector
+from jumeg.jumeg_base               import jumeg_base
 
-from jumeg.jumeg_base import jumeg_base
-from jumeg import jumeg_plot
+#from jumeg.decompose.ocarta         import ocarta
+#from jumeg.ctps                     import ctps
+
+#from jumeg import jumeg_plot
+
+
+#################################################################
+#
+# apply epocher data
+#
+#################################################################
+def apply_epocher_events_data(fname,raw=None,condition_list=None,do_run=False,**kwargs):
+    """
+    find events and stores epoch information into hdf5 file
+
+    RETURN:
+           fname          : fif-file name,
+           raw            : raw obj
+           fname_epocher  : epocher file name (hdf5 format)
+
+    """
+    from jumeg.epocher.jumeg_epocher  import jumeg_epocher
+
+    fname_epocher = None
+
+    if do_run :
+       if raw is None:
+          if fname is None:
+             print"ERROR no file foumd!!\n"
+             return
+          raw = mne.io.Raw(fname,preload=True)
+          print"\n"
+
+       (fname,raw,fname_epocher) = jumeg_epocher.apply_update_epochs(fname,raw=raw,condition_list=condition_list, **kwargs)
+
+    return fname,raw,fname_epocher
+
 
 #######################################################
 #                                                     #
@@ -50,39 +84,45 @@ def apply_create_noise_covariance_data(fname,raw=None,do_filter=True,filter_para
     import os
 
     mne.verbose = verbose
-    
-    fname_empty_room = None
-    (fname_empty_room,raw_empty) = jumeg_base.get_empty_room_fif(fname=fname,rar=raw,preload=do_run)
- 
-    #--- picks meg channels
-    filter_parameter.picks = jumeg_base.pick_meg_nobads(raw_empty)
+
+    try:
+        (fname_empty_room,raw_empty) = jumeg_base.get_empty_room_fif(fname=fname,raw=raw,preload=do_run)
+    except:
+        return
+
+    if raw_empty :
+   #--- picks meg channels
+       filter_parameter.picks = jumeg_base.pick_meg_nobads(raw_empty)
   
-    #--- filter or get filter name
-    filter_parameter.do_run = do_filter
-    if do_filter :
-       print "Filtering empty room fif with noise variance settings..."
-       
-    (fname_empty_room,raw_empty) = apply_filter_data(fname_empty_room,raw=raw_empty,**filter_parameter)   
+   #--- filter or get filter name
+       filter_parameter.do_run = do_filter
+
+       if do_filter :
+          print "Filtering empty room fif with noise variance settings...\n"
+          (fname_empty_room,raw_empty) = apply_filter_data(fname_empty_room,raw=raw_empty,**filter_parameter)
     
-    #--- update file name for saving noise_cov
+
+   #--- update file name for saving noise_cov
     fname_empty_room_cov = fname_empty_room.split('-')[0] + ',empty-cov.fif'
   
-    #--- calc nois-covariance matrix
+   #--- calc nois-covariance matrix
     if do_run :
        noise_cov_mat = cp_covariance(raw_empty,picks=filter_parameter.picks,verbose=verbose)
-       # write noise-covariance matrix to disk
+   #--- write noise-covariance matrix to disk
        if save :
           write_cov( fname_empty_room_cov, noise_cov_mat)
     
     return fname_empty_room_cov
+
 
 #################################################################
 #
 # apply filter on (raw) data
 #
 #################################################################
-def apply_filter_data(fname,raw=None,filter_method="mne",filter_type='bp',fcut1=1.0,fcut2=45.0,notch=None,notch_max=None,order=4,remove_dcoffset=True,njobs=1,  
-                      overwrite=False,do_run=True,verbose=False,save=True,picks=None,fif_postfix=None, fif_extention='-raw.fif'):
+def apply_filter_data(fname,raw=None,filter_method="mne",filter_type='bp',fcut1=1.0,fcut2=45.0,notch=None,notch_max=None,order=4,
+                      remove_dcoffset = False,njobs=1,overwrite = False,do_run=True,verbose=False,save=True,picks=None,
+                      fif_postfix=None, fif_extention='-raw.fif'):
     ''' 
     Applies the FIR FFT filter [bp,hp,lp,notches] to data array. 
     filter_method : mne => fft mne-filter
@@ -96,102 +136,281 @@ def apply_filter_data(fname,raw=None,filter_method="mne",filter_type='bp',fcut1=
     jfilter = jumeg_filter(filter_method=filter_method,filter_type=filter_type,fcut1=fcut1,fcut2=fcut2,njobs=njobs, 
                                 remove_dcoffset=True,order=order)
     jfilter.verbose = verbose                     
- #--- calc notch array 50,100,150 .. max
-    if notch :
-      jfilter.calc_notches(notch,notch_max)
-    
- #--- make output filename
-    name_raw = fname.split('-')[0]
-    fnfilt = name_raw + "," + jfilter.filter_name_postfix + fif_extention
-    
+
     if do_run :
        if raw is None:
           if fname is None:
              print"ERROR no file foumd!!\n" 
              return 
           raw = mne.io.Raw(fname,preload=True)
-       
+          print"\n"
+
        if picks is None :
           picks = jumeg_base.pick_channels_nobads(raw)
           
     #- apply filter for picks, exclude stim,resp,bads
        jfilter.sampling_frequency = raw.info['sfreq']
+    #--- calc notch array 50,100,150 .. max
+       if notch :
+          jfilter.calc_notches(notch,notch_max)
+
        jfilter.apply_filter(raw._data,picks=picks )
        jfilter.update_info_filter_settings(raw)
-       
+
+    #--- make output filename
+       name_raw = fname.split('-')[0]
+       fnfilt   = name_raw + "," + jfilter.filter_name_postfix + fif_extention
+
+       raw.info['filename'] = fnfilt
+
        if save :
-          fnfilt = jumeg_base.apply_save_mne_data(raw,fname=fnfilt)   
-     
+          fnfilt = jumeg_base.apply_save_mne_data(raw,fname=fnfilt)
+
+
+    else:
+     #--- calc notch array 50,100,150 .. max
+       if notch :
+          jfilter.calc_notches(notch,notch_max)
+
+     #--- make output filename
+       name_raw = fname.split('-')[0]
+       fnfilt   = name_raw + "," + jfilter.filter_name_postfix + fif_extention
+
+
     return (fnfilt, raw)
 
+
 #################################################################
 #
-# apply_ocarta_offline_data
+# apply_ocarta_data
 #
 #################################################################
-def apply_ocarta_offline_data(fname,raw=None,do_run=True,**argv):
-                              #**offline_parameter
-                              #name_ecg='ECG 001',name_eog='EOG 002',
-                              #event_chan=None,dir_img='plots',seg_length=30.0,shift_length=10.0,explVar=0.99,init_maxsteps=100,
-                              #maxsteps=50,denoising=None,fnout=None,verbose=True,do_run=True,save=True,fif_postfix='aroca',fif_extention='-raw.fif'):
+def apply_ocarta_data(fname,raw=None,do_run=True,verbose=False,template_name=None,**kwargs):
+
+    #---- ocarta obj
+    # name_ecg='ECG 001', ecg_freq=[10,20],
+    # thresh_ecg=0.4, name_eog='EOG 002', eog_freq=[1,10],
+    # seg_length=30.0, shift_length=10.0,
+    # percentile_eog=80, npc=None, explVar=0.95, lrate=None,
+    # maxsteps=50
+
+    #---- ocarta.fit
+    # denoising=None,unfiltered=False, notch_filter=True, notch_freq=50,
+    # notch_width=None, plot_template_OA=False, verbose=True,
+    # name_ecg=None, ecg_freq=None, thresh_ecg=None,
+    # name_eog=None, eog_freq=None, seg_length=None, shift_length=None,
+    # npc=None, explVar=None, lrate=None, maxsteps=None):
+
     if do_run :
-       (fnout,raw,ecg_events,eog_events) = ocarta_offline(fname,filt_data=raw,**argv['offline_parameter'])
-       print "===> Done ocarta offline"
-    return (fnout,raw,ecg_events,eog_events)
+
+       from jumeg.decompose.ocarta import ocarta
+
+       if kwargs['fit_parameter'] :
+          kwargs['fit_parameter']['verbose'] = verbose
+          (raw,fnout) = ocarta.fit(fname,meg_raw=raw,**kwargs['fit_parameter'])
+
+       else :
+          (raw,fnout) = ocarta.fit(fname,meg_raw=raw)
+
+       raw.info['filename'] = fnout
+
+      #--- save ocarta results into HDFobj
+
+       if template_name :
+
+          ecg_parameter = {'num_events': ocarta.idx_R_peak[:,0].size,
+                           'ch_name': ocarta.name_ecg,'thresh' : ocarta.thresh_ecg,'explvar':ocarta.explVar,
+                           'freq_correlation':None,'performance':ocarta.performance_ca}
+
+          eog_parameter  = {'num_events': ocarta.idx_eye_blink[:,0].size,
+                            'ch_name':ocarta.name_eog,'thresh' : None,'explvar':ocarta.explVar,
+                            'freq_correlation':None,'performance':ocarta.performance_oa}
+
+     #--- save ecg & eog onsets in HDFobj
+
+          from jumeg.epocher.jumeg_epocher import jumeg_epocher
+
+          (fnout,raw,fhdf) = jumeg_epocher.apply_update_ecg_eog(fnout,raw=raw,ecg_events=ocarta.idx_R_peak[:,0],ecg_parameter=ecg_parameter,
+                                                                eog_events=ocarta.idx_eye_blink[:,0],eog_parameter=eog_parameter,template_name=template_name)
+
+          print "===> save ocarta info & events : " + fhdf
+
+       print "===> Done JuMEG ocarta        : " + fnout + "\n"
+
+    return (fnout,raw,fhdf)
 
 
-def find_ecg_eog_events(fname, raw=None, name_ecg='ECG 001', name_eog='EOG 002'):
-    
-    if raw is None:
-       if fname is None:
-          print"ERROR no file foumd!!\n" 
-          return 
-       raw = mne.io.Raw(fname,preload=True)
-  
-    from jumeg.filter import jumeg_filter
-    
-    idx_ecg_channel = raw.info['ch_names'].index(name_ecg)
-    idx_eog_channel = raw.info['ch_names'].index(name_eog)
-    eog_signals     = raw._data[idx_eog_channel]
-    ecg_signals     = raw._data[idx_ecg_channel]
-    sfreq           = raw.info['sfreq']
-    ntsl            = ecg_signals.size
-   
-    fi_bp_bw = jumeg_filter(filter_method='bw', filter_type='bp',sampling_frequency=sfreq,fcut1=1.0,fcut2=10.0)
-    fi_bp_bw.apply_filter( eog_signals )
-    idx_eye_blink = _find_eog_events(eog_signals.reshape(1, ntsl), 998, 1, 10, sfreq, 0)[:, 0]
-
-    idx_R_peak = qrs_detector(sfreq, ecg_signals.ravel(),thresh_value="auto")                     # get indices of R-peaks
-
-    return(idx_R_peak,idx_eye_blink)
-    
-    
 #######################################################
 #
-#  apply ICA for artifact rejection
+#  apply mne-ica (fastica) after ocarta
 #
 #######################################################
-def apply_ica_data(fname,raw=None,n_components=0.99, decim=None, max_pca_components=None, reject={'mag': 5e-12},
-                   verbose=True, do_run=True, save=True,fif_postfix="ica",fif_extention=".fif"):
+def apply_ica_data(fname,raw=None,do_run=False,verbose=False,save=True,fif_extention=".fif",fif_postfix="-ica",**kwargs):
+    """
+     apply mne ica
 
-    ''' Applies ICA to a list of (filtered) raw files. '''
+      return
+        fnica_out  : fif filename of mne ica-obj
+        raw        : fif-raw obj
+        ICAobj     : mne-ica-object
 
-    import mne
-    from mne.preprocessing import ICA
-    import os
-    fnout_ica = jumeg_base.get_fif_name(fname,postfix=fif_postfix,extention=fif_extention) 
-       
+
+             Attributes
+        ----------
+        current_fit : str
+            Flag informing about which data type (raw or epochs) was used for
+            the fit.
+        ch_names : list-like
+            Channel names resulting from initial picking.
+            The number of components used for ICA decomposition.
+        n_components_` : int
+            If fit, the actual number of components used for ICA decomposition.
+        n_pca_components : int
+            See above.
+        max_pca_components : int
+            The number of components used for PCA dimensionality reduction.
+        verbose : bool, str, int, or None
+            See above.
+        pca_components_` : ndarray
+            If fit, the PCA components
+        pca_mean_` : ndarray
+            If fit, the mean vector used to center the data before doing the PCA.
+        pca_explained_variance_` : ndarray
+            If fit, the variance explained by each PCA component
+        mixing_matrix_` : ndarray
+            If fit, the mixing matrix to restore observed data, else None.
+        unmixing_matrix_` : ndarray
+            If fit, the matrix to unmix observed data, else None.
+        exclude : list
+            List of sources indices to exclude, i.e. artifact components identified
+            throughout the ICA solution. Indices added to this list, will be
+            dispatched to the .pick_sources methods. Source indices passed to
+            the .pick_sources method via the 'exclude' argument are added to the
+            .exclude attribute. When saving the ICA also the indices are restored.
+            Hence, artifact components once identified don't have to be added
+            again. To dump this 'artifact memory' say: ica.exclude = []
+        info : None | instance of mne.io.meas_info.Info
+            The measurement info copied from the object fitted.
+        n_samples_` : int
+            the number of samples used on fit.
+
+    """
+    ICAobj = None
+
     if do_run :
        if raw is None:
+          if fname is None:
+             print"ERROR no file foumd!!\n"
+             return
           raw = mne.io.Raw(fname,preload=True)
-       picks = jumeg_base.pick_meg_nobads(raw)
-       #--- ICA decomposition
-       ica = ICA(n_components=n_components, max_pca_components=max_pca_components)
-       ica.fit(raw, picks=picks, decim=decim, reject=reject)
-       #--- save ICA object
-       if save :
-          ica.save(fnout_ica)
-       
-    return (fnout_ica,ica)
+          print"\n"
 
+       from mne.preprocessing import ICA
+       picks = jumeg_base.pick_meg_nobads(raw)
+
+      #--- init MNE ICA obj
+
+       kwargs['global_parameter']['verbose'] = verbose
+       ICAobj = ICA( **kwargs['global_parameter'] )
+
+      #--- run  mne ica
+       kwargs['fit_parameter']['verbose'] = verbose
+       ICAobj.fit(raw, picks=picks,**kwargs['fit_parameter'] )
+
+       fnica_out = fname[:fname.rfind('-raw.fif')] + fif_postfix + fif_extention
+      # fnica_out = fname[0:len(fname)-4]+'-ica.fif'
+
+      #--- save ICA object
+       if save :
+          ICAobj.save(fnica_out)
+
+    print "===> Done JuMEG MNE ICA : " + fnica_out
+    print "\n"
+
+
+    return (fnica_out,raw,ICAobj)
+
+
+#######################################################
+#
+#  apply_ctps_ for brain_responses
+#
+#######################################################
+def apply_ctps_brain_responses_data(fname,raw=None,fname_ica=None,ica_raw=None,condition_list=None,template_name=None,**kwargv):
+
+    '''
+    raw=None,fname_ica=None,ica_raw=None,condition_list=None,template_name=None,
+                                           filter_method="bw",remove_dcoffset=False,jobs=4,
+                                           freq_ctps=None,fmin=4,fmax=32,fstep=8,proj=False,exclude_events=None,
+                                           ctps_parameter = {'time_pre':None,'time_post':None,'baseline':None},
+                                           save_phase_angles=False,
+                                           #fif_extention=".fif",fif_postfix="ctps",
+                                           do_run=False,verbose=False,save=True):
+
+    ctps= {'time_pre':-0.20,'time_post':0.50,'baseline':[None,0]},
+
+    exclude_events:{ eog_events:{ tmin:-0.4,tmax:0.4} }
+    exclude_events={'eog_events':{ 'tmin':-0.4,'tmax':0.4} }
+    '''
+
+    if kwargv['do_run']:
+
+       from jumeg.epocher.jumeg_epocher import jumeg_epocher
+
+       fhdf = None
+
+       if kwargv['do_update']:
+
+          fname,raw,fhdf = jumeg_epocher.apply_update_brain_responses(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+
+       if kwargv['do_select']:
+          fhdf=jumeg_epocher.ctps_ica_brain_responses_select(fhdf=fhdf,fname=fname,raw=raw,condition_list=condition_list,template_name=template_name)
+
+       print "===> save ctps ics : " + fhdf
+
+    print "===> Done JuMEG ctps fro brain responses : " + fhdf + "\n"
+
+    return (fname,raw,fhdf)
+
+
+#######################################################
+#
+# apply ICA-cleaning
+#
+#######################################################
+def apply_ctps_brain_responses_cleaning_data(fname,raw=None,fname_ica=None,ica_raw=None,fhdf=None,condition_list=None,
+                                             njobs=4,fif_extention=".fif",fif_postfix="ctps",template_name=None,
+                                             clean_global=None,clean_condition=None,do_run=False,verbose=False):
+    """
+     # ICA decomposition
+     # ica = mne.preprocessing.read_ica(fnica)
+
+     # ica.exclude += list(ic_ecg) + list(ic_eog)
+     #    # ica.plot_topomap(ic_artefacts)
+     # # apply cleaning
+        meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
+                              n_pca_components=npca, copy=True)
+        meg_clean.save(fnclean, overwrite=True)
+
+          ica.save(fnica)  # save again to store excluded
+
+
+
+    """
+    print "===> Start JuMEG MNE CTPs ICA cleaning: "
+
+    fout=None
+
+    if do_run:
+       from jumeg.epocher.jumeg_epocher import jumeg_epocher
+
+       fhdf = jumeg_epocher.ctps_ica_brain_responses_clean(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,fhdf=fhdf,condition_list=condition_list,
+                                                    njobs=njobs,fif_extention=fif_extention,fif_postfix=fif_postfix,template_name=template_name,
+                                                    clean_global=clean_global,clean_condition=clean_condition,do_run=do_run,verbose=verbose)
+
+       #TODO:  return global and or ctps-condition  as raw,epochs,average or names
+
+    print "===> Done JuMEG MNE ICA clean: " + fhdf
+
+    return fhdf
 
