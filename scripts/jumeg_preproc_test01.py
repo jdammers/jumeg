@@ -6,20 +6,22 @@
     last updae FB 04.12.2014
 """
 import sys, getopt, os, os.path
-import numpy as np
-import mne   as mne
+#import numpy as np
+#import mne   as mne
 
 #--- jumegs functions
 import jumeg.jumeg_preproc_data as jppd
-import jumeg.jumeg_math         as jumeg_math
+#import jumeg.jumeg_math         as jumeg_math
 
 #--- jumeg clases
 from jumeg.jumeg_base              import jumeg_base
-from jumeg.jumeg_epocher           import jumeg_epocher
+# from jumeg.jumeg_epocher           import jumeg_epocher
 
 from jumeg.template.jumeg_template import experiment as jtmp_exp
 
+
 def usage():
+
     usage=""" 
      usage: 
      -e --exp --experiment <experiment name> 
@@ -53,7 +55,7 @@ def usage():
 
     jumeg_preproc_test01.py --exp=TEST01 -s /data/exp/TEST01/mne --plist= /data/exp/TEST01/doc --flist=test01.txt -r -v
 
-
+    jumeg_preproc_test01.py --exp MEG94T -s /localdata/frank/data/MEG94T/mne --plist=/localdata/frank/data/MEG94T/doc --flist=meg94t_Gr_Static_0T_test.txt  -v -r
     """
     print usage
     sys.exit()
@@ -113,7 +115,7 @@ def main(argv):
        #path_list       = "/localdata/frank/data/Chrono/doc"
        #fname_list      = 'chrono_normal_inkomp.txt'
             
-       fif_name        = '201195_test.fif'  #None
+       fif_name        = '201195_Chrono01_110516_1413_1_c,rfDC-raw.fif' #'201195_test.fif'  #None
        pfif            = '201195/Chrono01/110516_1413/1'  #None
        verbose         = True
        do_run          = True     
@@ -143,10 +145,12 @@ def main(argv):
 #--- init experiment template parameter
     jtmp_exp.template_name = experiment_name
     jtmp_exp.verbose       = verbose
+
     #- read template parameters into dict
-    tmp = jtmp_exp.update_template_file()
+    tmp = jtmp_exp.template_update_file()
+
     #--- make obj from dict 
-    TMP      = jtmp_exp.get_as_obj()
+    TMP      = jtmp_exp.template_get_as_obj()
     path_exp = TMP.experiment.path.experiment
        
     if path_mne_stage is None:
@@ -167,41 +171,48 @@ def main(argv):
        elif os.path.isfile(path_mne_stage + '/' + f):
           fn_raw_list.append(path_mne_stage + '/' + f)
             
-    #--- obj short-cut 
+   #--- raw obj short-cut
     tmp_pp_raw = TMP.experiment.data_preprocessing.raw
+
+   #--- brainresponse obj short-cut
     tmp_pp_brs = TMP.experiment.data_preprocessing.brainresponse
-          
-    #--- loop preproc for each fif file
+
+   #--- loop preproc for each fif file
     for fif_file in (fn_raw_list) :
         raw = None  
         
     #--- epocher search for events save to HDF     
         if tmp_pp_raw.epocher.do_run :
-           tmp_pp_raw.epocher.verbose = verbose
+           tmp_pp_raw.epocher['verbose'] = verbose
            print"\n===> PP Info: start apply epocher => event code search" 
-           print"File  :" + fif_file
+           print"File : " + fif_file
            if verbose:
               print"Parameter:"
               print tmp_pp_raw.epocher
               print"\n\n"
-           (fname,raw,epocher_hdf_fname) = jumeg_epocher.apply_epochs_to_hdf(fif_file,raw=raw,condition_list=condition_list, **tmp_pp_raw.epocher)
+           (fname,raw,epocher_hdf_fname) = jppd.apply_epocher_events_data(fif_file,raw=raw,condition_list=condition_list, **tmp_pp_raw.epocher)
         
     #--- noise_covariance
     #--- will search and find empty room file if fif is no empty room file 
         if tmp_pp_raw.noise_covariance.do_run :
-           tmp_pp_raw.noise_covariance.verbose = verbose
+           tmp_pp_raw.noise_covariance['verbose'] = verbose
            print"\n===> PP Info: start apply create noise_covariance" 
            print"File  :" + fif_file
            if verbose:
               print"Parameter:"
               print tmp_pp_raw.noise_covariance
               print"\n\n"
-           fname_noise_covariance = jppd.apply_create_noise_covariance(fif_file,raw=raw,**tmp_pp_raw.noise_covariance)
-           print"\n\n==> PP Info: done apply create noise_covariance :\n  ---> " + fname_noise_covariance
+           fname_noise_covariance = jppd.apply_create_noise_covariance_data(fif_file,raw=raw,**tmp_pp_raw.noise_covariance)
+
+           print"\n\n==> PP Info: done apply create noise_covariance :\n  ---> "
+           try:
+               print fname_noise_covariance +"\n"
+           except:
+               print " !!! not found !!!\n\n"
        
     #--- filter raw data   
         if tmp_pp_raw.filter.do_run :
-           tmp_pp_raw.filter.verbose = verbose
+           tmp_pp_raw.filter['verbose'] = verbose
            print"\n===> PP Info: start apply filter raw:"
            print"File  : " + fif_file
            if verbose:
@@ -214,77 +225,73 @@ def main(argv):
              fname = jumeg_base.get_fif_name(fif_file,postfix=tmp_pp_raw.filter.fif_postfix,extention=tmp_pp_raw.filter.fif_extention) 
                           
     #--- average raw filtered data
-        if tmp_pp_raw.average.do_run :
-           tmp_pp_raw.average.verbose = verbose
-           print"\n===> PP Info: start apply averager raw" 
-           print"File  :" + fname
-           if verbose:
-              print"Parameter :"
-              print tmp_pp_raw.average
-              print"\n\n"
-           jppd.apply_averager(fn_raw_list,**tmp_pp_raw.averager)    
-           print"\n\n==> PP Info: done apply averager filterd raw data\n"
+    #    if tmp_pp_raw.average.do_run :
+    #       tmp_pp_raw.average.verbose = verbose
+    #       print"\n===> PP Info: start apply averager raw"
+    #       print"File  :" + fname
+    #       if verbose:
+    #          print"Parameter :"
+    #          print tmp_pp_raw.average
+    #          print"\n\n"
+    #       jppd.apply_averager(fn_raw_list,**tmp_pp_raw.averager)
+    #       print"\n\n==> PP Info: done apply averager filterd raw data\n"
            
     #--- ocarta
         if tmp_pp_raw.ocarta.do_run :
-           tmp_pp_raw.ocarta.verbose = verbose   
-           print"\n===> PP Info: start apply ocarta offline"
+           tmp_pp_raw.ocarta['verbose'] = verbose
+
+           print"\n===> PP Info: start apply ocarta fit"
            print"File  :" + fname
            if verbose :
               print"Parameter :" 
               print tmp_pp_raw.ocarta
               print"\n\n"
-           (fname_oca,raw,ecg_events,eog_events) = jppd.apply_ocarta_offline_data(fname,raw=raw,**tmp_pp_raw.ocarta) 
-           jumeg_epocher.write_events_to_json(fname_oca,ecg_events=ecg_events,eog_events=eog_events)  
+
+           (fname_oca,raw,fhdf) = jppd.apply_ocarta_data(fname,raw=raw,**tmp_pp_raw.ocarta)
+
            print"\n\n==> PP Info: done apply ocarta\n  ---> " + fname_oca
         else:
-             fname_oca = jumeg_base.get_fif_name(fname,postfix=tmp_pp_raw.ocarta.offline_parameter.fif_postfix,
-                                                 extention=tmp_pp_raw.ocarta.offline_parameter.fif_extention) 
-        #     (ecg_events, eog_events) = jppd.find_ecg_eog_events(fname_oca)
-        
-        #jumeg_epocher.write_events_to_json(fname_oca,ecg_events=ecg_events,eog_events=eog_events)  
-        
-        #jumeg_epocher.apply_epocher(fname_oca,raw=raw, template_name=tmp_pp_brs.epocher.template_name)
-        #jumeg_epocher.apply_epocher(fname_oca,raw=raw, **tmp_pp_brs.epocher)
-   
-    #--- brain response apply ica from mne  
+             fname_oca = jumeg_base.get_fif_name(fname,postfix=tmp_pp_raw.ocarta.fif_postfix,extention=tmp_pp_raw.ocarta.fif_extention)
+
+    #--- brain response apply mne ica: fastica
         if tmp_pp_brs.ica.do_run :
-           tmp_pp_brs.ica.verbose = verbose
+           tmp_pp_brs.ica['verbose'] = verbose
            print "\n===> PP Info: start apply brain-response ica"
            print"File   : " + fname_oca
            if verbose: 
               print"Parameter :" 
               print tmp_pp_brs.ica
               print"\n\n"
-           (fname_oca_ica,ica_obj) = jppd.apply_ica_data(fname_oca,raw=raw,**tmp_pp_brs.ica)
+
+           (fname_oca_ica,raw,ICAobj) = jppd.apply_ica_data(fname_oca,raw=raw,**tmp_pp_brs.ica)
+
            print"\n\n==> PP Info: done apply ica for brain responses\n  ---> " + fname_oca_ica
         else:
-             fname_oca_ica = jumeg_base.get_fif_name(fname_oca,postfix=tmp_pp_brs.ica.fif_postfix,extention=tmp_pp_brs.ica.fif_extention) 
-       
+             fname_oca_ica = jumeg_base.get_fif_name(fname_oca,postfix=tmp_pp_brs.ica.fif_postfix,extention=tmp_pp_brs.ica.fif_extention)
+
+            # 201195_Chrono01_110516_1413_1_c,rfDC,fihp1n,ocarta-ica.fif
+
     #--- brain response ctps 
     #--- run for all condition combine and or exclude CTPs-ICs for different conditions
         if tmp_pp_brs.ctps.do_run :
-           tmp_pp_brs.ctps.verbose = verbose
-       #--- init freq array     
-           #fmax  = tmp_pp_brs.ctps.fmax
-           #fmin  = tmp_pp_brs.ctps.fmin
-           #fstep = tmp_pp_brs.ctps.fstep
-           # freq_ctps = np.array([np.arange(f0, fmax+1  ,fstep/2),np.arange(f0+ fstep, fmax+ fstep+f0 ,fstep/2) ]).T
-           
-           # freq_ctps = jumeg_math.calc_frequency_windos(tmp_pp_brs.ctps.fmin, tmp_pp_brs.ctps.fmax, tmp_pp_brs.ctps.fstep)
-           
+           tmp_pp_brs.ctps['verbose'] = verbose
+
            print"\n===> PP Info: start brainresponse ica"
-           print"File  : "  + fname_oca_ica
+           print"File  : " + fname_oca_ica
            if verbose :
               print"Parameters:" 
               print tmp_pp_brs.ctps
               print"\n\n"
-           fname_oca_ica_brain_event = jppd.apply_ica_select_brain_response_data(fname_oca_ica,raw=raw,**tmp_pp_brs.ctps)
-           print"\n\n==> PP Info: done apply ctp for brain responses & cleaned \n  ---> " +fname_oca_ica_brain_event
+
+           jppd.apply_ctps_brain_responses_data(fname_oca,raw=raw,fname_ica=fname_oca_ica,ica_raw=None,
+                                                       condition_list=condition_list,**tmp_pp_brs.ctps)
+
+           print"\n\n==> PP Info: done apply ctp for brain responses\n  ---> " + fname_oca
          
      #--- epocher avg  & time frequency epochs
-     #jumeg_epocher.apply_epocher(fname_oca,raw=raw)
+     #jumeg_epocher.apply_averager(fname_oca,raw=raw,fname_ica=fname_oa_ica, epocher     ICAobj)
      
-     
+
+
 if __name__ == "__main__":
    main(sys.argv)
