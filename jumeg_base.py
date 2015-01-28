@@ -6,37 +6,67 @@ Authors:
          Praveen Sripad  <praveen.sripad@rwth-aachen.de>
 License: BSD 3 clause
 
-last update 22.10.2014 FB
+last update 09.01.2015 FB
 
 '''
 
-
 import os
-# from distutils.dir_util import mkpath
-import numpy as np
-import matplotlib.pylab as pl
 import mne
 
-class JuMEG_Base(object):
+class JuMEG_Base_Basic(object):
      def __init__ (self):
-        self._jumeg_base_version   = 0.0001
-        self._verbose              = False
-        #self._extention_empty_room ="empty.fif" 
-        
+        super(JuMEG_Base_Basic, self).__init__()
+
+        self.__version       = 0.00014
+        self.__verbose       = False
+        self.__template_name = None
+        self.__do_run        = False
+        self.__do_save       = False
+        self.__do_plot       = False
+
 #--- version
-     def _get_version(self):  
-         return self._jumeg_filter_base_version
-       
-     version = property(_get_version)
+     def __get_version(self):
+         return self.__version
+     def __set_version(self,v):
+         self.__version=v
+     version = property(__get_version,__set_version)
 
-#--- verbose    
-     def _set_verbose(self,value):
-         self._verbose = value
+#=== FLAGS ==========
+#--- verbose
+     def __set_verbose(self,value):
+         self.__verbose = value
+     def __get_verbose(self):
+         return self.__verbose
+     verbose = property(__get_verbose, __set_verbose)
 
-     def _get_verbose(self):
-         return self._verbose
-       
-     verbose = property(_get_verbose, _set_verbose)
+#--- run
+     def __set_do_run(self, v):
+         self.__do_run = v
+     def __get_do_run(self):
+         return self.__do_run
+     do_run = property(__get_do_run,__set_do_run)
+
+#--- save
+     def __set_do_save(self, v):
+         self.__do_save = v
+     def __get_do_save(self):
+         return self.__do_save
+     do_save = property(__get_do_save,__set_do_save)
+
+#--- plot
+     def __set_do_plot(self, v):
+         self.__do_plot = v
+     def __get_do_plot(self):
+         return self.__do_plot
+     do_plot = property(__get_do_plot,__set_do_plot)
+
+
+class JuMEG_Base(JuMEG_Base_Basic):
+     def __init__ (self):
+        super(JuMEG_Base, self).__init__()
+
+        self.version  = 0.0002
+        self.verbose  = False
 
 #--- get_files_from_list
      def get_files_from_list(fin):
@@ -121,16 +151,18 @@ class JuMEG_Base(object):
          try:
              fh = open( fin )
          except:
-             return found_list 
+             assert "ERROR no such file list: " + fin
+             #return found_list
          
          try:
              for f in fh :
                  f = f.rstrip()
-                 if ( f[0] != '#') :
-                      if start_path :
-                         if os.path.isfile( start_path + "/" + f ):
-                            found_list.append( start_path + "/" + f )
-                      else :
+                 if f :
+                    if ( f[0] != '#') :
+                       if start_path :
+                          if os.path.isfile( start_path + "/" + f ):
+                             found_list.append( start_path + "/" + f )
+                       else :
                           if os.path.isfile( f ):
                              found_list.append(  f )
          finally:           
@@ -151,7 +183,7 @@ class JuMEG_Base(object):
          
          return 'trigger'
 
-     def apply_save_mne_data(self, raw,fname="test.fif",overwrite=True):
+     def apply_save_mne_data(self,raw,fname="test.fif",overwrite=True):
          '''
              Apply saving mne raw obj as fif 
              input : raw=raw obj, fname=file name, overwrite=True
@@ -183,7 +215,8 @@ class JuMEG_Base(object):
          import glob
 
          fname_empty_room = None
-         
+
+         print fname
          if raw is not None:
             fname = raw.info.get('filename')
          #--- first trivial check if raw obj is the empty room obj   
@@ -197,20 +230,26 @@ class JuMEG_Base(object):
          else : 
             # get path and pdf (in memory of 4D filenames) from filename
             p,pdf = os.path.split(fname)
-            # get path to scan from p
-            path_scan    = p.split( pdf[2] )[0] 
-            # get session dat from file 
+            # get session dat from file
             session_date = pdf.split('_')[2]
-                          
-           #--- TODO: may check for the latest or earliest empty-room file
-            #session_time = fn.split('_')[3]
-            fname_empty_room = glob.glob( path_scan + session_date +'*/*/*.empty.fif' )[0]
-               
-         if preload:
+
+            # get path to scan from p and pdf
+            path_scan    = p.split( session_date )[0]
+
+            #--- TODO: may check for the latest or earliest empty-room file
+            try:
+                fname_empty_room = glob.glob( path_scan + session_date +'*/*/*-empty.fif' )[0]
+            except:
+                print"!!! ERROR can not find empty room file: " + path_scan + session_date
+                return
+
+         if fname_empty_room and preload:
+            if self.verbose:
+               print "\nEmpty Room FIF file found: %s \n"  % (fname_empty_room)
+
             return( fname_empty_room, mne.io.Raw(fname_empty_room, preload=True) )
         
-         return fname_empty_room
-    
+
      def get_fif_name(self,fname,postfix=None,extention="-raw.fif"):
         """ 
         Returns fif filename
@@ -228,6 +267,7 @@ class JuMEG_Base(object):
         fname = p +"/" + pdf[:pdf.rfind('-')]
         if postfix:
            fname += "," + postfix
+           fname  = fname.replace(',-','-')
 
         return fname + extention 
     
@@ -263,12 +303,18 @@ class JuMEG_Base(object):
          input : [1,2,3]
          out numpy array with unique numbers
          """
+         import numpy as np
+
          if seq_str is None:
             return np.unique( np.asarray( [ ] ) )
          if self.isString(seq_str):
             return self.str_range_to_list( seq_str )
          else:
             return np.unique( np.asarray( [seq_str] ) )
-         
+
+
+
+
 #--- 
-jumeg_base = JuMEG_Base()
+jumeg_base       = JuMEG_Base()
+jumeg_base_basic = JuMEG_Base_Basic()
