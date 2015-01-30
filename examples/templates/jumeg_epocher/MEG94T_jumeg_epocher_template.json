@@ -3,8 +3,8 @@
            "experiment"       : "MEG94T",
            "condition"        : "TEST",
            "postfix"          : "test",
-           "time_pre"         : -0.20,
-           "time_post"        :  0.50,
+           "time_pre"         : -0.50,
+           "time_post"        :  2.00,
            "baseline"         : [null,0],
            "stimulus_channel" : "stimulus",
            "response_channel" : "response",
@@ -12,8 +12,8 @@
            "marker_type"      : "onset",
            "response_matching": false,
            "response_matching_type": "hit",
-           "ctps"             : {"time_pre":-0.20,"time_post":0.70,"baseline":[null,0]},
-           "reject"           : {"mag": 5e-12},
+           "ctps"             : {"time_pre":-0.50,"time_post":2.0,"baseline":[null,0]},
+           "reject"           : {"mag": 4e-12},
            "stimulus":{
                        "events":{
                                   "stim_channel"   : "STI 014",

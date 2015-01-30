@@ -43,7 +43,7 @@
                   "epocher": {
                               "template_name": "MEG94T",
                               "fif_extention": ".fif",
-                              "do_run": false,
+                              "do_run": true,
                               "verbose": false,
                               "save": true
                              },
@@ -66,7 +66,7 @@
                                                               "save": false
                                                             },
                                         "do_filter": true,
-                                        "do_run": false,
+                                        "do_run": true,
                                         "save": true
                                       },
                   "filter": {
@@ -83,17 +83,10 @@
                               "fif_postfix": "fihp1n",
                               "picks": null,
                               "overwrite": true,
-                              "do_run": false,
+                              "do_run": true,
                               "verbose": false,
                               "save": true
                              },
-                  "average": {
-                              "template_name": "MEG94T",
-                              "do_run": false,
-                              "do_average": false,
-                              "verbose": false,
-                              "save": true
-                            },
                   "ocarta": {
                               "global_parameter": {
                                                     "name_ecg": "ECG 001",
@@ -145,7 +138,7 @@
                               "fif_extention": ".fif",
                               "fif_postfix": "ocarta-raw",
                               "verbose": false,
-                              "do_run": false
+                              "do_run": true
                             }},
                   "brainresponse":{
                                     "ica": {
@@ -161,7 +154,7 @@
                                                 "verbose": false
                                               },
                                               "fit_parameter": {
-                                                "reject": {"mag": 5e-12},
+                                                "reject": {"mag": 4e-12},
                                                 "decim": null,
                                                 "start": null,
                                                 "stop": null,
@@ -171,22 +164,22 @@
                                               },
                                               "fif_extention": ".fif",
                                               "fif_postfix": "-ica",
-                                              "do_run": false,
+                                              "do_run": true,
                                               "verbose": false,
                                               "save": true
                                             },
                                     "ctps": {
                                               "template_name": "MEG94T",
-                                              "exclude_events":{ "eog_events":{ "tmin":-0.4,"tmax":0.4 } },
+                                              "exclude_events":{ "eog_events":{ "tmin":-0.5,"tmax":0.5 } },
                                               "filter_method": "bw",
                                               "fmin": 4,
-                                              "fmax": 200,
+                                              "fmax": 400,
                                               "fstep": 8,
                                               "njobs": 4,
                                               "remove_dcoffset": false,
                                               "do_update":false,
                                               "do_select":false,
-                                              "do_run": false,
+                                              "do_run": true,
                                               "verbose": false,
                                               "save": true
                                             },
@@ -195,8 +188,8 @@
                                               "template_name": "MEG94T",
                                               "fif_extention": ".fif",
                                               "fif_postfix": "ctpsbr",
-                                              "clean_global":{"save_raw":true,"save_epochs":true,"save_evoked":true},
-                                              "clean_condition":{"save_raw":true,"save_epochs":true,"save_evoked":true},
+                                              "clean_global":{"save_raw":true,"save_epochs":false,"save_evoked":true},
+                                              "clean_condition":{"save_raw":false,"save_epochs":false,"save_evoked":true},
                                               "do_run": true,
                                               "verbose": false
                                             }
