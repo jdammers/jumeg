@@ -125,6 +125,58 @@ class JuMEG_Base(JuMEG_Base_Basic):
          ''' call with meg=False,stim=True,resp=True'''
          return mne.pick_types(raw.info, meg=False,stim=True,resp=True)
 
+
+     def update_bad_channels(self,fname,raw=None,bads=None,preload=True,append=False,save=False):
+         """
+
+         :param fname:
+         :param raw:
+         :param bads:
+         :param preload:
+         :param append:
+         :param save:
+         :return: raw, bad channel list
+
+         """
+         #TODO: if  new bads ==  old bads in raw then  exit
+
+         if raw is None:
+            if fname is None:
+                assert "ERROR no file foumd!!\n\n"
+            if save:
+               preload = True
+            raw = mne.io.Raw(fname,preload=preload)
+
+         if not append:
+            raw.info['bads']=[]
+
+         if not isinstance(bads,list):
+            bads = bads.split(',')
+
+         if not bads:
+            if not append:
+               raw.info['bads']=[]
+         else:
+            for b in bads:
+                if (b in raw.ch_names): #  .index(b):
+                   raw.info['bads'].append(b)
+                else:
+                   if b.startswith('A'):
+                      raw.info['bads'].append('MEG '+ b.replace(" ","").strip('A').zfill(3) )
+                   elif b.startswith('MEG'):
+                      raw.info['bads'].append('MEG '+ b.replace(" ","").strip('MEG').zfill(3) )
+
+         if self.verbose:
+            print "\n --> Update bad-channels : " + raw.info['filename']
+            print raw.info['bads']
+            print"\n"
+
+         if save:
+            raw.save(raw.info['filename'],overwrite=True)
+
+         return raw,raw.info['bads']
+
+
 #--- helper function
      def get_files_from_list(self, fin):
          ''' 
@@ -140,14 +192,25 @@ class JuMEG_Base(JuMEG_Base_Basic):
                fout = list( fin )
          return fout
 
-    
+
      def get_filename_list_from_file(self, fin, start_path = None):
          ''' 
              input : text file to open
                      start_path = <start_dir> [None]
-             return: list of existing files with full path
+
+                     txt file format e.g:
+                     fif-file-name  --bads=MEG1,MEG123
+
+                     0815/M100/121130_1306/1/0815_M100_121130_1306_1_c,rfDC-raw.fif --bads=A248
+                     0815/M100/120920_1253/1/0815_M100_120920_1253_1_c,rfDC-raw.fif
+                     0815/M100/130618_1347/1/0815_M100_130618_1347_1_c,rfDC-raw.fif --bads=A132,MEG199
+
+
+             return: list of existing files with full path and dict with bad-channels (as string e.g. A132,MEG199,MEG246)
          '''
-         found_list = []    
+         found_list = []
+         bads_dict  = dict()
+
          try:
              fh = open( fin )
          except:
@@ -155,24 +218,40 @@ class JuMEG_Base(JuMEG_Base_Basic):
              #return found_list
          
          try:
-             for f in fh :
-                 f = f.rstrip()
-                 if f :
-                    if ( f[0] != '#') :
-                       if start_path :
-                          if os.path.isfile( start_path + "/" + f ):
-                             found_list.append( start_path + "/" + f )
+             for line in fh :
+                 line = line.rstrip()
+                 bads = None
+                 if line :
+                    if ( line[0] == '#') : continue
+                    opt = line.split()
+
+                    for opi in opt[1:]:
+                        if ('--bads' in opi):
+                           _,bads = opi.split('--bads=')
+                           # print bads
+                           break
+
+                    if start_path :
+                       if os.path.isfile( start_path + "/" + opt[0] ):
+                             found_list.append( start_path + "/" + opt[0] )
+                             bads_dict[start_path + "/" + opt[0]]= bads
                        else :
-                          if os.path.isfile( f ):
-                             found_list.append(  f )
+                          if os.path.isfile( opt[0] ):
+                             found_list.append( opt[0] )
+                             bads_dict[opt[0]]= bads
          finally:           
              fh.close()
        
          if self.verbose :
             print "--> INFO << get_filename_list_from_file >> Files found: %d" % ( len(found_list) )
             print found_list
+            print "\n BADs: "
+            print bads_dict
+            print"\n"
 
-         return found_list
+         return found_list,bads_dict
+
+
 
      def get_trig_name(name_stim):
          ''' check stim_channel name and return trigger or response'''  
