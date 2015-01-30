@@ -926,5 +926,8 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
 # ave=mne.read_evokeds(fif)
 #  ave[0].plot()
+# ave.data
+#ave[0].data.dtype=np.float32
+#ave[0].data..astype('int16').tofile(filename)
 
 jumeg_epocher_ctps = JuMEG_Epocher_CTPS()

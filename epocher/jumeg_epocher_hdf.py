@@ -142,7 +142,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
                   return HStorer.get_storer(key).attrs[attr]
            except:
                print "\nERROR in hdf_obj_get_attributes => can not store key attributes no such Storer-Obj"
-               print "HDF : " + self.HDFobj.filename()
+               print "HDF : " + self.HDFobj.filename
                print "key : " + key
                print "Attr: " + attr
                print "\n"
@@ -186,7 +186,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
 
         if self.verbose :
            print "\n---> HDFobj store attributes to HDF5 : " + key
-           print self.HDFobj.filename()
+           print self.HDFobj.filename
            for atr in storer_attrs :
                print"---> PARAMETER "+  atr +":"
                print HStorer.attrs[atr]
