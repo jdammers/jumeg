@@ -146,7 +146,7 @@ def epochs(data, idx_event, sfreq, tpre, tpost):
 def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, wchange=1e-16,
                            annealdeg=60., annealstep=0.9, maxsteps=200, ca_idx=None,
                            ca_cost_func=[1., 1.], oa_idx=None, oa_cost_func=[1., 1.],
-                           sphering=None, oa_template=None):
+                           sphering=None, oa_template=[]):
     """
     Run the OCARTA constrained ICA decomposition on raw data
 
@@ -307,7 +307,7 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
         # ..................................
         # update weights for ocular activity
         # ..................................
-        if oa_template:
+        if len(oa_template):
 
             # ..................................
             # generate spatial maps
@@ -575,11 +575,11 @@ def identify_ocular_activity(activations, eog_signals, spatial_maps,
 ########################################################
 class JuMEG_ocarta(object):
 
-    def __init__ (self, name_ecg='ECG 001', ecg_freq=[10, 20],
-                  thresh_ecg=0.4, name_eog='EOG 002', eog_freq=[1, 10],
-                  seg_length=30.0, shift_length=10.0,
-                  percentile_eog=80, npc=None, explVar=0.95, lrate=None,
-                  maxsteps=50):
+    def __init__(self, name_ecg='ECG 001', ecg_freq=[10, 20],
+                 thresh_ecg=0.4, name_eog='EOG 002', eog_freq=[1, 10],
+                 seg_length=30.0, shift_length=10.0,
+                 percentile_eog=80, npc=None, explVar=0.95, lrate=None,
+                 maxsteps=50):
         """
         Create ocarta object from raw data file.
 
@@ -1105,7 +1105,8 @@ class JuMEG_ocarta(object):
         weights, activations = ocarta_constrained_ICA(pca_data, initial_weights=initial_weights,
                                                       maxsteps=self.maxsteps, lrate=self.lrate, ca_idx=ca_idx,
                                                       ca_cost_func=self.opt_cost_func_cardiac, oa_idx=oa_idx,
-                                                      oa_cost_func=self.opt_cost_func_ocular, sphering=sphering)
+                                                      oa_cost_func=self.opt_cost_func_ocular, sphering=sphering,
+                                                      oa_template=self._template_OA[self._picks])
 
         # return results
         return activations, weights
@@ -1160,7 +1161,7 @@ class JuMEG_ocarta(object):
             idx_ok = np.setdiff1d(idx_ok, idx_ca)
             eog_signals = meg_raw._data[meg_raw.info['ch_names'].index(self._get_name_eog()), idx_start:idx_end]
             idx_oa = identify_ocular_activity(act[idx_ok], eog_signals, spatial_maps[idx_ok],
-                                              self._template_OA, sfreq=meg_raw.info['sfreq'])
+                                              self._template_OA[self._picks], sfreq=meg_raw.info['sfreq'])
             idx_oa = idx_ok[idx_oa]
         else:
             idx_oa = []
@@ -1231,7 +1232,7 @@ class JuMEG_ocarta(object):
                 orientation = sgn(1., pearsonr(spatial_maps[idx_oa[ioa]], self._template_OA[self._picks])[0])
                 oa_template += pre_math.rescale(orientation * spatial_maps[idx_oa[ioa]], oa_min, oa_max)
 
-            self._template_OA = oa_template
+            self._template_OA[self._picks] = oa_template
 
         # return results
         return weights, idx_ca, idx_oa
@@ -1239,7 +1240,7 @@ class JuMEG_ocarta(object):
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    #   calculate optimal cost-function for ocular activity
+    #   clean data using OCARTA
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def fit(self, fn_raw, meg_raw=None, denoising=None,
             unfiltered=False, notch_filter=True, notch_freq=50,
@@ -1495,6 +1496,7 @@ class JuMEG_ocarta(object):
             perf_art_rej = plt_perf(meg_unfilt, None, fn_perf_img, meg_clean=meg_clean)
         else:
             perf_art_rej = plt_perf(meg_raw, None, fn_perf_img, meg_clean=meg_clean)
+
 
         self.performance_ca = perf_art_rej[0]
         self.performance_oa = perf_art_rej[1]

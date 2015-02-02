@@ -137,6 +137,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         nrange = 2
 
     y_figsize = 6 * nrange
+    perf_art_rej = np.zeros(2)
 
     # ToDo:  How can we avoid popping up the window if show=False ?
     pl.ioff()
@@ -217,14 +218,15 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         pl.xlim(times[0], times[len(times) - 1])
         pl.ylim(1.1 * ymin, 1.1 * ymax)
         # print some info
+        perf_art_rej[i] = calc_performance(raw_epochs_avg, cleaned_epochs_avg)
         # ToDo: would be nice to add info about ica.excluded
         if meg_clean_given:
             textstr1 = 'Performance: %d\nFrequency Correlation: %d'\
-                       % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
+                       % (perf_art_rej[i],
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg))
         else:
             textstr1 = 'Performance: %d\nFrequency Correlation: %d\n# ICs: %d\nExplained Var.: %d'\
-                       % (calc_performance(raw_epochs_avg, cleaned_epochs_avg),
+                       % (perf_art_rej[i],
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
                           ica.n_components_, ica.n_components * 100)
 
@@ -238,6 +240,8 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     pl.savefig(fnout_fig + '.png', format='png')
     pl.close('performance image')
     pl.ion()
+
+    return  perf_art_rej
 
 
 def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
