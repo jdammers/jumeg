@@ -184,7 +184,8 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
 ##################################################
 def shuffle_data(data_trials, seed=None):
     '''
-    Shuffling the time points of any data array.
+    Shuffling the time points of any data array. The probabiity density
+    of the data samples is preserved.
     WARNING: This function simply reorders the time points and does not
     perform shuffling of the phases.
 
@@ -194,15 +195,15 @@ def shuffle_data(data_trials, seed=None):
                   In each trial samples are randomly shuffled
     Returns
     -------
-    s_trial : shuffled (time points only) trials
+    dt : shuffled (time points only) trials
     '''
     np.random.seed(seed=None)   # for parallel processing => re-initialized
     ntrials, nsamples = data_trials.shape
 
-    # shuffle all phase entries
+    # shuffle all time points
     dt = data_trials.flatten()
     np.random.shuffle(dt)
-    dt = dt.reshape(ntrials,nsamples)
+    dt = dt.reshape(ntrials, nsamples)
 
     return dt
 
@@ -212,9 +213,10 @@ def shuffle_data(data_trials, seed=None):
 # destroy phase/time info by shifting on 2D arrays
 #
 ##################################################
-def shift_data(data_trials, seed=None):
+def shift_data(data_trials, min_shift=0, max_shift=None, seed=None):
     '''
-    Shuffling the time points of any data array.
+    Shifting the time points of any data array. The probability density of the data
+    samples are preserved.
     WARNING: This function simply shifts the time points and does not
     perform shuffling of the phases in the frequency domain.
 
@@ -225,7 +227,7 @@ def shift_data(data_trials, seed=None):
 
     Returns
     -------
-    s_trial : shuffled (phase) trials
+    dt : Time shifted trials.
     '''
 
     np.random.seed(seed=None)   # for parallel processing => re-initialized
@@ -233,9 +235,16 @@ def shift_data(data_trials, seed=None):
 
     # random phase shifts for each trial
     dt = np.zeros((ntrials, nsamples), dtype=data_trials.dtype)
-    shift = np.random.permutation(np.arange(ntrials))
+    # Limit shifts to the number of samples.
+    if max_shift is None:
+        max_shift = nsamples
+    # shift array contacts maximum and minimum number of shifts
+    assert (min_shift < max_shift) & (min_shift >= 0), 'min_shift is not less than max_shift'
+    shift = np.random.permutation(np.arange(min_shift, max_shift))
+
     for itrial in range(ntrials):
-        dt[itrial,:] = np.roll(data_trials[itrial,:], shift[itrial])
+        # random shift is picked from the range of min max values
+        dt[itrial, :] = np.roll(data_trials[itrial, :], np.random.choice(shift))
 
     return dt
 
@@ -245,10 +254,11 @@ def shift_data(data_trials, seed=None):
 # make surrogates from Epochs
 #
 #######################################################
-def make_surrogates_epochs(epochs, check_power=False):
+def make_surrogates_epochs(epochs, check_pdf=False):
     '''
     Make surrogate epochs using sklearn. Destroy each trial by shuffling the time points only.
-    The shuffling is performed in the time domain only.
+    The shuffling is performed in the time domain only. The probability density function is
+    preserved.
 
     Parameters
     ----------
@@ -268,11 +278,11 @@ def make_surrogates_epochs(epochs, check_power=False):
             order = np.argsort(rng.randn(len(surrogate.times)))
             surr[trial, channel, :] = surr[trial, channel, order]
     surrogate._data = surr
-    if check_power:
-        from mne.time_frequency import compute_epochs_psd
-        ps1, _ = compute_epochs_psd(epochs, epochs.picks)
-        ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
-        assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
+
+    if check_pdf:
+        hist, _ = np.histogram(data_trials.flatten())
+        hist_dt = np.histogram(dt.flatten())
+        assert np.array_equal(hist, hist_dt), 'The histogram values are unequal.'
 
     return surrogate
 
