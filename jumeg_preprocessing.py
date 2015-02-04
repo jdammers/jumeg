@@ -4,7 +4,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as pl
 import mne
-import ctps
+from mne.preprocessing import ctps_ as ctps
 from jumeg.jumeg_utils import get_files_from_list
 from jumeg.jumeg_plot import (plot_average, plot_performance_artifact_rejection,
                               plot_compare_brain_responses)
@@ -377,7 +377,7 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
                                     tmax=tmax, baseline=None,
                                     proj=False, picks=picks, verbose=False)
             # compute CTPS
-            _, pk, _ = ctps.compute_ctps(ica_epochs.get_data())
+            _, pk, _ = ctps.ctps(ica_epochs.get_data())
 
             pk_max = np.max(pk, axis=1)
             idx_ecg = np.where(pk_max >= thresh)[0]
@@ -547,7 +547,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
                                         picks=ica_picks, baseline=baseline,
                                         proj=proj)
                 # compute CTPS
-                _, pk, pt = ctps.compute_ctps(ica_epochs.get_data())
+                _, pk, pt = ctps.ctps(ica_epochs.get_data())
                 pkmax = pk.max(1)
                 times = ica_epochs.times * 1e3
                 pkarr.append(pk)

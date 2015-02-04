@@ -182,25 +182,28 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
 # destroy phase/time info by shuffling on 2D arrays
 #
 ##################################################
-def shuffle_data (data_trials, seed=None):
-    ''' Shuffling the time information (phase) of any data array
+def shuffle_data(data_trials, seed=None):
+    '''
+    Shuffling the time points of any data array. The probabiity density
+    of the data samples is preserved.
+    WARNING: This function simply reorders the time points and does not
+    perform shuffling of the phases.
+
     Parameters
     ----------
     data_trials : 2d ndarray of dimension [ntrials x nsamples]
                   In each trial samples are randomly shuffled
     Returns
     -------
-    s_trial : shuffled (phase) trials
-
+    dt : shuffled (time points only) trials
     '''
-
     np.random.seed(seed=None)   # for parallel processing => re-initialized
     ntrials, nsamples = data_trials.shape
 
-    # shuffle all phase entries
+    # shuffle all time points
     dt = data_trials.flatten()
     np.random.shuffle(dt)
-    dt = dt.reshape(ntrials,nsamples)
+    dt = dt.reshape(ntrials, nsamples)
 
     return dt
 
@@ -210,8 +213,13 @@ def shuffle_data (data_trials, seed=None):
 # destroy phase/time info by shifting on 2D arrays
 #
 ##################################################
-def shift_data(data_trials, seed=None):
-    ''' Shuffling the time information (phase) of any data array
+def shift_data(data_trials, min_shift=0, max_shift=None, seed=None):
+    '''
+    Shifting the time points of any data array. The probability density of the data
+    samples are preserved.
+    WARNING: This function simply shifts the time points and does not
+    perform shuffling of the phases in the frequency domain.
+
     Parameters
     ----------
     data_trials : 2d ndarray of dimension [ntrials x nsamples]
@@ -219,8 +227,7 @@ def shift_data(data_trials, seed=None):
 
     Returns
     -------
-    s_trial : shuffled (phase) trials
-
+    dt : Time shifted trials.
     '''
 
     np.random.seed(seed=None)   # for parallel processing => re-initialized
@@ -228,9 +235,16 @@ def shift_data(data_trials, seed=None):
 
     # random phase shifts for each trial
     dt = np.zeros((ntrials, nsamples), dtype=data_trials.dtype)
-    shift = np.random.permutation(np.arange(ntrials))
+    # Limit shifts to the number of samples.
+    if max_shift is None:
+        max_shift = nsamples
+    # shift array contacts maximum and minimum number of shifts
+    assert (min_shift < max_shift) & (min_shift >= 0), 'min_shift is not less than max_shift'
+    shift = np.random.permutation(np.arange(min_shift, max_shift))
+
     for itrial in range(ntrials):
-        dt[itrial,:] = np.roll(data_trials[itrial,:], shift[itrial])
+        # random shift is picked from the range of min max values
+        dt[itrial, :] = np.roll(data_trials[itrial, :], np.random.choice(shift))
 
     return dt
 
@@ -240,10 +254,12 @@ def shift_data(data_trials, seed=None):
 # make surrogates from Epochs
 #
 #######################################################
-def make_surrogates_epochs(epochs, check_power=False):
+def make_surrogates_epochs(epochs, check_pdf=False):
     '''
-    Make surrogate epochs using sklearn. Destroy time-phase relationship for each trial.
-    
+    Make surrogate epochs using sklearn. Destroy each trial by shuffling the time points only.
+    The shuffling is performed in the time domain only. The probability density function is
+    preserved.
+
     Parameters
     ----------
     Epochs Object.
@@ -262,12 +278,74 @@ def make_surrogates_epochs(epochs, check_power=False):
             order = np.argsort(rng.randn(len(surrogate.times)))
             surr[trial, channel, :] = surr[trial, channel, order]
     surrogate._data = surr
-    if (check_power):
-        ps1 = np.abs(np.fft.fft(surr)) ** 2
-        ps2 = np.abs(np.fft.fft(epochs.get_data())) ** 2
-        assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
+
+    if check_pdf:
+        hist, _ = np.histogram(data_trials.flatten())
+        hist_dt = np.histogram(dt.flatten())
+        assert np.array_equal(hist, hist_dt), 'The histogram values are unequal.'
 
     return surrogate
+
+
+def make_fftsurr_epochs(epochs, check_power=False):
+    '''
+    Make surrogate epochs using sklearn. Destroy each trial by shuffling the phase information.
+    The shuffling is performed in the frequency domain only using fftsurr function from mlab.
+
+    Parameters
+    ----------
+    Epochs Object.
+
+    Output
+    ------
+    Surrogate Epochs object
+    '''
+    from matplotlib.mlab import fftsurr
+
+    surrogate = epochs.copy()
+    surr = surrogate.get_data()
+    for trial in range(len(surrogate)):
+        for channel in range(len(surrogate.ch_names)):
+            surr[trial, channel, :] = fftsurr(surr[trial, channel, :])
+    surrogate._data = surr
+    if check_power:
+        from mne.time_frequency import compute_epochs_psd
+        ps1, _ = compute_epochs_psd(epochs, epochs.picks)
+        ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
+        assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
+
+    return surrogate
+
+
+def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
+    '''
+    Make surrogate epochs using sklearn. Destroy phase information in each trial by randomization.
+    The phases values are randomized in teh frequency domain.
+
+    Parameters
+    ----------
+    Epochs Object.
+
+    Output
+    ------
+    Surrogate Epochs object
+    '''
+
+    surrogate = epochs.copy()
+    surr = surrogate.get_data()
+    for trial in range(len(surrogate)):
+        for channel in range(len(surrogate.ch_names)):
+            surr[trial, channel, :] = randomize_phase(surr[trial, channel, :])
+    surrogate._data = surr
+    if check_power:
+        from mne.time_frequency import compute_epochs_psd
+        ps1, _ = compute_epochs_psd(epochs, epochs.picks)
+        ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
+        # np.array_equal does not pass the assertion, due to minor changes in power.
+        assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
+
+    return surrogate
+
     
 # def make_surrogates_epoch_numpy(epochs):
 #     '''
@@ -289,7 +367,7 @@ def make_surrogates_epochs(epochs, check_power=False):
 #     surrogate._data = surr
 #     ps1 = np.abs(np.fft.fft(surr))**2
 #     ps2 = np.abs(np.fft.fft(epochs.get_data()))**2
-#     assert ps1.all() == ps2.all(), 'The power content does not match. Error.'
+#     assert np.aray_equal(ps1, ps2), 'The power content does not match. Error.'
 #     return surrogate
 
 
@@ -661,3 +739,139 @@ def triu_indices(n, k=0):
     - mask_indices : generic function accepting an arbitrary mask function.
     """
     return mask_indices(n, np.triu, k)
+
+
+# Function obtained from scot (https://github.com/scot-dev/scot)
+# Used to randomize the phase values of a signal.
+def randomize_phase(data, random_state=None):
+    '''
+    Phase randomization.
+
+    This function randomizes the input array's spectral phase along the first dimension.
+
+    Parameters
+    ----------
+    data : array_like
+        Input array
+
+    Returns
+    -------
+    out : ndarray
+        Array of same shape as `data`.
+
+    Notes
+    -----
+    The algorithm randomizes the phase component of the input's complex fourier transform.
+
+    Examples
+    --------
+    .. plot::
+        :include-source:
+
+        from pylab import *
+        from scot.datatools import randomize_phase
+        np.random.seed(1234)
+        s = np.sin(np.linspace(0,10*np.pi,1000)).T
+        x = np.vstack([s, np.sign(s)]).T
+        y = randomize_phase(x)
+        subplot(2,1,1)
+        title('Phase randomization of sine wave and rectangular function')
+        plot(x), axis([0,1000,-3,3])
+        subplot(2,1,2)
+        plot(y), axis([0,1000,-3,3])
+        plt.show()
+    '''
+    from sklearn.utils import check_random_state
+    data = np.asarray(data)
+    data_freq = np.fft.rfft(data, axis=0)
+    rng = check_random_state(random_state)
+    data_freq = np.abs(data_freq) * np.exp(1j * rng.random_sample(data_freq.shape) * 2 * np.pi)
+    return np.fft.irfft(data_freq, data.shape[0], axis=0)
+
+
+def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False, raw_fname='output.fif'):
+    '''
+    A function that can be used to quickly create a raw object with the
+    data provided.
+
+    Inspired from https://gist.github.com/dengemann/e9b45f2ff3e3380907d3
+
+    Parameters
+    ----------
+    data: ndarray, shape (n_channels, n_times)
+    ch_types: list eg. ['misc'], ['eeg'] or ['meg']
+    sfreq: float
+        Sampling frequency.
+    ch_names: list
+        List of channel names.
+    save : bool
+        If True, the raw object will be saved as a fif. file.
+    raw_fname : str
+        If save is True, the name of the saved fif file.
+
+    Returns
+    -------
+    raw : Instance of mne.io.Raw
+
+    Example
+    -------
+
+    rng = np.random.RandomState(42)
+    data = rng.random_sample((248, 2000))
+    sfreq = 1e3
+    ch_types = ['misc'] * 248
+    ch_names = ['MISC {:03d}'.format(i + 1) for i in range(len(ch_types))]
+    raw = create_dummy_raw(data, ch_types, sfreq, ch_names)
+
+    '''
+    info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+    raw = mne.io.RawArray(data, info)
+    if save:
+        raw.save(raw_fname)
+    return raw
+
+
+def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False, epochs_fname='output-epo.fif'):
+    '''
+    A function that can be used to quickly create an Epochs object with the
+    data provided.
+
+    Inspired from https://gist.github.com/dengemann/e9b45f2ff3e3380907d3
+
+    Parameters
+    ----------
+    data: ndarray, shape (n_channels, n_times)
+    events: ndarray (n_events, 3)
+        As returned by mne.find_events
+    ch_types: list eg. ['misc'], ['eeg'] or ['meg']
+    sfreq: float
+        Sampling frequency.
+    ch_names: list
+        List of channel names.
+    save : bool
+        If True, the epochs object will be saved as a fif. file.
+    epochs_fname : str
+        If save is True, the name of the saved fif file.
+
+    Returns
+    -------
+    epochs : Instance of mne.Epochs
+
+    Example
+    -------
+
+    rng = np.random.RandomState(42)
+    data = rng.random_sample((248, 2000))
+    sfreq = 1e3
+    ch_types = ['misc'] * 248
+    ch_names = ['MISC {:03d}'.format(i + 1) for i in range(len(ch_types))]
+    # make event with - event id 42, 10 events of duration 100 s each, 0 stim signal
+    events = np.array((np.arange(0, 1000, 100), np.zeros((10)), np.array([42] * 10))).T
+    epochs = create_dummy_epochs(data, events, ch_types, sfreq, ch_names)
+
+    '''
+    info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+    epochs = mne.EpochsArray(data, info, events)
+    if save:
+        epochs.save(epochs_fname)
+    return epochs

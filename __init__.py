@@ -7,8 +7,6 @@
 #
 # License: Simplified BSD
 
-import ctps
-
 from . import jumeg_preprocessing 
 from . import jumeg_math
 from . import jumeg_noise_reducer
