@@ -11,6 +11,7 @@ import ctps
 
 from . import jumeg_preprocessing 
 from . import jumeg_math
+from . import jumeg_noise_reducer
 from . import jumeg_iomeg
 from . import jumeg_utils
 from . import jumeg_plot
