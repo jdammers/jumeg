@@ -4,10 +4,10 @@
 ----------------------------------------------------------------------
 --- jumeg.decompose.ocarta -------------------------------------------
 ----------------------------------------------------------------------
- autor      : Lukas Breuer
+ author     : Lukas Breuer
  email      : l.breuer@fz-juelich.de
  last update: 12.12.2014
- version    : 1.0 (NOTE: Current version is only able to handle data
+ version    : 1.1 (NOTE: Current version is only able to handle data
                          recorded with the magnesWH3600 system)
 
 ----------------------------------------------------------------------
@@ -651,6 +651,8 @@ class JuMEG_ocarta(object):
         self._thresh_eog = 0.0
         self._performance_ca = 0.0
         self._performance_oa = 0.0
+        self._freq_corr_ca = 0.0
+        self._freq_corr_oa = 0.0
 
 
 
@@ -861,8 +863,8 @@ class JuMEG_ocarta(object):
     performance_ca = property(_get_perf_rej_ca, _set_perf_rej_ca)
 
 
-     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    # set/get performance value related to cardiac activity
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # set/get performance value related to ocular activity
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def _set_perf_rej_oa(self, perf_val):
         self._performance_oa = abs(perf_val)
@@ -871,6 +873,30 @@ class JuMEG_ocarta(object):
         return self._performance_oa
 
     performance_oa = property(_get_perf_rej_oa, _set_perf_rej_oa)
+
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # set/get frequency correlation related to cardiac activity
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def _set_freq_corr_ca(self, freq_corr):
+        self._freq_corr_ca = abs(freq_corr)
+
+    def _get_freq_corr_ca(self):
+        return self._freq_corr_ca
+
+    freq_corr_ca = property(_get_freq_corr_ca, _set_freq_corr_ca)
+
+
+     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # set/get frequency correlation  related to ocular activity
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def _set_freq_corr_oa(self, freq_corr):
+        self._freq_corr_oa = abs(freq_corr)
+
+    def _get_freq_corr_oa(self):
+        return self._freq_corr_oa
+
+    freq_corr_oa = property(_get_freq_corr_oa, _set_freq_corr_oa)
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1170,7 +1196,6 @@ class JuMEG_ocarta(object):
         return weights, idx_ca, idx_oa
 
 
-
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     #   perform initial training to get starting values
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1238,6 +1263,55 @@ class JuMEG_ocarta(object):
         return weights, idx_ca, idx_oa
 
 
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    #   estimate performance values
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def performance(self, meg_raw, meg_clean):
+
+        # import necessary modules
+        from jumeg.jumeg_math import calc_performance, calc_frequency_correlation
+        from mne import Epochs
+        from mne.preprocessing import find_ecg_events, find_eog_events
+
+        perf_ar = np.zeros(2)
+        freq_corr_ar = np.zeros(2)
+
+        # ECG, EOG:  loop over all artifact events
+        for idx_ar in range(0, 2):
+
+            # for cardiac artifacts
+            if (idx_ar == 0) and self._get_name_ecg() in meg_raw.ch_names:
+                event_id = 999
+                idx_event, _, _ = find_ecg_events(meg_raw, event_id,
+                                                  ch_name=self._get_name_ecg(),
+                                                  verbose=False)
+            # for ocular artifacts
+            elif self._get_name_eog() in meg_raw.ch_names:
+                event_id = 998
+                idx_event = find_eog_events(meg_raw, event_id,
+                                            ch_name=self._get_name_eog(),
+                                            verbose=False)
+            else:
+                event_id = 0
+
+            if event_id:
+                # generate epochs
+                raw_epochs = Epochs(meg_raw, idx_event, event_id, -0.4, 0.4,
+                                    picks=self._picks, baseline=(None, None), proj=False,
+                                    verbose=False)
+                cleaned_epochs = Epochs(meg_clean, idx_event, event_id, -0.4, 0.4,
+                                        picks=self._picks, baseline=(None, None), proj=False,
+                                        verbose=False)
+
+                raw_epochs_avg = raw_epochs.average()
+                cleaned_epochs_avg = cleaned_epochs.average()
+
+                # estimate performance and frequency correlation
+                perf_ar[idx_ar] = calc_performance(raw_epochs_avg, cleaned_epochs_avg)
+                freq_corr_ar[idx_ar] = calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg)
+
+        return perf_ar, freq_corr_ar
+
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     #   clean data using OCARTA
@@ -1302,7 +1376,7 @@ class JuMEG_ocarta(object):
         """
 
         # import necessary modules
-        from jumeg.jumeg_preprocessing import plot_performance_artifact_rejection as plt_perf
+        from jumeg.jumeg_plot import plot_performance_artifact_rejection as plt_perf
         from jumeg.jumeg_utils import get_sytem_type
         from mne import pick_types, set_log_level
         from mne.io import Raw
@@ -1493,13 +1567,18 @@ class JuMEG_ocarta(object):
 
         # generate performance image
         if unfiltered:
-            perf_art_rej = plt_perf(meg_unfilt, None, fn_perf_img, meg_clean=meg_clean)
+            plt_perf(meg_unfilt, None, fn_perf_img, meg_clean=meg_clean)
+            # estimate performance values/frequency correlation
+            perf_ar, freq_corr_ar = self.performance(meg_unfilt, meg_clean)
         else:
-            perf_art_rej = plt_perf(meg_raw, None, fn_perf_img, meg_clean=meg_clean)
+            plt_perf(meg_raw, None, fn_perf_img, meg_clean=meg_clean)
+            # estimate performance values/frequency correlation
+            perf_ar, freq_corr_ar = self.performance(meg_raw, meg_clean)
 
-
-        self.performance_ca = perf_art_rej[0]
-        self.performance_oa = perf_art_rej[1]
+        self.performance_ca = perf_ar[0]
+        self.performance_oa = perf_ar[1]
+        self.freq_corr_ca = freq_corr_ar[0]
+        self.freq_corr_oa = freq_corr_ar[1]
 
 
         return meg_clean, fn_out

@@ -241,7 +241,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     pl.close('performance image')
     pl.ion()
 
-    return  perf_art_rej
+    return perf_art_rej
 
 
 def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,

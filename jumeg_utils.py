@@ -338,11 +338,11 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
             pt = phase_array[ifreq, :, isource, :]  # extract [ntrials, nsamp]
 
             if(mode=='shuffle'):
-                # shuffle phase values for all repititions
+                # shuffle phase values for all repetitions
                 pt_s = Parallel(n_jobs=n_jobs, verbose=0)(delayed(shuffle_data)
                                 (pt) for i in range(nrepeat))
             else:
-                # shift all phase values for all repititions
+                # shift all phase values for all repetitions
                 pt_s = Parallel(n_jobs=n_jobs, verbose=0)(delayed(shift_data)
                                 (pt) for i in range(nrepeat))
 
