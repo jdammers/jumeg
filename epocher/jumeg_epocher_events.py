@@ -293,7 +293,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
         return stim_df
 
  #---
-    def events_store_to_hdf(self,raw,condition_list=None,overwrite_hdf =True):
+    def events_store_to_hdf(self,raw,condition_list=None,overwrite_hdf=False):
         """
         find & store epocher data to hdf5:
         -> readding parameter from epocher template file

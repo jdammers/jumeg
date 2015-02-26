@@ -195,6 +195,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         return HStorer
 
 
+
     def hdf_obj_update_dataframe(self,df,key=None,reset=True,**storer_attrs):
         """
          store & update data[frame] and user attributes to HDFobj

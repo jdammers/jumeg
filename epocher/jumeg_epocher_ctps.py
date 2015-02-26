@@ -56,12 +56,14 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
               if ctps_parameter.has_key(k) :
                  if ctps_parameter[k]:
                     self.ctps_hdf_parameter[k] = ctps_parameter[k]
-              elif ep_param.has_key('ctps'):
+                    continue
+
+              if ep_param.has_key('ctps'):
                  self.ctps_hdf_parameter[k] = ep_param['ctps'][k]
               elif ep_param[k]:
                  self.ctps_hdf_parameter[k] = ep_param[k]
 
-              if not  self.ctps_hdf_parameter.has_key(k) :
+              if not self.ctps_hdf_parameter.has_key(k) :
                  self.ctps_hdf_parameter[k] = None
 
           if self.verbose:
@@ -367,7 +369,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
          #---  make HDF node for steady-state artifacsts
           storer_attrs = {'ctps_parameter': self.ctps_hdf_parameter}
           stst_key='/artifacts/steady-state'
-          self.hdf_obj_update_dataframe( pd.DataFrame( self.ctps_freq_bands ).astype(np.int16),key=stst_key,**storer_attrs )
+          self.hdf_obj_update_dataframe(pd.DataFrame( self.ctps_freq_bands ).astype(np.int16),key=stst_key,**storer_attrs )
 
          #--- get fresh IC's data & filter inplace
           print " ---> get ica sources ...\n"
@@ -430,14 +432,12 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
           return fhdr
 
-
 #===============================================================
       def ctps_ica_brain_responses_update(self,fname,raw=None,fname_ica=None,ica_raw=None,template_name=None,condition_list=None,
-                                 filter_method="bw",remove_dcoffset=False,jobs=4,
-                                 freq_ctps=None,fmin=4,fmax=32,fstep=8,proj=False,exclude_events=None,njobs=None,
+                                 filter_method="bw",remove_dcoffset=False,njobs=None,
+                                 freq_ctps=np.array([]),fmin=4,fmax=32,fstep=8,proj=False,exclude_events=None,
                                  ctps_parameter = {'time_pre':None,'time_post':None,'baseline':None},
-                                 save_phase_angles=False,fif_extention=".fif",fif_postfix="ctps",
-                                 do_run=False,verbose=False,save=True):
+                                 save_phase_angles=False,fif_extention=".fif",fif_postfix="ctps"):
           """
 
           :param fname:
@@ -448,7 +448,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           :param condition_list:
           :param filter_method:
           :param remove_dcoffset:
-          :param jobs:
+          :param njobs:
           :param freq_ctps:
           :param fmin:
           :param fmax:
@@ -459,12 +459,8 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           :param save_phase_angles:
           :param fif_extention:
           :param fif_postfix:
-          :param do_run:
-          :param verbose:
-          :param save:
           :return:
           """
-
 
           self.ctps_init_brain_response_data(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,template_name=template_name)
 
@@ -480,7 +476,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           epocher_condition_list = self.ctps_update_hdf_condition_list(condition_list)
 
           for condi in epocher_condition_list:
-              self.hdf_obj_reset_key(self.HDFobj,'/ctps/'+ condi)
+              self.hdf_obj_reset_key('/ctps/'+ condi)
 
        #--- get fresh IC's data & filter inplace
           print " ---> get ica sources ...\n"
@@ -545,6 +541,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                   pk_dynamics_key = ctps_key +'/pk_dynamics/'+ self.ctps_freq_bands_list[idx_freq]
 
                  #--- make epochs
+                  # print self.ctps_hdf_parameter
                   ica_epochs = mne.Epochs(ica,events=stim['events'],picks=self.ica_picks,
                                           event_id=self.ctps_hdf_parameter['event_id'],
                                           tmin=self.ctps_hdf_parameter['time_pre'],
@@ -679,7 +676,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
  #--- store df with updated bads & restore user-attribute
           storer_attrs = {'ics_parameter': {'nelem':ics_global.size,'ctps_pkd_theshold':self.ctps_pkd_theshold,'ctps_pkd_min_number_of_timeslices':self.ctps_pkd_min_number_of_timeslices}}
-          self.hdf_obj_update_dataframe(self.HDFobj, pd.Series( ics_global ).astype( np.int16 ),key='/ics_global',reset=True,**storer_attrs )
+          self.hdf_obj_update_dataframe(pd.Series( ics_global ).astype( np.int16 ),key='/ics_global',reset=True,**storer_attrs )
 
 
           print"ICs GLOBAL : %d"  % (ics_global.size)
@@ -751,6 +748,9 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                     print "---> Init parameter global : " + condi
                     print " --> save epochs : %r" %(clean_global['save_epochs'])
                     print " --> save evoked : %r" %(clean_global['save_evoked'])
+                    print " --> ICs global count : %d" %(ica_picks.size)
+
+                    if not ica_picks.size: continue
 
                  #--- read epocher condi parameter & info
                     epocher_key   = '/epocher/' + condi
@@ -817,8 +817,11 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
                  ics       = self.HDFobj[ctps_key+'/ics_selected']
                  ica_picks = np.array( np.where( ics ),dtype=np.int16).flatten()
+                 print" ICs counts: %d" %( ica_picks.size )
                  print "ICS:"
                  print ica_picks
+
+                 if not ica_picks.size: continue
 
                  raw_ctps_clean = self.ica_raw.apply(self.raw,include=ica_picks,n_pca_components=None,copy=True)
 

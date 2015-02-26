@@ -82,10 +82,10 @@ class JuMEG_Epocher(JuMEG_Epocher_CTPS):
 
 
        #--- update ecg events
-        self.hdf_obj_update_dataframe( HDFobj,pd.DataFrame( {'onset' : ecg_events}).astype(np.int32),key='/ocarta/ecg_events',param=ecg_parameter)
+        self.hdf_obj_update_dataframe(pd.DataFrame( {'onset' : ecg_events}).astype(np.int32),key='/ocarta/ecg_events',param=ecg_parameter)
 
        #--- update eog events
-        self.hdf_obj_update_dataframe( HDFobj,pd.DataFrame( {'onset' : eog_events}).astype(np.int32),key='/ocarta/eog_events',param=eog_parameter)
+        self.hdf_obj_update_dataframe(pd.DataFrame( {'onset' : eog_events}).astype(np.int32),key='/ocarta/eog_events',param=eog_parameter)
         HDFobj.close()
 
         return (fname,raw,fhdf)
@@ -107,15 +107,18 @@ class JuMEG_Epocher(JuMEG_Epocher_CTPS):
           # TODO: select ICs via ctps-surogates / threshold
           #self.ctps_select_brain_response_ics(fhdr=fhdr)
 
-          fhdr = self.ctps_update_ica_brain_responses(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+         # if kwargv['do_update']:
+          fhdr = self.ctps_ica_brain_responses_update(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
 
-          # fhdr = self.ctps_ica_brain_responses_select(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+          #if kwargv['do_select']:
+          #   fhdr = self.ctps_ica_brain_responses_select(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
 
-          # fhdr = self.ctps_ica_brain_responses_clean(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+          #if kwargv['do_clean']:
+          #   fhdr = self.ctps_ica_brain_responses_clean(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
 
           #self.ctps_brain_responses_average
 
-          print"Done TEST"
+          print"===> Done apply_update_brain_responses"
 
           return fname,raw,fhdr
 
