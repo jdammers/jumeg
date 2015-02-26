@@ -336,7 +336,7 @@ def apply_ica_data(fname,raw=None,do_run=False,verbose=False,save=True,fif_exten
 #  apply_ctps_ for brain_responses
 #
 #######################################################
-def apply_ctps_brain_responses_data(fname,raw=None,fname_ica=None,ica_raw=None,condition_list=None,template_name=None,**kwargv):
+def apply_ctps_brain_responses_data(fname,raw=None,fname_ica=None,ica_raw=None,condition_list=None,**kwargv):
 
     '''
     raw=None,fname_ica=None,ica_raw=None,condition_list=None,template_name=None,
@@ -353,22 +353,33 @@ def apply_ctps_brain_responses_data(fname,raw=None,fname_ica=None,ica_raw=None,c
     exclude_events={'eog_events':{ 'tmin':-0.4,'tmax':0.4} }
     '''
 
+
+    fhdf = None
+
     if kwargv['do_run']:
 
        from jumeg.epocher.jumeg_epocher import jumeg_epocher
-
-       fhdf = None
+       jumeg_epocher.verbose = kwargv['verbose']
 
        if kwargv['do_update']:
 
-          fname,raw,fhdf = jumeg_epocher.apply_update_brain_responses(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+          # fname,raw,fhdf = jumeg_epocher.apply_update_brain_responses(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv['parameter'])
+
+          fhdf = jumeg_epocher.ctps_ica_brain_responses_update(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,template_name=kwargv['template_name'],
+                                                               **kwargv['update_parameter'])
+
 
        if kwargv['do_select']:
-          fhdf=jumeg_epocher.ctps_ica_brain_responses_select(fhdf=fhdf,fname=fname,raw=raw,condition_list=condition_list,template_name=template_name)
+          fhdf=jumeg_epocher.ctps_ica_brain_responses_select(fhdf=fhdf,fname=fname,raw=raw,condition_list=condition_list,template_name=kwargv['template_name'],
+                                                             **kwargv['select_parameter'])
 
-       print "===> save ctps ics : " + fhdf
+       print "===> save ctps ics : " + str(fhdf)
 
-    print "===> Done JuMEG ctps fro brain responses : " + fhdf + "\n"
+
+
+
+
+    print "===> Done JuMEG ctps fro brain responses : " + str(fhdf) + "\n"
 
     return (fname,raw,fhdf)
 
@@ -397,7 +408,7 @@ def apply_ctps_brain_responses_cleaning_data(fname,raw=None,fname_ica=None,ica_r
 
 
     """
-    print "===> Start JuMEG MNE CTPs ICA cleaning: "
+    print "===> Start JuMEG CTPs ICA cleaning: "
 
     fout=None
 
