@@ -6,37 +6,67 @@ Authors:
          Praveen Sripad  <praveen.sripad@rwth-aachen.de>
 License: BSD 3 clause
 
-last update 22.10.2014 FB
+last update 09.01.2015 FB
 
 '''
 
-
 import os
-# from distutils.dir_util import mkpath
-import numpy as np
-import matplotlib.pylab as pl
 import mne
 
-class JuMEG_Base(object):
+class JuMEG_Base_Basic(object):
      def __init__ (self):
-        self._jumeg_base_version   = 0.0001
-        self._verbose              = False
-        #self._extention_empty_room ="empty.fif" 
-        
+        super(JuMEG_Base_Basic, self).__init__()
+
+        self.__version       = 0.00014
+        self.__verbose       = False
+        self.__template_name = None
+        self.__do_run        = False
+        self.__do_save       = False
+        self.__do_plot       = False
+
 #--- version
-     def _get_version(self):  
-         return self._jumeg_filter_base_version
-       
-     version = property(_get_version)
+     def __get_version(self):
+         return self.__version
+     def __set_version(self,v):
+         self.__version=v
+     version = property(__get_version,__set_version)
 
-#--- verbose    
-     def _set_verbose(self,value):
-         self._verbose = value
+#=== FLAGS ==========
+#--- verbose
+     def __set_verbose(self,value):
+         self.__verbose = value
+     def __get_verbose(self):
+         return self.__verbose
+     verbose = property(__get_verbose, __set_verbose)
 
-     def _get_verbose(self):
-         return self._verbose
-       
-     verbose = property(_get_verbose, _set_verbose)
+#--- run
+     def __set_do_run(self, v):
+         self.__do_run = v
+     def __get_do_run(self):
+         return self.__do_run
+     do_run = property(__get_do_run,__set_do_run)
+
+#--- save
+     def __set_do_save(self, v):
+         self.__do_save = v
+     def __get_do_save(self):
+         return self.__do_save
+     do_save = property(__get_do_save,__set_do_save)
+
+#--- plot
+     def __set_do_plot(self, v):
+         self.__do_plot = v
+     def __get_do_plot(self):
+         return self.__do_plot
+     do_plot = property(__get_do_plot,__set_do_plot)
+
+
+class JuMEG_Base(JuMEG_Base_Basic):
+     def __init__ (self):
+        super(JuMEG_Base, self).__init__()
+
+        self.version  = 0.0002
+        self.verbose  = False
 
 #--- get_files_from_list
      def get_files_from_list(fin):
@@ -95,6 +125,62 @@ class JuMEG_Base(object):
          ''' call with meg=False,stim=True,resp=True'''
          return mne.pick_types(raw.info, meg=False,stim=True,resp=True)
 
+
+     def update_bad_channels(self,fname,raw=None,bads=None,preload=True,append=False,save=False):
+         """
+
+         :param fname:
+         :param raw:
+         :param bads:
+         :param preload:
+         :param append:
+         :param save:
+         :return: raw, bad channel list
+
+         """
+         #TODO: if  new bads ==  old bads in raw then  exit
+
+         if raw is None:
+            if fname is None:
+                assert "ERROR no file foumd!!\n\n"
+            if save:
+               preload = True
+            raw = mne.io.Raw(fname,preload=preload)
+
+         if not append:
+            raw.info['bads']=[]
+
+         if not isinstance(bads,list):
+            bads = bads.split(',')
+
+         if not bads:
+            if not append:
+               raw.info['bads']=[]
+         else:
+            for b in bads:
+                bad_ch = None
+                if (b in raw.ch_names):
+                   bad_ch = b
+                else:
+                   if b.startswith('A'):
+                      bad_ch = 'MEG '+ b.replace(" ","").strip('A').zfill(3)
+                   elif b.startswith('MEG'):
+                      bad_ch = 'MEG '+ b.replace(" ","").strip('MEG').zfill(3)
+                if bad_ch:
+                   if bad_ch not in raw.info['bads']:
+                      raw.info['bads'].append(bad_ch)
+
+         if self.verbose:
+            print "\n --> Update bad-channels : " + raw.info['filename']
+            print raw.info['bads']
+            print"\n"
+
+         if save:
+            raw.save(raw.info['filename'],overwrite=True)
+
+         return raw,raw.info['bads']
+
+
 #--- helper function
      def get_files_from_list(self, fin):
          ''' 
@@ -110,37 +196,66 @@ class JuMEG_Base(object):
                fout = list( fin )
          return fout
 
-    
+
      def get_filename_list_from_file(self, fin, start_path = None):
          ''' 
              input : text file to open
                      start_path = <start_dir> [None]
-             return: list of existing files with full path
+
+                     txt file format e.g:
+                     fif-file-name  --bads=MEG1,MEG123
+
+                     0815/M100/121130_1306/1/0815_M100_121130_1306_1_c,rfDC-raw.fif --bads=A248
+                     0815/M100/120920_1253/1/0815_M100_120920_1253_1_c,rfDC-raw.fif
+                     0815/M100/130618_1347/1/0815_M100_130618_1347_1_c,rfDC-raw.fif --bads=A132,MEG199
+
+
+             return: list of existing files with full path and dict with bad-channels (as string e.g. A132,MEG199,MEG246)
          '''
-         found_list = []    
+         found_list = []
+         bads_dict  = dict()
+
          try:
              fh = open( fin )
          except:
-             return found_list 
+             assert "ERROR no such file list: " + fin
+             #return found_list
          
          try:
-             for f in fh :
-                 f = f.rstrip()
-                 if ( f[0] != '#') :
-                      if start_path :
-                         if os.path.isfile( start_path + "/" + f ):
-                            found_list.append( start_path + "/" + f )
-                      else :
-                          if os.path.isfile( f ):
-                             found_list.append(  f )
+             for line in fh :
+                 line = line.rstrip()
+                 bads = None
+                 if line :
+                    if ( line[0] == '#') : continue
+                    opt = line.split()
+
+                    for opi in opt[1:]:
+                        if ('--bads' in opi):
+                           _,bads = opi.split('--bads=')
+                           # print bads
+                           break
+
+                    if start_path :
+                       if os.path.isfile( start_path + "/" + opt[0] ):
+                             found_list.append( start_path + "/" + opt[0] )
+                             bads_dict[start_path + "/" + opt[0]]= bads
+                       else :
+                          if os.path.isfile( opt[0] ):
+                             found_list.append( opt[0] )
+                             bads_dict[opt[0]]= bads
          finally:           
              fh.close()
        
          if self.verbose :
             print "--> INFO << get_filename_list_from_file >> Files found: %d" % ( len(found_list) )
             print found_list
+            print "\n BADs: "
+            print bads_dict
+            print"\n"
 
-         return found_list
+         return found_list,bads_dict
+
+
 
      def get_trig_name(name_stim):
          ''' check stim_channel name and return trigger or response'''  
@@ -151,7 +266,7 @@ class JuMEG_Base(object):
          
          return 'trigger'
 
-     def apply_save_mne_data(self, raw,fname="test.fif",overwrite=True):
+     def apply_save_mne_data(self,raw,fname="test.fif",overwrite=True):
          '''
              Apply saving mne raw obj as fif 
              input : raw=raw obj, fname=file name, overwrite=True
@@ -183,7 +298,8 @@ class JuMEG_Base(object):
          import glob
 
          fname_empty_room = None
-         
+
+         print fname
          if raw is not None:
             fname = raw.info.get('filename')
          #--- first trivial check if raw obj is the empty room obj   
@@ -197,20 +313,26 @@ class JuMEG_Base(object):
          else : 
             # get path and pdf (in memory of 4D filenames) from filename
             p,pdf = os.path.split(fname)
-            # get path to scan from p
-            path_scan    = p.split( pdf[2] )[0] 
-            # get session dat from file 
+            # get session dat from file
             session_date = pdf.split('_')[2]
-                          
-           #--- TODO: may check for the latest or earliest empty-room file
-            #session_time = fn.split('_')[3]
-            fname_empty_room = glob.glob( path_scan + session_date +'*/*/*.empty.fif' )[0]
-               
-         if preload:
+
+            # get path to scan from p and pdf
+            path_scan    = p.split( session_date )[0]
+
+            #--- TODO: may check for the latest or earliest empty-room file
+            try:
+                fname_empty_room = glob.glob( path_scan + session_date +'*/*/*-empty.fif' )[0]
+            except:
+                print"!!! ERROR can not find empty room file: " + path_scan + session_date
+                return
+
+         if fname_empty_room and preload:
+            if self.verbose:
+               print "\nEmpty Room FIF file found: %s \n"  % (fname_empty_room)
+
             return( fname_empty_room, mne.io.Raw(fname_empty_room, preload=True) )
         
-         return fname_empty_room
-    
+
      def get_fif_name(self,fname,postfix=None,extention="-raw.fif"):
         """ 
         Returns fif filename
@@ -228,6 +350,7 @@ class JuMEG_Base(object):
         fname = p +"/" + pdf[:pdf.rfind('-')]
         if postfix:
            fname += "," + postfix
+           fname  = fname.replace(',-','-')
 
         return fname + extention 
     
@@ -263,12 +386,18 @@ class JuMEG_Base(object):
          input : [1,2,3]
          out numpy array with unique numbers
          """
+         import numpy as np
+
          if seq_str is None:
             return np.unique( np.asarray( [ ] ) )
          if self.isString(seq_str):
             return self.str_range_to_list( seq_str )
          else:
             return np.unique( np.asarray( [seq_str] ) )
-         
+
+
+
+
 #--- 
-jumeg_base = JuMEG_Base()
+jumeg_base       = JuMEG_Base()
+jumeg_base_basic = JuMEG_Base_Basic()

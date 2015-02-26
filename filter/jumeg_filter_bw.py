@@ -22,58 +22,64 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
      def __init__ (self,filter_type='bp',fcut1=1.0,fcut2=200.0,remove_dcoffset=True,sampling_frequency=1017.25,
                         notch=np.array([]),notch_width=2.0,order=4.0,settling_time_factor=5.0):
          super(JuMEG_Filter_Bw, self).__init__()
-         self._jumeg_filter_ws_version     = 0.0314
-         self._filter_method               = 'bw'
+         self._jumeg_filter_bw_version     = 0.0314
+         self.__filter_method              = 'bw'
          
-         self._sampling_frequency              = sampling_frequency
-         self._filter_type                     = filter_type #lp, bp, hp
-         self._fcut1                           = fcut1
-         self._fcut2                           = fcut2
-         self._filter_notch                    = notch
-         self._filter_notch_width              = notch_width  
-         
-         self._filter_order                    = order       
-         self._filter_kernel_data_cplx_sqrt    = np.array([])
-         self._settling_time_factor            = settling_time_factor
-         self._settling_time_factor_timeslices = 10000
+         self.sampling_frequency              = sampling_frequency
+         self.filter_type                     = filter_type #lp, bp, hp
+         self.fcut1                           = fcut1
+         self.fcut2                           = fcut2
+         self.filter_notch                    = notch
+         self.filter_notch_width              = notch_width  
+         self.settling_time_factor            = settling_time_factor
+
+         self.__filter_order                    = order       
+         self.__filter_kernel_data_cplx_sqrt    = np.array([])
+
+         self.__settling_time_factor_timeslices = 10000
         
-         self._remove_dcoffset                 = remove_dcoffset
-            
+         self.remove_dcoffset                 = remove_dcoffset
+
+#--- filter method bw,ws,mne
+     def __get_filter_method(self):
+         return self.__filter_method
+     filter_method = property(__get_filter_method)
+
 #--- version
-     def _get_version(self):  
-         return self._jumeg_filter_ws_version
+     def __get_version(self):  
+         return self.__jumeg_filter_ws_version
        
-     version = property(_get_version)
+     version = property(__get_version)
 
 #--- filter_order
-     def _set_filter_order(self, value):  
-         self._filter_order = value
+     def __set_filter_order(self, value):  
+         self.__filter_order = value
          self.filter_kernel_isinit = False
         
-     def _get_filter_order(self):  
-         return self._filter_order
+     def __get_filter_order(self):  
+         return self.__filter_order
        
-     filter_order = property(_get_filter_order, _set_filter_order)
+     filter_order = property(__get_filter_order, __set_filter_order)
 
 #--- filter_kernel_data_cplx_sqrt     
-     def _get_filter_kernel_data_cplx_sqrt(self):
-         return self._filter_kernel_data_cplx_sqrt
-     def _set_filter_kernel_data_cplx_sqrt(self, value):
-         self._filter_kernel_data_cplx_sqrt = value
+     def __get_filter_kernel_data_cplx_sqrt(self):
+         return self.__filter_kernel_data_cplx_sqrt
+     def __set_filter_kernel_data_cplx_sqrt(self, value):
+         self.__filter_kernel_data_cplx_sqrt = value
 
-     filter_kernel_data_cplx_sqrt = property(_get_filter_kernel_data_cplx_sqrt,_set_filter_kernel_data_cplx_sqrt)
+     filter_kernel_data_cplx_sqrt = property(__get_filter_kernel_data_cplx_sqrt,__set_filter_kernel_data_cplx_sqrt)
         
 #--- settling time factor timeslices        
-     def _get_settling_time_factor_timeslices(self):
+     def __get_settling_time_factor_timeslices(self):
         tau = self.fcut1 * 2.0 * np.pi
         if tau is None:
            tau = 0.01 * 2.0 * np.pi
         #---  ~calc 5 times tau   
-        self._settling_time_factor_timeslices = np.ceil( ( 1.0 / tau ) * self.settling_time_factor * self.sampling_frequency )
+        self.__settling_time_factor_timeslices = np.ceil( ( 1.0 / tau ) * self.settling_time_factor * self.sampling_frequency )
         
-        return self._settling_time_factor_timeslices
+        return self.__settling_time_factor_timeslices
 
-     settling_time_factor_timeslices = property(_get_settling_time_factor_timeslices)
+     settling_time_factor_timeslices = property(__get_settling_time_factor_timeslices)
     
 #---------------------------------------------------------# 
 #---  calc_filter_kernel         -------------------------#

@@ -57,11 +57,14 @@ def usage():
      -h       : show this
 
 
-    jumeg_preproc_test01.py --exp=TEST01 -s /data/exp/TEST01/mne --plist= /data/exp/TEST01/doc --flist=test01.txt -r -v
 
-    jumeg_preproc_test01.py --exp MEG94T -s /localdata/frank/data/MEG94T/mne --plist=/localdata/frank/data/MEG94T/doc --flist=meg94t_Gr_Static_0T_test.txt -v -r
+    jumeg_preproc_meg94t.py --exp MEG94T -s /data/meg_store2/exp/MEG94T/mne --plist=/data/meg_store2/exp/MEG94T/doc --flist=meg94t_Gr_Static_0T_bads.txt -v -r
 
-    jumeg_preproc_test01.py --exp MEG94T -s /localdata/frank/data/MEG94T/mne --plist=/localdata/frank/data/MEG94T/doc --flist=meg94t_Gr_Static_0T_bads.txt -v -r
+    jumeg_preproc_meg94t.py --exp MEG94T -s /localdata/frank/data/MEG94T/mne --plist=/localdata/frank/data/MEG94T/doc --flist=meg94t_Gr_Static_0T_bads.txt -v -r
+
+    jumeg_preproc_meg94t.py --exp MEG94T -s /media/usb0/exp/MEG94T/mne --plist=/media/usb0/exp/MEG94T/doc --flist=meg94t_Gr_Static_0T_bads.txt -v -r
+
+    jumeg_preproc_meg94t.py --exp MEG94T -s /localdata/frank/data/MEG94T/mne --plist=/localdata/frank/data/MEG94T/doc --flist=meg94t_Gr_Static_0T_bads.txt -v -
 
    """
     print usage
@@ -206,10 +209,10 @@ def main(argv):
 
     #--- check / set bad channels
         if ( fif_file in fn_raw_bad_channel_dict ):
-           print "BAD CH DICT -> " + fif_file
-           print"BADS: "  + fn_raw_bad_channel_dict[fif_file]
+           print "\n ===> BAD Channel -> " + fif_file
+           print"  --> BADs: "  + str(fn_raw_bad_channel_dict[fif_file])
            if fn_raw_bad_channel_dict[fif_file]:
-               raw = jumeg_base.update_bad_channels(fif_file,raw=raw,bads=fn_raw_bad_channel_dict[fif_file],save=True)
+              raw,bads_dict = jumeg_base.update_bad_channels(fif_file,raw=raw,bads=fn_raw_bad_channel_dict[fif_file],save=True)
 
 
     #--- epocher search for events save to HDF     
@@ -254,7 +257,8 @@ def main(argv):
            print"\n\n==> PP Info: done apply filter raw\n  ---> " + fname
         else:
              fname = jumeg_base.get_fif_name(fif_file,postfix=tmp_pp_raw.filter.fif_postfix,extention=tmp_pp_raw.filter.fif_extention) 
-                          
+             raw   = None
+
     #--- average raw filtered data
     #    if tmp_pp_raw.average.do_run :
     #       tmp_pp_raw.average.verbose = verbose
@@ -283,6 +287,7 @@ def main(argv):
            print"\n\n==> PP Info: done apply ocarta\n  ---> " + fname_oca
         else:
              fname_oca = jumeg_base.get_fif_name(fname,postfix=tmp_pp_raw.ocarta.fif_postfix,extention=tmp_pp_raw.ocarta.fif_extention)
+             raw      = None
 
     #--- brain response apply mne ica: fastica
         if tmp_pp_brs.ica.do_run :
@@ -299,6 +304,7 @@ def main(argv):
            print"\n\n==> PP Info: done apply ica for brain responses\n  ---> " + fname_oca_ica
         else:
              fname_oca_ica = jumeg_base.get_fif_name(fname_oca,postfix=tmp_pp_brs.ica.fif_postfix,extention=tmp_pp_brs.ica.fif_extention)
+             raw           = None
 
             # 201195_Chrono01_110516_1413_1_c,rfDC,fihp1n,ocarta-ica.fif
 
@@ -321,13 +327,14 @@ def main(argv):
 
         else:
            fhdf = None
+           raw  = None
 
     #--- brain response ctps ica cleaning
     #--- run for global ics, all ctp-ics-condition  create raw,epochs,average
         if tmp_pp_brs.clean.do_run :
            tmp_pp_brs.clean['verbose'] = verbose
 
-           print"\n===> PP Info: start brainresponse cleaning"
+           print"\n===> PP Info: start brain-response cleaning"
            print"File  : " + fname_oca
            if verbose :
               print"Parameters:"
@@ -335,8 +342,17 @@ def main(argv):
               print"\n\n"
 
 
-           jppd.apply_ctps_brain_responses_cleaning_data(fname_oca,raw=raw,fname_ica=fname_oca_ica,ica_raw=None,fhdf=fhdf,
+           fhdf = jppd.apply_ctps_brain_responses_cleaning_data(fname_oca,raw=raw,fname_ica=fname_oca_ica,ica_raw=None,fhdf=fhdf,
                                                          condition_list=condition_list,**tmp_pp_brs.clean)
+
+
+
+
+    print"===> Done JuMEG Pre-Processing Data"
+    print" --> FIF file input                : " + fif_file
+    print" --> Information stored in HDF file: " + str(fhdf)
+    print"\n\n"
+    raw = None
 
 
 if __name__ == "__main__":
