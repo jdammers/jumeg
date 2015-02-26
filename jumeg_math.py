@@ -127,6 +127,7 @@ def calc_frequency_correlation(evoked_raw, evoked_clean):
 
     return np.round(numerator / denominator * 100.)
 
+
 ##################################################
 #
 # Function calculate overlapping frequency windows
