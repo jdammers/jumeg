@@ -158,13 +158,17 @@ class JuMEG_Base(JuMEG_Base_Basic):
                raw.info['bads']=[]
          else:
             for b in bads:
-                if (b in raw.ch_names): #  .index(b):
-                   raw.info['bads'].append(b)
+                bad_ch = None
+                if (b in raw.ch_names):
+                   bad_ch = b
                 else:
                    if b.startswith('A'):
-                      raw.info['bads'].append('MEG '+ b.replace(" ","").strip('A').zfill(3) )
+                      bad_ch = 'MEG '+ b.replace(" ","").strip('A').zfill(3)
                    elif b.startswith('MEG'):
-                      raw.info['bads'].append('MEG '+ b.replace(" ","").strip('MEG').zfill(3) )
+                      bad_ch = 'MEG '+ b.replace(" ","").strip('MEG').zfill(3)
+                if bad_ch:
+                   if bad_ch not in raw.info['bads']:
+                      raw.info['bads'].append(bad_ch)
 
          if self.verbose:
             print "\n --> Update bad-channels : " + raw.info['filename']
