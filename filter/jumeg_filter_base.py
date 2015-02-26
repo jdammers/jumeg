@@ -74,7 +74,6 @@ class JuMEG_Filter_Base(object):
 #--- filter method bw,ws,mne
      def __get_filter_method(self):
          return self.__filter_method
-     
      filter_method = property(__get_filter_method)
      
 #--- filter_kernel_isinit check for call init fct.
@@ -364,8 +363,9 @@ class JuMEG_Filter_Base(object):
 #--- filter_info
      def __get_filter_info_string(self):
          """return info string with filter parameters """ 
-         self.__filter_info_string = self.filter_method +" ---> "+self.filter_type
-         
+         self.__filter_info_string = self.filter_method +" ---> "+ self.filter_type
+
+
          if self.filter_type == 'bp' :
             self.__filter_info_string += "%0.1f-%0.1f Hz" % (self.fcut1,self.fcut2)
          else:
@@ -525,7 +525,9 @@ class JuMEG_Filter_Base(object):
        """apply filter """
        
        self.data = data 
-       
+
+       from joblib import Parallel, delayed
+
        if self.verbose :
            t0 = time.time()
            print"===> Start apply filter"
@@ -539,7 +541,8 @@ class JuMEG_Filter_Base(object):
            for ichan in picks:
                self.do_apply_filter( self.data[ichan,:] )
                if self.verbose :
-                    print"===> ch %d" %(ichan)    
+                  print"===> ch %d" %(ichan)
+
        else:
             self.do_apply_filter( data )  
        

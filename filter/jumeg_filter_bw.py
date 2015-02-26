@@ -39,7 +39,12 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
          self.__settling_time_factor_timeslices = 10000
         
          self.remove_dcoffset                 = remove_dcoffset
-            
+
+#--- filter method bw,ws,mne
+     def __get_filter_method(self):
+         return self.__filter_method
+     filter_method = property(__get_filter_method)
+
 #--- version
      def __get_version(self):  
          return self.__jumeg_filter_ws_version

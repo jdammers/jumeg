@@ -40,7 +40,12 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
          self.settling_time_factor        = settling_time_factor
 #--               
          self.remove_dcoffset             = remove_dcoffset
-         
+
+#--- filter method bw,ws,mne
+     def __get_filter_method(self):
+         return self.__filter_method
+     filter_method = property(__get_filter_method)
+
 #--- version
      def __get_version(self):  
          return self.__jumeg_filter_ws_version
