@@ -140,7 +140,8 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
 #
 #######################################################
 def apply_ica(fname_filtered, n_components=0.99, decim=None,
-              reject={'mag': 5e-12}, ica_method='fastica'):
+              reject={'mag': 5e-12}, ica_method='fastica',
+              flow=None, fhigh=None, verbose=True):
 
     ''' Applies ICA to a list of (filtered) raw files. '''
 
@@ -155,6 +156,32 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
         # load filtered data
         raw = mne.io.Raw(fname, preload=True)
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
+
+        # check if data to estimate the optimal
+        # de-mixing matrix should be filtered
+        if flow or fhigh:
+            from jumeg.filter import jumeg_filter
+
+            # define filter type
+            if not flow:
+                filter_type = 'lp'
+                filter_info = "     --> filter parameter    : filter type=low pass %dHz" % flow
+            elif not fhigh:
+                filter_type = 'hp'
+                filter_info = "     --> filter parameter    : filter type=high pass %dHz" % flow
+            else:
+                filter_type = 'bp'
+                filter_info = "     --> filter parameter: filter type=band pass %d-%dHz" % (flow, fhigh)
+
+            if verbose:
+                print ">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!"
+                print filter_info
+
+            fi_mne_notch = jumeg_filter(fcut1=flow, fcut2=fhigh, filter_type=filter_type,
+                                        remove_dcoffset=False,
+                                        sampling_frequency=raw.info['sfreq'])
+            fi_mne_notch.apply_filter(raw._data, picks=picks)
+
         # ICA decomposition
         ica = ICA(method=ica_method, n_components=n_components,
                   max_pca_components=None)
