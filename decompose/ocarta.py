@@ -105,7 +105,7 @@ def epochs(data, idx_event, sfreq, tpre, tpost):
     idx_post_event = int(tpost * sfreq)
 
     # define some parameter
-    nsamp       = idx_post_event - idx_pre_event
+    nsamp       = idx_post_event - idx_pre_event + 1
     if len(data.shape) == 2:
         nchan, ntsl = data.shape
     else:
@@ -130,10 +130,10 @@ def epochs(data, idx_event, sfreq, tpre, tpost):
     epoch_data = np.zeros((nevents, nchan, nsamp), dtype=np.float64)
 
     if bool_array is False:
-        epoch_data[0, :, :] = data[:, int(idx_event+idx_pre_event):int(idx_event+idx_post_event)]
+        epoch_data[0, :, :] = data[:, int(idx_event+idx_pre_event):int(idx_event+idx_post_event+1)]
     else:
         for i in range(nevents):
-            epoch_data[i, :, :] = data[:, int(idx_event[i]+idx_pre_event):int(idx_event[i]+idx_post_event)]
+            epoch_data[i, :, :] = data[:, int(idx_event[i]+idx_pre_event):int(idx_event[i]+idx_post_event+1)]
 
     # return epoch data
     return epoch_data
@@ -146,7 +146,7 @@ def epochs(data, idx_event, sfreq, tpre, tpost):
 def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, wchange=1e-16,
                            annealdeg=60., annealstep=0.9, maxsteps=200, ca_idx=None,
                            ca_cost_func=[1., 1.], oa_idx=None, oa_cost_func=[1., 1.],
-                           sphering=None, oa_template=[]):
+                           sphering=None, oa_template=[], fixed_random_state=None):
     """
     Run the OCARTA constrained ICA decomposition on raw data
 
@@ -271,7 +271,11 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
         # ..................................
         # shuffel data at each step
         # ..................................
-        random.seed(istep)            # --> permutation is fixed but differs at each step
+        if fixed_random_state:
+            random.seed(istep)    # --> permutation is fixed but differs at each step
+        else:
+            random.seed(None)
+
         permute = range(ntsl)
         random.shuffle(permute)
 
@@ -579,7 +583,7 @@ class JuMEG_ocarta(object):
                  thresh_ecg=0.4, name_eog='EOG 002', eog_freq=[1, 10],
                  seg_length=30.0, shift_length=10.0,
                  percentile_eog=80, npc=None, explVar=0.95, lrate=None,
-                 maxsteps=50):
+                 maxsteps=50, flow=1.0, fhigh=45.0):
         """
         Create ocarta object from raw data file.
 
@@ -618,6 +622,12 @@ class JuMEG_ocarta(object):
                 default: lrate=None
             maxsteps: maximum number of iterations to be done
                 default: maxsteps=50
+            flow: if set data to estimate the optimal de-mixing matrix are filtered
+                prior to estimation. Note, data cleaning is applied to unfiltered
+                input data
+            fhigh: if set data to estimate the optimal de-mixing matrix are filtered
+                prior to estimation. Note, data cleaning is applied to unfiltered
+                input data
 
 
             Returns
@@ -653,6 +663,8 @@ class JuMEG_ocarta(object):
         self._performance_oa = 0.0
         self._freq_corr_ca = 0.0
         self._freq_corr_oa = 0.0
+        self._flow = flow
+        self._fhigh =fhigh
 
 
 
@@ -887,8 +899,8 @@ class JuMEG_ocarta(object):
     freq_corr_ca = property(_get_freq_corr_ca, _set_freq_corr_ca)
 
 
-     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    # set/get frequency correlation  related to ocular activity
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # set/get frequency correlation related to ocular activity
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def _set_freq_corr_oa(self, freq_corr):
         self._freq_corr_oa = abs(freq_corr)
@@ -897,6 +909,32 @@ class JuMEG_ocarta(object):
         return self._freq_corr_oa
 
     freq_corr_oa = property(_get_freq_corr_oa, _set_freq_corr_oa)
+
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # set/get low frequency range if data should be filtered
+    # prior to the estimation of the demixing matrix
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def _set_flow(self, flow):
+        self._flow = abs(flow)
+
+    def _get_flow(self):
+        return self._flow
+
+    flow = property(_get_flow, _set_flow)
+
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # set/get upper frequency range if data should be
+    # filtered prior to the estimation of the demixing matrix
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def _set_fhigh(self, fhigh):
+        self._fhigh = abs(fhigh)
+
+    def _get_fhigh(self):
+        return self._fhigh
+
+    fhigh = property(_get_fhigh, _set_fhigh)
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -947,16 +985,13 @@ class JuMEG_ocarta(object):
         # import necessary modules
         import matplotlib.pyplot as plt
         from mne.viz import plot_topomap
-        from mne.layouts.layout import _find_topomap_coords
+        from mne.channels.layout import _find_topomap_coords
 
-
-        chs = [info['chs'][i] for i in self._picks]
-        pos = _find_topomap_coords(chs, None)
-
+        pos = _find_topomap_coords(info, self._picks)
 
         plt.ioff()
         fig = plt.figure('topoplot ocular activity', figsize=(12, 12))
-        plot_topomap(self._template_OA[self._picks], pos, res=1200)
+        plot_topomap(self._template_OA[self._picks], pos, res=200, contours=0)
         plt.ion()
 
         # if desired show the image
@@ -1243,13 +1278,12 @@ class JuMEG_ocarta(object):
         weights, idx_ca, idx_oa = self._update_cleaning_information(meg_raw, idx_start, idx_end)
         self._maxsteps /= 3
 
-
         # update template of ocular activity
         # (to have it individual for each subject)
         if len(idx_oa) > 0:
             oa_min = np.min(self._template_OA)
             oa_max = np.max(self._template_OA)
-            oa_template = np.zeros(len(self._template_OA[self._picks]))
+            oa_template = self._template_OA[self._picks].copy() #np.zeros(len(self._template_OA[self._picks]))
             spatial_maps = fast_dot(self._pca.components_[:self.npc].T, pinv(weights)).T
 
             # loop over all components related to ocular activity
@@ -1317,11 +1351,11 @@ class JuMEG_ocarta(object):
     #   clean data using OCARTA
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def fit(self, fn_raw, meg_raw=None, denoising=None,
-            unfiltered=False, notch_filter=True, notch_freq=50,
-            notch_width=None, plot_template_OA=False, verbose=True,
+            flow=None, fhigh=None, plot_template_OA=False, verbose=True,
             name_ecg=None, ecg_freq=None, thresh_ecg=None,
             name_eog=None, eog_freq=None, seg_length=None, shift_length=None,
-            npc=None, explVar=None, lrate=None, maxsteps=None):
+            npc=None, explVar=None, lrate=None, maxsteps=None,
+            fn_perf_img=None):
 
 
         """
@@ -1342,20 +1376,14 @@ class JuMEG_ocarta(object):
                 cleaned data set only the components explaining 'denoising'
                 percentage of variance are taken. Must be between 0 and 1.
                 default: denoising=None
-            unfiltered : If set cleaning is performed to unfiltered data. Note:
-                Anyway the optimal demixing matrix is estimated based on filtered
-                data.
-                default: unfiltered=False
-            notch_filter : Only important if the unfiltered=True
-                If set, power line artifacts are removed by applying a notch filter
-                default: notch_filter=True
-            notch_freq : Only important if the unfiltered=True and notch_filter=True
-                Reverse to the frequency of the power line artifact
-                default: notch_freq=50 (Hz --> Europe)
-            notch_width : Only important if the unfiltered=True and notch_filter=True
-                Can be used to define the width of the notch filter
-                default: notch_width=None --> width is automatically calculated
-                                              (see jumeg.jumeg_filter)
+            flow: if set data to estimate the optimal de-mixing matrix are filtered
+                prior to estimation. Note, data cleaning is applied to unfiltered
+                input data
+                default: flow=1
+            fhigh: if set data to estimate the optimal de-mixing matrix are filtered
+                prior to estimation. Note, data cleaning is applied to unfiltered
+                input data
+                default: fhigh=20
             plot_template_OA: If set a topoplot of the template for ocular activity
                 is generated
                 default: plot_template_OA=False
@@ -1427,6 +1455,10 @@ class JuMEG_ocarta(object):
             self.lrate = lrate
         if maxsteps:
             self.maxsteps = maxsteps
+        if flow:
+            self.flow = flow
+        if fhigh:
+            self.fhigh = fhigh
 
         # perform initial training
         weights, idx_ca, idx_oa = self._initial_training(meg_raw)
@@ -1452,9 +1484,9 @@ class JuMEG_ocarta(object):
             print "       --> costfunction OA     : a0=%g, a1=%g" % (self.opt_cost_func_ocular[0], self.opt_cost_func_ocular[1])
             print ""
 
-            if unfiltered:
-                print ">>>> NOTE: cleaning is performed on unfiltered data!"
-                print ""
+            if self.flow or self.fhigh:
+                print ">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!"
+                print "           However, cleaning is performed on unfiltered input data!"
 
 
         # check if denoising is desired
@@ -1465,44 +1497,38 @@ class JuMEG_ocarta(object):
             npc_denoising = np.sum(exp_var_ratio.cumsum() <= denoising) + 1
             sphering[npc_denoising:, :] = 0.
 
-        # check if cleaning should performed on unfiltered data
-        if unfiltered:
 
-            # adjust filenames to unfiltered data
-            fn_unfilt = fn_raw[:fn_raw.rfind(',')] + '-raw.fif'
+        meg_clean = meg_raw.copy()
 
-            # load raw unfiltered data
-            meg_unfilt = Raw(fn_unfilt, preload=True)
+        # check if data should be filtered prior to estimate
+        # the optimal demixing parameter
+        if self.flow or self.fhigh:
 
-            # apply notch filter
-            if notch_filter:
-                from jumeg.filter import jumeg_filter
+            # import filter module
+            from jumeg.filter import jumeg_filter
 
-                # generate and apply filter
-                # check if array of frequencies is given
-                if type(notch_freq) in (tuple, list):
-                    notch = np.array(notch_freq)
-                elif type(np.ndarray) == np.ndarray:
-                    notch = notch_freq
-                # or a single frequency
-                else:
-                    notch = np.array([])
+            # define filter type
+            if not self.flow:
+                filter_type = 'lp'
+                self.flow = self.fhigh
+                filter_info = "          --> filter parameter    : filter type=low pass %dHz" % self.flow
+            elif not self.fhigh:
+                filter_type = 'hp'
+                filter_info = "          --> filter parameter    : filter type=high pass %dHz" % self.flow
+            else:
+                filter_type = 'bp'
+                filter_info = "          --> filter parameter    : filter type=band pass %d-%dHz" % (self.flow, self.fhigh)
 
-                fi_mne_notch = jumeg_filter(filter_method="mne", filter_type='notch',
-                                            remove_dcoffset=False,
-                                            notch=notch, notch_width=notch_width)
+            fi_mne_notch = jumeg_filter(fcut1=self.flow, fcut2=self.fhigh,
+                                        filter_type=filter_type,
+                                        remove_dcoffset=False,
+                                        sampling_frequency=meg_raw.info['sfreq'])
+            fi_mne_notch.apply_filter(meg_raw._data, picks=self._picks)
 
-                # if only a single frequency is given generate optimal
-                # filter parameter to also remove the harmonics
-                if not type(notch_freq) in (tuple, list, np.ndarray):
-                    fi_mne_notch.calc_notches(notch_freq)
+            if verbose:
+                print filter_info
+                print ""
 
-                fi_mne_notch.apply_filter(meg_unfilt._data, picks=self._picks)
-
-
-            meg_clean = meg_unfilt.copy()
-        else:
-            meg_clean = meg_raw.copy()
 
 
         # now loop over all segments
@@ -1546,15 +1572,14 @@ class JuMEG_ocarta(object):
             print ">>>> generate and save result files/images."
 
 
-        # check if unfiltered data are used
-        if unfiltered:
-            basename = fn_unfilt[:-8]
-        else:
-            basename = fn_raw[:-8]
 
         # generate filenames for output files/images
-        fn_perf_img = basename + ',ocarta-performance'
-        fn_topo = basename + ',ocarta_topoplot_oa'
+        basename = fn_raw[:-8]
+        if not fn_perf_img:
+            fn_perf_img = basename + ',ocarta-performance'
+
+        fn_topo = fn_perf_img[:fn_perf_img.rfind(',')] + ',ocarta_topoplot_oa'
+
         fn_out = basename + ',ocarta-raw.fif'
 
 
@@ -1566,14 +1591,14 @@ class JuMEG_ocarta(object):
             self.topoplot_oa(meg_raw.info, fn_img=fn_topo)
 
         # generate performance image
-        if unfiltered:
-            plt_perf(meg_unfilt, None, fn_perf_img, meg_clean=meg_clean)
-            # estimate performance values/frequency correlation
-            perf_ar, freq_corr_ar = self.performance(meg_unfilt, meg_clean)
-        else:
-            plt_perf(meg_raw, None, fn_perf_img, meg_clean=meg_clean)
-            # estimate performance values/frequency correlation
-            perf_ar, freq_corr_ar = self.performance(meg_raw, meg_clean)
+
+        if self.flow or self.fhigh:
+            meg_raw = Raw(fn_raw, preload=True, verbose=False) # reload raw data
+
+        plt_perf(meg_raw, None, fn_perf_img, meg_clean=meg_clean)
+
+        # estimate performance values/frequency correlation
+        perf_ar, freq_corr_ar = self.performance(meg_raw, meg_clean)
 
         self.performance_ca = perf_ar[0]
         self.performance_oa = perf_ar[1]
