@@ -904,7 +904,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
             # filter empty room raw data
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
-            fn_in = fn_in.split('-')[0] + ',bp1-45-empty.fif'
+            fn_in = fn_in.split('-')[0] + ',fibp1-45-empty.fif'
 
         # file name for saving noise_cov
         fn_out = fn_in[:fn_in.rfind(ext_empty_raw)] + ext_empty_cov
