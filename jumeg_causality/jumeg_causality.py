@@ -370,7 +370,7 @@ def causal_analysis(subject, subjects_dir, min_subject='fsaverage',
         stcs.append(stc)
         i = i + 1
     # Get common labels
-    list_dirs = os.walk(min_path + '/Group_labels/common/')
+    list_dirs = os.walk(min_path + '/Group_ROIs/common/')
     labels = []
     rois = []
     for root, dirs, files in list_dirs:
