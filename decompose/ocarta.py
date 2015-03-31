@@ -310,7 +310,7 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
         # ..................................
         # update weights for ocular activity
         # ..................................
-        if len(oa_template) and (istep+1 > (0.5 * maxsteps)):
+        if len(oa_template):
 
             # ..................................
             # generate spatial maps
@@ -1619,4 +1619,5 @@ class JuMEG_ocarta(object):
 #   to simplify the call of the JuMEG_ocarta() help
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ocarta = JuMEG_ocarta()
+
 
