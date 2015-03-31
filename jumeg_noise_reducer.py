@@ -206,7 +206,7 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
             raw = mne.io.Raw(fname_raw[idx], preload=True)
             epochs = mne.Epochs(raw, events, event_id, proj=False,
                                 tmin=tmin_stim, tmax=tmax_stim, picks=picks,
-                                preload=True)
+                                preload=True, baseline=(None, None))
             evoked = epochs.average()
             if idx == 0:
                 ymin = np.min(evoked.data)

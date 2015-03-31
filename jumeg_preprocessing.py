@@ -763,7 +763,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
             pkmax = pk.max(1)
             ixmax = np.where(pkmax == pkmax.max())[0]
             ix = (np.where(pkmax >= threshold))[0]
-            if np.any(ix):
+            if np.any(ix+1):
                 if (ifreq > 0):
                     ic_sel = np.append(ic_sel, ix + 1)
                 else:
