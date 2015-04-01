@@ -235,7 +235,7 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
     # heuristic default - may need adjustment for
     # large or tiny data sets
     if lrate == None:
-        lrate = 0.01/ math.log(npc ** 2.0)
+        lrate = 0.01/math.log(npc ** 2.0)
 
     if block == None:
         block = int(math.floor(math.sqrt(ntsl/3.0)))
@@ -295,7 +295,6 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
                 y[:, ca_idx] = pre_math.sigm_func(u_[:, ca_idx], ca_cost_func[0], ca_cost_func[1])
             if oa_idx is not None:
                 y[:, oa_idx] = pre_math.sigm_func(u_[:, oa_idx], oa_cost_func[0], oa_cost_func[1])
-
 
             weights += lrate * fast_dot(weights, BI + fast_dot(u_.T, (1.0 - 2.0 * y)))
             bias    += (lrate * np.sum((1.0 - 2.0 * y), axis=0, dtype=np.float64)).reshape(npc, 1)
@@ -556,7 +555,7 @@ def identify_ocular_activity(activations, eog_signals, spatial_maps,
         spatial_corr[i] = np.abs(pearsonr(spatial_maps[i], oa_template)[0])
 
     # check where the correlation is above threshold
-    idx_oa = np.arange(nchan)[temp_corr > (0.5*thresh_corr_oa)]
+    idx_oa = np.arange(nchan)[(temp_corr+spatial_corr) > thresh_corr_oa]
 
     # check that at least one and at maximum
     # three ICs belong to OA
@@ -580,10 +579,10 @@ def identify_ocular_activity(activations, eog_signals, spatial_maps,
 class JuMEG_ocarta(object):
 
     def __init__(self, name_ecg='ECG 001', ecg_freq=[10, 20],
-                 thresh_ecg=0.4, name_eog='EOG 002', eog_freq=[1, 10],
+                 thresh_ecg=0.3, name_eog='EOG 002', eog_freq=[1, 10],
                  seg_length=30.0, shift_length=10.0,
                  percentile_eog=80, npc=None, explVar=0.95, lrate=None,
-                 maxsteps=50, flow=1.0, fhigh=45.0):
+                 maxsteps=100, flow=1.0, fhigh=20.0):
         """
         Create ocarta object from raw data file.
 
@@ -1045,13 +1044,6 @@ class JuMEG_ocarta(object):
             # estimate optimal cost-function
             cost_func = _fit_sigmoidal_to_cdf(ecg_signal)
 
-            if cost_func[0] > 50:
-                cost_func[0] = 50
-
-            if cost_func[1] > 30:
-                cost_func[1] = 30
-
-
             self._set_opt_cost_func_cardiac(cost_func)
 
         # if no ECG channel is found use sigmoidal function as cost-function
@@ -1126,7 +1118,7 @@ class JuMEG_ocarta(object):
     # weight matrix W_(i-1).
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def _update_weight_matrix(self, data, initial_weights=None,
-                              ca_idx=None, oa_idx=None):
+                              ca_idx=None, oa_idx=None, annealstep=0.6):
         """
         Interface to estimate the whitening matrix as well as the current
         weight matrix W_(i) based on the previous weight matrix W_(i-1).
@@ -1167,7 +1159,8 @@ class JuMEG_ocarta(object):
                                                       maxsteps=self.maxsteps, lrate=self.lrate, ca_idx=ca_idx,
                                                       ca_cost_func=self.opt_cost_func_cardiac, oa_idx=oa_idx,
                                                       oa_cost_func=self.opt_cost_func_ocular, sphering=sphering,
-                                                      oa_template=self._template_OA[self._picks])
+                                                      oa_template=self._template_OA[self._picks],
+                                                      annealstep=annealstep)
 
         # return results
         return activations, weights
@@ -1180,7 +1173,8 @@ class JuMEG_ocarta(object):
     # related to cardiac and ocular artifacts
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def _update_cleaning_information(self, meg_raw, idx_start, idx_end,
-                                     initial_weights=None, ca_idx=None, oa_idx=None):
+                                     initial_weights=None, ca_idx=None, oa_idx=None,
+                                     annealstep=0.6):
         """
         Interface for updating cleaning information, i.e.
         estimating the un-mixing matrix and identifying
@@ -1195,7 +1189,8 @@ class JuMEG_ocarta(object):
         # (1) estimate optimal weight matrix
         act, weights = self._update_weight_matrix(meg_raw._data[self._picks, idx_start:idx_end],
                                                   initial_weights=initial_weights,
-                                                  ca_idx=ca_idx, oa_idx=oa_idx)
+                                                  ca_idx=ca_idx, oa_idx=oa_idx,
+                                                  annealstep=annealstep)
 
 
         # (2) identification of artifact ICs
@@ -1273,9 +1268,10 @@ class JuMEG_ocarta(object):
                 idx_start = self._ntsl - self._block
                 idx_end   = self._ntsl
 
+
         # perform ICA on trainings data set
         self._maxsteps *= 3
-        weights, idx_ca, idx_oa = self._update_cleaning_information(meg_raw, idx_start, idx_end)
+        weights, idx_ca, idx_oa = self._update_cleaning_information(meg_raw, idx_start, idx_end, annealstep=0.9)
         self._maxsteps /= 3
 
         # update template of ocular activity
@@ -1283,7 +1279,7 @@ class JuMEG_ocarta(object):
         if len(idx_oa) > 0:
             oa_min = np.min(self._template_OA)
             oa_max = np.max(self._template_OA)
-            oa_template = self._template_OA[self._picks].copy() #np.zeros(len(self._template_OA[self._picks]))
+            oa_template = self._template_OA[self._picks].copy()  # np.zeros(len(self._template_OA[self._picks]))
             spatial_maps = fast_dot(self._pca.components_[:self.npc].T, pinv(weights)).T
 
             # loop over all components related to ocular activity
@@ -1460,12 +1456,52 @@ class JuMEG_ocarta(object):
         if fhigh:
             self.fhigh = fhigh
 
+        # make sure that everything is initialized well
+        self._eog_signals_tkeo = None
+        self._idx_eye_blink = None
+        self._idx_R_peak = None
+        self._pca = None
+        self._template_OA = None
+        self._thresh_eog = 0.0
+        self._performance_ca = 0.0
+        self._performance_oa = 0.0
+        self._freq_corr_ca = 0.0
+        self._freq_corr_oa = 0.0
+
+
+        meg_clean = meg_raw.copy()
+        meg_filt = meg_raw.copy()
+        # check if data should be filtered prior to estimate
+        # the optimal demixing parameter
+        if self.flow or self.fhigh:
+
+            # import filter module
+            from jumeg.filter import jumeg_filter
+
+            # define filter type
+            if not self.flow:
+                filter_type = 'lp'
+                self.flow = self.fhigh
+                filter_info = "          --> filter parameter    : filter type=low pass %d Hz" % self.flow
+            elif not self.fhigh:
+                filter_type = 'hp'
+                filter_info = "          --> filter parameter    : filter type=high pass %d Hz" % self.flow
+            else:
+                filter_type = 'bp'
+                filter_info = "          --> filter parameter    : filter type=band pass %d-%d Hz" % (self.flow, self.fhigh)
+
+            fi_mne_notch = jumeg_filter(fcut1=self.flow, fcut2=self.fhigh,
+                                        filter_type=filter_type,
+                                        remove_dcoffset=False,
+                                        sampling_frequency=meg_raw.info['sfreq'])
+            fi_mne_notch.apply_filter(meg_filt._data, picks=self._picks)
+
         # perform initial training
-        weights, idx_ca, idx_oa = self._initial_training(meg_raw)
+        weights, idx_ca, idx_oa = self._initial_training(meg_filt)
 
         # get some parameter
         nchan = self._picks.shape[0]
-        shift = int(self.shift_length * meg_raw.info['sfreq'])
+        shift = int(self.shift_length * meg_filt.info['sfreq'])
         nsteps = np.floor((self._ntsl - self._block)/shift) + 1
         laststep = int(shift * nsteps)
 
@@ -1475,6 +1511,7 @@ class JuMEG_ocarta(object):
             print "       --> number of channels  : %d" % nchan
             print "       --> number of timeslices: %d" % self._ntsl
             print "       --> explained variance  : %g" % self.explVar
+            print "       --> number of components: %d" % weights.shape[0]
             print "       --> block size (in s)   : %d" % self.seg_length
             print "       --> number of blocks    : %d" % nsteps
             print "       --> block shift (in s)  : %d" % self.shift_length
@@ -1487,48 +1524,17 @@ class JuMEG_ocarta(object):
             if self.flow or self.fhigh:
                 print ">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!"
                 print "           However, cleaning is performed on unfiltered input data!"
+                print filter_info
+                print ""
 
 
         # check if denoising is desired
         sphering = self._pca.components_.copy()
-        if denoising is not None:
+        if denoising:
             full_var = np.sum(self._pca.explained_variance_)
             exp_var_ratio = self._pca.explained_variance_ / full_var
             npc_denoising = np.sum(exp_var_ratio.cumsum() <= denoising) + 1
             sphering[npc_denoising:, :] = 0.
-
-
-        meg_clean = meg_raw.copy()
-
-        # check if data should be filtered prior to estimate
-        # the optimal demixing parameter
-        if self.flow or self.fhigh:
-
-            # import filter module
-            from jumeg.filter import jumeg_filter
-
-            # define filter type
-            if not self.flow:
-                filter_type = 'lp'
-                self.flow = self.fhigh
-                filter_info = "          --> filter parameter    : filter type=low pass %dHz" % self.flow
-            elif not self.fhigh:
-                filter_type = 'hp'
-                filter_info = "          --> filter parameter    : filter type=high pass %dHz" % self.flow
-            else:
-                filter_type = 'bp'
-                filter_info = "          --> filter parameter    : filter type=band pass %d-%dHz" % (self.flow, self.fhigh)
-
-            fi_mne_notch = jumeg_filter(fcut1=self.flow, fcut2=self.fhigh,
-                                        filter_type=filter_type,
-                                        remove_dcoffset=False,
-                                        sampling_frequency=meg_raw.info['sfreq'])
-            fi_mne_notch.apply_filter(meg_raw._data, picks=self._picks)
-
-            if verbose:
-                print filter_info
-                print ""
-
 
 
         # now loop over all segments
@@ -1543,7 +1549,10 @@ class JuMEG_ocarta(object):
             # identify ICs related to artifacts
             # --------------------------------------
             idx_end = t+self._block  # get index of last element
-            weights, idx_ca, idx_oa = self._update_cleaning_information(meg_raw, t, idx_end,
+            if (idx_end+shift+1) > self._ntsl:
+                idx_end = self._ntsl
+
+            weights, idx_ca, idx_oa = self._update_cleaning_information(meg_filt, t, idx_end,
                                                                         initial_weights=weights.T,
                                                                         ca_idx=idx_ca, oa_idx=idx_oa)
 
@@ -1554,15 +1563,14 @@ class JuMEG_ocarta(object):
                 iweights[:, idx_oa] = 0.  # remove columns related to OA
 
             # transform data to ICA space
-            dnorm = (meg_clean._data[self._picks, t:idx_end] - self._pca.mean_[:, np.newaxis]) / self._pca.stddev_[:, np.newaxis]
+            dnorm = (meg_raw._data[self._picks, t:idx_end] - self._pca.mean_[:, np.newaxis]) / self._pca.stddev_[:, np.newaxis]
             pc = fast_dot(dnorm.T, sphering.T)
             activations = fast_dot(weights, pc[:, :self.npc].T)  # transform to ICA-space
 
             # backtransform data
             pc[:, :self.npc] = fast_dot(iweights, activations).T                         # back-transform to PCA-space
             meg_clean._data[self._picks, t:idx_end] = fast_dot(pc, sphering).T * self._pca.stddev_[:, np.newaxis] + \
-                                                      self._pca.mean_[:, np.newaxis]      # back-transform to sensor-space
-
+                                                      self._pca.mean_[:, np.newaxis]     # back-transform to sensor-space
 
 
         # write out some additional information
@@ -1591,10 +1599,6 @@ class JuMEG_ocarta(object):
             self.topoplot_oa(meg_raw.info, fn_img=fn_topo)
 
         # generate performance image
-
-        if self.flow or self.fhigh:
-            meg_raw = Raw(fn_raw, preload=True, verbose=False) # reload raw data
-
         plt_perf(meg_raw, None, fn_perf_img, meg_clean=meg_clean)
 
         # estimate performance values/frequency correlation
@@ -1615,4 +1619,5 @@ class JuMEG_ocarta(object):
 #   to simplify the call of the JuMEG_ocarta() help
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ocarta = JuMEG_ocarta()
+
 

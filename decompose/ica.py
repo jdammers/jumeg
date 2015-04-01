@@ -46,6 +46,8 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
             The number of components used for PCA decomposition. If None, no
             dimension reduction will be applied and max_pca_components will equal
             the number of channels supplied on decomposing data.
+        method : {'fastica', 'infomax', 'extended-infomax'}
+          The ICA method to use. Defaults to 'infomax'.
 
 
         FastICA parameter:
@@ -67,7 +69,7 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
         block : his block size used to randomly extract (in time) a chop
             of data
             default:  block = floor(sqrt(ntsl/3d))
-        wchange : iteration stops when weight changes is smaller then this
+        wchange : iteration stops when weight changes are smaller then this
             number
             default: wchange = 1e-16
         annealdeg : if angle delta is larger then annealdeg (in degree) the
@@ -133,8 +135,13 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
     else:
         if method == 'infomax':
             extended = False
-        else:
+        elif method == 'extended-infomax':
             extended = True
+        else:
+            print ">>>> WARNING: Entered ICA method not found!"
+            print ">>>>          Allowed are fastica, extended-infomax and infomax"
+            print ">>>>          Using now the default ICA method which is Infomax"
+            extended = False
 
         weights = infomax(data, weights=weights, l_rate=lrate, block=block,
                           w_change=wchange, anneal_deg=annealdeg, anneal_step=annealstep,
