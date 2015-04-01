@@ -254,7 +254,7 @@ def shift_data(data_trials, min_shift=0, max_shift=None, seed=None):
 # make surrogates from Epochs
 #
 #######################################################
-def make_surrogates_epochs(epochs, check_pdf=False):
+def make_surrogates_epochs(epochs, check_pdf=False, random_state=None):
     '''
     Make surrogate epochs using sklearn. Destroy each trial by shuffling the time points only.
     The shuffling is performed in the time domain only. The probability density function is
@@ -262,19 +262,21 @@ def make_surrogates_epochs(epochs, check_pdf=False):
 
     Parameters
     ----------
-    Epochs Object.
+    epochs : Epochs Object.
+    check_pdf : Condition to test for equal probability density. (bool)
+    random_state : Seed for random generator.
 
     Output
     ------
     Surrogate Epochs object
     '''
     from sklearn.utils import check_random_state
+    rng = check_random_state(random_state)
 
     surrogate = epochs.copy()
     surr = surrogate.get_data()
     for trial in range(len(surrogate)):
         for channel in range(len(surrogate.ch_names)):
-            rng = check_random_state(channel)
             order = np.argsort(rng.randn(len(surrogate.times)))
             surr[trial, channel, :] = surr[trial, channel, order]
     surrogate._data = surr
