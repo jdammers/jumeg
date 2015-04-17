@@ -921,3 +921,29 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
 
         # write noise-covariance matrix to disk
         write_cov(fn_out, noise_cov_mat)
+
+
+def apply_empty_room_projections(raw, raw_empty_room):
+    '''
+    Calculates empty room projections from empty room data and applies it to raw.
+    Note: Make sure the empty room data is also filtered. This may affect the projections.
+
+    Input
+    -----
+    raw, raw_empty_room: mne Raw object
+        Raw file and Empty room raw file.
+
+    Returns
+    -------
+    raw: mne Raw object
+        Raw file with projections applied.
+    empty_room_proj: projections
+        Empty room projection vectors. 
+    '''
+    # Add checks to make sure its empty room.
+    # Check for events in ECG, EOG, STI.
+    print 'Empty room projections calculated for %s.'%(raw_empty_fname)
+    empty_room_proj = mne.compute_proj_raw(raw_empty_room)
+    raw.add_proj(empty_room_proj).apply_proj()
+    return raw, empty_room_proj
+
