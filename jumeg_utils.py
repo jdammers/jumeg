@@ -111,17 +111,19 @@ def mark_bads_batch(subject_list, subjects_dir=None):
     '''
     for subj in subject_list:
         print "For subject %s"%(subj)
-        if not subjects_dir: SUBJECTS_DIR = os.environ['SUBJECTS_DIR']
-        dirname = SUBJECTS_DIR+'/'+subj
-        for raw_fname in os.listdir(dirname):
+        if not subjects_dir: subjects_dir = os.environ['SUBJECTS_DIR']
+        dirname = subjects_dir + '/' + subj
+        sub_file_list = os.listdir(dirname)
+        for raw_fname in sub_file_list:
+            if raw_fname.endswith('_bcc-raw.fif'): continue
             if raw_fname.endswith('-raw.fif'):
-                print "Raw calculations for file %s"%(dirname+'/'+raw_fname)
-                raw = mne.io.Raw(dirname+'/'+raw_fname)
+                print "Raw calculations for file %s" % (dirname + '/' + raw_fname)
+                raw = mne.io.Raw(dirname + '/' + raw_fname, preload=True)
                 raw.plot(block=True)
-                print 'The bad channels marked are'+raw.info['bads']
-                raw.save(raw.info['filename'].split('/')[-1].split('.')[0]+ \
-                         '_bcc-raw.fif')
-                return
+                print 'The bad channels marked are %s ' % (raw.info['bads'])
+                save_fname = dirname + '/' + raw.info['filename'].split('/')[-1].split('-raw.fif')[0] + '_bcc-raw.fif'
+                raw.save(save_fname)
+    return
 
 
 def rescale_artifact_to_signal(signal, artifact):
