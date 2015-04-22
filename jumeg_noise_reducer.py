@@ -703,7 +703,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                 print ">>>"
 
         if not fnout:
-            fnout = fname[:fname.rfind('-raw.fif')] + ',n-raw.fif'
+            fnout = fname[:fname.rfind('-raw.fif')] + ',nr-raw.fif'
 
         if verbose:
             print ">>> Saving '%s'..." % fnout
