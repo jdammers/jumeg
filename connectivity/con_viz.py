@@ -8,7 +8,7 @@ import matplotlib.pyplot as pl
 import mne
 
 
-def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05):
+def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_factor=0.005, tube_radius=0.001)):
     """ Function to plot sensor connectivity showing strongest connections(n_con)
         excluding sensors that are less than min_dist apart.
         https://github.com/mne-tools/mne-python/blob/master/examples/connectivity/plot_sensor_connectivity.py
@@ -28,6 +28,7 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05):
     min_dist : float
         Minimum distance between sensors allowed.
 
+    Note: Please modify scale factor and tube radius to appropriate sizes if the plot looks scrambled.
     """
 
     # Now, visualize the connectivity in 3D
@@ -43,7 +44,7 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05):
     sens_loc = np.array(sens_loc)
 
     pts = mlab.points3d(sens_loc[:, 0], sens_loc[:, 1], sens_loc[:, 2],
-                        color=(1, 1, 1), opacity=1, scale_factor=8.)
+                        color=(1, 1, 1), opacity=1, scale_factor=scale_factor)
 
     # Get the strongest connections
     threshold = np.sort(con, axis=None)[-n_con]
@@ -66,7 +67,7 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05):
         x1, y1, z1 = sens_loc[nodes[0]]
         x2, y2, z2 = sens_loc[nodes[1]]
         points = mlab.plot3d([x1, x2], [y1, y2], [z1, z2], [val, val],
-                             vmin=vmin, vmax=vmax, tube_radius=1,
+                             vmin=vmin, vmax=vmax, tube_radius=tube_radius,
                              colormap='RdBu')
         points.module_manager.scalar_lut_manager.reverse_lut = True
 
