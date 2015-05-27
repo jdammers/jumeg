@@ -363,7 +363,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
 
     Outputfile:
     -------
-    <wawa>,n-raw.fif for input <wawa>-raw.fif
+    <wawa>,nr-raw.fif for input <wawa>-raw.fif
 
     Returns
     -------
@@ -713,7 +713,6 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
         tw1 = time.time()
         if verbose:
             print ">>> Total run         took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tc0), (tw1-tw0))
-
 
 
 ##################################################
