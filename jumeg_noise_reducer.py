@@ -73,12 +73,12 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
                    area_mode='range', area_alpha=0.33, n_jobs=1,
                    title1='before denoising', title2='after denoising',
                    info=None, show=True, fnout=None):
-    """Plot the power spectral density across channels
+    """Plot the power spectral density across channels to show denoising.
 
     Parameters
     ----------
-    raw : instance of io.Raw
-        The raw instance to use.
+    raw : list or str
+        Raw filename or list of raw filenames.
     tmin : float
         Start time for calculations.
     tmax : float
@@ -106,10 +106,12 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
         If None, no area will be plotted.
     area_alpha : float
         Alpha for the area.
-    n_jobs : int
-        Number of jobs to run in parallel.
-    verbose : bool, str, int, or None
-        If not None, override default verbose level (see mne.verbose).
+    info : bool
+        Display information in the figure.
+    show : bool
+        Show figure.
+    fnout : str
+        Name of the saved output figure.
     """
 
     from matplotlib import gridspec as grd
@@ -193,7 +195,7 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
         # onset
         # ---------------------------------
         if stim_name:
-            raw = mne.io.Raw(fname_raw[idx], preload=True)
+            raw = mne.io.Raw(fnraw[idx], preload=True)
             epochs = mne.Epochs(raw, events, event_id, proj=False,
                                 tmin=tmin_stim, tmax=tmax_stim, picks=picks,
                                 preload=True, baseline=(None, None))
