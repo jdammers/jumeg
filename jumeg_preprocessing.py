@@ -246,7 +246,12 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         # to unfiltered data
         if unfiltered:
             # adjust filenames to unfiltered data
-            basename = basename[:basename.rfind(',')]
+            # FIXME breaks when noise reduced file is used with basename + ',nr'
+            # temporarily fixed by checking for fibp filter suffix
+            if basename.find(',fibp') != -1:
+                basename = basename[:basename.rfind(',')]
+            else:
+                basename = basename
             fnfilt = basename + ext_raw
             fnclean = basename + ext_clean
             fnica_ar = basename + ext_icap
