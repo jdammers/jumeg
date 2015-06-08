@@ -17,3 +17,4 @@ from . import jumeg_plot
 from . import decompose
 from . import jumeg_noise_reducer
 from .filter import jumeg_filter
+from . import jumeg_source_localize
