@@ -167,9 +167,18 @@ def setup_forward_model(subjects, subjects_dir=None, mne_root=None):
     print 'Next step is to align the MRI and MEG coordinate frames using mne.coregistration.gui() resulting in a -trans.fif file.'
 
 
-def compute_forward_solution(fname_raw, subjects_dir=None, spacing='ico4', mindist=5, eeg=False, overwrite=False)
+def compute_forward_solution(fname_raw, subjects_dir=None, spacing='ico4', mindist=5, eeg=False, overwrite=False):
     '''Performs forward solution computation using mne_do_foward_solution (uses MNE-C binaries)
        Requires bem sol files, and raw meas file)
+
+    Input
+    -----
+    fname_raw : str or list
+    List of raw files for which to compute the forward operator.
+
+    Returns
+    -------
+    None. Forward operator -fwd.fif will be saved.
     '''
     fnames = get_files_from_list(fname_raw)
 
