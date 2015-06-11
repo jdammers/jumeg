@@ -53,7 +53,8 @@ from math import floor, ceil
 import mne
 from mne.utils import logger
 from mne.epochs import _is_good
-from mne.io.pick import pick_types, channel_indices_by_type
+from mne.io.pick import channel_indices_by_type
+from jumeg.jumeg_utils import get_files_from_list
 
 TINY = 1.e-38
 SVD_RELCUTOFF = 1.e-08
@@ -67,17 +68,17 @@ SVD_RELCUTOFF = 1.e-08
 ##################################################
 def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
                    proj=False, n_fft=4096, color='blue',
-                   stim_name=None,  event_id=1,
+                   stim_name=None, event_id=1,
                    tmin_stim=-0.2, tmax_stim=0.5,
                    area_mode='range', area_alpha=0.33, n_jobs=1,
                    title1='before denoising', title2='after denoising',
                    info=None, show=True, fnout=None):
-    """Plot the power spectral density across channels
+    """Plot the power spectral density across channels to show denoising.
 
     Parameters
     ----------
-    raw : instance of io.Raw
-        The raw instance to use.
+    raw : list or str
+        Raw filename or list of raw filenames.
     tmin : float
         Start time for calculations.
     tmax : float
@@ -105,25 +106,19 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
         If None, no area will be plotted.
     area_alpha : float
         Alpha for the area.
-    n_jobs : int
-        Number of jobs to run in parallel.
-    verbose : bool, str, int, or None
-        If not None, override default verbose level (see mne.verbose).
+    info : bool
+        Display information in the figure.
+    show : bool
+        Show figure.
+    fnout : str
+        Name of the saved output figure.
     """
 
     from matplotlib import gridspec as grd
     import matplotlib.pyplot as plt
     from mne.time_frequency import compute_raw_psd
 
-
-    if isinstance(fname_raw, list):
-        fnraw = fname_raw
-    else:
-        if isinstance(fname_raw, str):
-            fnraw = list([fname_raw])
-        else:
-            fnraw = list(fname_raw)
-
+    fnraw = get_files_from_list(fname_raw)
 
     # ---------------------------------
     # estimate power spectrum
@@ -142,13 +137,11 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
         if area_mode not in [None, 'std', 'range']:
             raise ValueError('"area_mode" must be "std", "range", or None')
 
-
         psds, freqs = compute_raw_psd(raw, picks=picks, fmin=fmin, fmax=fmax,
                                       tmin=tmin, tmax=tmax, n_fft=n_fft,
                                       n_jobs=n_jobs, plot=False, proj=proj)
         psds_all.append(psds)
         freqs_all.append(freqs)
-
 
     if stim_name:
         n_xplots = 2
@@ -159,7 +152,7 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
     else:
         n_xplots = 1
 
-    fig = plt.figure('denoising', figsize=(16, 6*n_xplots))
+    fig = plt.figure('denoising', figsize=(16, 6 * n_xplots))
     gs = grd.GridSpec(n_xplots, int(len(psds_all)))
 
     # loop across all filenames
@@ -188,10 +181,9 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
 
         if idx == 0:
             p1.set_title(title1)
-            ylim = [np.min(psd_mean)-10, np.max(psd_mean)+10]
+            ylim = [np.min(psd_mean) - 10, np.max(psd_mean) + 10]
         else:
             p1.set_title(title2)
-
 
         p1.set_xlabel('Freq (Hz)')
         p1.set_ylabel('Power Spectral Density (dB/Hz)')
@@ -203,7 +195,7 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
         # onset
         # ---------------------------------
         if stim_name:
-            raw = mne.io.Raw(fname_raw[idx], preload=True)
+            raw = mne.io.Raw(fnraw[idx], preload=True)
             epochs = mne.Epochs(raw, events, event_id, proj=False,
                                 tmin=tmin_stim, tmax=tmax_stim, picks=picks,
                                 preload=True, baseline=(None, None))
@@ -219,7 +211,7 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
             p2.set_ylim(1.1 * ymin, 1.1 * ymax)
 
             if (idx == 1) and info:
-                plt.text(times[0], 0.9*ymax, '  ICs: ' + str(info))
+                plt.text(times[0], 0.9 * ymax, '  ICs: ' + str(info))
 
     # save image
     if fnout:
@@ -243,13 +235,7 @@ def perform_detrending(fname_raw, save=True):
     from mne.io import Raw
     from numpy import poly1d, polyfit
 
-    if isinstance(fname_raw, list):
-        fnraw = fname_raw
-    else:
-        if isinstance(fname_raw, str):
-            fnraw = list([fname_raw])
-        else:
-            fnraw = list(fname_raw)
+    fnraw = get_files_from_list(fname_raw)
 
     # loop across all filenames
     for fname in fnraw:
@@ -361,9 +347,9 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                            (can be useful for debugging)
     checkresults : boolean to control internal checks and overall success [True]
 
-    Outputfile:
-    -------
-    <wawa>,n-raw.fif for input <wawa>-raw.fif
+    Outputfile
+    ----------
+    <wawa>,nr-raw.fif for input <wawa>-raw.fif
 
     Returns
     -------
@@ -379,13 +365,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
     if type(complementary_signal) != bool:
         raise ValueError("Argument complementary_signal must be of type bool")
 
-    if isinstance(fname_raw, list):
-        fnraw = fname_raw
-    else:
-        if isinstance(fname_raw, str):
-            fnraw = list([fname_raw])
-        else:
-            fnraw = list(fname_raw)
+    fnraw = get_files_from_list(fname_raw)
 
     # loop across all filenames
     for fname in fnraw:
@@ -405,7 +385,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
         tw1 = time.time()
 
         if verbose:
-            print ">>> loading raw data  took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tc0), (tw1-tw0))
+            print ">>> loading raw data  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
 
         # Time window selection
         # weights are calc'd based on [tmin,tmax], but applied to the entire data set.
@@ -491,7 +471,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
             tc1 = time.clock()
             tw1 = time.time()
             if verbose:
-                print ">>> filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+                print ">>> filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
 
         if verbose:
             print "########## Calculating sig-ref/ref-ref-channel covariances:"
@@ -543,7 +523,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                         ignore_chs=raw.info['bads']):
                 sigmean += raw_segmentsig.sum(axis=1)
                 refmean += raw_segmentref.sum(axis=1)
-                sscovdata += (raw_segmentsig*raw_segmentsig).sum(axis=1)
+                sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
                 srcovdata += np.dot(raw_segmentsig, raw_segmentref.T)
                 rrcovdata += np.dot(raw_segmentref, raw_segmentref.T)
                 n_samples += raw_segmentsig.shape[1]
@@ -641,17 +621,17 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
 
         tct = time.clock()
         twt = time.time()
-        #data,times = raw[:,raw.time_as_index(tmin)[0]:raw.time_as_index(tmax)[0]:]
+        # data,times = raw[:,raw.time_as_index(tmin)[0]:raw.time_as_index(tmax)[0]:]
         # Work on entire data stream:
         for isl in xrange(raw._data.shape[1]):
-            slice = np.take(raw._data,[isl], axis=1)
+            slice = np.take(raw._data, [isl], axis=1)
             if use_reffilter:
-                refslice = np.take(fltref._data,[isl], axis=1)
-                refarr = refslice[:].flatten()-refmean
+                refslice = np.take(fltref._data, [isl], axis=1)
+                refarr = refslice[:].flatten() - refmean
                 # refarr = fltres[:,isl]-refmean
             else:
-                refarr = slice[refpick].flatten()-refmean
-            subrefarr = np.dot(weights[:],refarr)
+                refarr = slice[refpick].flatten() - refmean
+            subrefarr = np.dot(weights[:], refarr)
             # data[:,isl] -= subrefarr # will not modify raw._data?
             if not complementary_signal:
                 raw._data[:, isl] -= subrefarr
@@ -665,7 +645,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
             print "\nDone."
             tc1 = time.clock()
             tw1 = time.time()
-            print ">>> compensation loop took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+            print ">>> compensation loop took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
 
         if checkresults:
             if verbose:
@@ -687,7 +667,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                    _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
                             flat=None, ignore_chs=raw.info['bads']):
                     sigmean += raw_segmentsig.sum(axis=1)
-                    sscovdata += (raw_segmentsig*raw_segmentsig).sum(axis=1)
+                    sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
                     n_samples += raw_segmentsig.shape[1]
             sigmean /= n_samples
             sscovdata -= n_samples * sigmean[:] * sigmean[:]
@@ -699,11 +679,11 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                     print ">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))
                 tc1 = time.clock()
                 tw1 = time.time()
-                print ">>> signal covar-calc took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+                print ">>> signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
                 print ">>>"
 
         if not fnout:
-            fnout = fname[:fname.rfind('-raw.fif')] + ',n-raw.fif'
+            fnout = fname[:fname.rfind('-raw.fif')] + ',nr-raw.fif'
 
         if verbose:
             print ">>> Saving '%s'..." % fnout
@@ -712,8 +692,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
         tc1 = time.clock()
         tw1 = time.time()
         if verbose:
-            print ">>> Total run         took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tc0), (tw1-tw0))
-
+            print ">>> Total run         took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
 
 
 ##################################################
@@ -752,7 +731,7 @@ def test_noise_reducer():
     raw = mne.io.Raw(dname,preload=True)
     tc1 = time.clock()
     tw1 = time.time()
-    print "loading raw data  took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tc0), (tw1-tw0))
+    print "loading raw data  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
 
     # Time window selection
     # weights are calc'd based on [tmin,tmax], but applied to the entire data set.
@@ -805,10 +784,10 @@ def test_noise_reducer():
         fltref = raw.drop_channels(droplist, copy=True)
         tct = time.clock()
         twt = time.time()
-        fltref.filter(refflt_hpfreq, refflt_lpfreq,picks=np.array(xrange(nref)), method='iir')
+        fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(xrange(nref)), method='iir')
         tc1 = time.clock()
         tw1 = time.time()
-        print "filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+        print "filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
 
     print "########## Calculating sig-ref/ref-ref-channel covariances:"
     # Calculate sig-ref/ref-ref-channel covariance:
@@ -867,7 +846,7 @@ def test_noise_reducer():
                     flat=None, ignore_chs=raw.info['bads']):
             sigmean += raw_segmentsig.sum(axis=1)
             refmean += raw_segmentref.sum(axis=1)
-            sscovdata += (raw_segmentsig*raw_segmentsig).sum(axis=1)
+            sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
             srcovdata += np.dot(raw_segmentsig, raw_segmentref.T)
             rrcovdata += np.dot(raw_segmentref, raw_segmentref.T)
             n_samples += raw_segmentsig.shape[1]
@@ -901,7 +880,7 @@ def test_noise_reducer():
     logger.info("Number of samples used : %d" % n_samples)
     tc1 = time.clock()
     tw1 = time.time()
-    print "sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+    print "sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1-twt))
 
     print "########## Calculating sig-ref/ref-ref-channel covariances (robust):"
     # Calculate sig-ref/ref-ref-channel covariance:
@@ -1048,7 +1027,7 @@ def test_noise_reducer():
             print ">>> Testing RRinvtr-result (shld be unit-matrix): ok"
         else:
             print ">>> Testing RRinvtr-result (shld be unit-matrix): failed"
-            print np.dot(rrslope.transpose(),RRinvtr)
+            print np.dot(rrslope.transpose(), RRinvtr)
             # np.less_equal(np.abs(np.dot(rrslope.transpose(),RRinvtr)-np.identity(nref)),0.01*np.ones((nref,nref)))
         print ""
 
