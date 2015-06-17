@@ -77,8 +77,8 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
 
     Parameters
     ----------
-    raw : list or str
-        Raw filename or list of raw filenames.
+    fname_raw : list or str
+        List of raw files, without denoising and with for comparison.
     tmin : float
         Start time for calculations.
     tmax : float
@@ -91,12 +91,6 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
         Apply projection.
     n_fft : int
         Number of points to use in Welch FFT calculations.
-    picks : array-like of int | None
-        List of channels to use. Cannot be None if `ax` is supplied. If both
-        `picks` and `ax` are None, separate subplots will be created for
-        each standard channel type (`mag`, `grad`, and `eeg`).
-    ax : instance of matplotlib Axes | None
-        Axes to plot into. If None, axes will be created.
     color : str | tuple
         A matplotlib-compatible color to use.
     area_mode : str | None
@@ -111,7 +105,20 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
     show : bool
         Show figure.
     fnout : str
-        Name of the saved output figure.
+        Name of the saved output figure. If none, no figure will be saved.
+    title1, title2 : str
+        Title for two psd plots.
+    n_jobs : int
+        Number of jobs to use for parallel computation.
+    stim_name : str
+        Name of the stim channel. If stim_name is set, the plot of epochs average
+        is also shown alongside the PSD plots.
+    event_id : int
+        ID of the stim event. (only when stim_name is set)
+
+    Example Usage
+    -------------
+    plot_denoising(['orig-raw.fif', 'orig,nr-raw.fif', fnout='example')
     """
 
     from matplotlib import gridspec as grd
@@ -139,7 +146,7 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
 
         psds, freqs = compute_raw_psd(raw, picks=picks, fmin=fmin, fmax=fmax,
                                       tmin=tmin, tmax=tmax, n_fft=n_fft,
-                                      n_jobs=n_jobs, plot=False, proj=proj)
+                                      n_jobs=n_jobs, proj=proj)
         psds_all.append(psds)
         freqs_all.append(freqs)
 
@@ -250,7 +257,7 @@ def perform_detrending(fname_raw, save=True):
 
         # loop over all channels
         for ipick in picks:
-            coeff = np.polyfit(xval, raw._data[ipick, :], deg=1)
+            coeff = polyfit(xval, raw._data[ipick, :], deg=1)
             trend = poly1d(coeff)
             raw._data[ipick, :] -= trend(xval)
 
@@ -291,7 +298,7 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
             except:
                 print ">>>>> Channel '%s' not found." % findlist[ir]
         else:
-            chnpicktmp = (mne.pick_channels_regexp(fulllist,findlist[ir]))
+            chnpicktmp = (mne.pick_channels_regexp(fulllist, findlist[ir]))
             if len(chnpicktmp) == 0:
                 print ">>>>> '%s' does not match any channel name." % findlist[ir]
             else:
@@ -397,7 +404,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
         itmin = int(floor(tmin * raw.info['sfreq']))
         itmax = int(ceil(tmax * raw.info['sfreq']))
 
-        if itmax-itmin < 2:
+        if itmax - itmin < 2:
             raise ValueError("Time-window for noise compensation empty or too short")
 
         if verbose:
@@ -443,7 +450,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
             if refnotch is not None:
                 if reflp is None and reflp is None:
                     use_refantinotch = True
-                    freqlast = np.min([5.01*refnotch,0.5*raw.info['sfreq']])
+                    freqlast = np.min([5.01 * refnotch, 0.5 * raw.info['sfreq']])
                     if verbose:
                         print ">>> notches at freq %.1f and harmonics below %.1f" % (refnotch, freqlast)
                 else:
@@ -557,7 +564,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
             print ">>> Number of samples used : %d" % n_samples
             tc1 = time.clock()
             tw1 = time.time()
-            print ">>> sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+            print ">>> sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
 
         if checkresults:
             if verbose:
@@ -575,9 +582,9 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
             print s
             print ">>> Applying cutoff for smallest SVs:"
 
-        dtmp = s.max()*SVD_RELCUTOFF
+        dtmp = s.max() * SVD_RELCUTOFF
         s *= (abs(s) >= dtmp)
-        sinv = [1./s[k] if s[k]!=0. else 0. for k in xrange(nref)]
+        sinv = [1. / s[k] if s[k] != 0. else 0. for k in xrange(nref)]
         if verbose:
             print ">>> singular values (after cutoff):"
             print s
@@ -981,7 +988,7 @@ def test_noise_reducer():
     print "cmp(rrcovdata,rrcov):", np.allclose(rrcov, rrcovdata, atol=0.)
     tc1 = time.clock()
     tw1 = time.time()
-    print "sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+    print "sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
 
     if checkresults:
         print "########## Calculated initial signal channel covariance:"
@@ -1000,11 +1007,11 @@ def test_noise_reducer():
     print s
 
     print "Applying cutoff for smallest SVs:"
-    dtmp = s.max()*SVD_RELCUTOFF
+    dtmp = s.max() * SVD_RELCUTOFF
     sinv = np.zeros(nref)
     for i in xrange(nref):
         if abs(s[i]) >= dtmp:
-            sinv[i] = 1./s[i]
+            sinv[i] = 1. / s[i]
         else:
             s[i] = 0.
     # s *= (abs(s)>=dtmp)
@@ -1075,7 +1082,7 @@ def test_noise_reducer():
     print "\nDone."
     tc1 = time.clock()
     tw1 = time.time()
-    print "compensation loop took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+    print "compensation loop took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
 
     if checkresults:
         print "########## Calculating final signal channel covariance:"
@@ -1107,7 +1114,7 @@ def test_noise_reducer():
             print "final signal-rms[%3d] = %12.5e" % (i,np.sqrt(sscovdata.flatten()[i]))
         tc1 = time.clock()
         tw1 = time.time()
-        print "signal covar-calc took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tct), (tw1-twt))
+        print "signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
         print " "
 
     nrname = dname[:dname.rfind('-raw.fif')] + ',nold-raw.fif'
@@ -1115,4 +1122,4 @@ def test_noise_reducer():
     raw.save(nrname, overwrite=True)
     tc1 = time.clock()
     tw1 = time.time()
-    print "Total run         took %.1f ms (%.2f s walltime)" % (1000.*(tc1-tc0), (tw1-tw0))
+    print "Total run         took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
