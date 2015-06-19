@@ -8,7 +8,7 @@ import matplotlib.pyplot as pl
 import mne
 
 
-def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_factor=0.005, tube_radius=0.001)):
+def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_factor=0.005, tube_radius=0.001):
     """ Function to plot sensor connectivity showing strongest connections(n_con)
         excluding sensors that are less than min_dist apart.
         https://github.com/mne-tools/mne-python/blob/master/examples/connectivity/plot_sensor_connectivity.py
