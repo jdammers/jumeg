@@ -4,14 +4,14 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 06.02.2015
- version    : 1.0
+ last update: 19.06.2015
+ version    : 1.1
 
 ----------------------------------------------------------------------
  Based on following publications:
 ----------------------------------------------------------------------
 
-Ribinson, Stephen E., 'Environmental Noise Cancellation for
+Robinson, Stephen E., 'Environmental Noise Cancellation for
 Biomagnetic Measurements', Advances in Biomagnetism,
 Plenum Press, New York, 1989
 
@@ -20,7 +20,7 @@ Plenum Press, New York, 1989
   s'_i(t) = s_i(t) - sum(w_ij*r_j(t), j=1,nref)
  where
   s_i  are the   signal  traces, i=1,nsig
-  r_j  are the reference traces, j=1,nref
+  r_j  are the reference traces, j=1,nref after DC removal
   w_ij are weights determined by minimizing
        <(s'_i(t)-<s'_i>)^2> with <x> temporal mean
  Typically s_i are magnetic signal channels and
@@ -41,6 +41,7 @@ jumeg_noise_reducer.noise_reducer(fname_raw)
 '''
 # Author: EE
 #   150203/EE/
+#   150619/EE/ fix for tmin/tmax-arg
 #
 # License: BSD (3-clause)
 
@@ -294,7 +295,7 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
         if findlist[ir].translate(None, ' ').isalnum():
             try:
                 chnpicktmp = ([fulllist.index(findlist[ir])])
-                chnpick = np.array(np.concatenate((chnpick, chnpicktmp), axis=1), dtype=int)
+                chnpick = np.array(np.concatenate((chnpick, chnpicktmp)), dtype=int)
             except:
                 print ">>>>> Channel '%s' not found." % findlist[ir]
         else:
@@ -302,7 +303,7 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
             if len(chnpicktmp) == 0:
                 print ">>>>> '%s' does not match any channel name." % findlist[ir]
             else:
-                chnpick = np.array(np.concatenate((chnpick, chnpicktmp), axis=1), dtype=int)
+                chnpick = np.array(np.concatenate((chnpick, chnpicktmp)), dtype=int)
     if len(chnpick) > 1:
         # Remove duplicates:
         chnpick = np.sort(np.array(list(set(np.sort(chnpick)))))
@@ -352,6 +353,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                        (parameters are at present hard-coded!)
     complementary_signal : replaced signal by traces that would be subtracted [False]
                            (can be useful for debugging)
+    detrending: boolean to ctrl subtraction of linear trend from all magn. chans [False]
     checkresults : boolean to control internal checks and overall success [True]
 
     Outputfile
@@ -373,6 +375,9 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
         raise ValueError("Argument complementary_signal must be of type bool")
 
     fnraw = get_files_from_list(fname_raw)
+
+    if fnout is not None and len(fnraw) > 1:
+        raise ValueError("Cannot combine input file list with output file name")
 
     # loop across all filenames
     for fname in fnraw:
@@ -397,18 +402,22 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
         # Time window selection
         # weights are calc'd based on [tmin,tmax], but applied to the entire data set.
         # tstep is used in artifact detection
+        # tmin,tmax variables must not be changed here!
         if tmin is None:
-            tmin = 0.
+            itmin = 0
+        else:
+            itmin = int(floor(tmin * raw.info['sfreq']))
         if tmax is None:
-            tmax = raw.index_as_time(raw.last_samp)[0]
-        itmin = int(floor(tmin * raw.info['sfreq']))
-        itmax = int(ceil(tmax * raw.info['sfreq']))
+            itmax = raw.last_samp
+        else:
+            itmax = int(ceil(tmax * raw.info['sfreq']))
 
         if itmax - itmin < 2:
             raise ValueError("Time-window for noise compensation empty or too short")
 
         if verbose:
-            print ">>> Set time-range to [%7.3f,%7.3f]" % (tmin, tmax)
+            print ">>> Set time-range to [%7.3f,%7.3f]" % \
+                  (raw.index_as_time(itmin)[0], raw.index_as_time(itmax)[0])
 
         if signals is None or len(signals) == 0:
             sigpick = mne.pick_types(raw.info, meg='mag', eeg=False, stim=False,
@@ -469,7 +478,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
             fltref = raw.drop_channels(droplist, copy=True)
             if use_refantinotch:
                 rawref = raw.drop_channels(droplist, copy=True)
-                freqlast = np.min([5.01*refnotch, 0.5*raw.info['sfreq']])
+                freqlast = np.min([5.01 * refnotch, 0.5 * raw.info['sfreq']])
                 fltref.notch_filter(np.arange(refnotch, freqlast, refnotch),
                                     picks=np.array(xrange(nref)), method='iir')
                 fltref._data = (rawref._data - fltref._data)
@@ -536,8 +545,8 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                 n_samples += raw_segmentsig.shape[1]
             else:
                 logger.info("Artefact detected in [%d, %d]" % (first, last))
-
-        #_check_n_samples(n_samples, len(picks))
+        if n_samples <= 1:
+            raise ValueError('Too few samples to calculate weights')
         sigmean /= n_samples
         refmean /= n_samples
         sscovdata -= n_samples * sigmean[:] * sigmean[:]
@@ -628,7 +637,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
 
         tct = time.clock()
         twt = time.time()
-        # data,times = raw[:,raw.time_as_index(tmin)[0]:raw.time_as_index(tmax)[0]:]
+
         # Work on entire data stream:
         for isl in xrange(raw._data.shape[1]):
             slice = np.take(raw._data, [isl], axis=1)
@@ -639,7 +648,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
             else:
                 refarr = slice[refpick].flatten() - refmean
             subrefarr = np.dot(weights[:], refarr)
-            # data[:,isl] -= subrefarr # will not modify raw._data?
+
             if not complementary_signal:
                 raw._data[:, isl] -= subrefarr
             else:
@@ -1050,16 +1059,16 @@ def test_noise_reducer():
         print ">>> all weights are small (<=1.e-8)."
     else:
         print ">>> largest weight %12.5e" % np.max(np.abs(weights))
-        wlrg = np.where(np.abs(weights) >= 0.99*np.max(np.abs(weights)))
+        wlrg = np.where(np.abs(weights) >= 0.99 * np.max(np.abs(weights)))
         for iwlrg in xrange(len(wlrg[0])):
             print ">>> weights[%3d,%2d] = %12.5e" % \
                   (wlrg[0][iwlrg], wlrg[1][iwlrg], weights[wlrg[0][iwlrg], wlrg[1][iwlrg]])
 
-    if nref<5:
+    if nref < 5:
         print "weights-entries for first sigchans:"
         for i in xrange(5):
-            print 'weights[sp(%2d)][r]=[' % i +' '.join([' %+10.7f' %
-                             val for val in weights[sigpick[i]][:]])+']'
+            print 'weights[sp(%2d)][r]=[' % i + ' '.join([' %+10.7f' %
+                             val for val in weights[sigpick[i]][:]]) + ']'
 
     print "########## Compensating signal channels:"
     tct = time.clock()
@@ -1067,13 +1076,13 @@ def test_noise_reducer():
     #data,times = raw[:,raw.time_as_index(tmin)[0]:raw.time_as_index(tmax)[0]:]
     # Work on entire data stream:
     for isl in xrange(raw._data.shape[1]):
-        slice = np.take(raw._data,[isl],axis=1)
+        slice = np.take(raw._data, [isl], axis=1)
         if use_reffilter:
             refslice = np.take(fltref._data, [isl], axis=1)
-            refarr = refslice[:].flatten()-rmean
+            refarr = refslice[:].flatten() - rmean
             # refarr = fltres[:,isl]-rmean
         else:
-            refarr = slice[refpick].flatten()-rmean
+            refarr = slice[refpick].flatten() - rmean
         subrefarr = np.dot(weights[:], refarr)
         # data[:,isl] -= subrefarr   will not modify raw._data?
         raw._data[:, isl] -= subrefarr
@@ -1103,7 +1112,7 @@ def test_noise_reducer():
                _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
                         flat=None, ignore_chs=raw.info['bads']):
                 sigmean += raw_segmentsig.sum(axis=1)
-                sscovdata += (raw_segmentsig*raw_segmentsig).sum(axis=1)
+                sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
                 n_samples += raw_segmentsig.shape[1]
         sigmean /= n_samples
         sscovdata -= n_samples * sigmean[:] * sigmean[:]
@@ -1111,7 +1120,7 @@ def test_noise_reducer():
         print ">>> no channel got worse: ", np.all(np.less_equal(sscovdata, sscovinit))
         print "final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))
         for i in xrange(5):
-            print "final signal-rms[%3d] = %12.5e" % (i,np.sqrt(sscovdata.flatten()[i]))
+            print "final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))
         tc1 = time.clock()
         tw1 = time.time()
         print "signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
