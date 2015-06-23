@@ -1,6 +1,12 @@
 '''
 Utilities module for jumeg
 '''
+
+# Authors: Jurgen Dammers (j.dammers@fz-juelich.de)
+#          Praveen Sripad (pravsripad@gmail.com)
+#
+# License: BSD (3-clause)
+
 import mne
 import os
 import numpy as np
@@ -879,3 +885,27 @@ def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False, epo
     if save:
         epochs.save(epochs_fname)
     return epochs
+
+
+def put_pngs_into_html(regexp, html_out='output.html'):
+    '''Lists all files in directory that matches pattern regexp
+       and puts it into an html file with filename included.
+
+    regexp : str
+        String of dir path like '/home/kalka/*.png'
+    html_out : str
+        Output file name
+    '''
+    import glob
+    files =  glob.glob(regexp)
+    html_string = ''
+    for fname in files:
+        my_string = '<body><p>%s</p></body>' % (fname) + '\n' + '<img src=%s>' % (fname)
+        html_string += my_string
+    f = open(html_out, 'w')
+    message = """<html>
+          <head></head>
+          %s
+          </html>""" % (html_string)
+    f.write(message)
+    f.close()
