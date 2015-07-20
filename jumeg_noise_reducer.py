@@ -4,8 +4,8 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 19.06.2015
- version    : 1.1
+ last update: 23.06.2015
+ version    : 1.2
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -48,6 +48,7 @@ jumeg_noise_reducer.noise_reducer(fname_raw)
 import numpy as np
 import time
 import copy
+import warnings
 
 import os
 from math import floor, ceil
@@ -320,9 +321,9 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
 # using reference channels.
 #
 ##################################################
-def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
+def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                   tmin=None, tmax=None, reflp=None, refhp=None, refnotch=None,
-                  exclude_artifacts=True, checkresults=True,
+                  exclude_artifacts=True, checkresults=True, return_raw=False,
                   complementary_signal=False, fnout=None, verbose=False):
 
     """Apply noise reduction to signal channels using reference channels.
@@ -330,6 +331,8 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
     Parameters
     ----------
     fname_raw : (list of) rawfile names
+    raw : mne Raw objects
+        Allows passing of raw object as well.
     signals : list of string
               List of channels to compensate using noiseref.
               If empty use the meg signal channels.
@@ -351,6 +354,10 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                use raw(ref)-notched(ref) as reference signal
     exclude_artifacts: filter signal-channels thru _is_good() [True]
                        (parameters are at present hard-coded!)
+    return_raw : bool
+        If return_raw is true, the raw object is returned and raw file
+        is not written to disk. It is suggested that this option be used in cases
+        where the noise_reducer is applied multiple times. [False]
     complementary_signal : replaced signal by traces that would be subtracted [False]
                            (can be useful for debugging)
     detrending: boolean to ctrl subtraction of linear trend from all magn. chans [False]
@@ -362,7 +369,7 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
 
     Returns
     -------
-    TBD
+    If return_raw is True, then mne.io.Raw instance is returned.
 
     Bugs
     ----
@@ -374,10 +381,22 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
     if type(complementary_signal) != bool:
         raise ValueError("Argument complementary_signal must be of type bool")
 
-    fnraw = get_files_from_list(fname_raw)
+    # handle error if Raw object passed with file list
+    if raw and isinstance(fname_raw, list):
+        raise ValueError('List of file names cannot be combined with one Raw object')
 
-    if fnout is not None and len(fnraw) > 1:
-        raise ValueError("Cannot combine input file list with output file name")
+    # handle error if eturn_raw is requested with file list
+    if return_raw and isinstance(fname_raw, list):
+        raise ValueError('List of file names cannot be combined return_raw.'
+                         'Please pass one file at a time.')
+
+    # handle error if Raw object is passed with detrending option
+    #TODO include perform_detrending for Raw objects
+    if raw and detrending:
+        raise ValueError('Please perform detrending on the raw file directly. Cannot perform'
+                         'detrending on the raw object')
+
+    fnraw = get_files_from_list(fname_raw)
 
     # loop across all filenames
     for fname in fnraw:
@@ -388,16 +407,22 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
         tc0 = time.clock()
         tw0 = time.time()
 
-        if detrending:
-            raw = perform_detrending(fname, save=False)
+        if raw is None:
+            if detrending:
+                raw = perform_detrending(fname, save=False)
+            else:
+                raw = mne.io.Raw(fname, preload=True)
         else:
-            raw = mne.io.Raw(fname, preload=True)
+            # perform sanity check to make sure Raw object and file are same
+            if os.path.basename(fname) != os.path.basename(raw.info['filename']):
+                warnings.warn('The file name within the Raw object and provided'
+                              'fname are not the same. Please check again.')
 
         tc1 = time.clock()
         tw1 = time.time()
 
         if verbose:
-            print ">>> loading raw data  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
+            print ">>> loading raw data took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
 
         # Time window selection
         # weights are calc'd based on [tmin,tmax], but applied to the entire data set.
@@ -463,7 +488,8 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                     if verbose:
                         print ">>> notches at freq %.1f and harmonics below %.1f" % (refnotch, freqlast)
                 else:
-                    raise ValueError("Cannot specify notch- and high-/low-pass reference filter together")
+                    raise ValueError("Cannot specify notch- and high-/low-pass"
+                                     "reference filter together")
             else:
                 if verbose:
                     if reflp is not None:
@@ -698,17 +724,23 @@ def noise_reducer(fname_raw, signals=[], noiseref=[], detrending=None,
                 print ">>> signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
                 print ">>>"
 
-        if not fnout:
-            fnout = fname[:fname.rfind('-raw.fif')] + ',nr-raw.fif'
+        if fnout is not None:
+            fnoutloc = fnout
+        else:
+            fnoutloc = fname[:fname.rfind('-raw.fif')] + ',nr-raw.fif'
 
         if verbose:
-            print ">>> Saving '%s'..." % fnout
+            print ">>> Saving '%s'..." % fnoutloc
 
-        raw.save(fnout, overwrite=True)
+        if return_raw:
+            return raw
+        else:
+            raw.save(fnoutloc, overwrite=True)
+
         tc1 = time.clock()
         tw1 = time.time()
         if verbose:
-            print ">>> Total run         took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
+            print ">>> Total run took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
 
 
 ##################################################
@@ -737,14 +769,14 @@ def test_noise_reducer():
     refchanlist = ['RFM 001', 'RFM 003', 'RFM 005', 'RFG ...']
     tmin = 15.
     noise_reducer(dname, signals=sigchanlist, noiseref=refchanlist, tmin=tmin,
-                  reflp=refflt_lpfreq,refhp=refflt_hpfreq,
-                  exclude_artifacts=exclart,complementary_signal=True)
+                  reflp=refflt_lpfreq, refhp=refflt_hpfreq,
+                  exclude_artifacts=exclart, complementary_signal=True)
     print "########## behind of noisereducer call ##########"
 
     print "########## Read raw data:"
     tc0 = time.clock()
     tw0 = time.time()
-    raw = mne.io.Raw(dname,preload=True)
+    raw = mne.io.Raw(dname, preload=True)
     tc1 = time.clock()
     tw1 = time.time()
     print "loading raw data  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
@@ -852,8 +884,8 @@ def test_noise_reducer():
             raw_segmentref, times = fltref[:, first:last]
         else:
             raw_segmentref, times = raw[refpick, first:last]
-        #if True:
-        #if _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
+        # if True:
+        # if _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
         #            ignore_chs=raw.info['bads']) and _is_good(raw_segmentref,
         #              inforef['ch_names'], idx_by_typeref, reject, flat=None,
         #                ignore_chs=raw.info['bads']):
@@ -896,7 +928,7 @@ def test_noise_reducer():
     logger.info("Number of samples used : %d" % n_samples)
     tc1 = time.clock()
     tw1 = time.time()
-    print "sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1-twt))
+    print "sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
 
     print "########## Calculating sig-ref/ref-ref-channel covariances (robust):"
     # Calculate sig-ref/ref-ref-channel covariance:
@@ -950,8 +982,8 @@ def test_noise_reducer():
             raw_segmentref, times = fltref[:, first:last]
         else:
             raw_segmentref, times = raw[refpick, first:last]
-        #if True:
-        #if _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
+        # if True:
+        # if _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
         #            ignore_chs=raw.info['bads']) and _is_good(raw_segmentref,
         #              inforef['ch_names'], idx_by_typeref, reject, flat=None,
         #                ignore_chs=raw.info['bads']):
@@ -960,14 +992,14 @@ def test_noise_reducer():
                     flat=None, ignore_chs=raw.info['bads']):
             for isl in xrange(raw_segmentsig.shape[1]):
                 nsl = isl + n_samples + 1
-                cnslm1dnsl = float((nsl-1))/float(nsl)
-                sslsubmean = (raw_segmentsig[:, isl]-smold)
-                rslsubmean = (raw_segmentref[:, isl]-rmold)
-                smean = smold + sslsubmean/nsl
-                rmean = rmold + rslsubmean/nsl
-                sscov += sslsubmean*(raw_segmentsig[:, isl]-smean)
-                srcov += cnslm1dnsl*np.dot(sslsubmean.reshape((nsig, 1)), rslsubmean.reshape((1, nref)))
-                rrcov += cnslm1dnsl*np.dot(rslsubmean.reshape((nref, 1)), rslsubmean.reshape((1, nref)))
+                cnslm1dnsl = float((nsl - 1)) / float(nsl)
+                sslsubmean = (raw_segmentsig[:, isl] - smold)
+                rslsubmean = (raw_segmentref[:, isl] - rmold)
+                smean = smold + sslsubmean / nsl
+                rmean = rmold + rslsubmean / nsl
+                sscov += sslsubmean * (raw_segmentsig[:, isl] - smean)
+                srcov += cnslm1dnsl * np.dot(sslsubmean.reshape((nsig, 1)), rslsubmean.reshape((1, nref)))
+                rrcov += cnslm1dnsl * np.dot(rslsubmean.reshape((nref, 1)), rslsubmean.reshape((1, nref)))
                 smold = smean
                 rmold = rmean
             n_samples += raw_segmentsig.shape[1]
@@ -1007,7 +1039,7 @@ def test_noise_reducer():
         for i in xrange(5):
             print "initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscov.flatten()[i]))
         print " "
-    if nref<6:
+    if nref < 6:
         print "rrslope-entries:"
         for i in xrange(nref):
             print rrslope[i][:]
@@ -1073,7 +1105,7 @@ def test_noise_reducer():
     print "########## Compensating signal channels:"
     tct = time.clock()
     twt = time.time()
-    #data,times = raw[:,raw.time_as_index(tmin)[0]:raw.time_as_index(tmax)[0]:]
+    # data,times = raw[:,raw.time_as_index(tmin)[0]:raw.time_as_index(tmax)[0]:]
     # Work on entire data stream:
     for isl in xrange(raw._data.shape[1]):
         slice = np.take(raw._data, [isl], axis=1)
