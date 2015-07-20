@@ -2,7 +2,6 @@
 import numpy as np
 #import pandas as pd
 
-
 from jumeg.epocher.jumeg_epocher_ctps import JuMEG_Epocher_CTPS
 
 class JuMEG_Epocher(JuMEG_Epocher_CTPS):
