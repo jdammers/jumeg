@@ -808,7 +808,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 #
 #######################################################
 def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
-                                    conditions=['trigger'], include=None):
+                                    conditions=['trigger'], event_id=1, include=None):
 
     ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files.
         fname_clean_raw: raw data after ECG and EOG rejection.
@@ -859,7 +859,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
                                               ICA components for brain\
                                               responses only.'
         meg_clean.save(fnclean_eve, overwrite=True)
-        plot_compare_brain_responses(fname_clean_raw, fnclean_eve)
+        plot_compare_brain_responses(fname_clean_raw, fnclean_eve, event_id=event_id)
 
 
 #######################################################
