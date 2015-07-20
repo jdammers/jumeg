@@ -13,6 +13,29 @@ last update 09.01.2015 FB
 import os
 import mne
 
+class AccessorType(type):
+    """
+    meta class example
+    http://eli.thegreenplace.net/2011/08/14/python-metaclasses-by-example
+    """
+    def __init__(self, name, bases, d):
+        type.__init__(self, name, bases, d)
+        accessors = {}
+        prefixs = ["__get_", "__set_", "__del_"]
+        for k in d.keys():
+            v = getattr(self, k)
+            for i in range(3):
+                if k.startswith(prefixs[i]):
+                    accessors.setdefault(k[4:], [None, None, None])[i] = v
+        for name, (getter, setter, deler) in accessors.items():
+            # create default behaviours for the property - if we leave
+            # the getter as None we won't be able to getattr, etc..
+
+            # [...] some code that implements the above comment
+
+            setattr(self, name, property(getter, setter, deler, ""))
+
+
 class JuMEG_Base_Basic(object):
      def __init__ (self):
         super(JuMEG_Base_Basic, self).__init__()
@@ -84,6 +107,11 @@ class JuMEG_Base(JuMEG_Base_Basic):
 #--- mne.pick_types(raw.info, **fiobj.pick_all) 
 #    mne.pick_types(info, meg=True, eeg=False, stim=False, eog=False, ecg=False, emg=False, ref_meg='auto',
 #                   misc=False, resp=False, chpi=False, exci=False, ias=False, syst=False, include=[], exclude='bads', selection=None)
+
+#---
+#--- https://github.com/mne-tools/mne-python/blob/master/mne/io/pick.py  lines 20ff
+#---  type : 'grad' | 'mag' | 'eeg' | 'stim' | 'eog' | 'emg' | 'ecg' |'ref_meg' | 'resp' | 'exci' | 'ias' | 'syst' | 'misc'|'seeg' | 'chpi'
+#---
 
      def pick_channels(self,raw):
          ''' call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None'''
@@ -345,6 +373,7 @@ class JuMEG_Base(JuMEG_Base_Basic):
         extention= <my extention>: string to add as extention  [raw.fif]
        
         """
+        #
         # fname = ( fname.split('-')[0] ).strip('.fif')
         p,pdf = os.path.split(fname) 
         fname = p +"/" + pdf[:pdf.rfind('-')]
@@ -394,6 +423,7 @@ class JuMEG_Base(JuMEG_Base_Basic):
             return self.str_range_to_list( seq_str )
          else:
             return np.unique( np.asarray( [seq_str] ) )
+
 
 
 
