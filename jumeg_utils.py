@@ -7,10 +7,11 @@ Utilities module for jumeg
 #
 # License: BSD (3-clause)
 
-import mne
+import sys
 import os
 import numpy as np
 import scipy as sci
+import mne
 from mne.utils import logger
 
 
@@ -909,3 +910,36 @@ def put_pngs_into_html(regexp, html_out='output.html'):
           </html>""" % (html_string)
     f.write(message)
     f.close()
+
+
+def check_env_variables(env_variable=None, key=None):
+    '''Check the most important environment variables as
+       (keys) - SUBJECTS_DIR, MNE_ROOT and FREESURFER_HOME.
+
+    e.g. subjects_dir = check_env_variable(subjects_dir, key='SUBJECTS_DIR')
+    If subjects_dir provided exists, then it is prioritized over the env variable.
+    If not, then the environment variable pertaining to the key is returned. If both
+    do not exist, then exits with an error message.
+    Also checks if the directory exists.
+    '''
+
+    if key is None or not isinstance(key, str):
+        print ('Please provide the key. Currently '
+              'SUBJECTS_DIR, MNE_ROOT and FREESURFER_HOME as strings are allowed.')
+        sys.exit()
+
+    # Check subjects_dir
+    if env_variable:
+        os.environ[key] = env_variable
+    elif env_variable is None and key in os.environ:
+        env_variable = os.environ[key]
+    else:
+        print 'Please set the %s' % (key)
+        sys.exit()
+
+    if not os.path.isdir(env_variable):
+        print 'Path %s is not a valid directory. Please check.' % (env_variable)
+        sys.exit()
+
+    return env_variable
+
