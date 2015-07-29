@@ -155,23 +155,27 @@ def update_description(raw, comment):
     raw.info['description'] = str(raw.info['description']) + ' ; ' + comment
 
 
-def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
+def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True):
     '''
     This function extracts specified duration of raw data
-    and write it into a fif file.
+    and writes it into a fif file.
     Five mins of data will be extracted by default.
 
     Parameters
     ----------
 
-    raw: Raw object.
+    raw: Raw object or raw file name as a string.
     start_time: Time to extract data from in seconds. Default is 60.0 seconds.
     stop_time: Time up to which data is to be extracted. Default is 360.0 seconds.
+    save: bool, If True the raw file is written to disk.
 
     '''
+    if isinstance(raw, str):
+        print 'Raw file name provided, loading raw object...'
+        raw = mne.io.Raw(raw, preload=True)
     # Check if data is longer than required chop duration.
-    if (raw.n_times / (raw.info['sfreq'])) < (stop_time + 60.0):
-        logger.info("The data is not long enough.")
+    if (raw.n_times / (raw.info['sfreq'])) < (stop_time + start_time):
+        logger.info("The data is not long enough for file %s.") % (raw.info['filename'])
         return
     # Obtain indexes for start and stop times.
     assert start_time < stop_time, "Start time is greater than stop time."
@@ -180,9 +184,10 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0):
     data, times = raw[:, start_idx:stop_idx]
     raw._data,raw._times = data, times
     dur = int((stop_time - start_time) / 60)
-    raw.save(raw.info['filename'].split('/')[-1].split('.')[0] + '_' + str(dur) + 'm.fif')
-    # For the moment, simply warn.
-    logger.warning('The file name is not saved in standard form.')
+    if save:
+        #raw.save(raw.info['filename'].split('/')[-1].split('.')[0] + '_' + str(dur) + 'm-raw.fif')
+        raw.save(raw.info['filename'].split('-raw.fif')[0] + ',' + str(dur) + 'm-raw.fif')
+    raw.close()
     return
 
 
