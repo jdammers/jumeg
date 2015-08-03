@@ -220,7 +220,7 @@ class JuMEG_Template(JuMEG_Base_Basic):
           self.__template_isUpdate = True
 
           #self.exp_obj = dict2obj( self._template_dic_yaml )
-
+          #print self.template_data
           return self.template_data
           
     def template_get_as_obj(self):
