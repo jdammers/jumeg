@@ -1,0 +1,232 @@
+{
+  "info": {
+    "time": "24-10-2014  00:00:01",
+    "user": "fboers",
+    "version": "20141024"
+  },
+  "experiment": {
+    "name": "InKomp",
+    "ids": [
+      109077,
+      201195,
+      203147,
+      203267,
+      203288,
+      203709,
+      203731,
+      203780,
+      203792,
+      203822,
+      203840,
+      203867,
+      203929,
+      203952,
+      203969
+    ],
+    "id_group": {
+      "norm": [
+        109077,
+        201195,
+        203147,
+        203267,
+        203288,
+        203709,
+        203731,
+        203780,
+        203792,
+        203822,
+        203840,
+        203867,
+        203929,
+        203952,
+        203969
+      ]
+    },
+    "mri": {
+      "path": {
+        "brain": "mrdata/iso/brain",
+        "dicom": "mrdata/dicom",
+        "iso": "mrdata/iso",
+        "mask": "mrdata/iso/mask",
+        "mni": "mrdata/iso/mni",
+        "mni_trafo": "mrdata/iso/mni_trafo",
+        "mrdata": "mrdata",
+        "mri": "mrdata/iso/mri",
+        "mri_orig": "mrdata/mri_orig",
+        "segmentation": "mrdata/segmentation"
+      }
+    },
+    "path": {
+      "experiment": "/data/meg_store2/exp/Chrono",
+      "stage": "/data/meg_store2/exp/Chrono",
+      "mne": "mne",
+      "empty_room": "empty_room",
+      "eeg": "eeg",
+      "mft": "mft",
+      "doc": "doc",
+      "source": "source",
+      "stimuli": "stimuli"
+    },
+    "stimulus": {
+      "stim_channel": "STI 014",
+      "start_code": 128,
+      "stopt_code": 128
+    },
+    "data_preprocessing": {
+      "raw": {
+        "epocher": {
+          "template_name": "TEST01",
+          "fif_extention": ".fif",
+          "do_run": false,
+          "verbose": false,
+          "save": true
+        },
+        "noise_covariance": {
+          "filter_parameter": {
+            "filter_method": "mne",
+            "filter_type": "hp",
+            "fcut1": 1.0,
+            "fcut2": null,
+            "notch": 50.0,
+            "notch_max": 400.0,
+            "order": 4,
+            "remove_dcoffset": false,
+            "njobs": 4,
+            "fif_extention": "-empty.fif",
+            "picks": null,
+            "overwrite": false,
+            "do_run": false,
+            "verbose": false,
+            "save": false
+          },
+          "do_filter": true,
+          "do_run": false,
+          "save": true
+        },
+        "filter": {
+          "filter_method": "bw",
+          "filter_type": "hp",
+          "fcut1": 1.0,
+          "fcut2": null,
+          "notch": 50,
+          "notch_max": 200,
+          "order": 4,
+          "remove_dcoffset": false,
+          "njobs": 4,
+          "fif_extention": "-raw.fif",
+          "fif_postfix": "fihp1n",
+          "picks": null,
+          "overwrite": true,
+          "do_run": false,
+          "verbose": false,
+          "save": true
+        },
+        "average": {
+          "template_name": "TEST01",
+          "do_run": false,
+          "do_average": false,
+          "verbose": false,
+          "save": true
+        },
+        "ocarta": {
+          "global_parameter": {
+            "name_ecg": "ECG 001",
+            "ecg_freq": [
+              10,
+              20
+            ],
+            "thresh_ecg": 0.4,
+            "name_eog": "EOG 002",
+            "eog_freq": [
+              1,
+              10
+            ],
+            "seg_length": 30.0,
+            "shift_length": 10.0,
+            "percentile_eog": 80,
+            "npc": null,
+            "explVar": 0.95,
+            "lrate": null,
+            "maxsteps": 50
+          },
+          "fit_parameter": {
+            "name_ecg": "ECG 001",
+            "ecg_freq": [
+              10,
+              20
+            ],
+            "thresh_ecg": 0.4,
+            "name_eog": "EOG 002",
+            "eog_freq": [
+              1,
+              10
+            ],
+            "seg_length": 30.0,
+            "shift_length": 10.0,
+            "npc": null,
+            "explVar": 0.95,
+            "lrate": null,
+            "maxsteps": 50,
+            "denoising": null,
+            "unfiltered": false,
+            "notch_filter": true,
+            "notch_freq": 50,
+            "notch_width": null,
+            "plot_template_OA": false,
+            "verbose": false
+          },
+          "template_name": "TEST01",
+          "fif_extention": ".fif",
+          "fif_postfix": "ocarta-raw",
+          "verbose": false,
+          "do_run": false
+        }},
+        "brainresponse":{
+          "ica": {
+            "global_parameter": {
+              "max_pca_components": null,
+              "n_pca_components": null,
+              "noise_cov": null,
+              "random_state": null,
+              "method": "fastica",
+              "fit_params": null,
+              "max_iter": 200,
+              "n_components": 0.99,
+              "verbose": false
+            },
+            "fit_parameter": {
+              "reject": {"mag": 5e-12},
+              "decim": null,
+              "start": null,
+              "stop": null,
+              "flat": null,
+              "tstep": 2.0,
+              "verbose": false
+            },
+            "fif_extention": ".fif",
+            "fif_postfix": "-ica",
+            "do_run": false,
+            "verbose": false,
+            "save": true
+          },
+          "ctps": {
+            "template_name": "TEST01",
+            "exclude_events":{ "eog_events":{ "tmin":-0.4,"tmax":0.4 } },
+            "filter_method": "bw",
+            "fmin": 4,
+            "fmax": 32,
+            "fstep": 8,
+            "njobs": 4,
+            "remove_dcoffset": false,
+            "fif_extention": ".fif",
+            "fif_postfix": "ctps",
+            "do_run": true,
+            "verbose": false,
+            "save": true
+          }
+        }
+      }
+    }
+ }
+
+
