@@ -8,6 +8,9 @@ Created on Tue Jun  2 13:38:32 2015
 import os
 import argparse
 
+def msg_on_attribute_error(info):
+    print "\n ===> FYI: NO parameters for <" +info+ "> defined\n\n"
+    
 
 def get_args():
     
@@ -15,13 +18,13 @@ def get_args():
      JuMEG Preprocessing for FIF Files & FIF-RAW-Obj-Data 
     
      ---> porcess fif file for experiment MEG94T   
-      jumeg_preprocessing_4raw_data.py --exp MEG94T -pfif /localdata/frank/data/MEG94T/mne/205386/MEG94T/120906_1401/1 -fif 205386_MEG94T_120906_1401_1_c,rfDC-raw.fif -v -r
+      jumeg_preprocessing_4raw_data.py -exp MEG94T -pfif /localdata/frank/data/MEG94T/mne/205386/MEG94T/120906_1401/1 -fif 205386_MEG94T_120906_1401_1_c,rfDC-raw.fif -v -r
 
      ---> process fif file list for experiment MEG94T
-      jumeg_preprocessing_4raw_data.py --exp MEG94T -s /data/meg_store2/exp/MEG94T/mne --plist=/data/meg_store2/exp/MEG94T/doc --flist=meg94t_Gr_Static_0T_bads.txt -v -r
+      jumeg_preprocessing_4raw_data.py -exp MEG94T -s /data/meg_store2/exp/MEG94T/mne -plist=/data/meg_store2/exp/MEG94T/doc -flist=meg94t_Gr_Static_0T_bads.txt -v -r
     
      ---> process fif file list for experiment InKomp
-      jumeg_preprocessing_4raw_data.py --exp InKomp -s /data/meg_store1/exp/Chrono/mne --plist=/data/meg_store1/exp/Chrono/doc --flist=inkomp_mne_bads.txt -v -r
+      jumeg_preprocessing_4raw_data.py -exp InKomp -s /data/meg_store1/exp/Chrono/mne -plist=/data/meg_store1/exp/Chrono/doc -flist=inkomp_mne_bads.txt -v -r
 
     """
     
@@ -37,7 +40,7 @@ def get_args():
   
   #---exp/condi
     parser.add_argument("-exp","--experiment",  help="experiment name for <jumeg experiment template>: -exp TEST", default='default')
-    parser.add_argument("-c","--conditions",help="condition list for <jumeg epocher template>: -c HAPPY SAD",nargs='*',default='default')
+    parser.add_argument("-c","--conditions",help="condition list for <jumeg epocher template>: -c HAPPY SAD",nargs='*',default=())
   
   #---files  
     parser.add_argument("-s","--stage", help=info_stage,default=()) 
