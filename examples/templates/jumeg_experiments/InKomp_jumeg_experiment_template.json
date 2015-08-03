@@ -94,13 +94,13 @@
                                       "complementary_signal":false
                                     },
                          "fif_extention": "-raw.fif",
-                         "fif_postfix": "n",
+                         "fif_postfix": "nr",
                          "reflp": 5.0,
                          "refhp": null,
                          "refnotch": [23.8,50.0,60.0],
                          "plot":false,
                          "verbose": false,
-                         "do_run": true,
+                         "do_run": false,
                          "save": false
                        },
 
@@ -122,29 +122,11 @@
             "verbose": false,
             "save": false
           },
-          "do_filter": true,
+          "do_filter": false,
           "do_run": false,
           "save": true
         },
-        "filter": {
-          "filter_method": "bw",
-          "filter_type": "hp",
-          "fcut1": 1.0,
-          "fcut2": null,
-          "notch": null,
-          "notch_max": null,
-          "order": 4,
-          "remove_dcoffset": false,
-          "njobs": 4,
-          "fif_extention": "-raw.fif",
-          "fif_postfix": "fihp1",
-          "picks": null,
-          "overwrite": true,
-          "do_run": true,
-          "verbose": false,
-          "save": false
-        },
-        "ocarta": {
+    "ocarta": {
           "global_parameter": {
             "name_ecg": "ECG 001",
             "ecg_freq": [
@@ -184,9 +166,6 @@
             "lrate": null,
             "maxsteps": 50,
             "denoising": null,
-            "unfiltered": false,
-            "notch_filter": true,
-            "notch_freq": 50,
             "plot_template_OA": false,
             "verbose": false
           },
@@ -194,9 +173,22 @@
           "fif_extention": ".fif",
           "fif_postfix": "ocarta-raw",
           "verbose": false,
-          "do_run": true
+          "do_run": false,
+          "save":true
+        },
+    "events": {
+          "parameter":{
+                       "event_extention": ".eve",
+                       "weights":{"mode":"equal","method":"median","skipp_first":null},
+                       "save_condition":{"events":true,"epochs":true,"evoked":true},
+                       "time":{"time_pre":null,"time_post":null,"baseline":null},
+                       "exclude_events":{"eog_events":{"tmin":-0.4,"tmax":0.6} } },
+          "fif_postfix": "evt",
+          "template_name":"InKomp",
+          "do_run": true,
+          "verbose": false
         }},
-      "brainresponse":{
+    "brainresponse":{
                        "ica": {
                                 "global_parameter": {
                                                       "max_pca_components": null,
@@ -220,7 +212,7 @@
                                                  },
                                 "fif_extention": ".fif",
                                 "fif_postfix": "-ica",
-                                "do_run": true,
+                                "do_run": false,
                                 "verbose": false,
                                 "save": true
                                },
@@ -252,7 +244,7 @@
                                },
                        "clean":{
                                 "njobs": 8,
-                                "template_name": "MEG94T",
+                                "template_name": "InKomp",
                                 "fif_extention": ".fif",
                                 "fif_postfix": "ctpsbr",
                                 "clean_global":{"save_raw":true,"save_epochs":false,"save_evoked":true},
