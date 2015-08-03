@@ -2,6 +2,7 @@
 import numpy as np
 #import pandas as pd
 
+from jumeg.jumeg_base import jumeg_base
 from jumeg.epocher.jumeg_epocher_ctps import JuMEG_Epocher_CTPS
 
 class JuMEG_Epocher(JuMEG_Epocher_CTPS):
@@ -22,9 +23,9 @@ class JuMEG_Epocher(JuMEG_Epocher_CTPS):
         self.hdf_stat_postfix = '-epocher-stats.csv'
 
 #---
-    def apply_update_epochs(self, fname,raw=None,condition_list=None,picks=None,**kwargv):
+    def apply_events_to_hdf(self, fname,raw=None,condition_list=None,picks=None,**kwargv):
         """
-         find events and epochs; save to hdf5 format
+         find stimulus and/or response events for each condition; save to hdf5 format
         """
 
         if kwargv['template_name']:
@@ -36,16 +37,36 @@ class JuMEG_Epocher(JuMEG_Epocher_CTPS):
         self.template_update_file()
 
         fhdf = None
-
-        if raw is None:
-           import mne
-           raw  = mne.io.Raw(fname,preload=True)
-
+        raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
+        
         fhdf = self.events_store_to_hdf(raw,condition_list=condition_list)
 
         print "===> DONE  apply epoches to HDF: " + fhdf +"\n"
 
         return (fname,raw,fhdf)
+        
+#---
+    def apply_events_export_events(self,fname,raw=None,condition_list=None,picks=None,**kwargv):
+        """
+         export events and epochs for condition into mne fif data
+         
+        """
+
+        if kwargv['template_name']:
+           self.template_name = kwargv['template_name']
+
+        if kwargv['verbose']:
+           self.verbose = kwargv['verbose']
+
+        # self.template_update_file()
+
+        fhdf      = None
+        raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)        
+        evt_ids   = self.events_export_events(raw=raw,fhdf=fhdf,condition_list=condition_list,**kwargv['parameter'])
+        
+        print "===> DONE apply events export events: " + fname +"\n"
+
+        return (fname,raw,evt_ids)
 
 #---
     def apply_update_ecg_eog(self,fname,raw=None,ecg_events=None,ecg_parameter=None,eog_events=None,eog_parameter=None,template_name=None):
@@ -88,7 +109,6 @@ class JuMEG_Epocher(JuMEG_Epocher_CTPS):
         HDFobj.close()
 
         return (fname,raw,fhdf)
-
 
 
     def apply_update_brain_responses(self,fname,raw=None,fname_ica=None,ica_raw=None,condition_list=None,**kwargv):
