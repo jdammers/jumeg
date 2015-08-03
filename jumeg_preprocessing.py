@@ -140,7 +140,8 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
 #
 #######################################################
 def apply_ica(fname_filtered, n_components=0.99, decim=None,
-              reject={'mag': 5e-12}, ica_method='fastica'):
+              reject={'mag': 5e-12}, ica_method='fastica',
+              flow=None, fhigh=None, verbose=True):
 
     ''' Applies ICA to a list of (filtered) raw files. '''
 
@@ -155,6 +156,32 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
         # load filtered data
         raw = mne.io.Raw(fname, preload=True)
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
+
+        # check if data to estimate the optimal
+        # de-mixing matrix should be filtered
+        if flow or fhigh:
+            from jumeg.filter import jumeg_filter
+
+            # define filter type
+            if not flow:
+                filter_type = 'lp'
+                filter_info = "     --> filter parameter    : filter type=low pass %dHz" % flow
+            elif not fhigh:
+                filter_type = 'hp'
+                filter_info = "     --> filter parameter    : filter type=high pass %dHz" % flow
+            else:
+                filter_type = 'bp'
+                filter_info = "     --> filter parameter: filter type=band pass %d-%dHz" % (flow, fhigh)
+
+            if verbose:
+                print ">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!"
+                print filter_info
+
+            fi_mne_notch = jumeg_filter(fcut1=flow, fcut2=fhigh, filter_type=filter_type,
+                                        remove_dcoffset=False,
+                                        sampling_frequency=raw.info['sfreq'])
+            fi_mne_notch.apply_filter(raw._data, picks=picks)
+
         # ICA decomposition
         ica = ICA(method=ica_method, n_components=n_components,
                   max_pca_components=None)
@@ -219,7 +246,12 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         # to unfiltered data
         if unfiltered:
             # adjust filenames to unfiltered data
-            basename = basename[:basename.rfind(',')]
+            # FIXME breaks when noise reduced file is used with basename + ',nr'
+            # temporarily fixed by checking for fibp filter suffix
+            if basename.find(',fibp') != -1:
+                basename = basename[:basename.rfind(',')]
+            else:
+                basename = basename
             fnfilt = basename + ext_raw
             fnclean = basename + ext_clean
             fnica_ar = basename + ext_icap
@@ -736,7 +768,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
             pkmax = pk.max(1)
             ixmax = np.where(pkmax == pkmax.max())[0]
             ix = (np.where(pkmax >= threshold))[0]
-            if np.any(ix):
+            if np.any(ix+1):
                 if (ifreq > 0):
                     ic_sel = np.append(ic_sel, ix + 1)
                 else:
@@ -776,7 +808,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 #
 #######################################################
 def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
-                                    conditions=['trigger'], include=None):
+                                    conditions=['trigger'], event_id=1, include=None):
 
     ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files.
         fname_clean_raw: raw data after ECG and EOG rejection.
@@ -827,7 +859,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
                                               ICA components for brain\
                                               responses only.'
         meg_clean.save(fnclean_eve, overwrite=True)
-        plot_compare_brain_responses(fname_clean_raw, fnclean_eve)
+        plot_compare_brain_responses(fname_clean_raw, fnclean_eve, event_id=event_id)
 
 
 #######################################################
@@ -877,7 +909,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
             # filter empty room raw data
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
-            fn_in = fn_in.split('-')[0] + ',bp1-45-empty.fif'
+            fn_in = fn_in.split('-')[0] + ',fibp1-45-empty.fif'
 
         # file name for saving noise_cov
         fn_out = fn_in[:fn_in.rfind(ext_empty_raw)] + ext_empty_cov
@@ -894,3 +926,29 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
 
         # write noise-covariance matrix to disk
         write_cov(fn_out, noise_cov_mat)
+
+
+def apply_empty_room_projections(raw, raw_empty_room):
+    '''
+    Calculates empty room projections from empty room data and applies it to raw.
+    Note: Make sure the empty room data is also filtered. This may affect the projections.
+
+    Input
+    -----
+    raw, raw_empty_room: mne Raw object
+        Raw file and Empty room raw file.
+
+    Returns
+    -------
+    raw: mne Raw object
+        Raw file with projections applied.
+    empty_room_proj: projections
+        Empty room projection vectors. 
+    '''
+    # Add checks to make sure its empty room.
+    # Check for events in ECG, EOG, STI.
+    print 'Empty room projections calculated for %s.'%(raw_empty_fname)
+    empty_room_proj = mne.compute_proj_raw(raw_empty_room)
+    raw.add_proj(empty_room_proj).apply_proj()
+    return raw, empty_room_proj
+

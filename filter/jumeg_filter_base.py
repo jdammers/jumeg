@@ -25,6 +25,7 @@ import time
 class JuMEG_Filter_Base(object):
      def __init__ (self):
         self.__jumeg_filter_base_version   = 0.0314
+<<<<<<< HEAD
          
         self.__sampling_frequency          = None # 678.17
         self.__filter_type                 = "bp" #lp,hp,bp,notch
@@ -32,7 +33,16 @@ class JuMEG_Filter_Base(object):
 
         self.__fcut1                       = 1.0
         self.__fcut2                       = 45.0
+=======
+>>>>>>> fb_devel_03082015
          
+        self.__sampling_frequency          = None # 678.17
+        self.__filter_type                 = "bp" #lp,hp,bp,notch
+        self.__filter_method               = None
+
+        self.__fcut1                       = 1.0
+        self.__fcut2                       = 45.0
+        self.__filter_order                = None 
 #---
         self.__filter_notch                = np.array([])
         self.__filter_notch_width          = 1.0
@@ -367,9 +377,15 @@ class JuMEG_Filter_Base(object):
 
 
          if self.filter_type == 'bp' :
+<<<<<<< HEAD
             self.__filter_info_string += "%0.1f-%0.1f Hz" % (self.fcut1,self.fcut2)
          else:
             self.__filter_info_string += "%0.1f Hz" % (self.fcut1)
+=======
+            self.__filter_info_string += "%0.3f-%0.1f Hz" % (self.fcut1,self.fcut2)
+         else:
+            self.__filter_info_string += "%0.3f Hz" % (self.fcut1)
+>>>>>>> fb_devel_03082015
 
          if self.filter_notch.size :
             self.__filter_info_string += ",apply notch"
@@ -381,6 +397,30 @@ class JuMEG_Filter_Base(object):
      
      filter_info = property(__get_filter_info_string)
      
+#--- filter_info short string
+     def __get_filter_info_short_string(self):
+         """return info string with filter parameters """ 
+         self.__filter_info_short_string = self.filter_method +"/"+ self.filter_type+"/"
+
+
+         if self.filter_type == 'bp' :
+            self.__filter_info_short_string += "%0.3f-%0.1f Hz/" % (self.fcut1,self.fcut2)
+         else:
+            self.__filter_info_short_string += "%0.3f Hz/" % (self.fcut1)
+         
+         if self.__filter_order:
+            self.__filter_info_short_string += "O%d/" % ( self.__filter_order )
+         
+         if self.filter_notch.size :
+            self.__filter_info_short_string += "n/"
+         
+         if ( self.remove_dcoffset ):
+          self.__filter_info_short_string +="DC/"
+         
+         return self.__filter_info_short_string
+     
+     filter_info_short = property(__get_filter_info_short_string)
+          
      def update_info_filter_settings(self,raw):
          """ update raw info filter settings low-,highpass
              input: raw obj

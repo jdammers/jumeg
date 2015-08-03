@@ -4,7 +4,11 @@ import pandas as pd
 import mne
 
 #from jumeg.epocher.jumeg_epocher  import jumeg_epocher
+<<<<<<< HEAD
 
+=======
+from jumeg.jumeg_base import jumeg_base
+>>>>>>> fb_devel_03082015
 from jumeg.epocher.jumeg_epocher_events import JuMEG_Epocher_Events
 
 from jumeg.filter.jumeg_filter  import jumeg_filter
@@ -101,9 +105,12 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
           self.ctps_freq_bands_list = '\n'.join('-'.join(str(cell) for cell in row) for row in self.ctps_freq_bands).split('\n')
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> fb_devel_03082015
       def ctps_init_brain_response_data(self,fname,raw=None,fname_ica=None,ica_raw=None,template_name=None):
           """
 
@@ -123,6 +130,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           else:
              assert "ERROR no <template_name> specified !!\n\n"
 
+<<<<<<< HEAD
           if raw is None:
              if fname is None:
                 assert "ERROR no file foumd!!\n\n"
@@ -138,6 +146,12 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           else:
              self.ica_raw = ica_raw
 
+=======
+          self.raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
+          
+          self.ica_raw,fname_ica = jumeg_base.get_ica_raw_obj(fname_ica,ica_raw=ica_raw)
+       
+>>>>>>> fb_devel_03082015
           self.ica_picks = np.arange( self.ica_raw.n_components_ )
 
          #--- open HDFobj
@@ -149,7 +163,10 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           self.ctps_hdf_parameter['sfreq'] = self.ica_raw.info['sfreq'],
           self.ctps_hdf_parameter['scale_factor'] = self.scale_factor
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> fb_devel_03082015
       def ctps_init_brain_response_clean_data(self,fname,raw=None,fname_ica=None,ica_raw=None,fhdf=None,template_name=None):
           """
 
@@ -161,7 +178,10 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           :param template_name:
           :return:
           """
+<<<<<<< HEAD
 
+=======
+>>>>>>> fb_devel_03082015
           print " ---> Start CTPS  init clean brain responses"
 
          #--- ck template
@@ -169,6 +189,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
              self.template_name = template_name
          # else:
          #    assert "ERROR no <template_name> specified !!\n\n"
+<<<<<<< HEAD
 
           if raw is None:
              if fname is None:
@@ -177,6 +198,10 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           else:
              self.raw = raw
 
+=======
+          self.raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
+          
+>>>>>>> fb_devel_03082015
          #--- load ica raw obj & init
           if ica_raw is None:
              if fname_ica is None:

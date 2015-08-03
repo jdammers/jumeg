@@ -1,6 +1,12 @@
 '''
 Utilities module for jumeg
 '''
+
+# Authors: Jurgen Dammers (j.dammers@fz-juelich.de)
+#          Praveen Sripad (pravsripad@gmail.com)
+#
+# License: BSD (3-clause)
+
 import mne
 import os
 import numpy as np
@@ -111,17 +117,19 @@ def mark_bads_batch(subject_list, subjects_dir=None):
     '''
     for subj in subject_list:
         print "For subject %s"%(subj)
-        if not subjects_dir: SUBJECTS_DIR = os.environ['SUBJECTS_DIR']
-        dirname = SUBJECTS_DIR+'/'+subj
-        for raw_fname in os.listdir(dirname):
+        if not subjects_dir: subjects_dir = os.environ['SUBJECTS_DIR']
+        dirname = subjects_dir + '/' + subj
+        sub_file_list = os.listdir(dirname)
+        for raw_fname in sub_file_list:
+            if raw_fname.endswith('_bcc-raw.fif'): continue
             if raw_fname.endswith('-raw.fif'):
-                print "Raw calculations for file %s"%(dirname+'/'+raw_fname)
-                raw = mne.io.Raw(dirname+'/'+raw_fname)
+                print "Raw calculations for file %s" % (dirname + '/' + raw_fname)
+                raw = mne.io.Raw(dirname + '/' + raw_fname, preload=True)
                 raw.plot(block=True)
-                print 'The bad channels marked are'+raw.info['bads']
-                raw.save(raw.info['filename'].split('/')[-1].split('.')[0]+ \
-                         '_bcc-raw.fif')
-                return
+                print 'The bad channels marked are %s ' % (raw.info['bads'])
+                save_fname = dirname + '/' + raw.info['filename'].split('/')[-1].split('-raw.fif')[0] + '_bcc-raw.fif'
+                raw.save(save_fname)
+    return
 
 
 def rescale_artifact_to_signal(signal, artifact):
@@ -254,7 +262,11 @@ def shift_data(data_trials, min_shift=0, max_shift=None, seed=None):
 # make surrogates from Epochs
 #
 #######################################################
+<<<<<<< HEAD
 def make_surrogates_epochs(epochs, check_pdf=False):
+=======
+def make_surrogates_epochs(epochs, check_pdf=False, random_state=None):
+>>>>>>> fb_devel_03082015
     '''
     Make surrogate epochs using sklearn. Destroy each trial by shuffling the time points only.
     The shuffling is performed in the time domain only. The probability density function is
@@ -262,19 +274,21 @@ def make_surrogates_epochs(epochs, check_pdf=False):
 
     Parameters
     ----------
-    Epochs Object.
+    epochs : Epochs Object.
+    check_pdf : Condition to test for equal probability density. (bool)
+    random_state : Seed for random generator.
 
     Output
     ------
     Surrogate Epochs object
     '''
     from sklearn.utils import check_random_state
+    rng = check_random_state(random_state)
 
     surrogate = epochs.copy()
     surr = surrogate.get_data()
     for trial in range(len(surrogate)):
         for channel in range(len(surrogate.ch_names)):
-            rng = check_random_state(channel)
             order = np.argsort(rng.randn(len(surrogate.times)))
             surr[trial, channel, :] = surr[trial, channel, order]
     surrogate._data = surr
@@ -313,6 +327,7 @@ def make_fftsurr_epochs(epochs, check_power=False):
         ps1, _ = compute_epochs_psd(epochs, epochs.picks)
         ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
         assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
+<<<<<<< HEAD
 
     return surrogate
 
@@ -346,6 +361,41 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
 
     return surrogate
 
+=======
+
+    return surrogate
+
+
+def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
+    '''
+    Make surrogate epochs using sklearn. Destroy phase information in each trial by randomization.
+    The phases values are randomized in teh frequency domain.
+
+    Parameters
+    ----------
+    Epochs Object.
+
+    Output
+    ------
+    Surrogate Epochs object
+    '''
+
+    surrogate = epochs.copy()
+    surr = surrogate.get_data()
+    for trial in range(len(surrogate)):
+        for channel in range(len(surrogate.ch_names)):
+            surr[trial, channel, :] = randomize_phase(surr[trial, channel, :])
+    surrogate._data = surr
+    if check_power:
+        from mne.time_frequency import compute_epochs_psd
+        ps1, _ = compute_epochs_psd(epochs, epochs.picks)
+        ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
+        # np.array_equal does not pass the assertion, due to minor changes in power.
+        assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
+
+    return surrogate
+
+>>>>>>> fb_devel_03082015
     
 # def make_surrogates_epoch_numpy(epochs):
 #     '''
@@ -875,3 +925,30 @@ def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False, epo
     if save:
         epochs.save(epochs_fname)
     return epochs
+<<<<<<< HEAD
+=======
+
+
+def put_pngs_into_html(regexp, html_out='output.html'):
+    '''Lists all files in directory that matches pattern regexp
+       and puts it into an html file with filename included.
+
+    regexp : str
+        String of dir path like '/home/kalka/*.png'
+    html_out : str
+        Output file name
+    '''
+    import glob
+    files =  glob.glob(regexp)
+    html_string = ''
+    for fname in files:
+        my_string = '<body><p>%s</p></body>' % (fname) + '\n' + '<img src=%s>' % (fname)
+        html_string += my_string
+    f = open(html_out, 'w')
+    message = """<html>
+          <head></head>
+          %s
+          </html>""" % (html_string)
+    f.write(message)
+    f.close()
+>>>>>>> fb_devel_03082015

@@ -24,10 +24,8 @@ def plot_powerspectrum(fname, raw=None, picks=None, dir_plots="plots",
         import mne
         from distutils.dir_util import mkpath
 
-        if raw is None:
-            assert os.path.isfile(fname), 'ERROR: file not found: ' + fname
-            raw = mne.io.Raw(fname, preload=True)
-
+        raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
+           
         if picks is None:
             picks = jumeg_base.pick_meg_nobads(raw)
 

@@ -74,6 +74,12 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         # return pd.HDFStore( fhdf,format='table' ) not usefull with float16 !! ????
         self.HDFobj= pd.HDFStore( fhdf )
 
+<<<<<<< HEAD
+=======
+        if self.verbose:
+           print"Open HDF file: "+ self.HDFobj.filename
+        
+>>>>>>> fb_devel_03082015
         return self.HDFobj
 
     def hdf_obj_open(self,fhdf=None,fname=None,raw=None):
@@ -219,5 +225,40 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
        #--- update attributes e.g. save dicts like parameter,info ...
         return self.hdf_obj_store_attributes(key=key,**storer_attrs)
 
+<<<<<<< HEAD
+=======
+    
+    def hdf_get_key_list(self,node='epocher',key_list=None):
+          """
+
+          :param node:
+          :param key_list=None
+          :return:
+          """     
+          
+         # import re
+         # s='/epocher////LLst//'
+         # re.sub('//*','/',s)
+
+          clist = []             
+          node = node.strip('/')
+          node_list = self.hdf_obj_list_keys_from_node(node)          
+          
+          if self.verbose:
+             print"\n---> HDF get keys from node: " + node          
+             print"---> node list: "
+             print node_list
+             print"\n"
+             
+          if key_list :
+             for k in key_list :
+                 if k in self.hdf_obj_list_keys_from_node(node):
+                    clist.append(node +'/'+ k )
+             return clist
+          else :
+             return self.hdf_obj_list_keys_from_node(node)
+            
+             
+>>>>>>> fb_devel_03082015
 
 jumeg_epocher_hdf= JuMEG_Epocher_HDF()

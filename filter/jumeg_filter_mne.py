@@ -6,7 +6,7 @@ import mne
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 11.12.2014
+ last update: 28.05.2015
  version    : 0.03141
 ---------------------------------------------------------------------- 
  jumeg obj filter interface to the MNE filter types
@@ -28,7 +28,11 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
                    
          super(JuMEG_Filter_MNE, self).__init__()
          
+<<<<<<< HEAD
          self.__jumeg_filter_mne_version    = 0.0314
+=======
+         self.__jumeg_filter_mne_version    = 0.03141
+>>>>>>> fb_devel_03082015
          self.__filter_method               = 'mne'
          
          self.__mne_filter_method           = mne_filter_method  #fft
@@ -113,6 +117,7 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
        fcut2  = self.fcut2
        fl     = self.mne_filter_length
        tbw    = self.mne_trans_bandwith
+       
        method = self.mne_filter_method
        v      = self.verbose
 
@@ -120,7 +125,13 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
           import time
           t0 = time.time()
           print"===> Start apply mne filter"
-       
+          
+    #--- apply notches
+       if (self.filter_notch.size) or (self.filter_type == 'notch'):
+           data[:,: ] = mne.filter.notch_filter(data,Fs,self.filter_notch,filter_length = fl,notch_widths = self.filter_notch_width,trans_bandwidth=1,method = method,
+                                    iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v,mt_bandwidth = None,p_value = 0.05) 
+      
+    #---- filter lp hp bp bs br  
        if   self.filter_type =='lp' :
             data[:,:] = mne.filter.low_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
                                        iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
@@ -138,10 +149,6 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
             data[:,:] = mne.filter.band_stop_filter(data,Fs,fcut1,fcut2,filter_length = fl,trans_bandwidth = tbw,method = method,
                                         iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
 
-#--- apply notches
-       if (self.filter_notch.size) or (self.filter_type == 'notch'):
-           data[:,: ] = mne.filter.notch_filter(data,Fs,self.filter_notch,filter_length = fl,notch_widths = self.filter_notch_width,trans_bandwidth=1,method = method,
-                                    iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v,mt_bandwidth = None,p_value = 0.05) 
                                     
     
       #data = data.astype(data_type_orig)

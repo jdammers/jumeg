@@ -15,4 +15,7 @@ from . import jumeg_iomeg
 from . import jumeg_utils
 from . import jumeg_plot
 from . import decompose
+from . import jumeg_noise_reducer
+from . import connectivity
 from .filter import jumeg_filter
+from . import jumeg_source_localize

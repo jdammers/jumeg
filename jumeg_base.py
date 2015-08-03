@@ -13,6 +13,32 @@ last update 09.01.2015 FB
 import os
 import mne
 
+<<<<<<< HEAD
+=======
+class AccessorType(type):
+    """
+    meta class example
+    http://eli.thegreenplace.net/2011/08/14/python-metaclasses-by-example
+    """
+    def __init__(self, name, bases, d):
+        type.__init__(self, name, bases, d)
+        accessors = {}
+        prefixs = ["__get_", "__set_", "__del_"]
+        for k in d.keys():
+            v = getattr(self, k)
+            for i in range(3):
+                if k.startswith(prefixs[i]):
+                    accessors.setdefault(k[4:], [None, None, None])[i] = v
+        for name, (getter, setter, deler) in accessors.items():
+            # create default behaviours for the property - if we leave
+            # the getter as None we won't be able to getattr, etc..
+
+            # [...] some code that implements the above comment
+
+            setattr(self, name, property(getter, setter, deler, ""))
+
+
+>>>>>>> fb_devel_03082015
 class JuMEG_Base_Basic(object):
      def __init__ (self):
         super(JuMEG_Base_Basic, self).__init__()
@@ -59,6 +85,17 @@ class JuMEG_Base_Basic(object):
      def __get_do_plot(self):
          return self.__do_plot
      do_plot = property(__get_do_plot,__set_do_plot)
+<<<<<<< HEAD
+
+
+class JuMEG_Base(JuMEG_Base_Basic):
+     def __init__ (self):
+        super(JuMEG_Base, self).__init__()
+
+        self.version  = 0.0002
+        self.verbose  = False
+=======
+>>>>>>> fb_devel_03082015
 
 
 class JuMEG_Base(JuMEG_Base_Basic):
@@ -68,47 +105,60 @@ class JuMEG_Base(JuMEG_Base_Basic):
         self.version  = 0.0002
         self.verbose  = False
 
-#--- get_files_from_list
-     def get_files_from_list(fin):
-        ''' Return string of file or files as iterables lists '''
-        if isinstance(fin, list):
-            fout = fin
-        else:
-            if isinstance(fin, str):
-                fout = list([fin])
-            else:
-                fout = list(fin)
-        return fout
-
 #--- MNE foool fct  -> picks preselected channel groups
 #--- mne.pick_types(raw.info, **fiobj.pick_all) 
 #    mne.pick_types(info, meg=True, eeg=False, stim=False, eog=False, ecg=False, emg=False, ref_meg='auto',
 #                   misc=False, resp=False, chpi=False, exci=False, ias=False, syst=False, include=[], exclude='bads', selection=None)
 
+#---
+#--- https://github.com/mne-tools/mne-python/blob/master/mne/io/pick.py  lines 20ff
+#---  type : 'grad' | 'mag' | 'eeg' | 'stim' | 'eog' | 'emg' | 'ecg' |'ref_meg' | 'resp' | 'exci' | 'ias' | 'syst' | 'misc'|'seeg' | 'chpi'
+#---
+
      def pick_channels(self,raw):
          ''' call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None'''
-         return mne.pick_types(raw.info,meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None)
-       
+         return mne.pick_types(raw.info,meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None)       
      def pick_channels_nobads(self, raw):
          ''' call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude='bads' '''
          return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude='bads')
        
      def pick_all(self, raw):
          ''' call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude=None '''
-         return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude=None)
-       
+         return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude=None)       
+    
+     
      def pick_all_nobads(self, raw):
          ''' call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude='bads' '''
          return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude='bads')
        
      def pick_meg(self,raw):
          ''' call with meg=True'''
-         return mne.pick_types(raw.info,meg=True)
-       
+         return mne.pick_types(raw.info,meg=True)      
      def pick_meg_nobads(self,raw):
          ''' call with meg=True,exclude='bads' '''
          return mne.pick_types(raw.info, meg=True,exclude='bads')
+    
+     def pick_ref(self,raw):
+         ''' call with ref=True'''
+         return mne.pick_types(raw.info,ref_meg=True,meg=False,eeg=False,stim=False,eog=False)
+     def pick_ref_nobads(self,raw):
+         ''' call with ref=True,exclude='bads' '''
+         return mne.pick_types(raw.info,ref_meg=True,meg=False,eeg=False,stim=False,eog=False,exclude='bads')
         
+     def pick_meg_and_ref(self,raw):
+         ''' call with meg=True,ref_meg=True'''
+         return mne.pick_types(raw.info, meg=True,ref_meg=True, eeg=False, stim=False,eog=False)
+     def pick_meg_and_ref_nobads(self,raw):
+         ''' call with meg=mag,ref_meg=True,exclude='bads' '''
+         return mne.pick_types(raw.info,meg=True,ref_meg=True,eeg=False,stim=False,eog=False,exclude='bads')
+  
+     def pick_meg_ecg_eog_stim(self,raw):
+         ''' call with meg=True,ref_meg=False,ecg=True,eog=Truestim=True,'''
+         return mne.pick_types(raw.info, meg=True,ref_meg=False,eeg=False,stim=True,eog=True,ecg=True)
+     def pick_meg_ecg_eog_stim_nobads(self,raw):
+         ''' call with meg=True,ref_meg=False,ecg=True,eog=True,stim=True,exclude=bads'''
+         return mne.pick_types(raw.info, meg=True,ref_meg=False,eeg=False,stim=True,eog=True,ecg=True,exclude='bads')
+       
      def pick_ecg_eog(self,raw):
          ''' meg=False,ref_meg=False,ecg=True,eog=True '''
          return mne.pick_types(raw.info,meg=False,ref_meg=False,ecg=True,eog=True)
@@ -125,7 +175,14 @@ class JuMEG_Base(JuMEG_Base_Basic):
          ''' call with meg=False,stim=True,resp=True'''
          return mne.pick_types(raw.info, meg=False,stim=True,resp=True)
 
+<<<<<<< HEAD
 
+=======
+     def pick_exclude_trigger(self, raw):
+         ''' call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None '''
+         return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=False,resp=False)       
+    
+>>>>>>> fb_devel_03082015
      def update_bad_channels(self,fname,raw=None,bads=None,preload=True,append=False,save=False):
          """
 
@@ -180,8 +237,54 @@ class JuMEG_Base(JuMEG_Base_Basic):
 
          return raw,raw.info['bads']
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> fb_devel_03082015
 #--- helper function
+     def get_ica_raw_obj(self,fname_ica,ica_raw=None):
+         ''' 
+            check for <ica filename> or <ica raw obj>
+            if filename -> load ica fif file
+            input : filename
+                    raw_ica = icaraw obj 
+            return: raw ica obj,filename from ica raw obj 
+         '''
+         if ica_raw is None:
+            if fname_ica is None:
+               assert "ERROR no file foumd!!\n\n"
+               if self.verbose:
+                  print "########## Reading ica raw data ..."
+        
+            ica_raw = mne.preprocessing.read_ica(fname_ica)
+         
+            if ica_raw is None:
+               assert "ERROR in jumeg.jumeg_base.get_ica_raw_obj => could not get ica raw obj:\n ---> FIF name: " + fname_ica   
+   
+            return ica_raw,raw_ica.info['filename']
+            
+     def get_raw_obj(self,fname_raw,raw=None):
+         ''' 
+            check for filename or raw obj
+            if filename -> load fif file
+            input : filename
+                    raw : raw obj 
+            return: raw obj,fname from raw obj 
+         '''         
+         if raw is None:
+            if fname_raw is None:
+               assert"ERROR no file foumd!!\n"
+            if self.verbose:
+               print "########## Reading raw data ..."
+        
+            raw = mne.io.Raw(fname_raw,preload=True)
+         
+         if raw is None:
+            assert "ERROR in jumeg.jumeg_base.get_raw_obj => could not get raw obj:\n ---> FIF name: " + fname_raw   
+   
+         return raw,raw.info['filename'] 
+
+
      def get_files_from_list(self, fin):
          ''' 
              input : filename or list of filenames
@@ -333,7 +436,11 @@ class JuMEG_Base(JuMEG_Base_Basic):
             return( fname_empty_room, mne.io.Raw(fname_empty_room, preload=True) )
         
 
+<<<<<<< HEAD
      def get_fif_name(self,fname,postfix=None,extention="-raw.fif"):
+=======
+     def get_fif_name(self,fname=None,raw=None,postfix=None,extention="-raw.fif",update_raw_fname=False):
+>>>>>>> fb_devel_03082015
         """ 
         Returns fif filename
         based on input file name and applied operation
@@ -341,17 +448,31 @@ class JuMEG_Base(JuMEG_Base_Basic):
         Parameters
         ----------
         fname      : base file name
-        postfix  = <my postfix>  : string to add for applied operation [None]
-        extention= <my extention>: string to add as extention  [raw.fif]
+        raw              = <raw obj>     : if defined get filename from raw obj
+        update_raw_fname = <False/True>  : if true and raw is obj will update raw obj filename in place
+        postfix          = <my postfix>  : string to add for applied operation [None]
+        extention        = <my extention>: string to add as extention  [raw.fif]
        
         """
+        #
         # fname = ( fname.split('-')[0] ).strip('.fif')
+        
+        if raw:
+           fname = raw.info.get('filename')
+           
         p,pdf = os.path.split(fname) 
         fname = p +"/" + pdf[:pdf.rfind('-')]
         if postfix:
            fname += "," + postfix
            fname  = fname.replace(',-','-')
+<<<<<<< HEAD
 
+=======
+       
+        if raw and update_raw_fname:
+           raw.info['filename'] = fname + extention
+       
+>>>>>>> fb_devel_03082015
         return fname + extention 
     
      def isString(self, s):
@@ -380,7 +501,7 @@ class JuMEG_Base(JuMEG_Base_Basic):
          # flatten list of xranges
          return [y for x in xranges for y in x]
       
-     def str_range_to_numpy(self, seq_str): 
+     def str_range_to_numpy(self, seq_str,exclude_zero=False): 
          """
          converts array to numpy array 
          input : [1,2,3]
@@ -391,9 +512,16 @@ class JuMEG_Base(JuMEG_Base_Basic):
          if seq_str is None:
             return np.unique( np.asarray( [ ] ) )
          if self.isString(seq_str):
-            return self.str_range_to_list( seq_str )
+            anr = self.str_range_to_list( seq_str )
          else:
+<<<<<<< HEAD
             return np.unique( np.asarray( [seq_str] ) )
+=======
+            anr = np.unique( np.asarray( [seq_str] ) )
+         if exclude_zero:
+            return anr[ np.where(anr) ] 
+         return anr
+>>>>>>> fb_devel_03082015
 
 
 

@@ -2,7 +2,11 @@
 import numpy as np
 #import pandas as pd
 
+<<<<<<< HEAD
 
+=======
+from jumeg.jumeg_base import jumeg_base
+>>>>>>> fb_devel_03082015
 from jumeg.epocher.jumeg_epocher_ctps import JuMEG_Epocher_CTPS
 
 class JuMEG_Epocher(JuMEG_Epocher_CTPS):
@@ -23,9 +27,15 @@ class JuMEG_Epocher(JuMEG_Epocher_CTPS):
         self.hdf_stat_postfix = '-epocher-stats.csv'
 
 #---
+<<<<<<< HEAD
     def apply_update_epochs(self, fname,raw=None,condition_list=None,picks=None,**kwargv):
         """
          find events and epochs; save to hdf5 format
+=======
+    def apply_events_to_hdf(self, fname,raw=None,condition_list=None,picks=None,**kwargv):
+        """
+         find stimulus and/or response events for each condition; save to hdf5 format
+>>>>>>> fb_devel_03082015
         """
 
         if kwargv['template_name']:
@@ -37,16 +47,47 @@ class JuMEG_Epocher(JuMEG_Epocher_CTPS):
         self.template_update_file()
 
         fhdf = None
+<<<<<<< HEAD
 
         if raw is None:
            import mne
            raw  = mne.io.Raw(fname,preload=True)
 
+=======
+        raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
+        
+>>>>>>> fb_devel_03082015
         fhdf = self.events_store_to_hdf(raw,condition_list=condition_list)
 
         print "===> DONE  apply epoches to HDF: " + fhdf +"\n"
 
         return (fname,raw,fhdf)
+<<<<<<< HEAD
+=======
+        
+#---
+    def apply_events_export_events(self,fname,raw=None,condition_list=None,picks=None,**kwargv):
+        """
+         export events and epochs for condition into mne fif data
+         
+        """
+
+        if kwargv['template_name']:
+           self.template_name = kwargv['template_name']
+
+        if kwargv['verbose']:
+           self.verbose = kwargv['verbose']
+
+        # self.template_update_file()
+
+        fhdf      = None
+        raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)        
+        evt_ids   = self.events_export_events(raw=raw,fhdf=fhdf,condition_list=condition_list,**kwargv['parameter'])
+        
+        print "===> DONE apply events export events: " + fname +"\n"
+
+        return (fname,raw,evt_ids)
+>>>>>>> fb_devel_03082015
 
 #---
     def apply_update_ecg_eog(self,fname,raw=None,ecg_events=None,ecg_parameter=None,eog_events=None,eog_parameter=None,template_name=None):
@@ -91,7 +132,10 @@ class JuMEG_Epocher(JuMEG_Epocher_CTPS):
         return (fname,raw,fhdf)
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> fb_devel_03082015
     def apply_update_brain_responses(self,fname,raw=None,fname_ica=None,ica_raw=None,condition_list=None,**kwargv):
           """
 

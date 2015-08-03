@@ -11,6 +11,9 @@ if not os.path.isfile(raw_fname):
 # Function to check and explain the file naming standards
 #jumeg.jumeg_utils.check_jumeg_standards(raw_fname)
 
+# Function to apply noise reducer
+jumeg.jumeg_noise_reducer.noise_reducer(raw_fname, verbose=True)
+
 # Filter functions
 #jumeg.jumeg_preprocessing.apply_filter(raw_fname)
 

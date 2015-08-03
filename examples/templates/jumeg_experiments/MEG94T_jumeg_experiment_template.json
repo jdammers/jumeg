@@ -44,11 +44,42 @@
                   "epocher": {
                               "template_name": "MEG94T",
                               "fif_extention": ".fif",
+<<<<<<< HEAD
                               "overwrite_hdf": false,
+=======
+                              "overwrite_hdf": true,
+>>>>>>> fb_devel_03082015
                               "do_run": false,
                               "verbose": false,
                               "save": true
                              },
+<<<<<<< HEAD
+=======
+
+                  "noise_reducer": {
+                                      "parameter": {
+                                                     "signals":[],
+                                                     "noiseref":[],
+                                                     "detrending": null,
+                                                     "tmin": null,
+                                                     "tmax" : null,
+                                                     "exclude_artifacts":true,
+                                                     "checkresults":true,
+                                                     "complementary_signal":false
+                                                   },
+
+                                      "fif_extention": "-raw.fif",
+                                      "fif_postfix": "n",
+                                      "reflp": 5.0,
+                                      "refhp": null,
+                                      "refnotch": [50.0,60.0],
+                                      "plot":false,
+                                      "verbose": false,
+                                      "do_run": false,
+                                      "save": false
+                                    },
+
+>>>>>>> fb_devel_03082015
                   "noise_covariance": {
                                         "filter_parameter": {
                                                               "filter_method": "bw",
@@ -59,7 +90,11 @@
                                                               "notch_max": 400.0,
                                                               "order": 4,
                                                               "remove_dcoffset": false,
+<<<<<<< HEAD
                                                               "njobs": 4,
+=======
+                                                              "njobs": 8,
+>>>>>>> fb_devel_03082015
                                                               "fif_extention": "-empty.fif",
                                                               "picks": null,
                                                               "overwrite": false,
@@ -67,7 +102,11 @@
                                                               "verbose": false,
                                                               "save": false
                                                             },
+<<<<<<< HEAD
                                         "do_filter": true,
+=======
+                                        "do_filter": false,
+>>>>>>> fb_devel_03082015
                                         "do_run": false,
                                         "save": true
                                       },
@@ -76,6 +115,7 @@
                               "filter_type": "hp",
                               "fcut1": 1.0,
                               "fcut2": null,
+<<<<<<< HEAD
                               "notch": 50,
                               "notch_max": 400,
                               "order": 4,
@@ -83,6 +123,15 @@
                               "njobs": 4,
                               "fif_extention": "-raw.fif",
                               "fif_postfix": "fihp1n",
+=======
+                              "notch": null,
+                              "notch_max": null,
+                              "order": 4,
+                              "remove_dcoffset": false,
+                              "njobs": 8,
+                              "fif_extention": "-raw.fif",
+                              "fif_postfix": "fihp1",
+>>>>>>> fb_devel_03082015
                               "picks": null,
                               "overwrite": true,
                               "do_run": false,
@@ -129,10 +178,13 @@
                                                 "lrate": null,
                                                 "maxsteps": 50,
                                                 "denoising": null,
+<<<<<<< HEAD
                                                 "unfiltered": false,
                                                 "notch_filter": true,
                                                 "notch_freq": 50,
                                                 "notch_width": null,
+=======
+>>>>>>> fb_devel_03082015
                                                 "plot_template_OA": false,
                                                 "verbose": false
                                               },
@@ -183,7 +235,11 @@
                                                            "fmin": 4,
                                                            "fmax": 400,
                                                            "fstep": 8,
+<<<<<<< HEAD
                                                            "njobs": 4,
+=======
+                                                           "njobs": 8,
+>>>>>>> fb_devel_03082015
                                                            "remove_dcoffset": false
                                                         },
                                              "select_parameter": {
@@ -192,12 +248,20 @@
                                                                  },
                                              "do_update":true,
                                              "do_select":true,
+<<<<<<< HEAD
                                              "do_run": false,
+=======
+                                             "do_run": true,
+>>>>>>> fb_devel_03082015
                                              "verbose": false,
                                              "save": true
                                             },
                                     "clean":{
+<<<<<<< HEAD
                                               "njobs": 4,
+=======
+                                              "njobs": 8,
+>>>>>>> fb_devel_03082015
                                               "template_name": "MEG94T",
                                               "fif_extention": ".fif",
                                               "fif_postfix": "ctpsbr",
