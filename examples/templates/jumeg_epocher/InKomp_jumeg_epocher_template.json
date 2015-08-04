@@ -4,16 +4,16 @@
            "condition"        : "TEST",
            "postfix"          : "test",
            "time_pre"         : -0.20,
-           "time_post"        :  0.50,
-           "baseline"         : [null,0],
+           "time_post"        :  0.80,
+           "baseline"         :{"type":"avg","channel":"stimulus","output":"onset","baseline":[null,0]},
            "stimulus_channel" : "stimulus",
            "response_channel" : "response",
            "marker_channel"   : "stimulus",
            "marker_type"      : "onset",
            "response_matching": true,
            "response_matching_type": "hit",
-           "ctps"             : {"time_pre":-0.20,"time_post":0.50,"baseline":[null,0]},
-           "reject"           : {"mag": 5e-12},
+           "ctps"             : {"time_pre":-0.50,"time_post":1.0,"baseline":[null,0]},
+           "reject"           : {"mag": 4e-12},
            "stimulus":{
                        "events":{
                                   "stim_channel"   : "STI 014",
@@ -38,7 +38,7 @@
                                   "mask"           : 0
                                  },
                         "and_mask"             : 72,
-                        "window"               : [0.10,1.70],
+                        "window"               : [0.05,0.75],
                         "counts"               : 1,
                         "system_delay_ms"      : 0.0,
                         "include_early_ids"    : null,
@@ -62,9 +62,8 @@
          "stimulus"            : {"events":{"output":"onset"},"event_id":1},
          "response_matching"   : true,
          "response"            : {"event_id":8},
-         "baseline"            : [0.4,0.6],
-         "time_pre"            : -0.90,
-         "time_post"           :  0.20,
+         "time_pre"            : -0.80,
+         "time_post"           :  0.10,
          "ctps"                : {"time_pre":-0.90,"time_post":0.20,"baseline":null}
         },
 
@@ -84,9 +83,8 @@
          "stimulus"            : {"events":{"output":"onset"},"event_id":2},
          "response_matching"   : true,
          "response"            : {"event_id":64},
-         "baseline"            : [0.4,0.6],
-         "time_pre"            : -0.90,
-         "time_post"           :  0.20,
+         "time_pre"            : -0.80,
+         "time_post"           :  0.10,
          "ctps"                : {"time_pre":-0.90,"time_post":0.20,"baseline":null}
         },
 
@@ -106,9 +104,8 @@
          "stimulus"            : {"events":{"output":"onset"},"event_id":3},
          "response_matching"   : true,
          "response"            : {"event_id":64},
-         "baseline"            : [0.4,0.6],
-         "time_pre"            : -0.90,
-         "time_post"           :  0.20,
+         "time_pre"            : -0.80,
+         "time_post"           :  0.10,
          "ctps"                : {"time_pre":-0.90,"time_post":0.20,"baseline":null}
        },
 "RLst":{
@@ -127,9 +124,8 @@
          "stimulus"            : {"events":{"output":"onset"},"event_id":4},
          "response_matching"   : true,
          "response"            : {"event_id":8},
-         "baseline"            : [0.4,0.6],
-         "time_pre"            : -0.90,
-         "time_post"           :  0.20,
+         "time_pre"            : -0.80,
+         "time_post"           :  0.10,
          "ctps"                : {"time_pre":-0.90,"time_post":0.20,"baseline":null}
         }
 }

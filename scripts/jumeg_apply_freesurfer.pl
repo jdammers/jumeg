@@ -4,7 +4,7 @@
 #
 # Autor: F B 20.02.2015
 #
-# last change 24.02.2015
+# last change 02.03.2015
 #
 #=======================================================================
 # perl script run freesurfer cmd for MNE
@@ -20,7 +20,7 @@ use Getopt::Long;
 #use File::List;
 #use File::Basename;
 #use File::Copy;
-#use File::Slurp;
+use File::Slurp;
 
 use Carp;
 use File::Path;
@@ -43,7 +43,7 @@ my $mri_orig_extention = "_1x1x1mm_orig.nii";
 my $template_extention = "jumeg_experiment_template.json";
 
 my ($experiment,$template,$template_path,$ftemplate);
-my ($do_run,$verbose,$debug,$help);
+my ($do_run,$create_pbs,$verbose,$debug,$help);
 
 my ($stage,$id,$id_str,$fin,$fout,$fsuffix,$p,$path,$path_id,$pout,$cmd); 
 
@@ -85,6 +85,8 @@ my $u = "undef";
    print "---->   -c => clean id-fresurfer directory\n";  
    print "----> -verbose|-v       : if defined     : ".($verbose or $u )."\n";
    print "---->   -v => more info\n";
+   print "----> -pbs              : if defined     : ".($create_pbs or $u )."\n";
+   print "---->      => creates a pbs script for processing on a cluster\n";
    print"-"x60 ."\n"; 
    print "----> -help|-h          : if defined     : ".($help    or $u )."\n";
    print "---->   -h => show this \n";
@@ -117,6 +119,7 @@ my $u = "undef";
               "run|r"             => \$do_run,
               "iso|i"             => \$use_iso,
               "clean|c"           => \$clean,
+              "pbs"               => \$create_pbs,
               "verbose|v"         => \$verbose,
               "debug|d"           => \$debug,
               "help|h"            => \$help,
@@ -136,7 +139,7 @@ my $u = "undef";
     elsif ($experiment)
      {
        if ($template_path){ $ftemplate = $template_path }
-        else{ $ftemplate = $ENV{JUMEG_PATH_TEMPLATE} }
+        else{ $ftemplate = $ENV{JUMEG_PATH_TEMPLATE_EXPERIMENTS} }
        $ftemplate.= "/".$experiment;
      }
 
@@ -163,7 +166,7 @@ my $TMP = $JS->decode($json_text);
 
 #--- init mri data path
    $stage               = $TMP->{experiment}{path}{stage};
-my $path_mri_iso        = $stage."/".$TMP->{experiment}{mri}{path}{iso};
+my $path_mri_iso        = $stage."/".$TMP->{experiment}{mri}{path}{mri}; # mrdata/iso/mri
 my $path_mri_orig       = $stage."/".$TMP->{experiment}{mri}{path}{mri_orig};
 my $path_mri_freesurfer = $stage."/".$TMP->{experiment}{mri}{path}{freesurfer};
 
@@ -187,7 +190,50 @@ my $path_mri_freesurfer = $stage."/".$TMP->{experiment}{mri}{path}{freesurfer};
    print" path freesurfer : $path_mri_freesurfer\n";
    print" template file   : $ftemplate\n";
  
- 
+   if ($create_pbs)
+    {
+  my $pbs = 0;
+  my $opt = " -tmp $ftemplate";
+     $opt.= " -r";
+     $opt.= " -i"  if ($use_iso);
+     $opt.= " -cl" if ($clean);
+     $opt.= " -v"  if ($verbose);
+     
+  my $MY_WORKDIR = $path_mri_freesurfer."/tmp_mrcluster"; 
+     mkpath($MY_WORKDIR);
+
+  my $fpbs_id = $MY_WORKDIR."/".$experiment."_id_list.tmp";
+     write_file($fpbs_id,join("\n",@IDs) );
+  
+  my $fpbs_out = $MY_WORKDIR."/".$experiment."_apply_freesurfer_mrcluster.pbs";
+
+  my @pbs =();
+     push(@pbs,'#!/bin/tcsh','#PBS -W umask=002','#PBS -N JuMEGJob');
+     push(@pbs,'#PBS -l pmem=2gb');
+     push(@pbs,'#PBS -d '.$MY_WORKDIR);
+     push(@pbs,'#PBS -e '.$MY_WORKDIR);
+     push(@pbs,'#PBS -o '.$MY_WORKDIR);
+     push(@pbs,'#PBS -j oe');
+     push(@pbs,'#PBS -q cpu');
+     push(@pbs,'#PBS -l nodes=1:ppn=1');
+     push(@pbs,'#PBS -r n');
+     push(@pbs,"\n\n");
+     push(@pbs,'set SUBJECT_ID=`awk "NR==${PBS_ARRAYID}" '.$fpbs_id);
+     push(@pbs,$0.$opt." -id ". '${SUBJECT_ID}');
+
+     write_file($fpbs_out,join("\n",@pbs) );
+     system "chmod 770 $fpbs_out";
+
+    print"\n---> INFO for mrcluster & where to find the tmp files:";
+    print "--> Id list file: $fpbs_id\n";
+    print" --> PBS script  : $fpbs_out\n\n";
+    print" --> call for mrcluster jobs:\n";
+ # cmd ---> send it to the cluster
+  my $cmd="ssh -X mrcluster qsub -t 0-$#IDs $fpbs_out";
+     print "$cmd\n\n";
+
+     exit;
+} # if create_pbs
 
 my $i  = 0;
 my $ii = 0;
@@ -269,6 +315,9 @@ my $ii = 0;
      system $cmd if $do_run;
 
    } # foreach id
+
+
+
 
 
 __DATA__
