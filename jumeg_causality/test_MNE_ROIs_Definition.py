@@ -4,7 +4,7 @@ from MNE_ROIs_Definition01 import apply_create_noise_covariance, apply_inverse
 from MNE_ROIs_Definition01 import apply_rois, merge_rois, stan_rois, group_rois
 evt_st, evt_rt = 'LLst', 'LLrt'
 stmin, stmax = 0.0, 0.4
-rtmin, rtmax = -0.04, 0.00 
+rtmin, rtmax = -0.4, 0.00 
 method = 'dSPM'
 #calculate noise cov from empty room file
 #emp_list = glob.glob('/home/qdong/18subjects/*/MEG/*empty-raw.fif')
