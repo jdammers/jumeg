@@ -7,8 +7,8 @@ import numpy as np
 from dirs_manage import reset_directory, set_directory
 ''' Before running these functions, please make sure essential files in the
     correct pathes as 'bem-sol' and 'src' files: subject_path/bem/. 'trans'
-    file is in the same directory as fname_raw.The way of applying these
-    functions please refer 'test.py'.
+    file and 'noise-cov'are in the same directory as fname_raw.The way of 
+    applying these functions please refer 'test.py'.
 '''
 def apply_create_noise_covariance(fname_empty_room, verbose=None):
     
@@ -87,14 +87,14 @@ def apply_inverse(fnepo, method='dSPM', event='LLst', min_subject='fsaverage', S
     fnlist = get_files_from_list(fnepo)
     # loop across all filenames
     for fname in fnlist:
-        meg_path = os.path.split(fname)[0]
+        fn_path = os.path.split(fname)[0]
         name = os.path.basename(fname)
         stc_name = name[:name.rfind('-epo.fif')] 
         subject = name.split('_')[0]
         subject_path = subjects_dir + '/%s' %subject
         min_dir = subjects_dir + '/%s' %min_subject
-        fn_trans = meg_path + '/%s-trans.fif' % subject
-        fn_cov = meg_path + '/%s_empty,nr-cov.fif' % subject
+        fn_trans = fn_path + '/%s-trans.fif' % subject
+        fn_cov = fn_path + '/%s_empty,nr-cov.fif' % subject
         fn_src = subject_path + '/bem/%s-ico-4-src.fif' % subject
         fn_bem = subject_path + '/bem/%s-5120-5120-5120-bem-sol.fif' % subject
         snr = snr
@@ -256,11 +256,10 @@ def _cluster_rois(mer_path, label_list):
                         class_label.name.split('_')[-1]
                 os.remove(class_list[i])
                 os.remove(test_fn)
-                fn_newlabel = mer_path + '/%s.label' %label_name
+                fn_newlabel = mer_path + '%s.label' %label_name
                 if os.path.isfile(fn_newlabel):
-                    fn_newlabel = fn_newlabel[:fn_newlabel.rfind('-')] + '_new-%s' %fn_newlabel.split('-')[-1]
+                    fn_newlabel = fn_newlabel[:fn_newlabel.rfind('_')] + '_new,%s' %fn_newlabel.split('_')[-1]
                 mne.write_label(fn_newlabel, com_label)
-                print label_name
                 class_list[i] = fn_newlabel
                 belong = True
             i = i + 1
