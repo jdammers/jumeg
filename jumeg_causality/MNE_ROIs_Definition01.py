@@ -217,7 +217,7 @@ def apply_rois(fn_stc, event, tmin=0.0, tmax=0.3, tstep=0.05, window=0.2,
             tbeg = tbeg + tstep
             count = count + 1
             
-def _cluster_rois(mer_path, label_list):
+def _cluster_rois(mer_path, label_list, count):
     """
     subfunctions of merge_ROIs
     ----------
@@ -252,7 +252,7 @@ def _cluster_rois(mer_path, label_list):
                     for pre in pre_class[:-1]:
                         new_pre += '%s,' % pre
                     new_pre += pre_class[-1]
-                    label_name = '%s_' % new_pre + \
+                    label_name = '%s_%d_' % (new_pre, count) + \
                         class_label.name.split('_')[-1]
                 os.remove(class_list[i])
                 os.remove(test_fn)
@@ -300,6 +300,7 @@ def merge_rois(labels_path_list, group=False, evelist=['LLst','LLrt']):
                 shutil.copy(filename, mer_path)
         # Merge the individual subject's ROIs
         reducer = True
+        count = 1
         while reducer:
             list_dirs = os.walk(mer_path)
             label_list = ['']
@@ -308,10 +309,10 @@ def merge_rois(labels_path_list, group=False, evelist=['LLst','LLrt']):
                     label_fname = os.path.join(root, f)
                     label_list.append(label_fname)
             label_list = label_list[1:]
-            len_class = _cluster_rois(mer_path, label_list)
+            len_class = _cluster_rois(mer_path, label_list, count)
             if len_class == len(label_list):
                 reducer = False  
-            
+            count = count + 1
 def stan_rois(fname=None, stan_path=None, size=8.0, min_subject='fsaverage'):
     """
     Before merging all ROIs together, the size of ROIs will be standardized.
