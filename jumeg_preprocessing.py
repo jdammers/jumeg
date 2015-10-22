@@ -23,8 +23,8 @@ ext_ave = '-ave.fif'
 ext_ica = '-ica.fif'
 ext_clean = ',ar-raw.fif'
 ext_icap = ',ica-performance'     # figure extension provided by the routine
-ext_empty_raw = '-empty.fif'
-ext_empty_cov = ',empty-cov.fif'
+ext_empty_raw = '-raw.fif'
+ext_empty_cov = '-cov.fif'
 prefix_filt = ',fibp'             # for now bp only
 prefix_ctps = ',ctpsbr-'        # e.g.: "...,ica,ctps-trigger.npy"
 
@@ -867,7 +867,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
 # interface for creating the noise-covariance matrix  #
 #                                                     #
 #######################################################
-def apply_create_noise_covariance(fname_empty_room, require_filter=True,
+def apply_create_noise_covariance(fname_empty_room, require_filter=False,
                                   verbose=None):
 
     '''
@@ -892,7 +892,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
     from mne import compute_raw_data_covariance as cp_covariance
     from mne import write_cov, pick_types
     from mne.io import Raw
-
+    from jumeg.jumeg_noise_reducer import noise_reducer
     fner = get_files_from_list(fname_empty_room)
 
     nfiles = len(fner)
@@ -902,20 +902,23 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
         fn_in = fner[ifile]
         print ">>> create noise covariance using file: "
         path_in, name = os.path.split(fn_in)
-        print name
-
+        print name   
         if require_filter:
             print "Filtering with preset settings..."
             # filter empty room raw data
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
-            fn_in = fn_in.split('-')[0] + ',fibp1-45-empty.fif'
-
+            fn_in = fn_in[:fn_in.rfind('-raw.fif')] + ',fibp1-45-raw.fif'
+            
+        fn_empty_nr = fn_in[:fn_in.rfind('-raw.fif')] + ',nr-raw.fif'
+        noise_reducer(fn_in, refnotch=50, detrending=False, fnout=fn_empty_nr)
+        noise_reducer(fn_empty_nr, refnotch=60, detrending=False, fnout=fn_empty_nr) 
+        noise_reducer(fn_empty_nr, reflp=5, fnout=fn_empty_nr)
         # file name for saving noise_cov
-        fn_out = fn_in[:fn_in.rfind(ext_empty_raw)] + ext_empty_cov
+        fn_out = fn_empty_nr[:fn_empty_nr.rfind(ext_empty_raw)] + ext_empty_cov
 
         # read in data
-        raw_empty = Raw(fn_in, verbose=verbose)
+        raw_empty = Raw(fn_empty_nr, verbose=verbose)
 
         # pick MEG channels only
         picks = pick_types(raw_empty.info, meg=True, ref_meg=False, eeg=False,
@@ -926,6 +929,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=True,
 
         # write noise-covariance matrix to disk
         write_cov(fn_out, noise_cov_mat)
+
 
 
 def apply_empty_room_projections(raw, raw_empty_room):
@@ -947,7 +951,7 @@ def apply_empty_room_projections(raw, raw_empty_room):
     '''
     # Add checks to make sure its empty room.
     # Check for events in ECG, EOG, STI.
-    print 'Empty room projections calculated for %s.'%(raw_empty_fname)
+    print 'Empty room projections calculated for %s.'%(raw_empty_room)
     empty_room_proj = mne.compute_proj_raw(raw_empty_room)
     raw.add_proj(empty_room_proj).apply_proj()
     return raw, empty_room_proj
