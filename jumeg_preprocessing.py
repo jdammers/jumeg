@@ -868,7 +868,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
 #                                                     #
 #######################################################
 def apply_create_noise_covariance(fname_empty_room, require_filter=False,
-                                  verbose=None):
+                                  require_noise_reducer=False, verbose=None):
 
     '''
     Creates the noise covariance matrix from an empty room file.
@@ -877,9 +877,16 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
     ----------
     fname_empty_room : String containing the filename
         of the empty room file (must be a fif-file)
+        File name should end with -raw.fif in order to have proper output filenames.
     require_filter: bool
         If true, the empy room file is filtered before calculating
         the covariance matrix. (Beware, filter settings are fixed.)
+    require_noise_reducer: bool
+        If true, a noise reducer is applied on the empty room file.
+        The noise reducer frequencies are fixed to 50Hz, 60Hz and
+        to frequencies less than 5Hz i.e. the reference channels are filtered to
+        these frequency ranges and then signal obtained is removed from
+        the empty room raw data. For more information please check the jumeg noise reducer.
     verbose : bool, str, int, or None
         If not None, override default verbose level
         (see mne.verbose).
@@ -893,8 +900,8 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
     from mne import write_cov, pick_types
     from mne.io import Raw
     from jumeg.jumeg_noise_reducer import noise_reducer
+    
     fner = get_files_from_list(fname_empty_room)
-
     nfiles = len(fner)
 
     # loop across all filenames
@@ -902,23 +909,27 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
         fn_in = fner[ifile]
         print ">>> create noise covariance using file: "
         path_in, name = os.path.split(fn_in)
-        print name   
+        print name
+
         if require_filter:
             print "Filtering with preset settings..."
             # filter empty room raw data
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
-            fn_in = fn_in[:fn_in.rfind('-raw.fif')] + ',fibp1-45-raw.fif'
-            
-        fn_empty_nr = fn_in[:fn_in.rfind('-raw.fif')] + ',nr-raw.fif'
-        noise_reducer(fn_in, refnotch=50, detrending=False, fnout=fn_empty_nr)
-        noise_reducer(fn_empty_nr, refnotch=60, detrending=False, fnout=fn_empty_nr) 
-        noise_reducer(fn_empty_nr, reflp=5, fnout=fn_empty_nr)
+            fn_in = fn_in[:fn_in.rfind(ext_empty_raw)] + ',fibp1-45-raw.fif'
+        
+        if require_noise_reducer:
+            fn_empty_nr = fn_in[:fn_in.rfind(ext_empty_raw)] + ',nr-raw.fif'
+            noise_reducer(fn_in, refnotch=50, detrending=False, fnout=fn_empty_nr)
+            noise_reducer(fn_empty_nr, refnotch=60, detrending=False, fnout=fn_empty_nr)
+            noise_reducer(fn_empty_nr, reflp=5, fnout=fn_empty_nr)
+            fn_in = fn_empty_nr
+        
         # file name for saving noise_cov
-        fn_out = fn_empty_nr[:fn_empty_nr.rfind(ext_empty_raw)] + ext_empty_cov
+        fn_out = fn_in[:fn_in.rfind(ext_empty_raw)] + ext_empty_cov
 
         # read in data
-        raw_empty = Raw(fn_empty_nr, verbose=verbose)
+        raw_empty = Raw(fn_in, verbose=verbose)
 
         # pick MEG channels only
         picks = pick_types(raw_empty.info, meg=True, ref_meg=False, eeg=False,
@@ -929,7 +940,6 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
 
         # write noise-covariance matrix to disk
         write_cov(fn_out, noise_cov_mat)
-
 
 
 def apply_empty_room_projections(raw, raw_empty_room):
