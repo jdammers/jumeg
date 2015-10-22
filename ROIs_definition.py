@@ -183,29 +183,28 @@ def _cluster_sel(sel_path, label_list, stc, src, min_dist, weight, mni_subject='
                 i = i + 1
                 continue
             else:
-                class_pca = stc.extract_label_time_course(class_label, src, mode='pca_flip')
-                test_pca = stc.extract_label_time_course(test_label, src, mode='pca_flip')
-                class_pow = np.sum(class_pca ** 2)
-                test_pow = np.sum(test_pca ** 2)
-                max_pca = class_pca
-                exch = False
-                if class_pow < test_pow:
-                    max_pca = test_pca
-                    exch = True
-                    
-                nearby = False
                 class_stc = stc.in_label(class_label)
                 test_stc = stc.in_label(test_label)
+                class_pow = np.sum(class_stc.data ** 2, axis=1)
+                test_pow = np.sum(test_stc.data ** 2, axis=1)
                 if class_label.hemi == 'lh':
-                    class_vtx, _ = class_stc.get_peak(hemi='lh')
-                    test_vtx, _ = test_stc.get_peak(hemi='lh') 
-                    class_mni = mne.vertex_to_mni(class_vtx, 0, mni_subject)[0]
-                    test_mni = mne.vertex_to_mni(test_vtx, 0, mni_subject)[0]
+                    h = 0
                 elif class_label.hemi == 'rh':
-                    class_vtx, _ = class_stc.get_peak(hemi='rh')
-                    test_vtx, _ = test_stc.get_peak(hemi='rh') 
-                    class_mni = mne.vertex_to_mni(class_vtx, 1, mni_subject)[0]
-                    test_mni = mne.vertex_to_mni(test_vtx, 1, mni_subject)[0]
+                    h = 1
+                class_seed = class_stc.vertices[h][np.argmax(class_pow)]
+                test_seed = test_stc.vertices[h][np.argmax(test_pow)]
+                class_vtx = np.searchsorted(stc.vertices[h], class_seed)
+                test_vtx = np.searchsorted(stc.vertices[h], test_seed) 
+                class_mni = mne.vertex_to_mni(class_vtx, h, mni_subject)[0]
+                test_mni = mne.vertex_to_mni(test_vtx, h, mni_subject)[0]
+                class_ts = stc.data[class_vtx, :]
+                test_ts = stc.data[test_vtx, :]
+                max_ts = class_ts
+                exch = False
+                if np.max(class_pow) < np.max(test_pow):
+                    max_ts = test_ts
+                    exch = True
+                nearby = False
                 if np.linalg.norm(class_mni - test_mni) < min_dist:
                     if exch == True:
                         os.remove(class_list[i])
@@ -216,8 +215,8 @@ def _cluster_sel(sel_path, label_list, stc, src, min_dist, weight, mni_subject='
                     belong = True
                     
                 if nearby == False:
-                    thre = max_pca.std() * weight
-                    diff =  np.abs(np.linalg.norm(class_pca) - np.linalg.norm(test_pca))
+                    thre = max_ts.std() * weight
+                    diff =  np.abs(np.linalg.norm(class_ts) - np.linalg.norm(test_ts))
                     if diff < thre:
                         if exch == True:
                             os.remove(class_list[i])
@@ -230,6 +229,7 @@ def _cluster_sel(sel_path, label_list, stc, src, min_dist, weight, mni_subject='
             class_list.append(test_fn)
                 
     return len(class_list)
+
 
 
 def sele_rois(fn_stc_list, fn_src, min_dist, weight, tmin=0.1, tmax=0.5):
