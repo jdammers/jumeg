@@ -7,16 +7,12 @@
 import os
 import sys
 from mne import setup_source_space
-from jumeg.jumeg_utils import get_files_from_list, check_env_variables
+from jumeg_utils import (get_files_from_list, check_env_variables,
+                         retcode_error)
 
 # using subprocess to run freesurfer commands (other option os.system)
 # e.g. call(["ls", "-l"]) or call('ls -lrt', shell=True)
 from subprocess import call
-
-
-def retcode_error(command, subj):
-    print '%s did not run successfully for subject %s.' % (command, subj)
-    print 'Please check the arguments, and rerun for subject.'
 
 
 def make_subject_dirs(subjects_list, freesurfer_home=None):

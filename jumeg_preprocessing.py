@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as pl
 import mne
 from mne.preprocessing import ctps_ as ctps
-from jumeg.jumeg_utils import get_files_from_list
-from jumeg.jumeg_plot import (plot_average, plot_performance_artifact_rejection,
+from jumeg_utils import get_files_from_list
+from jumeg_plot import (plot_average, plot_performance_artifact_rejection,
                               plot_compare_brain_responses)
 
 
