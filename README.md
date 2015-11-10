@@ -13,9 +13,9 @@ Installation
 ============
 
 1. Fork the repository by visiting https://github.com/jdammers/jumeg and clicking on the Fork button. 
-2. Your own fork of the repo will be created at https://github.com/<yourname>/jumeg.
+2. Your own fork of the repo will be created at https://github.com/your_username/jumeg.
 3. Clone the repository from the system shell using the command:
-   git clone https://github.com/<yourname>/jumeg
+   git clone https://github.com/your_username/jumeg
 4. Add it to your local python site-packages using the below commands from the same directory as above:
 
    ```   site_dir=`python -c'import site; print site.getusersitepackages()'` ```
