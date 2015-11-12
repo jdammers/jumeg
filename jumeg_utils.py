@@ -122,7 +122,7 @@ def mark_bads_batch(subject_list, subjects_dir=None):
     added to the file name.
     '''
     for subj in subject_list:
-        print "For subject %s"%(subj)
+        print "For subject %s" % (subj)
         if not subjects_dir: subjects_dir = os.environ['SUBJECTS_DIR']
         dirname = subjects_dir + '/' + subj
         sub_file_list = os.listdir(dirname)
@@ -516,7 +516,7 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
             'pks_max_global': pks_max_global,
             'pks_mean_global': pks_mean_global,
             'pks_std_global': pks_std_global,
-            'pks_pct99_global': pks_pct99_global
+            'pks_pct99_global': pks_pct99_global,
             'pks_pct999_global': pks_pct999_global,
             'pks_pct9999_global': pks_pct9999_global
             }
