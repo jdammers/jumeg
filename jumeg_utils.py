@@ -27,11 +27,6 @@ def get_files_from_list(fin):
     return fout
 
 
-def retcode_error(command, subj):
-    print '%s did not run successfully for subject %s.' % (command, subj)
-    print 'Please check the arguments, and rerun for subject.'
-
-
 def check_jumeg_standards(fnames):
     '''
     Checks for file name extension and provides information on type of file
@@ -424,7 +419,7 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
     from joblib import Parallel, delayed
     from mne.parallel import parallel_func
     from mne.preprocessing.ctps_ import kuiper
-
+    
     nfreq, ntrials, nsources, nsamples = phase_array.shape
     pk = np.zeros((nfreq, nrepeat, nsources, nsamples), dtype='float32')
 
@@ -447,7 +442,7 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
 
             # calculate Kuiper's statistics for each phase array
             out = parallel(my_kuiper(i) for i in pt_s)
-
+            
             # store stat and pk in different arrays
             out = np.array(out, dtype='float32')
             # ks[ifreq,:,isource,:] = out[:,0,:]  # is actually not needed
@@ -489,7 +484,7 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
     pks_min = pks.min(axis=1)
     pks_mean = pks.mean(axis=1)
     pks_std = pks.std(axis=1)
-
+   
     # global stats
     pks_max_global = pks.max()
     pks_min_global = pks.min()
@@ -497,6 +492,8 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
     pks_std_global = pks.std()
 
     pks_pct99_global = np.percentile(pksarr, 99)
+    pks_pct999_global = np.percentile(pksarr, 99.9)
+    pks_pct9999_global = np.percentile(pksarr, 99.99)
 
     # collect info and store into dictionary
     stats = {
@@ -514,7 +511,9 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
             'pks_max_global': pks_max_global,
             'pks_mean_global': pks_mean_global,
             'pks_std_global': pks_std_global,
-            'pks_pct99_global': pks_pct99_global
+            'pks_pct99_global': pks_pct99_global,
+            'pks_pct999_global': pks_pct999_global,
+            'pks_pct9999_global': pks_pct9999_global
             }
 
     # mean and std dev
@@ -527,6 +526,8 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
         print 'overall stats:'
         print 'max/mean/std: ', pks_global_max, pks_global_mean, pks_global_std
         print '99th percentile: ', pks_global_pct99
+        print '99.90th percentile: ', pks_global_pct999
+        print '99.99th percentile: ', pks_global_pct9999
 
     return stats
 
@@ -810,8 +811,7 @@ def randomize_phase(data, random_state=None):
     return np.fft.irfft(data_freq, data.shape[0], axis=0)
 
 
-def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False,
-                     raw_fname='output.fif'):
+def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False, raw_fname='output.fif'):
     '''
     A function that can be used to quickly create a raw object with the
     data provided.
@@ -853,8 +853,7 @@ def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False,
     return raw
 
 
-def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False,
-                        epochs_fname='output-epo.fif'):
+def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False, epochs_fname='output-epo.fif'):
     '''
     A function that can be used to quickly create an Epochs object with the
     data provided.
@@ -955,100 +954,3 @@ def check_env_variables(env_variable=None, key=None):
 
     return env_variable
 
-
-def convert_annot2labels(annot_fname, subject='fsaverage', subjects_dir=None,
-                         freesurfer_home=None):
-    '''
-    Convert an annotation to labels for a single subject for both hemispheres.
-    The labels are written to '$SUBJECTS_DIR/$SUBJECT/label'.
-
-    Parameters
-    ----------
-    annot_fname: str
-        The name of the annotation (or parcellation).
-    subject: str
-        Subject name. Default is the fresurfer fsaverage.
-    subjects_dir: str
-        The subjects directory, if not provided, then the
-        environment value is used.
-    freesurfer_home: str
-        The freeesurfer home path, if not provided, the
-        environment value is used.
-
-    Reference
-    ---------
-    https://surfer.nmr.mgh.harvard.edu/fswiki/mri_annotation2label
-    '''
-    from subprocess import call
-    subjects_dir = check_env_variables(subjects_dir, key='SUBJECTS_DIR')
-    freesurfer_home = check_env_variables(freesurfer_home, key='FREESURFER_HOME')
-    freesurfer_bin = os.path.join(freesurfer_home, 'bin', '')
-    outdir = os.path.join(subjects_dir, subject, 'label')
-    print 'Convert annotation %s to labels' % (annot_fname)
-    for hemi in ['lh', 'rh']:
-        retcode = call([freesurfer_bin + '/mri_annotation2label', '--subject', subject, '--hemi', hemi,
-                        '--annotation', annot_fname, '--outdir', outdir])
-        if retcode != 0:
-            retcode_error('mri_annotation2label')
-            continue
-
-
-def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
-                        subjects_dir=None, freesurfer_home=None):
-    '''
-    Python wrapper for Freesurfer mri_label2label function.
-    Converts all labels in annot_fname from source subject to target subject
-    given the subjects directory. Both hemispheres are considered.
-    The registration method used it surface.
-
-    Parameters
-    ----------
-    annot_fname: str
-        The name of the annotation (or parcellation).
-    subjects_list: list or str
-        Subject names to which the labels have to be transformed to (the target subjects).
-        Can be provided as a list or a string.
-    srcsubject: str
-        The name of the source subject to be used. The source subject should
-        contain the labels in the correct folders already. Default - fsaverage.
-    subjects_dir: str
-        The subjects directory, if not provided, then the
-        environment value is used.
-    freesurfer_home: str
-        The freeesurfer home path, if not provided, the
-        environment value is used.
-
-    Reference:
-    https://surfer.nmr.mgh.harvard.edu/fswiki/mri_label2label
-    '''
-    if subjects_list:
-        subjects_list = get_files_from_list(subjects_list)
-    else:
-        raise RuntimeError('No subjects are specified.')
-
-    subjects_dir = check_env_variables(subjects_dir, key='SUBJECTS_DIR')
-    freesurfer_home = check_env_variables(freesurfer_home, key='FREESURFER_HOME')
-    freesurfer_bin = os.path.join(freesurfer_home, 'bin', '')
-
-    # obtain the names of labels in parcellation
-    from mne.label import read_labels_from_annot
-    labels = read_labels_from_annot(srcsubject, parc=annot_fname)
-    lnames = [l.name.rsplit('-')[0] if l.hemi is 'lh' else '' for l in labels]
-    lnames = filter(None, lnames)  # remove empty strings
-
-    # convert the labels from source subject to target subject
-    from subprocess import call
-    for subj in subjects_list:
-        # the target subject is subj provided
-        print 'Converting labels from %s to %s' % (srcsubject, subj)
-        for label in lnames:
-            for hemi in ['lh', 'rh']:
-                srclabel = os.path.join(subjects_dir, srcsubject, 'label', hemi + '.' + label + '.label')
-                trglabel = os.path.join(subjects_dir, subj, 'label', hemi + '.' + label + '.label')
-                retcode = call([freesurfer_bin + 'mri_label2label', '--srclabel', srclabel, '--srcsubject', srcsubject,
-                    '--trglabel', trglabel, '--trgsubject', subj, '--regmethod', 'surface', '--hemi', hemi])
-                if retcode != 0:
-                    retcode_error('mri_label2label')
-                    continue
-
-    print 'Labels for %d subjects have been transformed from source %s' %(len(subjects_list), srcsubject)
