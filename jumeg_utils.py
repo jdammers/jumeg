@@ -122,7 +122,7 @@ def mark_bads_batch(subject_list, subjects_dir=None):
     added to the file name.
     '''
     for subj in subject_list:
-        print "For subject %s"%(subj)
+        print "For subject %s" % (subj)
         if not subjects_dir: subjects_dir = os.environ['SUBJECTS_DIR']
         dirname = subjects_dir + '/' + subj
         sub_file_list = os.listdir(dirname)
@@ -367,11 +367,11 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
 
     return surrogate
 
-    
+
 # def make_surrogates_epoch_numpy(epochs):
 #     '''
 #     Make surrogate epochs by simply shuffling. Destroy time-phase relationship for each trial.
-    
+
 #     Parameters
 #     ----------
 #     Epochs Object.
@@ -497,6 +497,8 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
     pks_std_global = pks.std()
 
     pks_pct99_global = np.percentile(pksarr, 99)
+    pks_pct999_global = np.percentile(pksarr, 99.9)
+    pks_pct9999_global = np.percentile(pksarr, 99.99)
 
     # collect info and store into dictionary
     stats = {
@@ -514,7 +516,9 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
             'pks_max_global': pks_max_global,
             'pks_mean_global': pks_mean_global,
             'pks_std_global': pks_std_global,
-            'pks_pct99_global': pks_pct99_global
+            'pks_pct99_global': pks_pct99_global,
+            'pks_pct999_global': pks_pct999_global,
+            'pks_pct9999_global': pks_pct9999_global
             }
 
     # mean and std dev
@@ -527,6 +531,8 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
         print 'overall stats:'
         print 'max/mean/std: ', pks_global_max, pks_global_mean, pks_global_std
         print '99th percentile: ', pks_global_pct99
+        print '99.90th percentile: ', pks_global_pct999
+        print '99.99th percentile: ', pks_global_pct9999
 
     return stats
 
