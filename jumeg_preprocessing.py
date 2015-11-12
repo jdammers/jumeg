@@ -695,6 +695,8 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
         info.append('pk mean: '+ str('%8.3f' % stats['pks_mean_global']))
         info.append('pk std:  '+ str('%8.3f' % stats['pks_std_global']))
         info.append('pk pct99:'+ str('%8.3f' % stats['pks_pct99_global']))
+        info.append('pk pct99.90:'+ str('%8.3f' % stats['pks_pct999_global']))
+        info.append('pk pct99.99:'+ str('%8.3f' % stats['pks_pct9999_global']))
         info.append('pk max:  '+ str('%8.3f' % stats['pks_max_global']))
 
 
@@ -714,6 +716,8 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
         info.append('pk mean: '+ str('%8.3f' % pks_all.mean()))
         info.append('pk std:  '+ str('%8.3f' % pks_all.std()))
         info.append('pk pct99:'+ str('%8.3f' % np.percentile(pks_all,99)))
+        info.append('pk pct99.90:'+ str('%8.3f' % np.percentile(pks_all,99.9)))
+        info.append('pk pct99.99:'+ str('%8.3f' % np.percentile(pks_all,99.99)))
         info.append('pk max:  '+ str('%8.3f' % pks_all.max()))
 
     info.append('#')
@@ -781,12 +785,15 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
             ax = fig.add_subplot(nrow, 2, ifreq + 1)
             pl.bar(x, pkmax, color='steelblue')
             pl.bar(x[ix], pkmax[ix], color='red')
+            pl.plot(x,np.repeat(threshold,ncomp),color='black')
             pl.title(trig_name + frange, fontsize='small')
             pl.xlim([1, ncomp + 1])
             pl.ylim([0, 0.5])
             pl.text(2, 0.45, 'ICs: ' + str(ix + 1))
         ic_sel = np.unique(ic_sel)
         nic = np.size(ic_sel)
+        fig.text(0.02, 0.98, 'pK threshold: ' + str(threshold),
+                 transform=ax.transAxes)
         info = 'ICs (all): ' + str(ic_sel).strip('[]')
         fig.text(0.02, 0.01, info, transform=ax.transAxes)
 
@@ -900,7 +907,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
     from mne import write_cov, pick_types
     from mne.io import Raw
     from jumeg.jumeg_noise_reducer import noise_reducer
-    
+
     fner = get_files_from_list(fname_empty_room)
     nfiles = len(fner)
 
@@ -917,14 +924,14 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
             fn_in = fn_in[:fn_in.rfind(ext_empty_raw)] + ',fibp1-45-raw.fif'
-        
+
         if require_noise_reducer:
             fn_empty_nr = fn_in[:fn_in.rfind(ext_empty_raw)] + ',nr-raw.fif'
             noise_reducer(fn_in, refnotch=50, detrending=False, fnout=fn_empty_nr)
             noise_reducer(fn_empty_nr, refnotch=60, detrending=False, fnout=fn_empty_nr)
             noise_reducer(fn_empty_nr, reflp=5, fnout=fn_empty_nr)
             fn_in = fn_empty_nr
-        
+
         # file name for saving noise_cov
         fn_out = fn_in[:fn_in.rfind(ext_empty_raw)] + ext_empty_cov
 
@@ -957,7 +964,7 @@ def apply_empty_room_projections(raw, raw_empty_room):
     raw: mne Raw object
         Raw file with projections applied.
     empty_room_proj: projections
-        Empty room projection vectors. 
+        Empty room projection vectors.
     '''
     # Add checks to make sure its empty room.
     # Check for events in ECG, EOG, STI.
@@ -965,4 +972,3 @@ def apply_empty_room_projections(raw, raw_empty_room):
     empty_room_proj = mne.compute_proj_raw(raw_empty_room)
     raw.add_proj(empty_room_proj).apply_proj()
     return raw, empty_room_proj
-
