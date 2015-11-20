@@ -8,7 +8,7 @@
 ----------------------------------------------------------------------
  autor      : Lukas Breuer
  email      : l.breuer@fz-juelich.de
- last update: 31.03.2015
+ last update: 12.11.2015
  version    : 1.1 (NOTE: Current version is only able to handle data
                          recorded with the magnesWH3600 system)
 
@@ -76,8 +76,10 @@ Feb. 2014 (doi:10.1109/TBME.2013.2280143).
 """
 
 from . import complex_ica
+from . import dimension_selection
 from . import fourier_ica
 from . import fourier_ica_plot
+from . import group_ica
 from . import ica
 from . import icasso
 from . import ocarta

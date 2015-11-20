@@ -31,7 +31,7 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
               maxsteps=200, verbose=True):
 
     """
-    interface to perform (extended) Infomax ICA on a data array
+    interface to perform (extended) Infomax or FastICA on a data array
 
         Parameters
         ----------
@@ -319,8 +319,8 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
             anneal_deg=60., anneal_step=0.9, extended=False, n_subgauss=1,
             kurt_size=6000, ext_blocks=1, max_iter=200,
             fixed_random_state=None, verbose=None):
-    """Run the (extended) Infomax ICA decomposition on raw data
-
+    """
+    Run the (extended) Infomax ICA decomposition on raw data
     based on the publications of Bell & Sejnowski 1995 (Infomax)
     and Lee, Girolami & Sejnowski, 1999 (extended Infomax)
 

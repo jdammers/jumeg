@@ -247,11 +247,11 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
 
 
     # initialize training
-    if initial_weights == None:
+    if np.any(initial_weights):
+        weights = initial_weights
+    else:
         # initialize weights as identity matrix
         weights = np.identity(npc, dtype=np.float64)
-    else:
-        weights = initial_weights
 
     BI                = block * np.identity(npc, dtype=np.float64)
     bias              = np.zeros((npc, 1), dtype=np.float64)
@@ -309,8 +309,8 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
 
         # ..................................
         # update weights for ocular activity
-        # ..................................
-        if len(oa_template):
+        # .................................
+        if ((istep % 20) == 0) and len(oa_template):
 
             # ..................................
             # generate spatial maps
@@ -474,15 +474,16 @@ def identify_cardiac_activity(activations, idx_R_peak, sfreq=1017.25, ecg_flow=8
     pk_values         = np.max(pk_dynamics, axis=1)
     idx_ca            = np.where(pk_values >= thresh_kui_ca)[0]
 
+
     # check that at least one and at maximum
     # three ICs belong to CA
     if len(idx_ca) == 0:
         idx_ca = [np.argmax(pk_values)]
-    elif len(idx_ca) > 3:
-        idx_ca = np.argsort(pk_values)[-3:]
+    elif len(idx_ca) > 5:
+        idx_ca = np.argsort(pk_values)[-5:]
 
     # return indices
-    return idx_ca
+    return np.array(idx_ca)
 
 
 
@@ -561,8 +562,8 @@ def identify_ocular_activity(activations, eog_signals, spatial_maps,
     # three ICs belong to OA
     if len(idx_oa) == 0:
         idx_oa = [np.argmax((temp_corr + spatial_corr))]
-    elif len(idx_oa) > 3:
-        idx_oa = np.argsort((temp_corr + spatial_corr))[-3:]
+    elif len(idx_oa) > 5:
+        idx_oa = np.argsort((temp_corr + spatial_corr))[-5:]
 
     # return results
     return idx_oa
@@ -578,7 +579,7 @@ def identify_ocular_activity(activations, eog_signals, spatial_maps,
 ########################################################
 class JuMEG_ocarta(object):
 
-    def __init__(self, name_ecg='ECG 001', ecg_freq=[10, 20],
+    def __init__(self, name_ecg='ECG 001', ecg_freq=[8, 16],
                  thresh_ecg=0.3, name_eog='EOG 002', eog_freq=[1, 10],
                  seg_length=30.0, shift_length=10.0,
                  percentile_eog=80, npc=None, explVar=0.95, lrate=None,
@@ -805,7 +806,7 @@ class JuMEG_ocarta(object):
     # segments (in s)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def _set_shift_length(self, shift_length):
-        self._seg_length = abs(shift_length)
+        self._shift_length = abs(shift_length)
 
     def _get_shift_length(self):
         return self._shift_length
@@ -1044,6 +1045,9 @@ class JuMEG_ocarta(object):
             # estimate optimal cost-function
             cost_func = _fit_sigmoidal_to_cdf(ecg_signal)
 
+            if cost_func[1] > 20:
+                cost_func[1] = 20.0
+
             self._set_opt_cost_func_cardiac(cost_func)
 
         # if no ECG channel is found use sigmoidal function as cost-function
@@ -1201,6 +1205,10 @@ class JuMEG_ocarta(object):
         idx_R_peak = self._get_idx_R_peak().copy()[:, 0]
         idx_R_peak = idx_R_peak[idx_R_peak > idx_start]
         idx_R_peak = idx_R_peak[idx_R_peak < idx_end] - idx_start
+        if len(idx_R_peak) < 3:
+            import pdb
+            pdb.set_trace()
+
         idx_ca = identify_cardiac_activity(act.copy(), idx_R_peak, thresh_kui_ca=self._get_thresh_ecg(),
                                            sfreq=meg_raw.info['sfreq'])
 
@@ -1255,7 +1263,7 @@ class JuMEG_ocarta(object):
         # get indices of trainings data set
         # --> keep in mind that at least one eye-blink must occur
         if (idx_start == None) or (idx_end == None):
-            if self.idx_eye_blink == None:
+            if np.any(self.idx_eye_blink):
                 idx_start = 0
             else:
                 idx_start = self._get_idx_eye_blink()[0, 0] - (0.5 * self._block)
@@ -1420,14 +1428,6 @@ class JuMEG_ocarta(object):
             fn_out = fn_raw[:fn_raw.rfind('-raw.fif')] + ',ocarta-raw.fif'
 
 
-        # extract parameter from input data
-        self._system = get_sytem_type(meg_raw.info)
-        self._ntsl = int(meg_raw._data.shape[1])
-        self._block = int(self._seg_length * meg_raw.info['sfreq'])
-        self._picks = pick_types(meg_raw.info, meg=True, eeg=False,
-                                 eog=False, stim=False, exclude='bads')
-
-
         # check input parameter
         if name_ecg:
             self.name_ecg = name_ecg
@@ -1455,6 +1455,15 @@ class JuMEG_ocarta(object):
             self.flow = flow
         if fhigh:
             self.fhigh = fhigh
+
+
+        # extract parameter from input data
+        self._system = get_sytem_type(meg_raw.info)
+        self._ntsl = int(meg_raw._data.shape[1])
+        self._block = int(self._seg_length * meg_raw.info['sfreq'])
+        self._picks = pick_types(meg_raw.info, meg=True, eeg=False,
+                                 eog=False, stim=False, exclude='bads')
+
 
         # make sure that everything is initialized well
         self._eog_signals_tkeo = None
@@ -1491,6 +1500,7 @@ class JuMEG_ocarta(object):
                 filter_info = "          --> filter parameter    : filter type=band pass %d-%d Hz" % (self.flow, self.fhigh)
 
             fi_mne_notch = jumeg_filter(fcut1=self.flow, fcut2=self.fhigh,
+                                        filter_method= "ws",
                                         filter_type=filter_type,
                                         remove_dcoffset=False,
                                         sampling_frequency=meg_raw.info['sfreq'])
@@ -1556,6 +1566,9 @@ class JuMEG_ocarta(object):
                                                                         initial_weights=weights.T,
                                                                         ca_idx=idx_ca, oa_idx=idx_oa)
 
+
+            print "CA: %s, OA: %s" % (np.array_str(idx_ca), np.array_str(idx_oa))
+
             # get cleaning matrices
             iweights = pinv(weights)
             iweights[:, idx_ca] = 0.  # remove columns related to CA
@@ -1599,7 +1612,8 @@ class JuMEG_ocarta(object):
             self.topoplot_oa(meg_raw.info, fn_img=fn_topo)
 
         # generate performance image
-        plt_perf(meg_raw, None, fn_perf_img, meg_clean=meg_clean)
+        plt_perf(meg_raw, None, fn_perf_img, meg_clean=meg_clean,
+                 name_ecg=self.name_ecg, name_eog=self.name_eog)
 
         # estimate performance values/frequency correlation
         perf_ar, freq_corr_ar = self.performance(meg_raw, meg_clean)
