@@ -32,14 +32,15 @@ class ConnecBrain(surfer.Brain):
     to denote directional connectivity estimates
     """
 
-    def __init__(self, subject_id, hemi, surf, curv=True, title=None,
-                 config_opts={}, figure=None, subjects_dir=None,
+    def __init__(self, subject_id, hemi, surf='inflated', curv=True,
+                 title=None, config_opts={}, figure=None, subjects_dir=None,
                  views=['lat'], show_toolbar=False, offscreen=False,
                  opacity=0.3):
 
         print hemi
         # Call our main constructor
-        surfer.Brain.__init__(self, subject_id, hemi, surf)
+        surfer.Brain.__init__(self, subject_id, hemi, surf,
+                              subjects_dir=subjects_dir)
         #surfer.Brain.__init__(self, subject_id, hemi, surf, curv, title,
         #                            config_opts, figure, subjects_dir,
         #                            views, show_toolbar, offscreen)
@@ -56,7 +57,8 @@ class ConnecBrain(surfer.Brain):
         return self._get_one_brain(self.arrows_dict, 'arrows')
 
     def add_coords(self, coords, map_surface=None, scale_factor=1.5,
-                   color="red", alpha=1, name=None, labels=None, hemi=None):
+                   color="red", alpha=1, name=None, labels=None, hemi=None,
+                   text_size=5):
         """
         Plot locations onto the brain surface as spheres.
 
@@ -77,6 +79,8 @@ class ConnecBrain(surfer.Brain):
         :param hemi: str | None
             If None, assumed to belong to the hemisphere being shown.
             If two hemispheresa are being shown, an error will be thrown
+        :param text_size: int
+            Text size of labels
         """
 
         hemi = self._check_hemi(hemi)
@@ -126,7 +130,7 @@ class ConnecBrain(surfer.Brain):
                                        foci_coords[i, 2]+6,
                                        labels[i],
                                        color=(0,0,0),
-                                       scale=5,
+                                       scale=text_size,
                                        name=name + '_label',
                                        figure=brain['brain']._f))
 

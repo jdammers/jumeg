@@ -13,6 +13,7 @@ Created on 31.03.2015
 #######################################################
 import numpy as np
 import scipy as sc
+import types
 
 
 #######################################################
@@ -66,7 +67,6 @@ def cov(m, y=None, rowvar=1, bias=0, ddof=None):
     out : ndarray
         The covariance matrix of the variables.
     """
-    import types
 
     # Check inputs
     if ddof is not None and ddof != int(ddof):
@@ -126,15 +126,18 @@ def cov(m, y=None, rowvar=1, bias=0, ddof=None):
 #             complex ICA implementation              #
 #                                                     #
 #######################################################
-def complex_ica(data, complex_mixing=True, pca_dim=0.95,
+def complex_ica(data, complex_mixing=True,
+                already_normalized=False, pca_dim=0.95,
                 ica_dim=200, zero_tolerance=1e-7,
-                conv_eps=1e-7, max_iter=10000, lrate=1.0,
-                verbose=True):
+                conv_eps=1e-7, max_iter=10000, lrate=0.1,
+                whiten_mat=[], dewhiten_mat=[],
+                cost_function='g2', envelopeICA=False,
+                verbose=True, pca_only=False,
+                overwrite=False):
 
     """
-    Returns the reconstructed MEG signal obtained from each
-    component separately. Note, the 'fit()'function must be
-    applied before this routine can be used (to get W_orig).
+    This is simple python code for computing FastICA on
+    complex valued signals
 
         Parameters
         ----------
@@ -157,6 +160,21 @@ def complex_ica(data, complex_mixing=True, pca_dim=0.95,
             default: max_iter=10000
         lrate: initial learning rate
             default: lrate=1.0
+        whiten_mat: if both whiten_mat and dewhiten_mat are set PCA is
+            applied using the given matrices (i.e., no whitening and
+            de-whitening matrices must be estimated). Important when
+            ICASSO should be used to reduce the calculation time.
+        dewhiten_mat: if both whiten_mat and dewhiten_mat are set PCA is
+            applied using the given matrices (i.e., no whitening and
+            de-whitening matrices must be estimated). Important when
+            ICASSO should be used to reduce the calculation time.
+        cost_function: can be one of the following:
+            'g1': g_1(y) = 1 / (2 * np.sqrt(lrate + y))
+            'g2': g_2(y) = 1 / (lrate + y)
+            'g3': g_3(y) = y
+        envelopeICA: if set ICA is estimated on the envelope of the
+            complex input data, i.e., the mixing model is |x|=As
+            default: envelopeICA=False
         verbose: bool, str, int, or None
             If not None, override default verbose level
             (see mne.verbose).
@@ -175,81 +193,147 @@ def complex_ica(data, complex_mixing=True, pca_dim=0.95,
     """
 
     # -----------------------------------
-    # check input data
+    # copy and check input data
     # -----------------------------------
     # extract some parameter
+    if not overwrite:
+        origdata = data.copy()
+
     ntsl, nchan = data.shape
 
 
     # -----------------------------------
-    # subtract mean values from channels
+    # check if ICA should be estimated
+    # on the envelope of the data
     # -----------------------------------
-    dmean = np.mean(data, axis=0).reshape((1, nchan))
-    data -= np.dot(np.ones((ntsl, 1)), dmean)
+    if envelopeICA:
+        complex_mixing = False
+        if already_normalized:
+            dmean = np.zeros((1, nchan))
+            dstddev = np.ones((1, nchan))
+        else:
+            dmean = np.mean(data, axis=0).reshape((1, nchan))
+            dstddev = np.std(data, axis=0).reshape((1, nchan))
+
+        if isinstance(data[0, 0], types.ComplexType):
+            data = np.abs(data)
+        else:
+            print ">>> WARNING: Input data are not complex, i.e., ICA on data envelope cannot be performed."
+            print ">>>          Instead standard ICA is performed."
+
+        dmean_abs = np.mean(data, axis=0).reshape((1, nchan))
+        dstddev_abs = np.std(data, axis=0).reshape((1, nchan))
+        data = (data - np.dot(np.ones((ntsl, 1)), dmean_abs)) / np.dot(np.ones((ntsl, 1)), dstddev_abs)
+
+    elif already_normalized:
+        dmean = np.zeros((1, nchan))
+        dstddev = np.ones((1, nchan))
+    else:
+        # -----------------------------------
+        # subtract mean values from channels
+        # -----------------------------------
+        dmean = np.mean(data, axis=0).reshape((1, nchan))
+        dstddev = np.std(data, axis=0).reshape((1, nchan))
+        data = (data - np.dot(np.ones((ntsl, 1)), dmean)) / np.dot(np.ones((ntsl, 1)), dstddev)
 
 
     # -----------------------------------
     # do PCA (on data matrix)
     # -----------------------------------
-    covmat = cov(data, rowvar=0)
-
-    # check if complex mixing is assumed
-    if not complex_mixing:
-        covmat = covmat.real
-
-    Dc, Ec = np.linalg.eig(covmat)
-    idx_sort = np.argsort(Dc)[::-1]
-    Dc = Dc[idx_sort]
-
-
-    # ------------------------------
-    # perform model order selection
-    # ------------------------------
-    # --> can either be performed by
-    #     (1.) explained variance    (0 < self.pca_dim < 1)
-    #     (2.) or a fix number       (self.pca_dim > 1)
-    if np.abs(pca_dim) <= 1.0:
-        # estimate explained variance
-        explVar = np.abs(Dc.copy())
-        explVar /= explVar.sum()
-        pca_dim = np.sum(explVar.cumsum() <= np.abs(pca_dim)) + 1
-    else:
-        pca_dim = np.abs(pca_dim)
-
-
-    # checks for negativ eigenvalues
-    if any(Dc[0:pca_dim] < 0):
-        print ">>> WARNING: Negative eigenvalues! Reducing PCA and ICA dimension..."
-
-    # check for eigenvalues near zero (relative to the maximum eigenvalue)
-    zero_eigval = np.sum((Dc[0:pca_dim]/Dc[0]) < zero_tolerance)
-
-    # adjust dimensions if necessary (because zero eigenvalues were found)
-    pca_dim -= zero_eigval
-    if pca_dim < ica_dim:
+    # check if whitening and de-whitening matrices
+    if np.any(whiten_mat) and np.any(dewhiten_mat):
+        pca_dim = whiten_mat.shape[0]
         ica_dim = pca_dim
 
-    if verbose:
-        print ">>> PCA dimension is %d and ICA dimension is %d" % (pca_dim, ica_dim)
+    else:
+        if nchan > 1000:
+            print ">>> Launching PCA...due to data size this might take a while..."
 
-    # # construct whitening and dewhitening matrices
-    Dc_sqrt = np.sqrt(Dc[0:pca_dim])
-    Dc_sqrt_inv = 1.0 / Dc_sqrt
-    Ec = Ec[:, idx_sort[0:pca_dim]]
-    whiten_mat = np.dot(np.diag(Dc_sqrt_inv), Ec.conj().transpose())
-    dewhiten_mat = np.dot(Ec, np.diag(Dc_sqrt))
+        covmat = cov(data, rowvar=0)
+
+        # check if complex mixing is assumed
+        if not complex_mixing:
+            covmat = covmat.real
+
+        Dc, Ec = sc.linalg.eig(covmat)
+        idx_sort = np.argsort(Dc)[::-1]
+        Dc = Dc[idx_sort]
+
+    # from sklearn.decomposition import RandomizedPCA
+    # pca = RandomizedPCA(n_components=None, whiten=False,
+    #                     copy=True)
+    # whitened_data = pca.fit_transform(data)
+
+
+        if not complex_mixing:
+            Dc = Dc.real
+            Ec = Ec.real
+
+        # ------------------------------
+        # perform model order selection
+        # ------------------------------
+        # --> can either be performed by
+        #     (1.) MIBS                  (self.pca_dim = None)
+        #     (2.) explained variance    (0 < self.pca_dim < 1)
+        #     (3.) or a fix number       (self.pca_dim > 1)
+        if not pca_dim:
+            from .icasso import mibs
+            pca_dim = mibs(Dc.real, ntsl)
+        elif np.abs(pca_dim) <= 1.0:
+            # estimate explained variance
+            explVar = np.abs(Dc.copy())
+            explVar /= explVar.sum()
+            pca_dim = np.sum(explVar.cumsum() <= np.abs(pca_dim)) + 1
+        else:
+            pca_dim = np.abs(pca_dim)
+
+        # checks for negativ eigenvalues
+        if any(Dc[0:pca_dim] < 0):
+            print ">>> WARNING: Negative eigenvalues! Reducing PCA and ICA dimension..."
+
+        # check for eigenvalues near zero (relative to the maximum eigenvalue)
+        zero_eigval = np.sum((Dc[0:pca_dim]/Dc[0]) < zero_tolerance)
+
+        # adjust dimensions if necessary (because zero eigenvalues were found)
+        pca_dim -= zero_eigval
+        if pca_dim < ica_dim:
+            ica_dim = pca_dim
+
+        if verbose:
+            print ">>> PCA dimension is %d and ICA dimension is %d" % (pca_dim, ica_dim)
+
+        if pca_only:
+            pca_start = 0
+        else:
+            pca_start = 0
+
+        # construct whitening and dewhitening matrices
+        Dc_sqrt = np.sqrt(Dc[pca_start:pca_dim])
+        Dc_sqrt_inv = 1.0 / Dc_sqrt
+        Ec = Ec[:, idx_sort[pca_start:pca_dim]]
+        whiten_mat = np.dot(np.diag(Dc_sqrt_inv), Ec.conj().transpose())
+        dewhiten_mat = np.dot(Ec, np.diag(Dc_sqrt))
 
     # reduce dimensions and whiten data. |Zmat_c| is the
     # main input for the iterative algorithm
     Zmat_c = np.dot(whiten_mat, data.transpose())
     Zmat_c_tr = Zmat_c.conj().transpose()     # also used in the fixed-point iteration
 
+    # check if only PCA should be performed
+    if pca_only:
+        # return explained variance as objective function
+        objective = np.abs(Dc.copy())
+        objective /= objective.sum()
+        return whiten_mat, dewhiten_mat, Zmat_c, dmean, dstddev, objective, whiten_mat, dewhiten_mat
+
 
     # ----------------------------------------------------------------
     # COMPLEX-VALUED FAST_ICA ESTIMATION
     # ----------------------------------------------------------------
-    if verbose:
+    if verbose and complex_mixing:
         print "... Launching complex-valued FastICA:"
+    elif verbose:
+        print "... Launching FastICA:"
 
     # initial point, make it imaginary and unitary
     if complex_mixing:
@@ -265,14 +349,27 @@ def complex_ica(data, complex_mixing=True, pca_dim=0.95,
 
         # compute outputs, note lack of conjugate
         Y = np.dot(W_old, Zmat_c)
-
-        # compute nonlinearities
         Y2 = np.abs(Y * Y.conj())
-        gY2 = 1.0 / (lrate + Y2)
-        dmv = lrate * np.sum(gY2**2, axis=1)
+
+        # # compute nonlinearities
+        if cost_function == 'g1':
+            gY = 1.0/(2.0 * np.sqrt(lrate + Y2))
+            dmv = np.sum(((2.0 * lrate + Y2)/(4.0 * (lrate + Y2)**1.5)), axis=1)
+
+        elif cost_function == 'g3':
+            gY = Y2
+            dmv = np.sum((2.0 * Y2), axis=1)
+
+        elif cost_function == 'sigmoidal':
+            gY = 1.0 / (1.0 + np.exp(-Y2))
+            dmv = np.sum(((1.0 + (1.0 + Y2) * np.exp(-Y2))*gY**2), axis=1)
+
+        else:
+            gY = 1.0 / (lrate + Y2)
+            dmv = lrate * np.sum(gY**2, axis=1)
 
         # fixed-point iteration
-        W_new = np.dot((Y * gY2), Zmat_c_tr) - np.dot(np.diag(dmv), W_old)
+        W_new = np.dot((Y * gY), Zmat_c_tr) - np.dot(np.diag(dmv), W_old)
 
         # in case we want to restrict W to be real-valued, do it here
         if complex_mixing:
@@ -298,6 +395,7 @@ def complex_ica(data, complex_mixing=True, pca_dim=0.95,
 
         # store old value
         W_old = W
+
 
     # compute mixing matrix (in whitened space)
     A = W.conj().transpose()
@@ -340,4 +438,7 @@ def complex_ica(data, complex_mixing=True, pca_dim=0.95,
     if verbose:
         print "... Done!"
 
-    return W_orig, A_orig, S, dmean, objective, whiten_mat, dewhiten_mat
+    if not overwrite:
+        data = origdata
+
+    return W_orig, A_orig, S, dmean, dstddev, objective, whiten_mat, dewhiten_mat

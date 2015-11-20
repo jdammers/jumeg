@@ -453,7 +453,8 @@ def ICs_topoplot(A_orig, info, picks, fnout=None, show=True):
 def plot_results(fourier_ica_obj, meg_data,
                  W_orig, A_orig, info, picks,
                  cluster_quality=[], fnout=None,
-                 show=True, plot_all=True):
+                 show=True, plot_all=True,
+                 layout=None):
 
     """
     Generate plot containing all results achieved by
@@ -503,7 +504,6 @@ def plot_results(fourier_ica_obj, meg_data,
     rec_signal_avg, orig_avg = fourier_ica_obj.get_reconstructed_signal(meg_data, W_orig, A_orig)
     fourier_ampl = fourier_ica_obj.get_fourier_ampl(meg_data, W_orig)
 
-
     # ------------------------------------------
     # collect some general information
     # ------------------------------------------
@@ -511,14 +511,15 @@ def plot_results(fourier_ica_obj, meg_data,
     tpost = fourier_ica_obj.tpre + fourier_ica_obj.win_length_sec
     nchan, ncomp = A_orig.shape
     nbins = fourier_ampl.shape[1]
-    sfreq_bins = nbins/(fourier_ica_obj.fhigh - fourier_ica_obj.flow)
+    sfreq_bins = (1.0 * nbins)/(fourier_ica_obj.fhigh - fourier_ica_obj.flow)
 
     # define axis/positions for plots
-    xaxis_time = np.arange(ntsl)/fourier_ica_obj.sfreq + fourier_ica_obj.tpre
+    xaxis_time = np.arange(ntsl)/(1.0*fourier_ica_obj.sfreq) + fourier_ica_obj.tpre
     xaxis_fourier = np.arange(nbins)/sfreq_bins + fourier_ica_obj.flow
+
     ylim_act = [np.min(temporal_envelope), np.max(temporal_envelope)]
     ylim_meg = [np.min(orig_avg), np.max(orig_avg)]
-    pos = _find_topomap_coords(info, picks)
+    pos = _find_topomap_coords(info, picks, layout=layout)
 
     # ------------------------------------------
     # loop over all activations
@@ -566,7 +567,7 @@ def plot_results(fourier_ica_obj, meg_data,
             p1.plot(xaxis_time, temporal_envelope[icomp, :])
 
             # add some information
-            txt_info = 'cluster qual.: %0.2f; ' % cluster_quality[icomp] if cluster_quality.any() else ''
+            txt_info = 'cluster qual.: %0.2f; ' % cluster_quality[icomp] if np.any(cluster_quality) else ''
 
             if pk_values.any():
                 txt_info += 'pk: %0.2f' % pk_values[icomp]
@@ -621,7 +622,7 @@ def plot_results(fourier_ica_obj, meg_data,
                                         fraction=0.04, pad=0.04)
                     cbar.ax.set_yticklabels(['-1.0', '0.0', '1.0'])
 
-                phase_diff = (np.angle(A_orig[:, icomp]) + np.pi) / (2 * np.pi)
+                phase_diff = (np.angle(A_orig[:, icomp]) + 2.0 * np.pi) % (2.0 * np.pi) / (2 * np.pi)
                 p5 = plt.subplot(gs[icomp-istart_plot, 7])
                 im, _ = plot_topomap(phase_diff, pos, res=200, vmin=0, vmax=1, contours=0)
                 if icomp == istart_plot:
@@ -647,7 +648,7 @@ def plot_results(fourier_ica_obj, meg_data,
         # save image
         if fnout:
             if plot_all:
-                fnout_complete = '%s%2d.png' % (fnout, iimg+1)
+                fnout_complete = '%s%02d.png' % (fnout, iimg+1)
             else:
                 fnout_complete = '%s.png' % fnout
 
@@ -663,4 +664,387 @@ def plot_results(fourier_ica_obj, meg_data,
 
     return pk_values
 
+
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# plot results when Fourier ICA was applied in the
+# source space
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
+                           src_loc_data, vertno,
+                           fnout=None, tICA=False,
+                           stim_name=[],
+                           morph2fsaverage=False,
+                           subject='fsaverage',
+                           subjects_dir=None,
+                           temporal_envelope=[], act=[],
+                           time_range=[-0.1, 0.5],
+                           classification={},
+                           percentile=97, show=True,
+                           plot_center_of_mass=False):
+
+    """
+    Generate plot containing all results achieved by
+    applying FourierICA in source space, i.e., plot
+    spatial and spectral profiles.
+
+        Parameters
+        ----------
+
+    """
+
+    # ------------------------------------------
+    # import necessary modules
+    # ------------------------------------------
+    from jumeg.jumeg_utils import rescale_arr
+    from matplotlib import pyplot as plt
+    from matplotlib import gridspec as grd
+    from mayavi import mlab
+    from mne.baseline import rescale
+    from mne.source_estimate import _make_stc
+    from mne.surface import read_surface
+    from mne.time_frequency._stockwell import _induced_power_stockwell
+    from os import environ, makedirs, rmdir, remove
+    from os.path import exists, join
+    from scipy import fftpack, misc
+    import types
+
+
+    # -------------------------------------------
+    # extract some parameter
+    # -------------------------------------------
+    tpre = fourier_ica_obj.tpre
+    flow = fourier_ica_obj.flow
+    fhigh = fourier_ica_obj.fhigh
+    freq = fourier_ica_obj.sfreq
+    win_ntsl = int(np.floor(freq * fourier_ica_obj.win_length_sec))
+    startfftind = int(np.floor(flow * fourier_ica_obj.win_length_sec))
+    ncomp, nvoxel = W_orig.shape
+    nfreq, nepochs, nvoxel = src_loc_data.shape
+
+
+    # -------------------------------------------
+    # generate spatial profiles
+    # (using magnitude and phase)
+    # -------------------------------------------
+    if not subjects_dir:
+        subjects_dir = environ.get('SUBJECTS_DIR')
+
+    if isinstance(A_orig[0, 0], types.ComplexType):
+        A_orig_mag = np.abs(A_orig)
+    else:
+        A_orig_mag = A_orig
+
+
+    # create temporary directory to save plots
+    # of spatial profiles
+    temp_plot_dir = join(subjects_dir, subject, 'temp_plots')
+    if not exists(temp_plot_dir):
+        makedirs(temp_plot_dir)
+
+
+    # -------------------------------------------
+    # check if temporal envelope is already
+    # given or should be estimated
+    # -------------------------------------------
+    if not np.any(temporal_envelope) and not np.any(act):
+        # -------------------------------------------
+        # get independent components
+        # -------------------------------------------
+        act = np.zeros((ncomp, nepochs, nfreq), dtype=np.complex)
+        if tICA:
+            win_ntsl = nfreq
+
+        temporal_envelope = np.zeros((nepochs, ncomp, win_ntsl))
+        fft_act = np.zeros((ncomp, win_ntsl), dtype=np.complex)
+
+        for iepoch in range(nepochs):
+            src_loc_zero_mean = (src_loc_data[:, iepoch, :] - np.dot(np.ones((nfreq, 1)), fourier_ica_obj.dmean)) / \
+                                np.dot(np.ones((nfreq, 1)), fourier_ica_obj.dstd)
+
+            act[:ncomp, iepoch, :] = np.dot(W_orig, src_loc_zero_mean.transpose())
+            act[ncomp:, iepoch, :] = np.dot(W_orig, src_loc_zero_mean.transpose())
+
+            if tICA:
+                temporal_envelope[iepoch, :, :] = act[:, iepoch, :].real
+                act[:, iepoch, :] = fftpack.fft(temporal_envelope[iepoch, :, :])
+
+            else:
+                # -------------------------------------------
+                # generate temporal profiles
+                # -------------------------------------------
+                # apply inverse STFT to get temporal envelope
+                fft_act[:, startfftind:(startfftind+nfreq)] = act[:, iepoch, :]
+                temporal_envelope[iepoch, :, :] = fftpack.ifft(fft_act, n=win_ntsl, axis=1).real
+
+
+    # check if classsification was done
+    key_borders = []
+    if np.any(classification):
+        idx_sort = []
+        keys = classification.keys()
+        for key in classification:
+            idx_sort += classification[key]
+            key_borders.append(len(classification[key]))
+
+        key_borders = np.insert(key_borders, 0, 1)
+        key_borders = np.cumsum(key_borders)[:-1]
+
+    else:
+        idx_sort = np.arange(ncomp)
+
+
+    # average temporal envelope
+    ntemp = len(temporal_envelope)
+    temporal_envelope_orig = temporal_envelope[:]
+    temporal_envelope = np.empty((ntemp, 0)).tolist()
+    for itemp in range(ntemp):
+        temporal_envelope[itemp].append(np.mean(temporal_envelope_orig[itemp][0], axis=0)[:, 5:-5])
+
+    # scale temporal envelope between 0 and 1
+    min_val = np.min(temporal_envelope)
+    max_val = np.max(temporal_envelope)
+    scale_fact = 1.0 / (max_val - min_val)
+
+    for itemp in range(ntemp):
+        temporal_envelope[itemp][0] = np.clip(scale_fact * temporal_envelope[itemp][0] - scale_fact * min_val, 0., 1.)
+
+    ylim_temp = [-0.05, 1.05]
+
+
+
+    # -------------------------------------------
+    # loop over all components to generate
+    # spatial profiles
+    # Note: This will take a while
+    # -------------------------------------------
+    centers_of_mass = np.zeros((ncomp, 2), dtype=int)
+    for icomp in range(ncomp):
+
+        # generate stc-object from current component
+        A_cur = A_orig_mag[:, icomp]
+
+        src_loc = _make_stc(A_cur[:, np.newaxis], vertices=vertno, tmin=0, tstep=1,
+                            subject=subject)
+
+        # define current range (Xth percentile)
+        fmin = np.percentile(A_cur, percentile)
+        fmax = np.max(A_cur)
+        fmid = 0.5 * (fmin + fmax)
+        clim = {'kind': 'value',
+                'lims': [fmin, fmid, fmax]}
+
+
+        # plot spatial profiles
+        brain = src_loc.plot(surface='inflated', hemi='split', subjects_dir=subjects_dir,
+                             config_opts={'cortex': 'bone'}, views=['lateral', 'medial'],
+                             time_label=' ', colorbar=False, clim=clim)
+
+
+        # -------------------------------------------
+        # estimate center of mass
+        # -------------------------------------------
+        if plot_center_of_mass:
+            # loop over both hemispheres
+            for idx in range(2):
+                idx_hemi = np.arange(len(vertno[idx]))
+                if idx == 1:
+                    hemi = 'rh'
+                    idx_hemi += len(vertno[0])
+                else:
+                    hemi = 'lh'
+
+                # check if we have significant pixels
+                idx_want = np.where(src_loc.data[idx_hemi] > np.percentile(A_cur, 99))[0]
+
+                # check if sufficient activity exists
+                if np.any(idx_want):
+
+                    fn_surf = join(subjects_dir, subject, 'surf', hemi + '.sphere')
+                    surf = read_surface(fn_surf)
+
+                    values = src_loc.data[idx_hemi][idx_want].flatten()
+                    pos = surf[0][src_loc.vertices[idx][idx_want], :].T
+                    c_o_m = np.sum(pos * values, axis=1) / np.sum(values)
+
+                    # Find the vertex closest to the COM
+                    vertex = np.argmin(np.sqrt(np.mean((surf[0][src_loc.vertices[idx][idx_want], :] -
+                                        c_o_m) ** 2, axis=1)))
+                    center_of_mass = vertno[idx][idx_want[vertex]]
+                    brain.add_foci(vertno[idx][center_of_mass], coords_as_verts=True, hemi=hemi,
+                                   color='blue', scale_factor=0.6)
+                    centers_of_mass[icomp, idx] = vertno[idx][center_of_mass]
+                else:
+                    centers_of_mass[icomp, idx] = -1
+        else:
+            center_of_mass = -1
+
+
+        # save results
+        fn_base = "IC%02d_spatial_profile.png" % (icomp+1)
+        fnout_img = join(temp_plot_dir, fn_base)
+        brain.save_image(fnout_img)
+
+
+    # close mlab figure
+    mlab.close(all=True)
+
+
+    # -------------------------------------------
+    # loop over all components to generate
+    # spectral profiles
+    # -------------------------------------------
+    vmax = 0
+    average_power_all = np.empty((ntemp, 0)).tolist()
+
+    for itemp in range(ntemp):
+        for icomp in range(ncomp):
+
+            nepochs = temporal_envelope_orig[itemp][0].shape[0]
+            times = np.arange(win_ntsl)/freq + tpre
+            idx_start = np.argmin(np.abs(times - time_range[0]))
+            idx_end = np.argmin(np.abs(times - time_range[1]))
+
+            idx_start_stock = idx_start - 10 if idx_start - 10 > 0 else idx_start
+            idx_end_stock = idx_end + 10 if idx_start + 10 < win_ntsl else idx_end
+            idx_start_diff = idx_start - idx_start_stock
+            idx_end_diff = idx_end_stock - idx_end
+            data_stockwell = temporal_envelope_orig[itemp][0][:, icomp, idx_start_stock:idx_end_stock].\
+                reshape((nepochs, 1, idx_end_stock-idx_start_stock))
+
+            power_data, _, freqs = _induced_power_stockwell(data_stockwell, sfreq=freq, fmin=flow,
+                                                            fmax=fhigh/2.0, width=1.0, decim=1, return_itc=False,
+                                                            n_jobs=4)
+            power_data = power_data[:, :, idx_start_diff:-idx_end_diff]
+            # convert data to decibel
+            power_data = 20 * np.log10(power_data)
+            # perform baseline correction
+            if np.any(fourier_ica_obj.events):
+                power_data = rescale(power_data, times[idx_start:idx_end], (None, 0), 'percent')
+
+            average_power = power_data.mean(0)
+            average_power_all[itemp].append(average_power)
+
+            if vmax < np.max(np.abs(average_power)):
+                vmax = np.max(np.abs(average_power))
+                vmin = -vmax
+
+
+    # -------------------------------------------
+    # generate spectral profiles
+    # -------------------------------------------
+    if tICA:
+        spectral_profiles = np.mean(np.abs(act[:, :, int(flow):int(fhigh+1)]), axis=1)
+    else:
+        spectral_profiles = np.mean(np.abs(act), axis=1)
+
+    spectral_profiles /= np.max(spectral_profiles)
+
+
+    # ------------------------------------------
+    # loop over all activations
+    # ------------------------------------------
+    plt.ioff()
+    nimg = 1
+
+    # loop over all images
+    for iimg in range(nimg):
+
+        fig = plt.figure('FourierICA plots', figsize=(11 + ntemp*10, 60))
+        idx_class = 0
+
+        # estimate how many plots on current image
+        istart_plot = int(ncomp*iimg)
+        nplot = [ncomp]
+        gs = grd.GridSpec(ncomp*20+len(key_borders)*10, (ntemp+1)*10, wspace=0.1, hspace=0.05,
+                          left=0.04, right=0.96, bottom=0.04, top=0.96)
+
+        for icomp in range(istart_plot, nplot[iimg]):
+
+
+            if (icomp + 1) in key_borders:
+                p_text = fig.add_subplot(gs[20*(icomp-istart_plot)+idx_class*10:20*(icomp-istart_plot)+8+idx_class*10, 0:10])
+                idx_class += 1
+                p_text.text(0, 0, keys[idx_class-1], fontsize=25)
+                adjust_spines(p_text, [])
+
+
+            # ----------------------------------------------
+            # plot spatial profiles (magnitude)
+            # ----------------------------------------------
+            # spatial profile
+            fn_base = "IC%02d_spatial_profile.png" % (idx_sort[icomp]+1)
+            fnin_img = join(temp_plot_dir, fn_base)
+            spat_tmp = misc.imread(fnin_img)
+            remove(fnin_img)
+
+            # rearrange image
+            x_size, y_size, _ = spat_tmp.shape
+            x_half, y_half = x_size/2, y_size/2
+            x_frame = int(0.15*x_half)
+            y_frame = int(0.05*y_half)
+            spatial_profile = np.concatenate((spat_tmp[x_frame:(x_half-x_frame), y_frame:(y_half-y_frame), :],
+                                              spat_tmp[(x_half+x_frame):-x_frame, y_frame:(y_half-y_frame), :],
+                                              spat_tmp[(x_half+x_frame):-x_frame, (y_half+y_frame):-y_frame, :],
+                                              spat_tmp[x_frame:(x_half-x_frame), (y_half+y_frame):-y_frame, :]), axis=1)
+
+
+            p1 = fig.add_subplot(gs[20*(icomp-istart_plot)+idx_class*10:20*(icomp-istart_plot)+15+idx_class*10, 0:10])
+            p1.imshow(spatial_profile)
+            p1.yaxis.set_ticks([])
+            p1.xaxis.set_ticks([])
+            y_name = "IC#%02d" % (idx_sort[icomp]+1)
+            p1.set_ylabel(y_name)
+
+
+            # ----------------------------------------------
+            # temporal/spectral profile
+            # ----------------------------------------------
+            for itemp in range(ntemp):
+
+                if icomp == 0 and len(stim_name):
+                    p_text = fig.add_subplot(gs[20*(icomp-istart_plot)+(idx_class-1)*10: \
+                        20*(icomp-istart_plot)+8+(idx_class-1)*10, (itemp+1)*10+4:(itemp+2)*10-1])
+                    p_text.text(0, 0, "  " + stim_name[itemp], fontsize=30)
+                    adjust_spines(p_text, [])
+
+
+                times = np.arange(win_ntsl)/freq + tpre
+                idx_start = np.argmin(np.abs(times - time_range[0]))
+                idx_end = np.argmin(np.abs(times - time_range[1]))
+                average_power = average_power_all[itemp][idx_sort[icomp]]
+                extent = (times[idx_start], times[idx_end], freqs[0], freqs[-1])
+                p2 = plt.subplot(gs[20*(icomp-istart_plot)+idx_class*10:20*(icomp-istart_plot)+15+idx_class*10,
+                                 (itemp+1)*10+1:(itemp+2)*10-1])
+                p2.imshow(average_power, extent=extent, aspect="auto", origin="lower",
+                          picker=False, cmap='RdBu', vmin=0.9*vmin, vmax=0.9*vmax)
+                p2.set_xlabel("time [s]")
+                p2.set_ylabel("freq. [Hz]")
+                ax = p2.twinx()
+                ax.set_xlim(times[idx_start], times[idx_end])
+                ax.set_ylim(ylim_temp)
+                ax.set_ylabel("ampl. [a.u.]")
+                ax.plot(times[idx_start:idx_end], temporal_envelope[itemp][0][idx_sort[icomp], idx_start:idx_end],
+                        color='black', linewidth=3.0)
+
+
+        # save image
+        if fnout:
+            fnout_complete = '%s%02d.png' % (fnout, iimg+1)
+            plt.savefig(fnout_complete, format='png', dpi=300)
+
+        # show image if requested
+        if show:
+            plt.show()
+
+        plt.close('FourierICA plots')
+
+    # remove temporary directory for
+    # spatial profile plots
+    if exists(temp_plot_dir):
+        rmdir(temp_plot_dir)
+
+    plt.ion()
+
+    return centers_of_mass
 

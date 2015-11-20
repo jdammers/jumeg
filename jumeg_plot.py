@@ -87,7 +87,8 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
 
 def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
                                         meg_clean=None, show=False,
-                                        proj=False, verbose=False):
+                                        proj=False, verbose=False,
+                                        name_ecg='ECG 001', name_eog='EOG 002'):
     '''
     Creates a performance image of the data before
     and after the cleaning process.
@@ -96,9 +97,9 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     from mne.preprocessing import find_ecg_events, find_eog_events
     from jumeg import jumeg_math as jmath
 
-    name_ecg = 'ECG 001'
-    name_eog_hor = 'EOG 001'
-    name_eog_ver = 'EOG 002'
+    # name_ecg = 'ECG 001'
+    # name_eog_hor = 'EOG 001'
+    # name_eog_ver = 'EOG 002'
     event_id_ecg = 999
     event_id_eog = 998
     tmin_ecg = -0.4
@@ -133,7 +134,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         nrange = 1
 
     # EOG
-    if name_eog_ver in ch_names:
+    if name_eog in ch_names:
         nrange = 2
 
     y_figsize = 6 * nrange
@@ -163,9 +164,9 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         elif i == 1:
             baseline = (None, None)
             event_id = event_id_eog
-            idx_event = find_eog_events(meg_raw, event_id, ch_name=name_eog_ver,
+            idx_event = find_eog_events(meg_raw, event_id, ch_name=name_eog,
                                         verbose=verbose)
-            idx_ref_chan = meg_raw.ch_names.index(name_eog_ver)
+            idx_ref_chan = meg_raw.ch_names.index(name_eog)
             tmin = tmin_eog
             tmax = tmax_eog
             pl1 = nrange * 100 + 21 + (nrange - nstart - 1) * 2
