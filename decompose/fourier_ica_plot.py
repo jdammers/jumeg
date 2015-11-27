@@ -6,8 +6,8 @@
 ----------------------------------------------------------------------
  autor      : Lukas Breuer
  email      : l.breuer@fz-juelich.de
- last update: 24.02.2015
- version    : 1.0
+ last update: 27.11.2015
+ version    : 1.1
 
 ----------------------------------------------------------------------
  This is a simple implementation to plot the results achieved by
@@ -672,13 +672,15 @@ def plot_results(fourier_ica_obj, meg_data,
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
                            src_loc_data, vertno,
+                           sfreq=None, flow=None, fhigh=None,
+                           tpre=None, win_length_sec=None,
                            fnout=None, tICA=False,
-                           stim_name=[],
+                           stim_name=[], n_jobs=4,
                            morph2fsaverage=False,
                            subject='fsaverage',
                            subjects_dir=None,
-                           temporal_envelope=[], act=[],
-                           time_range=[-0.1, 0.5],
+                           temporal_envelope=[],
+                           time_range=[None, None],
                            classification={},
                            percentile=97, show=True,
                            plot_center_of_mass=False):
@@ -696,13 +698,11 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
     # ------------------------------------------
     # import necessary modules
     # ------------------------------------------
-    from jumeg.jumeg_utils import rescale_arr
     from matplotlib import pyplot as plt
     from matplotlib import gridspec as grd
     from mayavi import mlab
     from mne.baseline import rescale
     from mne.source_estimate import _make_stc
-    from mne.surface import read_surface
     from mne.time_frequency._stockwell import _induced_power_stockwell
     from os import environ, makedirs, rmdir, remove
     from os.path import exists, join
@@ -711,16 +711,27 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
 
 
     # -------------------------------------------
-    # extract some parameter
+    # check input parameter
     # -------------------------------------------
-    tpre = fourier_ica_obj.tpre
-    flow = fourier_ica_obj.flow
-    fhigh = fourier_ica_obj.fhigh
-    freq = fourier_ica_obj.sfreq
-    win_ntsl = int(np.floor(freq * fourier_ica_obj.win_length_sec))
-    startfftind = int(np.floor(flow * fourier_ica_obj.win_length_sec))
+    if tpre == None:
+        tpre = fourier_ica_obj.tpre
+    if flow == None:
+        flow = fourier_ica_obj.flow
+    if not fhigh:
+        fhigh = fourier_ica_obj.fhigh
+    if not sfreq:
+        sfreq = fourier_ica_obj.sfreq
+    if not win_length_sec:
+        win_length_sec = fourier_ica_obj.win_length_sec
+
+
+    win_ntsl = int(np.floor(sfreq * win_length_sec))
+    startfftind = int(np.floor(flow * win_length_sec))
     ncomp, nvoxel = W_orig.shape
     nfreq, nepochs, nvoxel = src_loc_data.shape
+
+    if time_range == [None, None]:
+        time_range = [tpre + 0.1, tpre + win_length_sec - 0.1]
 
 
     # -------------------------------------------
@@ -747,7 +758,7 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
     # check if temporal envelope is already
     # given or should be estimated
     # -------------------------------------------
-    if not np.any(temporal_envelope) and not np.any(act):
+    if not np.any(temporal_envelope):
         # -------------------------------------------
         # get independent components
         # -------------------------------------------
@@ -767,7 +778,6 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
 
             if tICA:
                 temporal_envelope[iepoch, :, :] = act[:, iepoch, :].real
-                act[:, iepoch, :] = fftpack.fft(temporal_envelope[iepoch, :, :])
 
             else:
                 # -------------------------------------------
@@ -795,22 +805,24 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
 
 
     # average temporal envelope
+    if not isinstance(temporal_envelope, list):
+        temporal_envelope = [[temporal_envelope]]
+
     ntemp = len(temporal_envelope)
-    temporal_envelope_orig = temporal_envelope[:]
-    temporal_envelope = np.empty((ntemp, 0)).tolist()
+    temporal_envelope_mean = np.empty((ntemp, 0)).tolist()
+
     for itemp in range(ntemp):
-        temporal_envelope[itemp].append(np.mean(temporal_envelope_orig[itemp][0], axis=0)[:, 5:-5])
+        temporal_envelope_mean[itemp].append(np.mean(temporal_envelope[itemp][0], axis=0)[:, 5:-5])
 
     # scale temporal envelope between 0 and 1
-    min_val = np.min(temporal_envelope)
-    max_val = np.max(temporal_envelope)
+    min_val = np.min(temporal_envelope_mean)
+    max_val = np.max(temporal_envelope_mean)
     scale_fact = 1.0 / (max_val - min_val)
 
     for itemp in range(ntemp):
-        temporal_envelope[itemp][0] = np.clip(scale_fact * temporal_envelope[itemp][0] - scale_fact * min_val, 0., 1.)
+        temporal_envelope_mean[itemp][0] = np.clip(scale_fact * temporal_envelope_mean[itemp][0] - scale_fact * min_val, 0., 1.)
 
     ylim_temp = [-0.05, 1.05]
-
 
 
     # -------------------------------------------
@@ -818,7 +830,6 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
     # spatial profiles
     # Note: This will take a while
     # -------------------------------------------
-    centers_of_mass = np.zeros((ncomp, 2), dtype=int)
     for icomp in range(ncomp):
 
         # generate stc-object from current component
@@ -840,46 +851,6 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
                              config_opts={'cortex': 'bone'}, views=['lateral', 'medial'],
                              time_label=' ', colorbar=False, clim=clim)
 
-
-        # -------------------------------------------
-        # estimate center of mass
-        # -------------------------------------------
-        if plot_center_of_mass:
-            # loop over both hemispheres
-            for idx in range(2):
-                idx_hemi = np.arange(len(vertno[idx]))
-                if idx == 1:
-                    hemi = 'rh'
-                    idx_hemi += len(vertno[0])
-                else:
-                    hemi = 'lh'
-
-                # check if we have significant pixels
-                idx_want = np.where(src_loc.data[idx_hemi] > np.percentile(A_cur, 99))[0]
-
-                # check if sufficient activity exists
-                if np.any(idx_want):
-
-                    fn_surf = join(subjects_dir, subject, 'surf', hemi + '.sphere')
-                    surf = read_surface(fn_surf)
-
-                    values = src_loc.data[idx_hemi][idx_want].flatten()
-                    pos = surf[0][src_loc.vertices[idx][idx_want], :].T
-                    c_o_m = np.sum(pos * values, axis=1) / np.sum(values)
-
-                    # Find the vertex closest to the COM
-                    vertex = np.argmin(np.sqrt(np.mean((surf[0][src_loc.vertices[idx][idx_want], :] -
-                                        c_o_m) ** 2, axis=1)))
-                    center_of_mass = vertno[idx][idx_want[vertex]]
-                    brain.add_foci(vertno[idx][center_of_mass], coords_as_verts=True, hemi=hemi,
-                                   color='blue', scale_factor=0.6)
-                    centers_of_mass[icomp, idx] = vertno[idx][center_of_mass]
-                else:
-                    centers_of_mass[icomp, idx] = -1
-        else:
-            center_of_mass = -1
-
-
         # save results
         fn_base = "IC%02d_spatial_profile.png" % (icomp+1)
         fnout_img = join(temp_plot_dir, fn_base)
@@ -894,51 +865,44 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
     # loop over all components to generate
     # spectral profiles
     # -------------------------------------------
-    vmax = 0
     average_power_all = np.empty((ntemp, 0)).tolist()
 
     for itemp in range(ntemp):
         for icomp in range(ncomp):
 
-            nepochs = temporal_envelope_orig[itemp][0].shape[0]
-            times = np.arange(win_ntsl)/freq + tpre
+            nepochs = temporal_envelope[itemp][0].shape[0]
+            times = np.arange(win_ntsl)/sfreq + tpre
             idx_start = np.argmin(np.abs(times - time_range[0]))
             idx_end = np.argmin(np.abs(times - time_range[1]))
 
-            idx_start_stock = idx_start - 10 if idx_start - 10 > 0 else idx_start
-            idx_end_stock = idx_end + 10 if idx_start + 10 < win_ntsl else idx_end
-            idx_start_diff = idx_start - idx_start_stock
-            idx_end_diff = idx_end_stock - idx_end
-            data_stockwell = temporal_envelope_orig[itemp][0][:, icomp, idx_start_stock:idx_end_stock].\
-                reshape((nepochs, 1, idx_end_stock-idx_start_stock))
+            data_stockwell = temporal_envelope[itemp][0][:, icomp, idx_start:idx_end].\
+                reshape((nepochs, 1, idx_end-idx_start))
 
-            power_data, _, freqs = _induced_power_stockwell(data_stockwell, sfreq=freq, fmin=flow,
-                                                            fmax=fhigh/2.0, width=1.0, decim=1, return_itc=False,
-                                                            n_jobs=4)
-            power_data = power_data[:, :, idx_start_diff:-idx_end_diff]
+            power_data, _, freqs = _induced_power_stockwell(data_stockwell, sfreq=sfreq, fmin=flow,
+                                                            fmax=fhigh/2.0, width=1.0, decim=1,
+                                                            return_itc=False, n_jobs=4)
             # convert data to decibel
-            power_data = 20 * np.log10(power_data)
+            power_data = 20 * np.log10(power_data[:, :, 15:-15])
+
             # perform baseline correction
-            if np.any(fourier_ica_obj.events):
-                power_data = rescale(power_data, times[idx_start:idx_end], (None, 0), 'percent')
+            if time_range[0] < 0:
+                power_data = rescale(power_data, times[idx_start+15:idx_end-15], (None, 0), 'percent')
 
             average_power = power_data.mean(0)
             average_power_all[itemp].append(average_power)
 
-            if vmax < np.max(np.abs(average_power)):
-                vmax = np.max(np.abs(average_power))
-                vmin = -vmax
+    # define thresholds
+    if time_range[0] < 0:
+        vmax = np.percentile(average_power_all, 99)
+        vmedian = np.median(average_power_all)     # np.percentile(average_power_all, 50)
+        vmin = np.percentile(average_power_all, 1)
+        if np.abs((vmax - vmedian)) > np.abs((vmedian - vmin)):
+            vmin = vmedian - np.abs((vmax - vmedian))
+        else:
+            vmax = vmedian + np.abs((vmedian - vmin))
 
-
-    # -------------------------------------------
-    # generate spectral profiles
-    # -------------------------------------------
-    if tICA:
-        spectral_profiles = np.mean(np.abs(act[:, :, int(flow):int(fhigh+1)]), axis=1)
     else:
-        spectral_profiles = np.mean(np.abs(act), axis=1)
-
-    spectral_profiles /= np.max(spectral_profiles)
+        vmin, vmax = None, None
 
 
     # ------------------------------------------
@@ -1009,7 +973,7 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
                     adjust_spines(p_text, [])
 
 
-                times = np.arange(win_ntsl)/freq + tpre
+                times = (np.arange(win_ntsl)/sfreq + tpre)[5:-5]
                 idx_start = np.argmin(np.abs(times - time_range[0]))
                 idx_end = np.argmin(np.abs(times - time_range[1]))
                 average_power = average_power_all[itemp][idx_sort[icomp]]
@@ -1017,14 +981,14 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
                 p2 = plt.subplot(gs[20*(icomp-istart_plot)+idx_class*10:20*(icomp-istart_plot)+15+idx_class*10,
                                  (itemp+1)*10+1:(itemp+2)*10-1])
                 p2.imshow(average_power, extent=extent, aspect="auto", origin="lower",
-                          picker=False, cmap='RdBu', vmin=0.9*vmin, vmax=0.9*vmax)
+                          picker=False, cmap='RdBu', vmin=vmin, vmax=vmax)
                 p2.set_xlabel("time [s]")
                 p2.set_ylabel("freq. [Hz]")
                 ax = p2.twinx()
                 ax.set_xlim(times[idx_start], times[idx_end])
                 ax.set_ylim(ylim_temp)
                 ax.set_ylabel("ampl. [a.u.]")
-                ax.plot(times[idx_start:idx_end], temporal_envelope[itemp][0][idx_sort[icomp], idx_start:idx_end],
+                ax.plot(times[idx_start:idx_end], temporal_envelope_mean[itemp][0][idx_sort[icomp], idx_start:idx_end],
                         color='black', linewidth=3.0)
 
 
@@ -1046,5 +1010,4 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
 
     plt.ion()
 
-    return centers_of_mass
 

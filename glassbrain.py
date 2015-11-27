@@ -125,11 +125,11 @@ class ConnecBrain(surfer.Brain):
         if labels is not None:
             tl = []
             for i in xrange(coords.shape[0]):
-                tl.append(mlab.text3d(foci_coords[i, 0],
-                                       foci_coords[i, 1]+2,
-                                       foci_coords[i, 2]+6,
+                tl.append(mlab.text3d(foci_coords[i, 0]*1.15,
+                                       foci_coords[i, 1]*1.15,
+                                       foci_coords[i, 2]*1.15,
                                        labels[i],
-                                       color=(0,0,0),
+                                       color=(0.9, 0.9, 0.9),
                                        scale=text_size,
                                        name=name + '_label',
                                        figure=brain['brain']._f))
@@ -173,14 +173,14 @@ class ConnecBrain(surfer.Brain):
 
         nsegs = 100
 
-        x = np.linspace(foci_coords[0,0], foci_coords[1,0],nsegs)
-        y = np.linspace(foci_coords[0,1], foci_coords[1,1],nsegs)
-        z = np.linspace(foci_coords[0,2], foci_coords[1,2],nsegs)
+        x = np.linspace(foci_coords[0, 0], foci_coords[1, 0], nsegs)
+        y = np.linspace(foci_coords[0, 1], foci_coords[1, 1], nsegs)
+        z = np.linspace(foci_coords[0, 2], foci_coords[1, 2], nsegs)
 
-        line_coords = np.vstack((x,y,z)).transpose()
+        line_coords = np.vstack((x, y, z)).transpose()
         step = 5
-        idx_a = range(0,nsegs+1,step)
-        idx_b = range(10,nsegs+1,step)
+        idx_a = range(0, nsegs+1, step)
+        idx_b = range(10, nsegs+1, step)
 
         views = self._toggle_render(False)
 
@@ -192,10 +192,10 @@ class ConnecBrain(surfer.Brain):
 
                     seg_width = tube_radius - (start*(tube_radius-.5)/100.)
 
-                    al.append(mlab.plot3d(line_coords[start:end,0],
+                    al.append(mlab.plot3d(line_coords[start:end, 0],
                                 line_coords[start:end, 1],
                                 line_coords[start:end, 2],
-                                np.ones_like(line_coords[start:end,0]),
+                                np.ones_like(line_coords[start:end, 0]),
                                 color=color, opacity=alpha,
                                 tube_radius=seg_width,
                                 name=name,
