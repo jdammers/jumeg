@@ -2,11 +2,11 @@
 
 """
 ----------------------------------------------------------------------
---- cau_proc.py ------------------------------------------------------
+--- jumeg.decompose.group_ica.py -------------------------------------
 ----------------------------------------------------------------------
  autor      : Lukas Breuer
  email      : l.breuer@fz-juelich.de
- last update: 28.05.2015
+ last update: 27.11.2015
  version    : 1.0
 
 ----------------------------------------------------------------------
@@ -18,7 +18,7 @@
 # define some global file ending pattern
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 inv_pattern = "-src-meg-inv.fif"
-img_src_fourier_ica = ",src_fourierICA"
+img_src_group_ica = ",src_group_ICA"
 
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -26,6 +26,7 @@ img_src_fourier_ica = ",src_fourierICA"
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def group_fourierICA_src_space(fname_raw, average=False, stim_name=None,
                                stim_id=1, stim_delay=None, pca_dim=None,
+                               ica_method='fourierica',
                                src_loc_method="dSPM", snr=3., nrep=1,
                                tmin=0, tmax=1.0, flow=4., fhigh=34.,
                                hamming_data=True, remove_outliers=True,
@@ -63,6 +64,10 @@ def group_fourierICA_src_space(fname_raw, average=False, stim_name=None,
             (Wax and Kailath, 1985) criterion is used to estimation
             the number of components
             default: pca_dim=None
+        ica_method: which ICA method should be used for the group ICA?
+            You can chose between 'extended-infomax', 'fastica',
+            'fourierica' and 'infomax'
+            default: ica_method='fourierica'
         src_loc_method: method used for source localization.
             default: src_loc_method='dSPM'
         snr: signal-to-noise ratio for performing source
@@ -131,7 +136,7 @@ def group_fourierICA_src_space(fname_raw, average=False, stim_name=None,
     from jumeg.decompose.icasso import JuMEG_icasso
     from mne import set_log_level
     from os.path import dirname, join
-    import pickle
+    from pickle import dump
 
     # set log level to 'WARNING'
     set_log_level('WARNING')
@@ -162,6 +167,7 @@ def group_fourierICA_src_space(fname_raw, average=False, stim_name=None,
                               src_loc_method=src_loc_method,
                               morph2fsaverage=True,
                               envelopeICA=envelopeICA,
+                              ica_method=ica_method,
                               tICA=False,
                               snr=snr, lrate=lrate)
 
@@ -192,14 +198,13 @@ def group_fourierICA_src_space(fname_raw, average=False, stim_name=None,
 
 
     if stim_id:
-        fn_base = "group_FourierICA_%02ddB.obj" % (stim_id)
+        fn_base = "group_ICA_%02ddB.obj" % (stim_id)
     else:
-        fn_base = "group_FourierICA_resting_state.obj"
+        fn_base = "group_ICA_resting_state.obj"
 
     fnout = join(dirname(dirname(fn_list[0])), fn_base)
-    filehandler = open(fnout, "wb")
-    pickle.dump(groupICA_obj, filehandler)
-    filehandler.close()
+    with open(fnout, "wb") as filehandler:
+        dump(groupICA_obj, filehandler)
 
     # return dictionary
     return groupICA_obj, fnout
@@ -210,8 +215,7 @@ def group_fourierICA_src_space(fname_raw, average=False, stim_name=None,
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #  get time courses of FourierICA components
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def get_group_fourierICA_time_courses(groupICA_obj, stim_name=None,
-                                      stim_id=1, stim_delay=0):
+def get_group_fourierICA_time_courses(groupICA_obj, stim_delay=0):
 
 
     """
@@ -224,15 +228,6 @@ def get_group_fourierICA_time_courses(groupICA_obj, stim_name=None,
         ----------
         groupICA_obj: either filename of the group ICA object or an
             already swiped groupICA object
-        stim_name: name of the stimulus channel. Note, for
-            applying FourierCIA data are chopped around stimulus
-            onset. If not set data are chopped in overlapping
-            windows
-            default: stim_names=None
-        stim_id: Id of the event of interest to be considered in
-            the stimulus channel. Only of interest if 'stim_name'
-            is set
-            default: event_id=1
         stim_delay: stimulus delay in milliseconds
             default: stim_delay=0
     """
@@ -252,88 +247,139 @@ def get_group_fourierICA_time_courses(groupICA_obj, stim_name=None,
     # ------------------------------------------
     if isinstance(groupICA_obj, string_types):
         from pickle import load
-        filehandler = open(groupICA_obj, "rb")
-        groupICA_obj = load(filehandler)
-        filehandler.close()
-        fn_list = groupICA_obj['fn_list']
-        nfn_list = len(fn_list)
+        with open(groupICA_obj, "rb") as filehandler:
+            groupICA_obj = load(filehandler)
+
 
     icasso_obj = groupICA_obj['icasso_obj']
     fourier_ica_obj = groupICA_obj['fourier_ica_obj']
+    fn_list = groupICA_obj['fn_list']
+    if not isinstance(fn_list, list):
+        fn_list = [fn_list]
+    nfn_list = len(fn_list)
+
+
 
     # ------------------------------------------
-    # loop over all files
+    # check if FourierICA or temporal ICA was
+    # performed
     # ------------------------------------------
-    for idx in range(nfn_list):
+    if fourier_ica_obj:
+        average_epochs = False
+        hamming_data = fourier_ica_obj.hamming_data
+        remove_outliers = fourier_ica_obj.remove_outliers
+    else:
+        average_epochs = True
+        hamming_data = False
+        remove_outliers = False
+
+
+
+    # check if we have more than one stimulus ID
+    event_id = icasso_obj.event_id
+    if isinstance(event_id, (list, tuple)):
+        nstim = len(event_id)
+    else:
+        nstim = 1
+        event_id = [event_id]
+
+    temporal_envelope_all = np.empty((nstim, 0)).tolist()
+
+
+    # ------------------------------------------
+    # loop over all stimulus IDs to get time
+    # courses
+    # ------------------------------------------
+    for istim in range(nstim):
+
+        stim_id = event_id[istim]
+
 
         # ------------------------------------------
-        # get some parameter
+        # loop over all files
         # ------------------------------------------
-        fn_raw = fn_list[idx]
-        tmin, tmax = fourier_ica_obj.tpre, fourier_ica_obj.tpre + fourier_ica_obj.win_length_sec
+        for idx in range(nfn_list):
 
+            # ------------------------------------------
+            # transform data to source space
+            # ------------------------------------------
+            # get some parameter
+            fn_raw = fn_list[idx]
+            tmin, tmax = icasso_obj.tmin_win, icasso_obj.tmax_win
+            win_length_sec = (tmax - tmin)
 
-        # ------------------------------------------
-        # transform data to source space
-        # ------------------------------------------
-        _, src_loc, vert, _, _, _, _ = \
-            icasso_obj.prepare_data_for_fit(fn_raw, stim_name=stim_name,
-                                            tmin_stim=tmin, tmax_stim=tmax,
-                                            flow=fourier_ica_obj.flow,
-                                            fhigh=fourier_ica_obj.fhigh,
-                                            event_id=stim_id, stim_delay=stim_delay,
-                                            hamming_data=fourier_ica_obj.hamming_data,
-                                            fn_inv=icasso_obj.fn_inv[idx],
-                                            remove_outliers=fourier_ica_obj.remove_outliers)
+            _, src_loc, vert, _, _, sfreq, _ = \
+                icasso_obj.prepare_data_for_fit(fn_raw, stim_name=icasso_obj.stim_name,
+                                                tmin_stim=tmin, tmax_stim=tmax,
+                                                flow=icasso_obj.flow,
+                                                fhigh=icasso_obj.fhigh,
+                                                event_id=stim_id,
+                                                stim_delay=stim_delay,
+                                                hamming_data=hamming_data,
+                                                fn_inv=icasso_obj.fn_inv[idx],
+                                                averaged_epochs=average_epochs,
+                                                remove_outliers=remove_outliers)
 
-        # normalize source data
-        fftsize, nwindows, nvoxel = src_loc.shape
-        nrows_Xmat_c = fftsize*nwindows
-        Xmat_c = src_loc.reshape((nrows_Xmat_c, nvoxel), order='F')
-        fourier_ica_obj.dmean = np.mean(Xmat_c, axis=0).reshape((1, nvoxel))
-        fourier_ica_obj.dstd = np.std(Xmat_c, axis=0).reshape((1, nvoxel))
+            # normalize source data
+            fftsize, nwindows, nvoxel = src_loc.shape
+            nrows_Xmat_c = fftsize*nwindows
+            Xmat_c = src_loc.reshape((nrows_Xmat_c, nvoxel), order='F')
+            dmean = np.mean(Xmat_c, axis=0).reshape((1, nvoxel))
+            dstd = np.std(Xmat_c, axis=0).reshape((1, nvoxel))
 
-
-        # -------------------------------------------
-        # get some parameter
-        # -------------------------------------------
-        ncomp, nvoxel = groupICA_obj['W_orig'].shape
-        win_ntsl = int(np.floor(fourier_ica_obj.sfreq * fourier_ica_obj.win_length_sec))
-        startfftind = int(np.floor(fourier_ica_obj.flow * fourier_ica_obj.win_length_sec))
-        fft_act = np.zeros((ncomp, win_ntsl), dtype=np.complex)
-
-        # -------------------------------------------
-        # define result arrays
-        # -------------------------------------------
-        if idx == 0:
-            # we have to double the number of components as we separate the
-            # results for left and right hemisphere
-            act = np.zeros((ncomp, nfn_list*nwindows, fftsize), dtype=np.complex)
-            temporal_envelope = np.zeros((nfn_list*nwindows, ncomp, win_ntsl))
-
-        idx_start = idx * nwindows
-
-        for iepoch in range(nwindows):
-
-            # -------------------------------------------
-            # get independent components
-            # -------------------------------------------
-            src_loc_zero_mean = (src_loc[:, iepoch, :] - np.dot(np.ones((fftsize, 1)), fourier_ica_obj.dmean)) / \
-                                np.dot(np.ones((fftsize, 1)), fourier_ica_obj.dstd)
-
-            # activations in both hemispheres
-            act[:, idx_start+iepoch, :] = np.dot(groupICA_obj['W_orig'], src_loc_zero_mean.transpose())
 
 
             # -------------------------------------------
-            # generate temporal profiles
+            # get some parameter
             # -------------------------------------------
-            # apply inverse STFT to get temporal envelope
-            fft_act[:, startfftind:(startfftind+fftsize)] = act[:, iepoch, :]
-            temporal_envelope[idx_start+iepoch, :, :] = fftpack.ifft(fft_act, n=win_ntsl, axis=1).real
+            ncomp, nvoxel = groupICA_obj['W_orig'].shape
+            if fourier_ica_obj:
+                win_ntsl = int(np.floor(sfreq * win_length_sec))
+            else:
+                win_ntsl = fftsize
+
+            startfftind = int(np.floor(icasso_obj.flow * win_length_sec))
+            fft_act = np.zeros((ncomp, win_ntsl), dtype=np.complex)
 
 
-    return temporal_envelope, act, src_loc, vert
+            # -------------------------------------------
+            # define result arrays
+            # -------------------------------------------
+            if idx == 0:
+                # we have to double the number of components as we separate the
+                # results for left and right hemisphere
+                act = np.zeros((ncomp, nfn_list*nwindows, fftsize), dtype=np.complex)
+                temporal_envelope = np.zeros((nfn_list*nwindows, ncomp, win_ntsl))
+
+            idx_start = idx * nwindows
+
+            # -------------------------------------------
+            # loop over all epochs
+            # -------------------------------------------
+            for iepoch in range(nwindows):
+
+                # get independent components
+                src_loc_zero_mean = (src_loc[:, iepoch, :] - np.dot(np.ones((fftsize, 1)), dmean)) / \
+                                    np.dot(np.ones((fftsize, 1)), dstd)
+
+                # activations in both hemispheres
+                act[:, idx_start+iepoch, :] = np.dot(groupICA_obj['W_orig'], src_loc_zero_mean.transpose())
+
+                # generate temporal profiles:
+                # apply inverse STFT to get temporal envelope
+                if fourier_ica_obj:
+                    fft_act[:, startfftind:(startfftind+fftsize)] = act[:, iepoch, :]
+                    temporal_envelope[idx_start+iepoch, :, :] = fftpack.ifft(fft_act, n=win_ntsl, axis=1).real
+                else:
+                    temporal_envelope = act.transpose([1, 0, 2])
+
+        # -------------------------------------------
+        # collecting time courses of interest
+        # -------------------------------------------
+        temporal_envelope_all[istim].append(temporal_envelope.real)
+
+
+    return temporal_envelope_all, src_loc, vert, sfreq
 
 
 
@@ -383,15 +429,17 @@ def plot_group_fourierICA(fn_groupICA_obj, stim_name=None,
     # ------------------------------------------
     # read in group FourierICA object
     # ------------------------------------------
-    filehandler = open(fn_groupICA_obj, "rb")
-    groupICA_obj = load(filehandler)
-    filehandler.close()
+    with open(fn_groupICA_obj, "rb") as filehandler:
+        groupICA_obj = load(filehandler)
+
+    icasso_obj = groupICA_obj['icasso_obj']
+    win_length_sec = icasso_obj.tmax_win - icasso_obj.tmin_win
 
 
     # ------------------------------------------
     # get temporal envelope
     # ------------------------------------------
-    temporal_envelope, act, src_loc, vert = \
+    temporal_envelope, src_loc, vert, sfreq = \
         get_group_fourierICA_time_courses(groupICA_obj)
 
 
@@ -405,15 +453,20 @@ def plot_group_fourierICA(fn_groupICA_obj, stim_name=None,
 
 
     fnout_src_fourier_ica = fn_groupICA_obj[:fn_groupICA_obj.rfind('.obj')] + \
-                            img_src_fourier_ica
+                            img_src_group_ica
+
     plot_results_src_space(groupICA_obj['fourier_ica_obj'],
                            groupICA_obj['W_orig'], groupICA_obj['A_orig'],
                            src_loc, vert, subjects_dir=subjects_dir,
+                           tpre=icasso_obj.tmin_win,
+                           win_length_sec=win_length_sec, sfreq=sfreq,
+                           flow=icasso_obj.flow, fhigh=icasso_obj.fhigh,
                            fnout=fnout_src_fourier_ica,
-                           tICA=False, morph2fsaverage=True,
+                           tICA=icasso_obj.tICA,
+                           morph2fsaverage=icasso_obj.morph2fsaverage,
                            temporal_envelope=temporal_envelope,
                            classification=classification,
-                           act=act, show=False)
+                           show=False)
 
 
 

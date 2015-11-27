@@ -277,7 +277,7 @@ def complex_ica(data, complex_mixing=True,
         #     (2.) explained variance    (0 < self.pca_dim < 1)
         #     (3.) or a fix number       (self.pca_dim > 1)
         if not pca_dim:
-            from .icasso import mibs
+            from .dimension_selection import mibs
             pca_dim = mibs(Dc.real, ntsl)
         elif np.abs(pca_dim) <= 1.0:
             # estimate explained variance

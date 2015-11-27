@@ -1,6 +1,6 @@
 # Authors: Lukas Breuer <l.breuer@fz-juelich.de>
 '''
-Created on 28.11.2014
+Created on 27.11.2015
 
 @author: lbreuer
 '''
@@ -28,7 +28,7 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
               cost_func='logcosh', weights=None, lrate=None,
               block=None, wchange=1e-16, annealdeg=60.,
               annealstep=0.9, n_subgauss=1, kurt_size=6000,
-              maxsteps=200, verbose=True):
+              maxsteps=200, pca=None, verbose=True):
 
     """
     interface to perform (extended) Infomax or FastICA on a data array
@@ -115,9 +115,22 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
     # -------------------------------------------
     # perform centering and whitening of the data
     # -------------------------------------------
-    if verbose:
-        print "     ... perform centering and whitening ..."
-    data, pca = whitening(data.T, npc=max_pca_components, explainedVar=explainedVar)
+    if pca:
+        # perform centering and whitening
+        dmean = data.mean(axis=-1)
+        stddev = np.std(data, axis=-1)
+        dnorm = (data - dmean[:, np.newaxis])/stddev[:, np.newaxis]
+        data = np.dot(dnorm.T, pca.components_[:max_pca_components].T)
+
+        # update mean and standard-deviation in PCA object
+        pca.mean_ = dmean
+        pca.stddev_ = stddev
+
+    else:
+        if verbose:
+            print "     ... perform centering and whitening ..."
+
+        data, pca = whitening(data.T, npc=max_pca_components, explainedVar=explainedVar)
 
 
     # -------------------------------------------
@@ -377,7 +390,7 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
     min_l_rate = 1e-10
     blowup = 1e4
     blowup_fac = 0.5
-    n_small_angle = 20
+    n_small_angle = 200
     degconst = 180.0 / np.pi
 
     # for extended Infomax
@@ -524,6 +537,15 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
             angledelta = 0.0
             delta = oldwtchange.reshape(1, n_features_square)
             change = np.sum(delta * delta, dtype=np.float64)
+
+            if verbose:
+                from sys import stdout
+                info = "\r" if iter > 0 else ""
+                info += ">>> Step %4d of %4d; wchange: %1.4e" % (step+1, max_iter, change)
+                stdout.write(info)
+                stdout.flush()
+
+
             if step > 1:
                 angledelta = math.acos(np.sum(delta * olddelta) /
                                        math.sqrt(change * oldchange))
@@ -575,6 +597,7 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
             else:
                 raise ValueError('Error in Infomax ICA: unmixing_matrix matrix'
                                  'might not be invertible!')
+
 
     # prepare return values
     return weights.T
