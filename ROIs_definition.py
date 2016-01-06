@@ -18,7 +18,7 @@ import os
 import numpy as np
 from dirs_manage import reset_directory, set_directory
 subjects_dir = os.environ['SUBJECTS_DIR']
-def apply_inverse(fnepo, method='dSPM', event='LLst', min_subject='fsaverage'):
+def apply_inverse(fnepo, method='dSPM', event='LLst', min_subject='fsaverage', snr=5.0):
     ''' 
        Compute the averaged individual STCs and then morph them into the
        common brain sapce.
