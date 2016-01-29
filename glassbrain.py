@@ -37,10 +37,9 @@ class ConnecBrain(surfer.Brain):
                  views=['lat'], show_toolbar=False, offscreen=False,
                  opacity=0.3):
 
-        print hemi
         # Call our main constructor
-        surfer.Brain.__init__(self, subject_id, hemi, surf,
-                              subjects_dir=subjects_dir)
+        surfer.Brain.__init__(self, subject_id, hemi, surf, views=views, curv=curv,
+                              config_opts=config_opts, subjects_dir=subjects_dir)
         #surfer.Brain.__init__(self, subject_id, hemi, surf, curv, title,
         #                            config_opts, figure, subjects_dir,
         #                            views, show_toolbar, offscreen)
@@ -58,7 +57,7 @@ class ConnecBrain(surfer.Brain):
 
     def add_coords(self, coords, map_surface=None, scale_factor=1.5,
                    color="red", alpha=1, name=None, labels=None, hemi=None,
-                   text_size=5):
+                   text_size=5, txt_pos=[1.4, 1.1, 1.1]):
         """
         Plot locations onto the brain surface as spheres.
 
@@ -125,11 +124,11 @@ class ConnecBrain(surfer.Brain):
         if labels is not None:
             tl = []
             for i in xrange(coords.shape[0]):
-                tl.append(mlab.text3d(foci_coords[i, 0]*1.15,
-                                       foci_coords[i, 1]*1.15,
-                                       foci_coords[i, 2]*1.15,
+                tl.append(mlab.text3d(foci_coords[i, 0]*txt_pos[0],
+                                       foci_coords[i, 1]*txt_pos[1],
+                                       foci_coords[i, 2]*txt_pos[2],
                                        labels[i],
-                                       color=(0.9, 0.9, 0.9),
+                                       color=(1.0, 1.0, 1.0),
                                        scale=text_size,
                                        name=name + '_label',
                                        figure=brain['brain']._f))
@@ -138,7 +137,7 @@ class ConnecBrain(surfer.Brain):
 
         self._toggle_render(True, views)
 
-    def add_arrow(self, coords, tube_radius=3.0,
+    def add_arrow(self, coords, map_surface=None, tube_radius=3.0,
                   color="white", alpha=1, name=None, hemi=None):
         """
         Add an arrow across the brain between two co-ordinates
@@ -160,8 +159,19 @@ class ConnecBrain(surfer.Brain):
 
         hemi = self._check_hemi(hemi)
 
-        foci_vtxs = surfer.utils.find_closest_vertices(self.geo[hemi].coords, coords)
-        foci_coords = self.geo[hemi].coords[foci_vtxs]
+        if map_surface is None:
+            foci_vtxs = surfer.utils.find_closest_vertices(self.geo[hemi].coords, coords)
+            foci_coords = self.geo[hemi].coords[foci_vtxs]
+        else:
+            foci_surf = utils.Surface(self.subject_id, hemi, map_surface,
+                                   subjects_dir=self.subjects_dir)
+            foci_surf.load_geometry()
+            foci_vtxs = utils.find_closest_vertices(foci_surf.coords, coords)
+            foci_coords = self.geo[hemi].coords[foci_vtxs]
+
+
+        # foci_vtxs = surfer.utils.find_closest_vertices(self.geo[hemi].coords, coords)
+        # foci_coords = self.geo[hemi].coords[foci_vtxs]
 
 
         # Convert the color code

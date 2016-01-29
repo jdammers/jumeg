@@ -4,7 +4,7 @@
 ----------------------------------------------------------------------
 --- jumeg.decompose.group_ica.py -------------------------------------
 ----------------------------------------------------------------------
- autor      : Lukas Breuer
+ author     : Lukas Breuer
  email      : l.breuer@fz-juelich.de
  last update: 27.11.2015
  version    : 1.0
@@ -19,6 +19,7 @@
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 inv_pattern = "-src-meg-inv.fif"
 img_src_group_ica = ",src_group_ICA"
+
 
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -215,7 +216,8 @@ def group_fourierICA_src_space(fname_raw, average=False, stim_name=None,
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #  get time courses of FourierICA components
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def get_group_fourierICA_time_courses(groupICA_obj, stim_delay=0):
+def get_group_fourierICA_time_courses(groupICA_obj, event_id=None,
+                                      stim_delay=0):
 
 
     """
@@ -228,6 +230,9 @@ def get_group_fourierICA_time_courses(groupICA_obj, stim_delay=0):
         ----------
         groupICA_obj: either filename of the group ICA object or an
             already swiped groupICA object
+        event_id: Id of the event of interest to be considered in
+            the stimulus channel.
+            default: event_id=None
         stim_delay: stimulus delay in milliseconds
             default: stim_delay=0
     """
@@ -254,10 +259,11 @@ def get_group_fourierICA_time_courses(groupICA_obj, stim_delay=0):
     icasso_obj = groupICA_obj['icasso_obj']
     fourier_ica_obj = groupICA_obj['fourier_ica_obj']
     fn_list = groupICA_obj['fn_list']
+
     if not isinstance(fn_list, list):
         fn_list = [fn_list]
-    nfn_list = len(fn_list)
 
+    nfn_list = len(fn_list)
 
 
     # ------------------------------------------
@@ -276,13 +282,13 @@ def get_group_fourierICA_time_courses(groupICA_obj, stim_delay=0):
 
 
     # check if we have more than one stimulus ID
-    event_id = icasso_obj.event_id
-    if isinstance(event_id, (list, tuple)):
-        nstim = len(event_id)
-    else:
-        nstim = 1
+    if not event_id:
+        event_id = icasso_obj.event_id
+
+    if not isinstance(event_id, (list, tuple)):
         event_id = [event_id]
 
+    nstim = len(event_id)
     temporal_envelope_all = np.empty((nstim, 0)).tolist()
 
 
@@ -353,6 +359,7 @@ def get_group_fourierICA_time_courses(groupICA_obj, stim_delay=0):
 
             idx_start = idx * nwindows
 
+
             # -------------------------------------------
             # loop over all epochs
             # -------------------------------------------
@@ -371,12 +378,14 @@ def get_group_fourierICA_time_courses(groupICA_obj, stim_delay=0):
                     fft_act[:, startfftind:(startfftind+fftsize)] = act[:, iepoch, :]
                     temporal_envelope[idx_start+iepoch, :, :] = fftpack.ifft(fft_act, n=win_ntsl, axis=1).real
                 else:
-                    temporal_envelope = act.transpose([1, 0, 2])
+                    temporal_envelope[idx_start+iepoch, :, :] = act.transpose([1, 0, 2])
+
 
         # -------------------------------------------
         # collecting time courses of interest
         # -------------------------------------------
         temporal_envelope_all[istim].append(temporal_envelope.real)
+
 
 
     return temporal_envelope_all, src_loc, vert, sfreq

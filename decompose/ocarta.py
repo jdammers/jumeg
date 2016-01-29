@@ -88,7 +88,12 @@ def _fit_sigmoidal_to_cdf(ref_signal):
     cdf /= cdf[cdf.shape[0]-1]
 
     # fit sigmoidal function to normalized cdf
-    opt_para, _ = curve_fit(pre_math.sigm_func, x, cdf)
+    opt_para, cov_para = curve_fit(pre_math.sigm_func, x, cdf)
+
+    if cov_para[0, 0] > 100:
+        opt_para[0] /= np.sqrt(cov_para[0, 0])
+    if cov_para[1, 1] > 100:
+        opt_para[1] /= np.sqrt(cov_para[1, 1])
 
     # return optimal cost_function parameter
     return opt_para
@@ -310,7 +315,7 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
         # ..................................
         # update weights for ocular activity
         # .................................
-        if ((istep % 20) == 0) and len(oa_template):
+        if ((istep % 20) == 0) and not np.all(oa_template == 0):
 
             # ..................................
             # generate spatial maps
@@ -556,14 +561,24 @@ def identify_ocular_activity(activations, eog_signals, spatial_maps,
         spatial_corr[i] = np.abs(pearsonr(spatial_maps[i], oa_template)[0])
 
     # check where the correlation is above threshold
-    idx_oa = np.arange(nchan)[(temp_corr+spatial_corr) > thresh_corr_oa]
+    if np.all(oa_template == 0):
+        idx_oa = np.arange(nchan)[temp_corr > (thresh_corr_oa*0.5)]
+    else:
+        idx_oa = np.arange(nchan)[(temp_corr+spatial_corr) > thresh_corr_oa]
 
     # check that at least one and at maximum
     # three ICs belong to OA
     if len(idx_oa) == 0:
-        idx_oa = [np.argmax((temp_corr + spatial_corr))]
+        if np.all(oa_template == 0):
+            idx_oa = [np.argmax(temp_corr)]
+        else:
+            idx_oa = [np.argmax((temp_corr + spatial_corr))]
+
     elif len(idx_oa) > 5:
-        idx_oa = np.argsort((temp_corr + spatial_corr))[-5:]
+        if np.all(oa_template == 0):
+            idx_oa = np.argsort(temp_corr)[-5:]
+        else:
+            idx_oa = np.argsort((temp_corr + spatial_corr))[-5:]
 
     # return results
     return idx_oa
@@ -940,7 +955,7 @@ class JuMEG_ocarta(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     #          spatial template of ocular activity
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def _get_template_oa(self):
+    def _get_template_oa(self, picks_all):
         """
         This function returns the optimal template for ocular
         activity dependent on the used MEG system.
@@ -950,24 +965,142 @@ class JuMEG_ocarta(object):
             idx = [41, 64, 65, 66, 91, 92, 93, 94, 95, 114, 115, 116, 123, 124, 125,
                    126, 127, 146, 147, 148, 152, 153, 154, 155, 173, 174, 175, 176,
                    177, 178, 192, 193, 194, 210, 211, 212, 226, 227, 228, 246, 247]
-            oa_template[idx] = [ -0.21419708, -0.22414582, -0.23823837, -0.22548739,
-                                 -0.20605918, -0.27002638, -0.28440455, -0.28815480,
-                                 -0.24950478, 0.22117308,  0.29407277,  0.22017770,
-                                 -0.27574748, -0.41399348, -0.38132934, -0.35345995,
-                                 -0.26804101,  0.31008617, 0.41633716,  0.41061879,
-                                 -0.63642773, -0.50244379, -0.39267986, -0.20910069,
-                                 0.45186911,  0.65563883,  0.75937563, -0.73426719,
-                                 -0.51053563, -0.40412956, 0.56405808,  0.76393096,
-                                 1.26573280, 0.20691632, -0.52849269, -0.33448858,
-                                 0.51931741,  0.86917479, -0.26111224, 0.25098986,
-                                 0.44863074]
+            oa_template[idx] = [-0.21419708, -0.22414582, -0.23823837, -0.22548739,
+                                -0.20605918, -0.27002638, -0.28440455, -0.28815480,
+                                -0.24950478, 0.22117308,  0.29407277,  0.22017770,
+                                -0.27574748, -0.41399348, -0.38132934, -0.35345995,
+                                -0.26804101,  0.31008617, 0.41633716,  0.41061879,
+                                -0.63642773, -0.50244379, -0.39267986, -0.20910069,
+                                0.45186911,  0.65563883,  0.75937563, -0.73426719,
+                                -0.51053563, -0.40412956, 0.56405808,  0.76393096,
+                                1.26573280, 0.20691632, -0.52849269, -0.33448858,
+                                0.51931741,  0.86917479, -0.26111224, 0.25098986,
+                                0.44863074]
 
         elif self._system == 'CTF-275':
-            oa_template = np.zeros(275)
-            # ToDo: define optimal template for CTF system
+            oa_template = np.array([-0.058565141, -0.11690785, -0.17268385, -0.15426008, -0.20032253,
+                                    -0.15363393, -0.12323404, -0.10946847, -0.16916947, -0.14746442,
+                                    -0.15358254, -0.14400186, -0.15525403, -0.15283391, -0.13544806,
+                                    -0.17018204, -0.063472347, -0.10674760, -0.10030443, -0.11342886,
+                                    -0.13479470, -0.052915536, -0.024286532, -0.055881446, 0.0037911439,
+                                    -0.032562383, -0.14573821, -0.29425978, -0.0045026940, -0.031647166,
+                                    -0.10888827, -0.045307071, -0.13936511, -0.046178482, -0.084780686,
+                                    -0.076642890, -0.036790318, -0.075410101, -0.044708814, -0.084798443,
+                                    -0.11400239, -0.16520238, -0.014120410, -0.081479993, -0.097965143,
+                                    -0.11635242, -0.14776817, -0.17646771, -0.080756626, -0.11254949,
+                                    -0.087876982, -0.14841610, -0.17512911, -0.20432370, -0.070218149,
+                                    -0.058648725, -0.13394765, -0.045302358, -0.10417176, -0.15566306,
+                                    -0.11492872, -0.10548316, -0.095742287, -0.13736693, -0.092999466,
+                                    -0.10288697, -0.11555681, -0.11282008, -0.082011793, -0.049344792,
+                                    -0.088065540, -0.11053412, -0.12065042, -0.025757443, -0.027820728,
+                                    -0.082922248, -0.12122259, -0.15043460, -0.052105187, -0.15553202,
+                                    -0.14986676, -0.014437410, -0.090186754, -0.15645345, -0.16031683,
+                                    -0.13582460, -0.034788139, -0.13993048, -0.16867599, -0.15442359,
+                                    -0.11393539, -0.074824826, -0.11928964, -0.13316035, -0.14855343,
+                                    -0.15660267, -0.10442158, -0.11282534, -0.17358998, -0.13321466,
+                                    -0.10717522, -0.086176787, -0.075780353, -0.14099021, -0.28022000,
+                                    -0.26693972, -0.21092154, -0.17802375, -0.13204559, -0.12027664,
+                                    -0.076974510, -0.45429123, -0.41849051, -0.32964312, -0.25982543,
+                                    -0.18627639, -0.14125467, -0.11137423, -0.53589574, -0.46382467,
+                                    -0.36122694, -0.27124481, -0.20924367, -0.15347565, -0.099263216,
+                                    -0.52728865, -0.42379039, -0.36164611, -0.28821427, -0.22000020,
+                                    -0.14784679, -0.11590759, 0.036824802, 0.093934452, 0.13097195,
+                                    0.14522522, 0.15277589, 0.070567862, 0.058642875, 0.088307732,
+                                    0.12242332, 0.14752465, 0.12698872, 0.081547945, 0.11954144,
+                                    0.083645453, 0.096368518, 0.066791858, 0.011411852, 0.065904644,
+                                    0.060074836, 0.048916143, 0.017195015, -0.017013312, -0.0071025117,
+                                    -0.0093241514, -0.031171524, -0.010059101, 0.074217858, 0.21455144,
+                                    -0.035040070, -0.0091646982, 0.050761747, -0.012930817, 0.058960765,
+                                    0.0063172897, 0.025850518, 0.017197767, -0.020378035, 0.0044334725,
+                                    0.017243069, 0.057735566, 0.068522080, 0.10762666, -0.061766704,
+                                    0.017947565, 0.079977442, 0.059938679, 0.097308417, 0.11610799,
+                                    0.0054828443, 0.066051916, 0.067836441, 0.11593674, 0.12678335,
+                                    0.13789155, 0.012435442, 0.013607388, 0.080161115, -0.036834136,
+                                    -0.010289298, 0.035043452, 0.061348170, 0.071413054, 0.071413054,
+                                    0.071413054, 0.081477938, 0.025778993, -0.029919951, 0.10495685,
+                                    0.15127930, -0.014177644, 0.043475680, 0.11972285, 0.17038701,
+                                    0.080144106, 0.13886613, 0.19256639, -0.0040417525, 0.058780805,
+                                    -0.0059654108, 0.043501240, 0.10268145, 0.012838752, 0.019365734,
+                                    0.070999708, 0.066554060, 0.098630593, -0.041697964, 0.055967335,
+                                    0.083834500, 0.071740581, 0.066069011, -0.049221401, -0.040997277,
+                                    0.0056458618, 0.050528772, 0.083315954, 0.064787693, 0.071272221,
+                                    0.11462440, 0.085937449, 0.068063294, 0.078936183, 0.061066792,
+                                    0.10164505, 0.22551399, 0.20088610, 0.15750752, 0.15745568,
+                                    0.13426065, 0.13086236, 0.42475419, 0.35426926, 0.26677939,
+                                    0.23072707, 0.16998415, 0.17016685, 0.50725829, 0.37056822,
+                                    0.29026340, 0.23929801, 0.19027917, 0.18509452, 0.14636934,
+                                    0.46976649, 0.37464059, 0.30673212, 0.22792418, 0.19673625,
+                                    0.20176800, 0.20786696, -0.021859729, -0.027438053, -0.058549057,
+                                    -0.054302882, -0.0097157384, -0.0098055885, -0.017562975, -0.059990033,
+                                    -0.10632609,   0.020643219,  -0.048138548])
+
+        elif self._system == 'ElektaNeuromagTriux':
+            oa_template = np.array([0.18360799, 0.12003697, 0.33445287, -0.27803913, -0.068841192,
+                                    0.38209576, -0.17740718, 0.16923261, 0.33698536, 0.14444730,
+                                    0.28414915, 0.21649465, -0.23332505, 0.021221704, 0.23283946,
+                                    -0.16586170, -0.029340197, 0.15159994, -0.11861228, 0.063994609,
+                                    0.15887337, -0.15331291, 0.12103925, 0.21762525, -0.26022441,
+                                    -0.29051216, 0.23624229, -0.20911411, -0.13089867, 0.15844157,
+                                    -0.14554117, -0.12354527, 0.083576864, -0.28942896, -0.10863199,
+                                    0.26069866, -0.13382335, -0.020152835, 0.10108698, -0.13221163,
+                                    0.0042310797, 0.054602311, -0.11179135, 0.051934803, 0.063177254,
+                                    -0.093829138, 0.053365325, 0.12545024, -0.14798746, -0.33213444,
+                                    0.18566677, -0.062983559, -0.31510336, 0.12082395, -0.048603552,
+                                    -0.25811763, 0.088032829, -0.13875872, -0.25371598, 0.12950875,
+                                    -0.00068137906, -0.21972821, 0.058637269, 0.018040675, -0.17439945,
+                                    -0.016842386, 0.011023214, -0.13851954, 0.0064568693, 0.00087816034,
+                                    -0.17815832, 0.035305152, -0.10482940, 0.033799893, -0.00073875417,
+                                    0.11312366, -0.0064186697, -0.040750148, 0.019746752, 0.083932856,
+                                    -0.043249978, 0.011361737, 0.088216613, 0.0050663023, 0.015717159,
+                                    -0.30934606, 0.040938890, 0.020970890, -0.25145939, 0.020623727,
+                                    0.078630036, -0.29707181, -0.049092018, 0.13215664, -0.30131723,
+                                    -0.12101881, 0.14769097, -0.23362375, -0.10673614, 0.080561570,
+                                    -0.25059843, -0.053442328, 0.025712179, -0.20809924, -0.0041900317,
+                                    0.045628096, -0.22151296, -0.064993409, 0.032620655, -0.18441844,
+                                    -0.061350852, -0.0043718732, -0.14552628, -0.037528696, 0.14178086,
+                                    0.016916950, -0.061763999, 0.15629734, 0.024629873, -0.10211258,
+                                    0.10376096, 0.053401006, -0.094262869, 0.11486065, 0.022095798,
+                                    -0.059982449, 0.20893838, -0.23494617, -0.19395047, 0.22377159,
+                                    -0.054523217, -0.24033766, 0.19479757, -0.10694107, -0.15641026,
+                                    0.17976663, -0.094075995, -0.10325845, 0.15671319, 0.016030663,
+                                    -0.15307202, 0.17259257, 0.079347885, -0.22070749, 0.13871766,
+                                    0.13303529, -0.18200036, 0.11318009, 0.075325625, -0.12847975,
+                                    0.22519082, -0.0026578764, -0.33413725, -0.14958983, 0.13876642,
+                                    -0.31017721, -0.10880966, 0.25502318, -0.25154015, 0.15544350,
+                                    0.18711886, -0.31257406, -0.076500332, 0.22446558, 0.26722754,
+                                    -0.050660953, 0.18436889, 0.17396986, 0.036027727, 0.20300253,
+                                    0.090146574, 0.082440245, 0.24578699, 0.13840596, -0.071482571,
+                                    0.15100916, 0.18566209, -0.073750761, 0.10136248, 0.14856450,
+                                    -0.031046211, 0.068987417, 0.12696809, -0.035587460, 0.11512855,
+                                    0.15619548, 0.021727986, 0.14983967, 0.063651880, -0.023533432,
+                                    0.17243586, 0.13961274, -0.018560930, 0.12728923, 0.10843198,
+                                    0.018077515, 0.094269730, 0.042793299, -0.061635196, 0.055970987,
+                                    0.11938486, -0.095553922, 0.025694485, 0.060390569, 0.019585127,
+                                    0.076071456, 0.020436739, -0.022882829, 0.045396907, 0.082927479,
+                                    -0.011168266, 0.049173714, 0.083202144, 0.019587681, 0.095796808,
+                                    0.047050082, -0.016594952, 0.12060474, 0.043040342, -0.010968210,
+                                    0.094254002, 0.11582725, -0.0033878286, 0.065452487, 0.030402745,
+                                    -0.0010179377, 0.082236103, -0.043251259, -0.0036983206, 0.087834116,
+                                    -0.044584616, 0.0024826310, 0.070374248, 0.019219473, 0.029849494,
+                                    0.096728388, -0.013784682, 0.0020963223, 0.11318502, -0.027328685,
+                                    0.0012622290, 0.086936357, -0.078408848, 0.0078774207, 0.075611206,
+                                    -0.0080653859, 0.10391830, -0.0021302612, -0.060074793, 0.071262115,
+                                    0.026229429, -0.081020928, 0.041278111, 0.068204081, -0.066598833,
+                                    0.0085404961, 0.078485480, -0.041530870, 0.011619860, 0.090003247,
+                                    -0.076780998, 0.035278074, 0.12705908, -0.11769492, 0.034106793,
+                                    0.12100020, -0.099653483, 0.011808040, 0.11109468, -0.072550723,
+                                    0.070069110, 0.080182691, -0.10876908, 0.089920955, 0.11840345,
+                                    -0.16562674, 0.062388752, 0.13242117, -0.15432277, 0.027970059,
+                                    0.092424300, -0.089983873, 0.048860316, 0.15898658, -0.14973049,
+                                    0.051211366, 0.15877839, -0.19457758, -0.019922747, 0.17720550,
+                                    -0.14981668, -0.010227319, 0.11611742, -0.12898792, 0.10517578,
+                                    0.13878154, -0.26682595, -0.064715030, 0.13192554, -0.20017487,
+                                    -0.034091207, 0.17313771, -0.17714283, 0.068179001, 0.13961502,
+                                    -0.20904324])
+
         else:
-            # ToDo: define optimal templates for Elekta system
-            oa_template = None
+            # ToDo: implement also other systems
+            oa_template = np.zeros(picks_all[-1:][0] + 1)
 
         return oa_template
 
@@ -984,23 +1117,45 @@ class JuMEG_ocarta(object):
 
         # import necessary modules
         import matplotlib.pyplot as plt
+        from mne import pick_types
         from mne.viz import plot_topomap
         from mne.channels.layout import _find_topomap_coords
 
-        pos = _find_topomap_coords(info, self._picks)
 
-        plt.ioff()
-        fig = plt.figure('topoplot ocular activity', figsize=(12, 12))
-        plot_topomap(self._template_OA[self._picks], pos, res=200, contours=0)
-        plt.ion()
+        if self._system  == 'ElektaNeuromagTriux':
+            for ch_type in ['mag', 'planar1', 'planar2']:
 
-        # if desired show the image
-        if show:
-             fig.show()
+                picks = pick_types(info, meg=ch_type, eeg=False,
+                                   eog=False, stim=False, exclude='bads')
 
-        # save results
-        if fn_img:
-            fig.savefig(fn_img + '.png', format='png')
+                pos = _find_topomap_coords(info, picks)
+
+                plt.ioff()
+                fig = plt.figure('topoplot ocular activity', figsize=(12, 12))
+                plot_topomap(self._template_OA[picks], pos, res=200,
+                             contours=0, show=False)
+                plt.ion()
+
+                # save results
+                if fn_img:
+                    fig.savefig(fn_img + '_' + ch_type +  '.png', format='png')
+
+        else:
+            pos = _find_topomap_coords(info, self._picks)
+
+            plt.ioff()
+            fig = plt.figure('topoplot ocular activity', figsize=(12, 12))
+            plot_topomap(self._template_OA[self._picks], pos, res=200, contours=0,
+                         show=False)
+            plt.ion()
+
+            # if desired show the image
+            if show:
+                 fig.show()
+
+            # save results
+            if fn_img:
+                fig.savefig(fn_img + '.png', format='png')
 
 
 
@@ -1033,14 +1188,14 @@ class JuMEG_ocarta(object):
                                                event_id=event_id_ecg, l_freq=self.ecg_freq[0],
                                                h_freq=self.ecg_freq[1], verbose=None)
 
-            self._set_idx_R_peak(idx_R_peak)
+            self._set_idx_R_peak(idx_R_peak - meg_raw.first_samp)
 
             # generate epochs around R-peaks and average signal
             picks = [meg_raw.info['ch_names'].index(self.name_ecg)]
             ecg_epochs = Epochs(meg_raw, events=idx_R_peak, event_id=event_id_ecg,
                                 tmin=-0.3, tmax=0.3, baseline=None, picks=picks,
                                 verbose=None, proj=False)
-            ecg_signal = np.abs(ecg_epochs.get_data().flatten())
+            ecg_signal = np.abs(ecg_epochs.average(picks=[0]).data.flatten())
 
             # estimate optimal cost-function
             cost_func = _fit_sigmoidal_to_cdf(ecg_signal)
@@ -1088,7 +1243,8 @@ class JuMEG_ocarta(object):
             idx_eye_blink = find_eog_events(meg_raw, ch_name=self.name_eog,
                                             event_id=event_id_eog, l_freq=self.eog_freq[0],
                                             h_freq=self.eog_freq[1], verbose=None)
-            self._set_idx_eye_blink(idx_eye_blink)
+            self._set_idx_eye_blink(idx_eye_blink - meg_raw.first_samp)
+            self._get_idx_eye_blink
 
             # generate epochs around eye blinks and average signal
             picks = [meg_raw.info['ch_names'].index(self.name_eog)]
@@ -1096,10 +1252,11 @@ class JuMEG_ocarta(object):
                                 tmin=-0.3, tmax=0.3, baseline=None, picks=picks,
                                 verbose=None, proj=False)
             eog_epochs.verbose = None
-            eog_signal = np.abs(eog_epochs.get_data().flatten())
+            eog_signal = np.abs(eog_epochs.average(picks=[0]).data.flatten())
 
             # estimate optimal cost-function
             cost_func = _fit_sigmoidal_to_cdf(eog_signal)
+
             self._set_opt_cost_func_ocular(cost_func)
 
             # perform tkeo-transformation to EOG-signals
@@ -1133,7 +1290,8 @@ class JuMEG_ocarta(object):
 
         # estimate PCA structure
         if self._pca is None:
-            pca_data, pca = whitening(data.T, npc=self.npc, explainedVar=self.explVar)
+            pca_data, pca = whitening(data.T, dim_reduction='explVar',
+                                      npc=self.npc, explainedVar=self.explVar)
             self._pca = pca
             self.npc = len(pca_data[0])
         else:
@@ -1248,6 +1406,7 @@ class JuMEG_ocarta(object):
         # import necessary modules
         from jumeg import jumeg_math as pre_math
         from math import copysign as sgn
+        from mne import pick_types
         from scipy.linalg import pinv
         from scipy.stats.stats import pearsonr
 
@@ -1258,7 +1417,10 @@ class JuMEG_ocarta(object):
         self.calc_opt_cost_func_ocular(meg_raw)
 
         # get optimal spatial template for ocular activity
-        self._template_OA = self._get_template_oa()
+        if not np.any(self._template_OA):
+            picks_all = pick_types(meg_raw.info, meg=True, eeg=False,
+                                   eog=False, stim=False, exclude='bads')
+            self._template_OA = self._get_template_oa(picks_all)
 
         # get indices of trainings data set
         # --> keep in mind that at least one eye-blink must occur
@@ -1287,8 +1449,12 @@ class JuMEG_ocarta(object):
         if len(idx_oa) > 0:
             oa_min = np.min(self._template_OA)
             oa_max = np.max(self._template_OA)
-            oa_template = self._template_OA[self._picks].copy()  # np.zeros(len(self._template_OA[self._picks]))
+            oa_template = self._template_OA[self._picks].copy()
             spatial_maps = fast_dot(self._pca.components_[:self.npc].T, pinv(weights)).T
+            if oa_min == oa_max:
+                oa_min = np.min(spatial_maps[idx_oa[0]])
+                oa_max = np.max(spatial_maps[idx_oa[0]])
+
 
             # loop over all components related to ocular activity
             for ioa in range(len(idx_oa)):
@@ -1310,6 +1476,7 @@ class JuMEG_ocarta(object):
         from jumeg.jumeg_math import calc_performance, calc_frequency_correlation
         from mne import Epochs
         from mne.preprocessing import find_ecg_events, find_eog_events
+        # from jumeg.jumeg_utils import get_peak_ecg
 
         perf_ar = np.zeros(2)
         freq_corr_ar = np.zeros(2)
@@ -1422,10 +1589,8 @@ class JuMEG_ocarta(object):
         # read raw data in
         if meg_raw == None:
             meg_raw = Raw(fn_raw, preload=True, verbose=False)
-            fn_out = fn_raw[:fn_raw.rfind('-raw.fif')] + ',ocarta-raw.fif'
         else:
             fn_raw = meg_raw.info['filename']
-            fn_out = fn_raw[:fn_raw.rfind('-raw.fif')] + ',ocarta-raw.fif'
 
 
         # check input parameter
@@ -1461,8 +1626,6 @@ class JuMEG_ocarta(object):
         self._system = get_sytem_type(meg_raw.info)
         self._ntsl = int(meg_raw._data.shape[1])
         self._block = int(self._seg_length * meg_raw.info['sfreq'])
-        self._picks = pick_types(meg_raw.info, meg=True, eeg=False,
-                                 eog=False, stim=False, exclude='bads')
 
 
         # make sure that everything is initialized well
@@ -1480,6 +1643,8 @@ class JuMEG_ocarta(object):
 
         meg_clean = meg_raw.copy()
         meg_filt = meg_raw.copy()
+
+
         # check if data should be filtered prior to estimate
         # the optimal demixing parameter
         if self.flow or self.fhigh:
@@ -1506,84 +1671,107 @@ class JuMEG_ocarta(object):
                                         sampling_frequency=meg_raw.info['sfreq'])
             fi_mne_notch.apply_filter(meg_filt._data, picks=self._picks)
 
-        # perform initial training
-        weights, idx_ca, idx_oa = self._initial_training(meg_filt)
 
-        # get some parameter
-        nchan = self._picks.shape[0]
-        shift = int(self.shift_length * meg_filt.info['sfreq'])
-        nsteps = np.floor((self._ntsl - self._block)/shift) + 1
-        laststep = int(shift * nsteps)
+        # -----------------------------------------
+        # check if we have Elekta data
+        # --> if yes OCARTA has to be performed
+        #     twice, once for magnetometer and
+        #     once for gradiometer
+        # -----------------------------------------
+        if self._system == 'ElektaNeuromagTriux':
+            ch_types = ['mag', 'grad']
 
-        # print out some information
-        if verbose:
-            print ">>>> calculating OCARTA"
-            print "       --> number of channels  : %d" % nchan
-            print "       --> number of timeslices: %d" % self._ntsl
-            print "       --> explained variance  : %g" % self.explVar
-            print "       --> number of components: %d" % weights.shape[0]
-            print "       --> block size (in s)   : %d" % self.seg_length
-            print "       --> number of blocks    : %d" % nsteps
-            print "       --> block shift (in s)  : %d" % self.shift_length
-            print "       --> maxsteps training   : %d" % (3 * self.maxsteps)
-            print "       --> maxsteps cleaning   : %d" % self.maxsteps
-            print "       --> costfunction CA     : a0=%g, a1=%g" % (self.opt_cost_func_cardiac[0], self.opt_cost_func_cardiac[1])
-            print "       --> costfunction OA     : a0=%g, a1=%g" % (self.opt_cost_func_ocular[0], self.opt_cost_func_ocular[1])
-            print ""
+            if verbose:
+                print ">>>> NOTE: as input data contain gardiometer and magnetometer"
+                print ">>>>       OCARTA has to be performed twice!"
+        else:
+            ch_types = [True]
 
-            if self.flow or self.fhigh:
-                print ">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!"
-                print "           However, cleaning is performed on unfiltered input data!"
-                print filter_info
-                print ""
+        # loop over all channel types
+        for ch_type in ch_types:
 
+            self._picks = pick_types(meg_raw.info, meg=ch_type, eeg=False,
+                                    eog=False, stim=False, exclude='bads')
+            self._pca = None
 
-        # check if denoising is desired
-        sphering = self._pca.components_.copy()
-        if denoising:
-            full_var = np.sum(self._pca.explained_variance_)
-            exp_var_ratio = self._pca.explained_variance_ / full_var
-            npc_denoising = np.sum(exp_var_ratio.cumsum() <= denoising) + 1
-            sphering[npc_denoising:, :] = 0.
+            # perform initial training
+            weights, idx_ca, idx_oa = self._initial_training(meg_filt)
 
-
-        # now loop over all segments
-        for istep, t in enumerate(range(0, laststep, shift)):
+            # get some parameter
+            nchan = self._picks.shape[0]
+            shift = int(self.shift_length * meg_filt.info['sfreq'])
+            nsteps = np.floor((self._ntsl - self._block)/shift) + 1
+            laststep = int(shift * nsteps)
 
             # print out some information
             if verbose:
-                print ">>>> Step %d of %d..." % (istep+1, nsteps)
+                print ">>>> calculating OCARTA"
+                print "       --> number of channels  : %d" % nchan
+                print "       --> number of timeslices: %d" % self._ntsl
+                print "       --> explained variance  : %g" % self.explVar
+                print "       --> number of components: %d" % weights.shape[0]
+                print "       --> block size (in s)   : %d" % self.seg_length
+                print "       --> number of blocks    : %d" % nsteps
+                print "       --> block shift (in s)  : %d" % self.shift_length
+                print "       --> maxsteps training   : %d" % (3 * self.maxsteps)
+                print "       --> maxsteps cleaning   : %d" % self.maxsteps
+                print "       --> costfunction CA     : a0=%g, a1=%g" % (self.opt_cost_func_cardiac[0], self.opt_cost_func_cardiac[1])
+                print "       --> costfunction OA     : a0=%g, a1=%g" % (self.opt_cost_func_ocular[0], self.opt_cost_func_ocular[1])
+                print ""
 
-            # --------------------------------------
-            # Estimating un-mixing matrix and
-            # identify ICs related to artifacts
-            # --------------------------------------
-            idx_end = t+self._block  # get index of last element
-            if (idx_end+shift+1) > self._ntsl:
-                idx_end = self._ntsl
-
-            weights, idx_ca, idx_oa = self._update_cleaning_information(meg_filt, t, idx_end,
-                                                                        initial_weights=weights.T,
-                                                                        ca_idx=idx_ca, oa_idx=idx_oa)
+                if self.flow or self.fhigh:
+                    print ">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!"
+                    print "           However, cleaning is performed on unfiltered input data!"
+                    print filter_info
+                    print ""
 
 
-            print "CA: %s, OA: %s" % (np.array_str(idx_ca), np.array_str(idx_oa))
+            # check if denoising is desired
+            sphering = self._pca.components_.copy()
+            if denoising:
+                full_var = np.sum(self._pca.explained_variance_)
+                exp_var_ratio = self._pca.explained_variance_ / full_var
+                npc_denoising = np.sum(exp_var_ratio.cumsum() <= denoising) + 1
+                sphering[npc_denoising:, :] = 0.
 
-            # get cleaning matrices
-            iweights = pinv(weights)
-            iweights[:, idx_ca] = 0.  # remove columns related to CA
-            if len(idx_oa) > 0:
-                iweights[:, idx_oa] = 0.  # remove columns related to OA
 
-            # transform data to ICA space
-            dnorm = (meg_raw._data[self._picks, t:idx_end] - self._pca.mean_[:, np.newaxis]) / self._pca.stddev_[:, np.newaxis]
-            pc = fast_dot(dnorm.T, sphering.T)
-            activations = fast_dot(weights, pc[:, :self.npc].T)  # transform to ICA-space
+            # now loop over all segments
+            for istep, t in enumerate(range(0, laststep, shift)):
 
-            # backtransform data
-            pc[:, :self.npc] = fast_dot(iweights, activations).T                         # back-transform to PCA-space
-            meg_clean._data[self._picks, t:idx_end] = fast_dot(pc, sphering).T * self._pca.stddev_[:, np.newaxis] + \
-                                                      self._pca.mean_[:, np.newaxis]     # back-transform to sensor-space
+                # print out some information
+                if verbose:
+                    print ">>>> Step %d of %d..." % (istep+1, nsteps)
+
+                # --------------------------------------
+                # Estimating un-mixing matrix and
+                # identify ICs related to artifacts
+                # --------------------------------------
+                idx_end = t+self._block  # get index of last element
+                if (idx_end+shift+1) > self._ntsl:
+                    idx_end = self._ntsl
+
+                weights, idx_ca, idx_oa = self._update_cleaning_information(meg_filt, t, idx_end,
+                                                                            initial_weights=weights.T,
+                                                                            ca_idx=idx_ca, oa_idx=idx_oa)
+
+
+                print "CA: %s, OA: %s" % (np.array_str(idx_ca), np.array_str(idx_oa))
+
+                # get cleaning matrices
+                iweights = pinv(weights)
+                iweights[:, idx_ca] = 0.  # remove columns related to CA
+                if len(idx_oa) > 0:
+                    iweights[:, idx_oa] = 0.  # remove columns related to OA
+
+                # transform data to ICA space
+                dnorm = (meg_raw._data[self._picks, t:idx_end] - self._pca.mean_[:, np.newaxis]) / self._pca.stddev_[:, np.newaxis]
+                pc = fast_dot(dnorm.T, sphering.T)
+                activations = fast_dot(weights, pc[:, :self.npc].T)  # transform to ICA-space
+
+                # backtransform data
+                pc[:, :self.npc] = fast_dot(iweights, activations).T                         # back-transform to PCA-space
+                meg_clean._data[self._picks, t:idx_end] = fast_dot(pc, sphering).T * self._pca.stddev_[:, np.newaxis] + \
+                                                          self._pca.mean_[:, np.newaxis]     # back-transform to sensor-space
 
 
         # write out some additional information
@@ -1608,7 +1796,7 @@ class JuMEG_ocarta(object):
         meg_clean.save(fn_out, overwrite=True, verbose=False)
 
         # generate topoplot image
-        if plot_template_OA:
+        if plot_template_OA and not np.all(self._template_OA == 0):
             self.topoplot_oa(meg_raw.info, fn_img=fn_topo)
 
         # generate performance image
