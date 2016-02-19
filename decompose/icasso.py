@@ -4,7 +4,7 @@
 ----------------------------------------------------------------------
 --- jumeg.decompose.fourier_ica --------------------------------------
 ----------------------------------------------------------------------
- autor      : Lukas Breuer
+ author     : Lukas Breuer
  email      : l.breuer@fz-juelich.de
  last update: 27.11.2015
  version    : 1.1
@@ -799,7 +799,7 @@ class JuMEG_icasso(object):
                              tmin_stim=0.0, tmax_stim=1.0, flow=4.0, fhigh=34.0,
                              event_id=1, hamming_data=True, remove_outliers=True,
                              fn_inv=None, contrast_id=[], baseline=(None, None),
-                             zero_mean=False, averaged_epochs=False, verbose=True):
+                             averaged_epochs=False, verbose=True):
 
 
         # ------------------------------------------
@@ -913,7 +913,7 @@ class JuMEG_icasso(object):
                                   win_length_sec=win_length_sec,
                                   hamming_data=hamming_data,
                                   remove_outliers=remove_outliers,
-                                  zero_mean=zero_mean, verbose=verbose)
+                                  baseline=baseline, verbose=verbose)
 
                 if np.any(contrast_id):
                     X_contrast, _ = apply_stft(meg_data, events=contrast_events,
@@ -922,7 +922,7 @@ class JuMEG_icasso(object):
                                                win_length_sec=win_length_sec,
                                                hamming_data=hamming_data,
                                                remove_outliers=remove_outliers,
-                                               zero_mean=zero_mean,
+                                               baseline=baseline,
                                                verbose=verbose)
 
 
@@ -1378,6 +1378,7 @@ class JuMEG_icasso(object):
                                           baseline=baseline, verbose=verbose)
             normalized = False
 
+        self._sfreq = sfreq
         # ------------------------------------------
         # check if PCA dimension is set...if not
         # use MIBS to estimate the dimension

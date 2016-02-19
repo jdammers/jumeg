@@ -4,7 +4,7 @@
 ----------------------------------------------------------------------
 --- jumeg.decompose.fourier_ica --------------------------------------
 ----------------------------------------------------------------------
- autor      : Lukas Breuer
+ author     : Lukas Breuer
  email      : l.breuer@fz-juelich.de
  last update: 13.11.2015
  version    : 1.0

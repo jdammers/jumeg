@@ -351,7 +351,7 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
                flow=1.0, fhigh=45.0, win_length_sec=1.0,
                overlap_fac=2.0, hamming_data=False,
                remove_outliers=True, fcnoutliers=[],
-               already_epoched=False, zero_mean=False,
+               already_epoched=False, baseline=(None, None),
                verbose=True):
 
     """
@@ -434,8 +434,12 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
         else:
             data_win = origdata[:, int(window[0]):int(window[1])]
 
-        if zero_mean:
-            data_win = data_win - np.mean(data_win, axis=-1)[:, np.newaxis]
+        if baseline != (None, None):
+
+            idx_base1 = int((baseline[0] - tpre) * sfreq) if baseline[0] != None else 0
+            idx_base2 = int((baseline[1] - tpre) * sfreq) if baseline[1] != None else -1
+            data_win = data_win - np.mean(data_win[:, idx_base1:idx_base2],
+                                          axis=-1)[:, np.newaxis]
 
         # multiply by a hamming window if necessary
         if hamming_data:

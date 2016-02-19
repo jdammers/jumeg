@@ -681,9 +681,9 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
                            subjects_dir=None,
                            temporal_envelope=[],
                            time_range=[None, None],
+                           global_scaling=False,
                            classification={},
-                           percentile=97, show=True,
-                           plot_center_of_mass=False):
+                           percentile=97, show=True):
 
     """
     Generate plot containing all results achieved by
@@ -731,7 +731,7 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
     nfreq, nepochs, nvoxel = src_loc_data.shape
 
     if time_range == [None, None]:
-        time_range = [tpre + 0.1, tpre + win_length_sec - 0.1]
+        time_range = [tpre, tpre + win_length_sec]
 
 
     # -------------------------------------------
@@ -866,6 +866,8 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
     # spectral profiles
     # -------------------------------------------
     average_power_all = np.empty((ntemp, 0)).tolist()
+    vmin = np.zeros(ncomp)
+    vmax = np.zeros(ncomp)
 
     for itemp in range(ntemp):
         for icomp in range(ncomp):
@@ -878,31 +880,38 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
             data_stockwell = temporal_envelope[itemp][0][:, icomp, idx_start:idx_end].\
                 reshape((nepochs, 1, idx_end-idx_start))
 
+
             power_data, _, freqs = _induced_power_stockwell(data_stockwell, sfreq=sfreq, fmin=flow,
-                                                            fmax=fhigh/2.0, width=1.0, decim=1,
+                                                            fmax=fhigh, width=1.0, decim=1,
                                                             return_itc=False, n_jobs=4)
-            # convert data to decibel
-            power_data = 20 * np.log10(power_data[:, :, 15:-15])
+
+
 
             # perform baseline correction
             if time_range[0] < 0:
-                power_data = rescale(power_data, times[idx_start+15:idx_end-15], (None, 0), 'percent')
+                power_data = rescale(power_data, times[idx_start:idx_end], (None, 0), 'mean')
+                imax = np.argmin(np.abs(times[idx_start:idx_end]))
+                power_data /= np.sqrt(np.std(power_data[..., :imax], axis=-1)[..., None])
 
-            average_power = power_data.mean(0)
+            average_power = power_data.reshape((power_data.shape[1], power_data.shape[2]))
             average_power_all[itemp].append(average_power)
 
-    # define thresholds
-    if time_range[0] < 0:
-        vmax = np.percentile(average_power_all, 99)
-        vmedian = np.median(average_power_all)     # np.percentile(average_power_all, 50)
-        vmin = np.percentile(average_power_all, 1)
-        if np.abs((vmax - vmedian)) > np.abs((vmedian - vmin)):
-            vmin = vmedian - np.abs((vmax - vmedian))
-        else:
-            vmax = vmedian + np.abs((vmedian - vmin))
+            # define thresholds
+            if time_range[0] < 0:
+                # vmax[icomp] = np.max((np.nanmax(average_power), vmax[icomp]))  # np.percentile(average_power_all, 99.9)
+                # vmin[icomp] = np.min((np.nanmin(average_power), vmin[icomp]))  # np.percentile(average_power_all, 0.1)
+                vmax[icomp] = np.max((np.percentile(average_power, 99), vmax[icomp]))  # np.percentile(average_power_all, 99.9)
+                vmin[icomp] = np.min((np.percentile(average_power, 1), vmin[icomp]))  # np.percentile(average_power_all, 0.1)
 
-    else:
-        vmin, vmax = None, None
+
+                if np.abs(vmax[icomp]) > np.abs(vmin[icomp]):
+                    vmin[icomp] = - np.abs(vmax[icomp])
+                else:
+                    vmax[icomp] = np.abs(vmin[icomp])
+
+            else:
+                vmin[icomp] = None
+                vmax[icomp] = None
 
 
     # ------------------------------------------
@@ -980,8 +989,14 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
                 extent = (times[idx_start], times[idx_end], freqs[0], freqs[-1])
                 p2 = plt.subplot(gs[20*(icomp-istart_plot)+idx_class*10:20*(icomp-istart_plot)+15+idx_class*10,
                                  (itemp+1)*10+1:(itemp+2)*10-1])
+
+                if global_scaling:
+                    vmin_cur, vmax_cur = np.min(vmin), np.max(vmax)
+                else:
+                    vmin_cur, vmax_cur = vmin[icomp], vmax[icomp]
+
                 p2.imshow(average_power, extent=extent, aspect="auto", origin="lower",
-                          picker=False, cmap='RdBu', vmin=vmin, vmax=vmax)
+                          picker=False, cmap='RdBu_r', vmin=vmin_cur, vmax=vmax_cur)    # cmap='RdBu', vmin=vmin, vmax=vmax)
                 p2.set_xlabel("time [s]")
                 p2.set_ylabel("freq. [Hz]")
                 ax = p2.twinx()

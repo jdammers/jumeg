@@ -23,7 +23,8 @@ import numpy as np
 #                    a data array                     #
 #                                                     #
 #######################################################
-def ica_array(data_orig, explainedVar=1.0, overwrite=None,
+def ica_array(data_orig, dim_reduction='',
+              explainedVar=1.0, overwrite=None,
               max_pca_components=None, method='infomax',
               cost_func='logcosh', weights=None, lrate=None,
               block=None, wchange=1e-16, annealdeg=60.,
@@ -36,6 +37,12 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
         Parameters
         ----------
         data_orig : array of data to be decomposed [nchan, ntsl].
+        dim_reduction : {'', 'AIC', 'BIC', 'GAP', 'MDL', 'MIBS', 'explVar'}
+            Method for dimension selection. For further information about
+            the methods please check the script 'dimension_selection.py'.
+            default: dim_reduction='' --> no dimension reduction is performed
+                                          as long as not the parameter
+                                          'max_pca_components' is set.
         explainedVar : float
             Value between 0 and 1; components will be selected by the
             cumulative percentage of explained variance.
@@ -45,7 +52,8 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
         max_pca_components : int | None
             The number of components used for PCA decomposition. If None, no
             dimension reduction will be applied and max_pca_components will equal
-            the number of channels supplied on decomposing data.
+            the number of channels supplied on decomposing data. Only of interest
+            when dim_reduction=''
         method : {'fastica', 'infomax', 'extended-infomax'}
           The ICA method to use. Defaults to 'infomax'.
 
@@ -130,7 +138,8 @@ def ica_array(data_orig, explainedVar=1.0, overwrite=None,
         if verbose:
             print "     ... perform centering and whitening ..."
 
-        data, pca = whitening(data.T, npc=max_pca_components, explainedVar=explainedVar)
+        data, pca = whitening(data.T, dim_reduction=dim_reduction, npc=max_pca_components,
+                              explainedVar=explainedVar)
 
 
     # -------------------------------------------
@@ -235,7 +244,8 @@ def infomax2data(weights, pca, activations, idx_zero=None):
 # routine for PCA decomposition prior to ICA          #
 #                                                     #
 #######################################################
-def whitening(data, npc=None, explainedVar=None):
+def whitening(data, dim_reduction='',
+              npc=None, explainedVar=1.0):
 
     """
     routine to perform whitening prior to Infomax ICA application
@@ -245,10 +255,16 @@ def whitening(data, npc=None, explainedVar=None):
         Parameters
         ----------
         X : data array [ntsl, nchan] for decomposition.
+        dim_reduction : {'', 'AIC', 'BIC', 'GAP', 'MDL', 'MIBS', 'explVar'}
+            Method for dimension selection. For further information about
+            the methods please check the script 'dimension_selection.py'.
+            default: dim_reduction='' --> no dimension reduction is performed as
+                                          long as not the parameter 'npc' is set.
         npc : int | None
             The number of components used for PCA decomposition. If None, no
             dimension reduction will be applied and max_pca_components will equal
-            the number of channels supplied on decomposing data.
+            the number of channels supplied on decomposing data. Only of interest
+            when dim_reduction=''
             default: npc = None
         explainedVar : float | None
             Must be between 0 and 1. If float, the number of components
@@ -270,6 +286,7 @@ def whitening(data, npc=None, explainedVar=None):
     # import necessary modules
     # -------------------------------------------
     from sklearn.decomposition import RandomizedPCA
+    import dimension_selection as dim_sel
 
 
     # -------------------------------------------
@@ -286,7 +303,7 @@ def whitening(data, npc=None, explainedVar=None):
     # -------------------------------------------
     X = data.copy()
     whiten = False
-    n_components = npc
+    n_components = None if dim_reduction == '' else npc
     dmean = X.mean(axis=0)
     stddev = np.std(X, axis=0)
     X = (X - dmean[np.newaxis, :]) / stddev[np.newaxis, :]
@@ -307,9 +324,21 @@ def whitening(data, npc=None, explainedVar=None):
     pca.stddev_ = stddev
 
     # -------------------------------------------
-    # check explained variance
+    # check dimension selection
     # -------------------------------------------
-    if explainedVar:
+    if dim_reduction == 'AIC':
+        npc, _ = dim_sel.aic_mdl(pca.explained_variance_)
+    elif dim_reduction == 'BIC':
+        npc = dim_sel.mibs(pca.explained_variance_, ntsl,
+                           use_bic=True)
+    elif dim_reduction == 'GAP':
+        npc = dim_sel.gap(pca.explained_variance_)
+    elif dim_reduction == 'MDL':
+        _, npc = dim_sel.aic_mdl(pca.explained_variance_)
+    elif dim_reduction == 'MIBS':
+        npc = dim_sel.mibs(pca.explained_variance_, ntsl,
+                           use_bic=False)
+    elif dim_reduction == 'explVar':
         # compute explained variance manually
         explained_variance_ratio_ = pca.explained_variance_
         explained_variance_ratio_ /= explained_variance_ratio_.sum()

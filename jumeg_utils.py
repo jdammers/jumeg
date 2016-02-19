@@ -90,13 +90,20 @@ def get_sytem_type(info):
     ctf_other_types = (FIFF.FIFFV_COIL_CTF_REF_MAG,
                        FIFF.FIFFV_COIL_CTF_REF_GRAD,
                        FIFF.FIFFV_COIL_CTF_OFFDIAG_REF_GRAD)
+    elekta_types = (FIFF.FIFFV_COIL_VV_MAG_T3,
+                    FIFF.FIFFV_COIL_VV_PLANAR_T1)
     has_CTF_grad = (FIFF.FIFFV_COIL_CTF_GRAD in coil_types or
                     (FIFF.FIFFV_MEG_CH in channel_types and
                      any([k in ctf_other_types for k in coil_types])))
+    has_Elekta_grad = (FIFF.FIFFV_COIL_VV_MAG_T3 in coil_types or
+                      (FIFF.FIFFV_MEG_CH in channel_types and
+                       any([k in elekta_types for k in coil_types])))
     if has_4D_mag:
         system_type = 'magnesWH3600'
     elif has_CTF_grad:
         system_type = 'CTF-275'
+    elif has_Elekta_grad:
+        system_type = 'ElektaNeuromagTriux'
     else:
         # ToDo: Expand method to also cope with other systems!
         print "System type not known!"
@@ -366,6 +373,157 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
         assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
 
     return surrogate
+
+
+
+#######################################################
+#                                                     #
+#      to extract the indices of the R-peak from      #
+#               ECG single channel data               #
+#                                                     #
+#######################################################
+def get_peak_ecg(ecg, sfreq=1017.25, flow=10, fhigh=20,
+                 pct_thresh=95.0, default_peak2peak_min=0.5,
+                 event_id=999):
+
+    # -------------------------------------------
+    # import necessary modules
+    # -------------------------------------------
+    from mne.filter import band_pass_filter
+    from jumeg.jumeg_math import calc_tkeo
+    from scipy.signal import argrelextrema as extrema
+
+    # -------------------------------------------
+    # filter ECG to get rid of noise and drifts
+    # -------------------------------------------
+    fecg = band_pass_filter(ecg, sfreq, flow, fhigh,
+                            n_jobs=1, method='fft')
+    ecg_abs = np.abs(fecg)
+
+    # -------------------------------------------
+    # apply Teager Kaiser energie Operator (TKEO)
+    # -------------------------------------------
+    tk_ecg = calc_tkeo(fecg)
+
+    # -------------------------------------------
+    # find all peaks of abs(EOG)
+    # since we don't know if the EOG lead has a
+    # positive or negative R-peak
+    # -------------------------------------------
+    ixpeak = extrema(tk_ecg, np.greater, axis=0)
+
+
+    # -------------------------------------------
+    # threshold for |R-peak|
+    # ------------------------------------------
+    peak_thresh_min = np.percentile(tk_ecg, pct_thresh, axis=0)
+    ix = np.where(tk_ecg[ixpeak] > peak_thresh_min)[0]
+    npeak = len(ix)
+    if (npeak > 1):
+        ixpeak = ixpeak[0][ix]
+    else:
+        return -1
+
+
+    # -------------------------------------------
+    # threshold for max Amplitude of R-peak
+    # fixed to: median + 3*stddev
+    # -------------------------------------------
+    mag = fecg[ixpeak]
+    mag_mean = np.median(mag)
+    if (mag_mean > 0):
+        nstd = 3
+    else:
+        nstd = -3
+
+    peak_thresh_max = mag_mean + nstd * np.std(mag)
+    ix = np.where(ecg_abs[ixpeak] < np.abs(peak_thresh_max))[0]
+    npeak = len(ix)
+
+    if (npeak > 1):
+        ixpeak = ixpeak[ix]
+    else:
+        return -1
+
+
+    # -------------------------------------------
+    # => test if the R-peak is positive or negative
+    # => we assume the the R-peak is the largest peak !!
+    #
+    # ==> sometime we have outliers and we should check
+    #     the number of npos and nneg peaks -> which is larger?  -> note done yet
+    #     -> we assume at least 2 peaks -> maybe we should check the ratio
+    # -------------------------------------------
+    ixp = np.where(fecg[ixpeak] > 0)[0]
+    npos = len(ixp)
+    ixn = np.where(fecg[ixpeak] < 0)[0]
+    nneg = len(ixp)
+
+    if (npos == 0 and nneg == 0):
+        import pdb
+        pdb.set_trace()
+    if (npos > 3):
+        peakval_pos = np.abs(np.median(ecg[ixpeak[ixp]]))
+    else:
+        peakval_pos = 0
+
+    if (nneg > 3): peakval_neg = np.abs(np.median(ecg[ixpeak[ixn]]))
+    else:
+        peakval_neg = 0
+
+    if (peakval_pos > peakval_neg):
+        ixpeak  = ixpeak[ixp]
+        ecg_pos = ecg
+    else:
+        ixpeak  = ixpeak[ixn]
+        ecg_pos = - ecg
+
+    npeak = len(ixpeak)
+    if (npeak < 1):
+        return -1
+
+
+    # -------------------------------------------
+    # check if we have peaks too close together
+    # -------------------------------------------
+    peak_ecg = ixpeak/sfreq
+    dur = (np.roll(peak_ecg, -1)-peak_ecg)
+    ix  = np.where(dur > default_peak2peak_min)[0]
+    npeak = len(ix)
+    if (npeak < 1):
+        return -1
+
+    ixpeak = np.append(ixpeak[0], ixpeak[ix])
+    peak_ecg = ixpeak/sfreq
+    dur = (peak_ecg-np.roll(peak_ecg, 1))
+    ix  = np.where(dur > default_peak2peak_min)[0]
+    npeak = len(ix)
+    if (npeak < 1):
+        return -1
+
+    ixpeak = np.unique(np.append(ixpeak, ixpeak[ix[npeak-1]]))
+    npeak = len(ixpeak)
+
+    # -------------------------------------------
+    # search around each peak if we find
+    # higher peaks in a range of 0.1 s
+    # -------------------------------------------
+    seg_length = np.ceil(0.1 * sfreq)
+    for ipeak in range(0, npeak-1):
+        idx = [int(np.max([ixpeak[ipeak] - seg_length, 0])),
+               int(np.min([ixpeak[ipeak]+seg_length, len(ecg)]))]
+        idx_want = np.argmax(ecg_pos[idx[0]:idx[1]])
+        ixpeak[ipeak] = idx[0] + idx_want
+
+
+    # -------------------------------------------
+    # to be confirm with mne implementation
+    # -------------------------------------------
+    ecg_events = np.c_[ixpeak, np.zeros(npeak),
+                       np.zeros(npeak)+event_id]
+
+    return ecg_events.astype(int)
+
 
 
 # def make_surrogates_epoch_numpy(epochs):
