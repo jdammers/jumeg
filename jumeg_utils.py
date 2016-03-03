@@ -13,7 +13,8 @@ import numpy as np
 import scipy as sci
 import mne
 from mne.utils import logger
-
+import matplotlib.cm as cmx
+import matplotlib.colors as colors
 
 def get_files_from_list(fin):
     ''' Return string of file or files as iterables lists '''
@@ -1077,7 +1078,7 @@ def put_pngs_into_html(regexp, html_out='output.html'):
     files =  glob.glob(regexp)
     html_string = ''
     for fname in files:
-        my_string = '<body><p>%s</p></body>' % (fname) + '\n' + '<img src=%s>' % (fname)
+        my_string = '<body><p>%s</p></body>' % (fname) + '\n' + '<img src=%s>' % (fname) + '\n'
         html_string += my_string
     f = open(html_out, 'w')
     message = """<html>
@@ -1216,3 +1217,43 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
                     continue
 
     print 'Labels for %d subjects have been transformed from source %s' %(len(subjects_list), srcsubject)
+
+
+def get_cmap(N):
+    '''Returns a function that maps each index in 0, 1, ... N-1 to a distinct
+    RGB color.'''
+    color_norm = colors.Normalize(vmin=0, vmax=N-1)
+    scalar_map = cmx.ScalarMappable(norm=color_norm, cmap='hsv')
+
+    def map_index_to_rgb_color(index):
+        return scalar_map.to_rgba(index)
+    return map_index_to_rgb_color
+
+
+def subtract_overlapping_vertices(label, labels):
+    '''
+    Check if label overlaps with others in labels
+    and return a new label without the overlapping vertices.
+    The output label contains the original label vertices minus
+    vertices from all overlapping labels in the list.
+
+    label : instance of mne.Label
+    labels : list of labels
+    '''
+    for lab in labels:
+        if (lab.hemi == label.hemi and
+           np.intersect1d(lab.vertices, label.vertices).size > 0 and
+           lab is not label):
+            label = label - lab
+
+    if label.vertices.size > 0:
+        return label
+    else:
+        print 'Label has no vertices left '
+        return None
+
+
+def apply_percentile_threshold(in_data, percentile):
+    ''' Return ndarray with all values below percentile set to 0. '''
+    in_data[in_data <= np.percentile(in_data, percentile)] = 0.
+    return in_data

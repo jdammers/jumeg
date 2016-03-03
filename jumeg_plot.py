@@ -506,3 +506,40 @@ def draw_matrix(mat, th1=None, th2=None, clim=None, cmap=None):
         ax.set_clim(*clim)
     pl.colorbar()
     return ax
+
+
+def plot_intersection_matrix(mylabels):
+    '''
+    Plots matrix showing intersections/ overlaps between labels
+    in the same hemisphere, all the labels are unique
+    this means that no labels reduction is possible.
+    '''
+    import matplotlib.pyplot as pl
+    import itertools
+
+    length = len(mylabels)
+    intersection_matrix = np.zeros((length, length))
+    for i, j in itertools.product(range(length), range(length)):
+        if mylabels[i].hemi == mylabels[j].hemi:
+            intersection_matrix[i][j] = np.intersect1d(mylabels[i].vertices,
+                                                       mylabels[j].vertices).size
+        else:
+            intersection_matrix[i][j] = 0
+    pl.spy(intersection_matrix)
+    pl.show()
+    return intersection_matrix
+
+
+def plot_matrix_with_values(mat, cmap='seismic', colorbar=True):
+    '''
+    Show a matrix with text inside showing the values of the matrix
+    may be useful for showing connectivity maps.
+    '''
+    import matplotlib.pyplot as pl
+    fig, ax = pl.subplots()
+    im = ax.matshow(mat, cmap=cmap)
+    if colorbar:
+        pl.colorbar(im)
+    for (a, b), z in np.ndenumerate(mat):
+        ax.text(b, a, z, ha='center', va='center')
+    pl.show()
