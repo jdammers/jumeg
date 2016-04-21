@@ -13,6 +13,10 @@ from jumeg.jumeg_base import jumeg_base
 from jumeg_math import (calc_performance,
                         calc_frequency_correlation)
 
+try:
+    import glassbrain
+except Exception as e:
+    print ('Unable to import glassbrain check mayavi and pysurfer config.')
 
 def plot_powerspectrum(fname, raw=None, picks=None, dir_plots="plots",
                        tmin=None, tmax=None, fmin=0.0, fmax=450.0, n_fft=4096):

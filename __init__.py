@@ -19,4 +19,4 @@ from . import jumeg_noise_reducer
 from . import connectivity
 from .filter import jumeg_filter
 from . import jumeg_source_localize
-from . import glassbrain
+
