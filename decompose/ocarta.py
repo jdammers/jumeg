@@ -6,9 +6,8 @@
 ----------------------------------------------------------------------
  author     : Lukas Breuer
  email      : l.breuer@fz-juelich.de
- last update: 12.12.2014
- version    : 1.1 (NOTE: Current version is only able to handle data
-                         recorded with the magnesWH3600 system)
+ last update: 14.06.2016
+ version    : 1.2
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -80,9 +79,9 @@ def _fit_sigmoidal_to_cdf(ref_signal):
     ref_signal = pre_math.rescale(ref_signal, 0, 1)
 
     # estimate cdf
-    num_bins = np.sqrt(ref_signal.shape[0])
+    num_bins = int(np.round(np.sqrt(ref_signal.shape[0])))
     x = np.linspace(0, 1, num_bins)
-    counts, _ = np.histogram(ref_signal, bins=num_bins, normed=True)
+    counts, _ = np.histogram(ref_signal, bins=num_bins, density=True)
     cdf = np.cumsum(counts)
     # normalize cdf
     cdf /= cdf[cdf.shape[0]-1]
@@ -598,7 +597,8 @@ class JuMEG_ocarta(object):
                  thresh_ecg=0.3, name_eog='EOG 002', eog_freq=[1, 10],
                  seg_length=30.0, shift_length=10.0,
                  percentile_eog=80, npc=None, explVar=0.95, lrate=None,
-                 maxsteps=100, flow=1.0, fhigh=20.0):
+                 maxsteps=100, flow=1.0, fhigh=20.0,
+                 dim_reduction='explVar'):
         """
         Create ocarta object from raw data file.
 
@@ -680,6 +680,7 @@ class JuMEG_ocarta(object):
         self._freq_corr_oa = 0.0
         self._flow = flow
         self._fhigh =fhigh
+        self._dim_reduction = dim_reduction
 
 
 
@@ -693,6 +694,25 @@ class JuMEG_ocarta(object):
         return self._name_ecg
 
     name_ecg = property(_get_name_ecg, _set_name_ecg)
+
+
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # set/get dimesnion reduction method
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    def _set_dim_reduction(self, dim_reduction):
+        if dim_reduction in ['', 'AIC', 'BIC', 'GAP', 'MDL', 'MIBS', 'explVar']:
+            self._dim_reduction = dim_reduction
+        else:
+            print "Dimension reduction method must be one of the following:"
+            print "AIC, BIC, GAP, MDL, MIBS or explVar"
+            print "Programm stops"
+            import pdb
+            pdb.set_trace()
+
+    def _get_dim_reduction(self):
+        return self._dim_reduction
+
+    dim_reduction = property(_get_dim_reduction, _set_dim_reduction)
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1290,7 +1310,7 @@ class JuMEG_ocarta(object):
 
         # estimate PCA structure
         if self._pca is None:
-            pca_data, pca = whitening(data.T, dim_reduction='explVar',
+            pca_data, pca = whitening(data.T, dim_reduction=self.dim_reduction,
                                       npc=self.npc, explainedVar=self.explVar)
             self._pca = pca
             self.npc = len(pca_data[0])
@@ -1526,7 +1546,7 @@ class JuMEG_ocarta(object):
             name_ecg=None, ecg_freq=None, thresh_ecg=None,
             name_eog=None, eog_freq=None, seg_length=None, shift_length=None,
             npc=None, explVar=None, lrate=None, maxsteps=None,
-            fn_perf_img=None):
+            fn_perf_img=None, dim_reduction=None):
 
 
         """
@@ -1620,6 +1640,8 @@ class JuMEG_ocarta(object):
             self.flow = flow
         if fhigh:
             self.fhigh = fhigh
+        if dim_reduction:
+            self.dim_reduction = dim_reduction
 
 
         # extract parameter from input data
@@ -1706,17 +1728,19 @@ class JuMEG_ocarta(object):
             # print out some information
             if verbose:
                 print ">>>> calculating OCARTA"
-                print "       --> number of channels  : %d" % nchan
-                print "       --> number of timeslices: %d" % self._ntsl
-                print "       --> explained variance  : %g" % self.explVar
-                print "       --> number of components: %d" % weights.shape[0]
-                print "       --> block size (in s)   : %d" % self.seg_length
-                print "       --> number of blocks    : %d" % nsteps
-                print "       --> block shift (in s)  : %d" % self.shift_length
-                print "       --> maxsteps training   : %d" % (3 * self.maxsteps)
-                print "       --> maxsteps cleaning   : %d" % self.maxsteps
-                print "       --> costfunction CA     : a0=%g, a1=%g" % (self.opt_cost_func_cardiac[0], self.opt_cost_func_cardiac[1])
-                print "       --> costfunction OA     : a0=%g, a1=%g" % (self.opt_cost_func_ocular[0], self.opt_cost_func_ocular[1])
+                print "       --> number of channels        : %d" % nchan
+                print "       --> number of timeslices      : %d" % self._ntsl
+                print "       --> dimension reduction method: %s" % self._dim_reduction
+                if self._dim_reduction == 'explVar':
+                    print "       --> explained variance        : %g" % self.explVar
+                print "       --> number of components      : %d" % weights.shape[0]
+                print "       --> block size (in s)         : %d" % self.seg_length
+                print "       --> number of blocks          : %d" % nsteps
+                print "       --> block shift (in s)        : %d" % self.shift_length
+                print "       --> maxsteps training         : %d" % (3 * self.maxsteps)
+                print "       --> maxsteps cleaning         : %d" % self.maxsteps
+                print "       --> costfunction CA           : a0=%g, a1=%g" % (self.opt_cost_func_cardiac[0], self.opt_cost_func_cardiac[1])
+                print "       --> costfunction OA           : a0=%g, a1=%g" % (self.opt_cost_func_ocular[0], self.opt_cost_func_ocular[1])
                 print ""
 
                 if self.flow or self.fhigh:
