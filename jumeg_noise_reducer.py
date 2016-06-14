@@ -4,8 +4,8 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 17.07.2015
- version    : 1.3
+ last update: 14.06.2016
+ version    : 1.4
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -125,7 +125,7 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
 
     from matplotlib import gridspec as grd
     import matplotlib.pyplot as plt
-    from mne.time_frequency import compute_raw_psd
+    from mne.time_frequency import psd_welch
 
     fnraw = get_files_from_list(fname_raw)
 
@@ -146,9 +146,9 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
         if area_mode not in [None, 'std', 'range']:
             raise ValueError('"area_mode" must be "std", "range", or None')
 
-        psds, freqs = compute_raw_psd(raw, picks=picks, fmin=fmin, fmax=fmax,
-                                      tmin=tmin, tmax=tmax, n_fft=n_fft,
-                                      n_jobs=n_jobs, proj=proj)
+        psds, freqs = psd_welch(raw, picks=picks, fmin=fmin, fmax=fmax,
+                                tmin=tmin, tmax=tmax, n_fft=n_fft,
+                                n_jobs=n_jobs, proj=proj)
         psds_all.append(psds)
         freqs_all.append(freqs)
 
@@ -442,7 +442,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
         if verbose:
             print ">>> Set time-range to [%7.3f,%7.3f]" % \
-                  (raw.index_as_time(itmin)[0], raw.index_as_time(itmax)[0])
+                  (raw.times[itmin], raw.times[itmax])
 
         if signals is None or len(signals) == 0:
             sigpick = mne.pick_types(raw.info, meg='mag', eeg=False, stim=False,
@@ -501,9 +501,9 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             droplist = [raw.info['ch_names'][k] for k in xrange(raw.info['nchan']) if not k in refpick]
             tct = time.clock()
             twt = time.time()
-            fltref = raw.drop_channels(droplist, copy=True)
+            fltref = raw.copy().drop_channels(droplist)
             if use_refantinotch:
-                rawref = raw.drop_channels(droplist, copy=True)
+                rawref = raw.copy().drop_channels(droplist)
                 freqlast = np.min([5.01 * refnotch, 0.5 * raw.info['sfreq']])
                 fltref.notch_filter(np.arange(refnotch, freqlast, refnotch),
                                     picks=np.array(xrange(nref)), method='iir')
@@ -781,7 +781,7 @@ def test_noise_reducer():
     # Time window selection
     # weights are calc'd based on [tmin,tmax], but applied to the entire data set.
     # tstep is used in artifact detection
-    tmax = raw.index_as_time(raw.last_samp)[0]
+    tmax = raw.times[raw.last_samp]
     tstep = 0.2
     itmin = int(floor(tmin * raw.info['sfreq']))
     itmax = int(ceil(tmax * raw.info['sfreq']))
