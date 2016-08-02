@@ -4,6 +4,8 @@ Jumeg MFT example.
 ====================
 """
 
+import numpy as np
+import mne
 from mne.datasets import sample
 from jumeg_mft_funcs import apply_mft
 import jumeg_mft_plot
@@ -56,6 +58,10 @@ fwdmag, qualmft, stc_mft = apply_mft(fwdname, evoname, evocondition=evocondition
                                      subject=subject, meg=want_meg,
                                      mftpar=mftpar, verbose='verbose')
 
+evo = mne.read_evokeds(evoname, condition=evocondition, baseline=(None, 0))
+tmin = -0.2
+tstep = 1./evo.info['sfreq']
+
 stcdata = stc_mft.data
 
 print " "
@@ -73,8 +79,9 @@ print "> Discriminating lh/rh by sign of fwdmag['source_rr'][:,0] in MR coords:"
 print "> lhmrinds[0].shape[0] = ", lhmrinds[0].shape[0], " rhmrinds[0].shape[0] = ", rhmrinds[0].shape[0]
 
 # plotting routines
-jumeg_mft_plot.jumeg_mft_plot.plot_global_cdv_dist(stcdata)
-jumeg_mft_plot.plot_visualize_mft_sources(fwdmag, stcdata)
+jumeg_mft_plot.plot_global_cdv_dist(stcdata)
+jumeg_mft_plot.plot_visualize_mft_sources(fwdmag, stcdata, tmin=tmin, tstep=tstep,
+                                          subject=subject, subjects_dir=subjects_dir)
 jumeg_mft_plot.plot_cdv_distribution(fwdmag, stc_data)
 jumeg_mft_plot.plot_max_amplitude_data(fwdmag, stcdata)
 jumeg_mft_plot.plot_max_cdv_data(stcdatamft, lhmrinds, rhmrinds)
@@ -94,10 +101,10 @@ if print_transforms:
     print invmri_head_t
 
 # stc_feat.save will create lh/rh-stc-s [md5-]equal to stc.save 00/01 above.
-stcfname = os.path.join(os.path.dirname(evoname),
-                        os.path.basename(evoname).split('-')[0]) + "tst"
-print "stc basefilename: %s" % stcfname
-stc_feat.save(stcfname, verbose=True)
+# stcfname = os.path.join(os.path.dirname(evoname),
+#                         os.path.basename(evoname).split('-')[0]) + "tst"
+# print "stc basefilename: %s" % stcfname
+# stc_feat.save(stcfname, verbose=True)
 
 write_tab_files = False
 if write_tab_files:

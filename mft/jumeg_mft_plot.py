@@ -4,11 +4,14 @@ Jumeg MFT Plotting.
 ====================
 """
 
+import numpy as np
 import matplotlib.pyplot as plt
 
 from nilearn.plotting import plot_stat_map
 from nilearn.image import index_img
 
+from mne import SourceEstimate, VolSourceEstimate
+from mne.transforms import invert_transform, apply_trans
 
 def plot_global_cdv_dist(stcdata):
     '''
@@ -29,7 +32,8 @@ def plot_global_cdv_dist(stcdata):
     plt.close()
 
 
-def plot_visualize_mft_sources(fwdmag, stcdata):
+def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
+                               subject, subjects_dir):
     '''
     Plot the MFT sources at time point of peak.
     '''
@@ -40,8 +44,8 @@ def plot_visualize_mft_sources(fwdmag, stcdata):
         vertices = [fwdmag['src'][0]['vertno'][fwdmag['src'][0]['rr'][fwdmag['src'][0]['vertno']][:, 0] <= -0.],
                     fwdmag['src'][0]['vertno'][fwdmag['src'][0]['rr'][fwdmag['src'][0]['vertno']][:, 0] > -0.]]
 
-    stc_feat = mne.SourceEstimate(stcdata, vertices=vertices,
-                                  tmin=-0.2, tstep=tstep, subject=subject)
+    stc_feat = SourceEstimate(stcdata, vertices=vertices,
+                              tmin=-0.2, tstep=tstep, subject=subject)
     for hemi in ['lh', 'rh']:
         brain = stc_feat.plot(surface='white', hemi=hemi, subjects_dir=subjects_dir,
                               transparent=True, clim='auto')
@@ -49,7 +53,7 @@ def plot_visualize_mft_sources(fwdmag, stcdata):
         # use peak getter to move visualization to the time point of the peak
         tmin = 0.095
         tmax = 0.10
-        print "Restricting peak search to [%fs,%fs]" % (tmin, tmax)
+        print "Restricting peak search to [%fs, %fs]" % (tmin, tmax)
         if hemi == 'both':
             vertno_max, time_idx = stc_feat.get_peak(hemi='rh', time_as_index=True,
                                                      tmin=tmin, tmax=tmax)
@@ -92,8 +96,8 @@ def plot_visualize_mft_sources(fwdmag, stcdata):
             print brain.geo['rh'].coords[vfoci]
 
         mrfoci = np.zeros(cfoci.shape)
-        invmri_head_t = mne.transforms.invert_transform(fwdmag['info']['mri_head_t'])
-        mrfoci = mne.transforms.apply_trans(invmri_head_t['trans'],cfoci, move=True)
+        invmri_head_t = invert_transform(fwdmag['info']['mri_head_t'])
+        mrfoci = apply_trans(invmri_head_t['trans'],cfoci, move=True)
         print "mrfoci: "
         print mrfoci
 
@@ -103,7 +107,7 @@ def plot_visualize_mft_sources(fwdmag, stcdata):
             bloblist[i,0] = float(i)
             bloblist[i+100,1] = float(i)
             bloblist[i+200,2] = float(i)
-        mrblobs = mne.transforms.apply_trans(invmri_head_t['trans'], bloblist, move=True)
+        mrblobs = apply_trans(invmri_head_t['trans'], bloblist, move=True)
         brain.save_image('testfig_map_%s.png' % hemi)
         brain.close()
 
@@ -138,7 +142,7 @@ def plot_max_amplitude_data(fwdmag, stcdata, method='mft'):
     iblck = -1
     for s in fwdmag['src']:
         iblck = iblck + 1
-        stc = mne.VolSourceEstimate(stcdata[iblck], vertices=s['vertno'],
+        stc = VolSourceEstimate(stcdata[iblck], vertices=s['vertno'],
                                     tmin=-0.2, tstep=tstep, subject=subject)
         # View activation time-series
         plt.xlim((1e3*np.min(stc.times), 1e3*np.max(stc.times)))
