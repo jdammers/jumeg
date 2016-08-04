@@ -68,9 +68,16 @@ def compare_est_exp(pmat, acoeff, mexp):
 def calc_cdm_w_cut(cdv, cdvcut):
     """Calculate cdm from current-density-vectors with cut
 
+    Estimate cdm, the current directionality measure, using the direction
+    of the maximum current and jlong, the total current in that direction
+     cutcdm = sum(cdvmax^*cdv[i], i with cdvmax^*cdv[i]>0) /
+              sum(|cdv[i]|, all i w/ |cdv(i)|>cut*cdvmax)
+     cutjlong = sum(cdvmax^*cdv[i], i with cdvmax^*cdv[i]>0),
+                            all i w/ |cdv(i)|>cut*cdvmax)
+
     Parameters
     ----------
-    cdv: np-array w current densoty vectors
+    cdv: np-array w current density vectors
     cdvcut: cut for cdv-norms [0,1) of |cdvmax|
 
     Returns
@@ -110,9 +117,18 @@ def calc_cdm_w_cut(cdv, cdvcut):
 def fit_cdm_w_cut(cdv, cdvcut):
     """Calculate cdm from current-density-vectors with cut
 
+    Fit cdm, the current directionality measure, using the direction
+    of the maximum current as initial value and scan directions on
+    the unit sphere for improvement.
+    Returns also jlong, the total current in that direction
+     cutcdm = sum(cdvmax^*cdv[i], i with cdvmax^*cdv[i]>0) /
+              sum(|cdv[i]|, all i w/ |cdv(i)|>cut*cdvmax)
+     cutjlong = sum(cdvmax^*cdv[i], i with cdvmax^*cdv[i]>0),
+                            all i w/ |cdv(i)|>cut*cdvmax)
+
     Parameters
     ----------
-    cdv: np-array w current densoty vectors
+    cdv: np-array w current density vectors
     cdvcut: cut for cdv-norms [0,1) of |cdvmax|
 
     Returns
@@ -163,9 +179,14 @@ def fit_cdm_w_cut(cdv, cdvcut):
 def scan_cdm_w_cut(cdv, cdvcut):
     """Calculate cdm from current-density-vectors with cut
 
+    Find cdm, the current directionality measure, scanning for the
+    best cdv-direction.
+     cutcdm = sum(cdvmax^*cdv[i], i with cdvmax^*cdv[i]>0) /
+              sum(|cdv[i]|, all i w/ |cdv(i)|>cut*cdvmax)
+
     Parameters
     ----------
-    cdv: np-array w current densoty vectors
+    cdv: np-array w current density vectors
     cdvcut: cut for cdv-norms [0,1) of |cdvmax|
 
     Returns
@@ -616,27 +637,53 @@ def apply_mft(fwdname, datafile, evocondition=None, meg='mag',
         print "stcdata from mft-SR and old calc DIFFER."
 
     if save_stc:
-        # save Volume stc.
-        if len(vertices) == 1:
-            method = 'mft'
-            print "##### Creating volume stc-s:"
-            iblck = -1
-            for s in fwdmag['src']:
-                iblck = iblck + 1
-                stc = mne.VolSourceEstimate(stcdata[iblck], vertices=s['vertno'],
-                                            tmin=-0.2, tstep=tstep, subject=subject)
-                stcfname = os.path.join(os.path.dirname(datafile),
-                                        os.path.basename(datafile).split('-')[0]) + "{0:0=2d}".format(iblck)
-                stc.save(stcfname, verbose=True)
-                print "Created %s" % stcfname
-        else:
-            # save Surface stc.
-            print "##### Trying to save stc:"
-            stcmft_fname = os.path.join(os.path.dirname(datafile),
-                                        os.path.basename(datafile).split('-')[0]) + "mft"
-            print "stcmft basefilename: %s" % stcmft_fname
-            stc_mft.save(stcmft_fname, verbose=True)
-            print "##### done."
+        # save Surface stc.
+        print "##### Trying to save stc:"
+        stcmft_fname = os.path.join(os.path.dirname(datafile),
+                                    os.path.basename(datafile).split('-')[0]) + "mft"
+        print "stcmft basefilename: %s" % stcmft_fname
+        stc_mft.save(stcmft_fname, verbose=True)
+        print "##### done."
+
+    write_tab_files = True
+    if write_tab_files:
+        time_idx = np.argmax(np.max(stcdata, axis=0))
+        tabfilenam = 'testtab.dat'
+        print "##### Creating %s with |cdv(time_idx=%d)|" % (tabfilenam, time_idx)
+        tabfile = open(tabfilenam, mode='w')
+        cdvnmax = np.max(stcdata[:, time_idx])
+        tabfile.write("# time_idx = %d\n" % time_idx)
+        tabfile.write("# max amplitude = %11.4e\n" % cdvnmax)
+        tabfile.write("#  x/mm    y/mm    z/mm     |cdv|   index\n")
+        for ipnt in xrange(n_loc/3):
+            copnt = 1000.*fwdmag['source_rr'][ipnt]
+            tabfile.write(" %7.2f %7.2f %7.2f %11.4e %5d\n" % \
+                          (copnt[0], copnt[1], copnt[2], stcdata[ipnt, time_idx], ipnt))
+        tabfile.close()
+
+        tabfilenam = 'testwtab.dat'
+        print "##### Creating %s with wdist0" % tabfilenam
+        tabfile = open(tabfilenam,mode='w')
+        tabfile.write("# time_idx = %d\n" % time_idx)
+        for icnt in xrange(prbcnt.shape[0]):
+            cocnt = 1000.*prbcnt[icnt,:]
+            tabfile.write("# center  %7.2f %7.2f %7.2f\n" % (cocnt[0], cocnt[1], cocnt[2]))
+
+        tabfile.write("# max value = %11.4e\n" % np.max(wdist0))
+        tabfile.write("#  x/mm    y/mm    z/mm    wdist0   index")
+        for icnt in xrange(prbcnt.shape[0]):
+            tabfile.write("  d_%d/mm" % (icnt+1))
+        tabfile.write("\n")
+        for ipnt in xrange(n_loc/3):
+            copnt = 1000.*fwdmag['source_rr'][ipnt]
+            tabfile.write(" %7.2f %7.2f %7.2f %11.4e %5d" %\
+                          (copnt[0],copnt[1],copnt[2],wdist0[ipnt],ipnt))
+            for icnt in xrange(prbcnt.shape[0]):
+                cocnt = 1000.*prbcnt[icnt,:]
+                dist = np.sqrt(np.dot((copnt-cocnt),(copnt-cocnt)))
+                tabfile.write("  %7.2f" % dist)
+            tabfile.write("\n")
+        tabfile.close()
 
     twgbl1 = time.time()
     tcgbl1 = time.clock()
@@ -648,4 +695,5 @@ def apply_mft(fwdname, datafile, evocondition=None, meg='mag',
         print "iteration-loops took per call %9.2fms CPU-time (%9.2fms walltime)" % \
                                (1000.*tltotcpu/float(nltotcall),1000.*tltotwall/float(nltotcall))
         print "Total mft-call  took   total  %9.2f s CPU-time (%9.2f s walltime)" % ((tcgbl1-tcgbl0),(twgbl1-twgbl0))
+
     return (fwdmag, qualdata, stc_mft)

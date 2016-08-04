@@ -74,6 +74,7 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
         # draw marker at maximum peaking vertex
         brain.add_foci(vertno_max, coords_as_verts=True, hemi=hemi, color='blue',
                        scale_factor=0.6)
+        offsets = np.append([0], [s['nuse'] for s in fwdmag['src']])
         if hemi == 'lh':
             ifoci = [np.nonzero([stcdata[0:offsets[1],time_idx]>=0.25*np.max(stcdata[:,time_idx])][0])]
             vfoci = fwdmag['src'][0]['vertno'][ifoci[0][0]]
@@ -112,7 +113,7 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
         brain.close()
 
 
-def plot_cdv_distribution(fwdmag, stc_data):
+def plot_cdv_distribution(fwdmag, stcdata):
     '''
     Plot cdv-distribution.
     '''
@@ -124,9 +125,11 @@ def plot_cdv_distribution(fwdmag, stc_data):
     plt.xlim((0, maxxpnt + 100))
     plt.ylim((-0.1 * np.max(stcdata[:, time_idx]),
               1.1 * np.max(stcdata[:, time_idx])))
+    offsets = np.append([0], [s['nuse'] for s in fwdmag['src']])
+    print "offsets = ",offsets
     for s in fwdmag['src']:
         iblck = iblck + 1
-        cdvnmax = stcdata[iblck][:, time_idx]
+        cdvnmax = stcdata[offsets[iblck]:offsets[iblck]+offsets[iblck+1], time_idx]
         print "cdvnmax.shape=", cdvnmax.shape
         plt.plot(xrange(cdvnmax.shape[0]), np.sort(cdvnmax))
         plt.xlabel('n')
@@ -136,17 +139,18 @@ def plot_cdv_distribution(fwdmag, stc_data):
     plt.close()
 
 
-def plot_max_amplitude_data(fwdmag, stcdata, method='mft'):
+def plot_max_amplitude_data(fwdmag, stcdata, tmin, tstep, subject, method='mft'):
     print "##### Attempting to plot max. amplitude data:"
     fig = plt.figure()
     iblck = -1
+    offsets = np.append([0], [s['nuse'] for s in fwdmag['src']])
     for s in fwdmag['src']:
         iblck = iblck + 1
-        stc = VolSourceEstimate(stcdata[iblck], vertices=s['vertno'],
-                                    tmin=-0.2, tstep=tstep, subject=subject)
+        stc = VolSourceEstimate(stcdata[offsets[iblck]:offsets[iblck]+offsets[iblck+1],:], vertices=s['vertno'],
+                                    tmin=tmin, tstep=tstep, subject=subject)
         # View activation time-series
         plt.xlim((1e3*np.min(stc.times), 1e3*np.max(stc.times)))
-        plt.ylim((0, np.max(stcdata[iblck])))
+        plt.ylim((0, np.max(stcdata)))
         plt.plot(1e3 * stc.times, np.max(stc.data, axis=0),
                  label=(('lh', 'rh'))[iblck])
         plt.xlabel('time (ms)')
@@ -187,7 +191,7 @@ def plot_cdvsum_data(stc_mft, lhmrinds, rhmrinds):
     plt.close()
 
 
-def plot_quality_data(qualmft, stf_mft):
+def plot_quality_data(qualmft, stc_mft):
     '''Plot quality data.
     '''
     print "##### Attempting to plot quality data:"
@@ -196,7 +200,7 @@ def plot_quality_data(qualmft, stf_mft):
     scalexp = -int(np.log10(np.max(qualmft['relerr'][:])))-1
     relerrscal = pow(10,scalexp)
     ls = '-'
-    if fwdname.rfind('vol')>0: ls = '--'
+    #if fwdname.rfind('vol')>0: ls = '--'
     plt.ylim((0,1.05))
     plt.plot(1e3 * stc_mft.times, relerrscal*qualmft['relerr'][:],'r'+ls, label='relerr')
     plt.plot(1e3 * stc_mft.times, qualmft['rdmerr'][:], 'g'+ls, label='rdmerr')
@@ -208,6 +212,7 @@ def plot_quality_data(qualmft, stf_mft):
     plt.close()
 
 
+# TODO cdmdata computation to be added into apply_mft
 def plot_cdm_data(stc_mft, cdmdata):
     '''Plot CDM data.
     '''
@@ -227,6 +232,7 @@ def plot_cdm_data(stc_mft, cdmdata):
     plt.close()
 
 
+# TODO jlngdata computation to be added into apply_mft
 def plot_jlong_data(stc_mft, jlngdata):
     print "##### Attempting to plot jlong data:"
     fig = plt.figure()
