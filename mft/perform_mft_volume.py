@@ -29,13 +29,13 @@ want_stim = False
 exclude = 'bads'
 include = []
 
-print "########## MFT parameters:"
+print "MFT parameters:"
 # mftpar = { 'prbfct':'Gauss',
 #           'prbcnt':np.array([[-1.039, 0.013,0.062],[-0.039, 0.013,0.062]]),
 #           'prbhw':np.array([[0.040,0.040,0.040],[0.040,0.040,0.040]]) }
 mftpar = {'prbfct': 'uniform',
-           'prbcnt': None,
-           'prbhw': None}
+          'prbcnt': None,
+          'prbhw': None}
 mftpar.update({'iter': 8, 'currexp': 1.0})
 mftpar.update({'regtype': 'PzetaE', 'zetareg': 1.00})
 # mftpar.update({ 'regtype':'classic', 'zetareg':1.0})
@@ -64,14 +64,17 @@ print "########## Some geo-numbers:"
 lhinds = np.where(fwdmag['source_rr'][:, 0] <= 0.)
 rhinds = np.where(fwdmag['source_rr'][:, 0] > 0.)
 print "> Discriminating lh/rh by sign of fwdmag['source_rr'][:,0]:"
-print "> lhinds[0].shape[0] = ", lhinds[0].shape[0], " rhinds[0].shape[0] = ", rhinds[0].shape[0]
+print "> lhinds[0].shape[0] = ", lhinds[0].shape[0], " rhinds[0].shape[0] = ",\
+    rhinds[0].shape[0]
 invmri_head_t = mne.transforms.invert_transform(fwdmag['info']['mri_head_t'])
 mrsrc = np.zeros(fwdmag['source_rr'].shape)
-mrsrc = mne.transforms.apply_trans(invmri_head_t['trans'], fwdmag['source_rr'], move=True)
+mrsrc = mne.transforms.apply_trans(invmri_head_t['trans'], fwdmag['source_rr'],
+                                   move=True)
 lhmrinds = np.where(mrsrc[:, 0] <= 0.)
 rhmrinds = np.where(mrsrc[:, 0] > 0.)
 print "> Discriminating lh/rh by sign of fwdmag['source_rr'][:,0] in MR coords:"
-print "> lhmrinds[0].shape[0] = ", lhmrinds[0].shape[0], " rhmrinds[0].shape[0] = ", rhmrinds[0].shape[0]
+print "> lhmrinds[0].shape[0] = ", lhmrinds[0].shape[0],\
+    " rhmrinds[0].shape[0] = ", rhmrinds[0].shape[0]
 
 # read the evoked
 evo = mne.read_evokeds(evoname, condition=evocondition, baseline=(None, 0))
@@ -92,7 +95,8 @@ jumeg_mft_plot.plot_quality_data(qualmft, stc_mft)
 
 print_transforms = False
 if print_transforms:
-    print "##### Transforms:\nfwdmag['info']['mri_head_t']:", fwdmag['info']['mri_head_t']
+    print "##### Transforms:\nfwdmag['info']['mri_head_t']:",\
+        fwdmag['info']['mri_head_t']
     invmri_head_t = mne.transforms.invert_transform(fwdmag['info']['mri_head_t'])
     print "Inverse of fwdmag['info']['mri_head_t']:", invmri_head_t
 
