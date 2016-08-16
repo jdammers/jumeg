@@ -2,10 +2,13 @@
 
 """ Visualization functions for connectivity analysis. """
 
+import sys
+import os.path as op
 import numpy as np
 import scipy as sci
 import matplotlib.pyplot as pl
 import mne
+import yaml
 
 
 def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_factor=0.005, tube_radius=0.001):
@@ -84,3 +87,67 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_
 
     view = (-88.7, 40.8, 0.76, np.array([-3.9e-4, -8.5e-3, -1e-2]))
     mlab.view(*view)
+
+
+def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
+                                     out_fname='circle.png'):
+    '''
+    Plot the connectivity circle grouped and ordered according to
+    groups in the yaml input file provided.
+    '''
+    # read the yaml file with grouping
+    if op.isfile(yaml_fname):
+        with open(yaml_fname, 'r') as f:
+            labels = yaml.load(f)
+    else:
+        print '%s - File not found.' % yaml_fname
+        sys.exit()
+
+    cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
+                     'g', 'r', 'c', 'y', 'b', 'm']
+
+    # make list of label_names (without individual cortex locations)
+    label_names = list()
+    for lab in labels:
+        label_names.extend(labels[lab])
+
+    lh_labels = [name + '-lh' for name in label_names]
+    rh_labels = [name + '-rh' for name in label_names]
+
+    # Save the plot order and create a circular layout
+    node_order = list()
+    node_order.extend(lh_labels[::-1])  # reverse the order
+    node_order.extend(rh_labels)
+
+    assert len(node_order) == node_order_size, 'Node order length is correct.'
+
+    # the respective no. of regions in each cortex
+    group_bound = [len(labels[key]) for key in labels.keys()]
+    group_bound = [0] + group_bound[::-1] + group_bound
+
+    group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
+
+    # remove the first element of group_bound
+    # make label colours such that each cortex is of one colour
+    group_bound.pop(0)
+    label_colors = []
+    for ind, rep in enumerate(group_bound):
+        label_colors += [cortex_colors[ind]] * rep
+    assert len(label_colors) == len(node_order), 'Number of colours do not match'
+
+    # remove the last total sum of the list
+    group_boundaries.pop()
+
+    from mne.viz.circle import circular_layout
+    node_angles = circular_layout(node_order, node_order, start_pos=90,
+                                  group_boundaries=group_boundaries)
+
+    # Plot the graph using node_order and colours
+    from mne.viz import plot_connectivity_circle
+    plot_connectivity_circle(con, node_order, n_lines=10, facecolor='white', textcolor='black',
+                             node_angles=node_angles, node_colors=label_colors,
+                             node_edgecolor='white',
+                             colorbar=False,
+                             title='test grouped con matrix')
+    if out_fname:
+        pl.savefig(out_fname, facecolor='white')

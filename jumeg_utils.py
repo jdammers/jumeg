@@ -33,6 +33,11 @@ def retcode_error(command, subj):
     print 'Please check the arguments, and rerun for subject.'
 
 
+def get_jumeg_path():
+    '''Return the path where jumeg is installed.'''
+    return os.path.abspath(os.path.dirname(__file__))
+
+
 def check_jumeg_standards(fnames):
     '''
     Checks for file name extension and provides information on type of file
