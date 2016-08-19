@@ -1,0 +1,45 @@
+cingulate:
+    - rostralanteriorcingulate
+    - caudalanteriorcingulate
+    - posteriorcingulate
+    - isthmuscingulate
+
+insula:
+    - insula
+
+frontal:
+    - superiorfrontal
+    - rostralmiddlefrontal
+    - caudalmiddlefrontal
+    - parsopercularis
+    - parsorbitalis
+    - parstriangularis
+    - lateralorbitofrontal
+    - medialorbitofrontal
+    - precentral
+    - paracentral
+    - frontalpole
+
+parietal:
+    - superiorparietal
+    - inferiorparietal
+    - precuneus
+    - postcentral
+    - supramarginal
+
+occipital:
+    - lateraloccipital
+    - lingual
+    - cuneus
+    - pericalcarine
+
+temporal:
+    - bankssts
+    - temporalpole
+    - superiortemporal
+    - middletemporal
+    - transversetemporal
+    - inferiortemporal
+    - fusiform
+    - entorhinal
+    - parahippocampal

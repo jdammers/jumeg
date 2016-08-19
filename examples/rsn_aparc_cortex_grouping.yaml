@@ -1,0 +1,45 @@
+default_mode_network:
+    - precuneus
+    - posteriorcingulate
+    - inferiorparietal
+    - rostralanteriorcingulate
+    - caudalanteriorcingulate
+    - superiorfrontal
+
+the_sensorymotor_network:
+    - precentral
+    - paracentral
+    - postcentral
+    - insula
+
+the_visual_component:
+    - lateraloccipital
+    - lingual
+    - cuneus
+    - pericalcarine
+
+the_dorsoventral_parietal_network:
+    - superiorparietal
+    - supramarginal
+
+the_frontoparietal_network:
+    - rostralmiddlefrontal
+    - caudalmiddlefrontal
+    - parsopercularis
+    - parsorbitalis
+    - parstriangularis
+    - lateralorbitofrontal
+    - medialorbitofrontal
+    - frontalpole
+    - isthmuscingulate
+
+the temporalparietal_network:
+    - bankssts
+    - temporalpole
+    - superiortemporal
+    - middletemporal
+    - transversetemporal
+    - inferiortemporal
+    - fusiform
+    - entorhinal
+    - parahippocampal
