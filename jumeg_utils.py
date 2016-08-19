@@ -16,6 +16,7 @@ from mne.utils import logger
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
 
+
 def get_files_from_list(fin):
     ''' Return string of file or files as iterables lists '''
     if isinstance(fin, list):
@@ -28,9 +29,37 @@ def get_files_from_list(fin):
     return fout
 
 
+def reset_directory(path=None):
+    """
+    Check whether the directory exits, if yes, recreate the directory.
+    ----------
+    path : the target directory.
+    """
+    import shutil
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
+
+
+def set_directory(path=None):
+    """
+    Check whether the directory exits, if not, create the directory.
+    ----------
+    path : the target directory.
+
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
 def retcode_error(command, subj):
     print '%s did not run successfully for subject %s.' % (command, subj)
     print 'Please check the arguments, and rerun for subject.'
+
+
+def get_jumeg_path():
+    '''Return the path where jumeg is installed.'''
+    return os.path.abspath(os.path.dirname(__file__))
 
 
 def check_jumeg_standards(fnames):
