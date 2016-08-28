@@ -45,13 +45,13 @@ p_v = 0.005 # comparisons corrected p-value
 
 # Cluster operation
 do_apply_invers_ave = False # Making inverse operator
-do_apply_STC_ave = False # Inversing conduction
-do_morph_STC_ave = False # STC morphing conduction
-do_calc_matrix = False # Form the group matrix or load directly
+do_apply_STC_ave = True # Inversing conduction
+do_morph_STC_ave = True # STC morphing conduction
+do_calc_matrix = True # Form the group matrix or load directly
 do_mv_ave = False #The moving average conduction
 do_ftest = False # 2sample f test conduction
-do_ttest = False # 1sample t test
-do_clu2STC=True
+do_ttest = True # 1sample t test
+do_clu2STC = False
 # Set the option for stimulus or response
 conf_per = False
 conf_res = True

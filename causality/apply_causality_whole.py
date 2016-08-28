@@ -471,7 +471,9 @@ def model_estimation(fn_norm, thr_cons=0.8, whit_min=1., whit_max=3.,
         A, SIG, E = _tsdata_to_var(X, morder)
         whi = False
         dw, pval = _whiteness(X, E)
-        if np.all(dw < whit_max) and np.all(dw > whit_min):
+        #if np.all(dw < whit_max) and np.all(dw > whit_min):
+        #    whi = True
+        if np.all(pval < 0.05):
             whi = True
         cons = _consistency(X, E)
         X = X.transpose(2, 0, 1)

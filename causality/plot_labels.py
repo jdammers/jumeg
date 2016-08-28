@@ -12,7 +12,7 @@ stcs_path = subjects_dir + '/fsaverage/conf_stc/'
 labels_dir = stcs_path + 'STC_ROI/func/'
 
 subject_id = 'fsaverage'
-hemi = "split"
+hemi = "both"
 # surf = "smoothwm"
 surf = 'inflated'
 fn_list = glob.glob(labels_dir + '*')
