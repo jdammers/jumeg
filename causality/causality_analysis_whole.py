@@ -38,12 +38,12 @@ freqs = [(ifre, 2*ifre), (2*ifre, 3*ifre), (3*ifre, 4*ifre), (4*ifre, 5*ifre)]
 
 # Cluster operation
 do_apply_invers_oper = False # Making inverse operator
-do_apply_STC_epo = True # Making STCs
-do_extract_rSTCs = False
+do_apply_STC_epo = False # Making STCs
+do_extract_rSTCs = True
 do_norm = False
 do_morder = False
 do_moesti = False
-do_cau = True
+do_cau = False
 do_sig_thr = False
 do_group = False
 do_group_plot = False
