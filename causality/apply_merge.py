@@ -62,9 +62,9 @@ def _merge_rois(mer_path, label_list):
             class_list.append(test_fn)
     return len(class_list)
 
-def _redu_mean(mer_path, vert_num):
+def redu_small(red_path, vert_size, fn_src):
     '''
-    mer_path: str
+    red_path: str
         The directory for storing merged ROIs.
     '''
     import glob
@@ -81,15 +81,26 @@ def _redu_mean(mer_path, vert_num):
     # import pdb
     # pdb.set_trace()
     # print np.round(np.array(vert).max()), np.round(np.array(vert).min()), vert_mean
-    files = glob.glob(mer_path + '*')
+    files = glob.glob(red_path + '*')
+    src = mne.read_source_spaces(fn_src)
     for f in files:
         label = mne.read_label(f)
-        if label.vertices.size < vert_num:
+        if label.hemi == 'lh':
+            hemi = 0
+        elif label.hemi == 'rh':
+            hemi = 1
+        dist = src[hemi]['dist']
+        label_dist = dist[label.vertices, :][:, label.vertices]
+        max_dist = round(label_dist.max() * 1000)
+        if max_dist > vert_size:
+            print('Size of the %s:' %label.name, max_dist, 'mm')
+        elif max_dist < vert_size:
         # if label.vertices.size < vert_mean:
+            print('Size of the %s:' %label.name, max_dist, 'mm lower than %d mm' %vert_size)
             os.remove(f)
 
 
-def apply_merge(labels_path, vert_num=0, red_little=False):
+def apply_merge(labels_path):
     '''
     Merge the concentrated ROIs.
     Parameter
@@ -111,8 +122,6 @@ def apply_merge(labels_path, vert_num=0, red_little=False):
     source = glob.glob(os.path.join(source_path, '*.*'))
     for filename in source:
         shutil.copy(filename, mer_path)
-    if red_little:
-        _redu_mean(mer_path, vert_num)
     reducer = True
     while reducer:
         list_dirs = os.walk(mer_path)

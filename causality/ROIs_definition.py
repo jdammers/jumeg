@@ -6,7 +6,7 @@ import os
 import numpy as np
 import mne
 import glob
-from apply_merge import apply_merge
+from apply_merge import apply_merge, redu_small
 from jumeg.jumeg_utils import reset_directory
 
 subjects_dir = os.environ['SUBJECTS_DIR']
@@ -16,8 +16,8 @@ labels_path = stcs_path + 'STC_ROI/' # path where ROIs are saved
 conditions = [('sti', 'LLst'), ('sti', 'RRst'), ('sti', 'RLst'), ('sti', 'LRst'),
               ('res', 'LLrt'), ('res', 'RRrt'), ('res', 'RLrt'), ('res', 'LRrt')]
 #fn_stcdata = stcs_path + 'stcsdata.npy'
-thr = 0 # Threshold of the time span of STC
-vert_num = 0 # minimum vertices amount for ROIs
+thr = 0 # Threshold of the time span of STC (ms)
+vert_size = 10 # minimum size for ROIs (mm)
 
 do_ROIs = False
 if do_ROIs:
@@ -28,6 +28,7 @@ if do_ROIs:
         side = cond[0]
         conf_type = cond[1]
         fn_stc = stcs_path + 'Ttestpermu16384_pthr0.0001_%s_%s,temp_0.001,tmin_0.000-rh.stc' %(side, conf_type)
+        #fn_stc = stcs_path + 'Ttestpermu16384_pthr0.0001_%s_%s,temp_0.005-rh.stc' %(side, conf_type)
         stc = mne.read_source_estimate(fn_stc)
         data = stc.data
         print '%s_%s condition, the time span is: min %.4f, max %.4f, median %.4f' \
@@ -53,7 +54,7 @@ if do_ROIs:
 # Merge ROIs across conditions
 do_merge = False
 if do_merge:
-    apply_merge(labels_path, vert_num, red_little=False)
+    apply_merge(labels_path)
 
 # Split large cluster
 do_split = False
@@ -67,7 +68,8 @@ if do_split:
     # The corresponding anatomical labels
     #fnana_list = glob.glob(labels_path + '/func_ana/rh/*')
     analabel_list = mne.read_labels_from_annot('fsaverage')
-
+    ana_path = labels_path + '/func_ana/'
+    reset_directory(ana_path)
     for fn_par in fn_par_list:
         par_label = mne.read_label(fn_par, subject='fsaverage')
         # The path to save splited ROIs
@@ -80,9 +82,9 @@ if do_split:
             if overlapped > 0 and ana_label.hemi == par_label.hemi:  
                 chi_label = ana_label - (ana_label - par_label)
                 chi_label.save(chis_path+ana_label.name)
-
+                
 # Merge ROIs with the same anatomical labels.   
-do_merge_ana = False
+do_merge_ana = True
 if do_merge_ana:
     import shutil
     ana_path = glob.glob(labels_path + 'func_ana/*')
@@ -103,14 +105,24 @@ if do_merge_ana:
                 mer_label = ana_label + tar_label
                 os.remove(fn_tar)
                 mer_label.save(tar_path + label_name)
+                print '%s has %d vertices' %(label_name, mer_label.vertices.shape[0])
             else:
                 shutil.copy(fn_ana, tar_path)
-tar_path = labels_path + 'func/'
-func_list1 = glob.glob(tar_path + '*-lh.label')
-func_list2 = glob.glob(tar_path + '*-rh.label')
-func_list = func_list1 + func_list2
-fn_func = labels_path + 'func_list.txt'
-text_file = open(fn_func, "w")
-for func in func_list:
-    text_file.write("%s\n" %func)
-text_file.close()
+
+red_size = True
+if red_size:
+    tar_path = labels_path + 'func/'
+    fn_src = subjects_dir + '/fsaverage/bem/fsaverage-ico-5-src.fif'
+    redu_small(tar_path, vert_size, fn_src)
+    
+do_write_list = True
+if do_write_list:
+    tar_path = labels_path + 'func/'
+    func_list1 = glob.glob(tar_path + '*-lh.label')
+    func_list2 = glob.glob(tar_path + '*-rh.label')
+    func_list = func_list1 + func_list2
+    fn_func = labels_path + 'func_list.txt'
+    text_file = open(fn_func, "w")
+    for func in func_list:
+        text_file.write("%s\n" %func)
+    text_file.close()
