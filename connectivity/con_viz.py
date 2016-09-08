@@ -91,7 +91,7 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_
 
 def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
                                      out_fname='circle.png', title=None,
-                                     subplot=111,
+                                     subplot=111, include_legend=False,
                                      n_lines=None, show=True):
     '''
     Plot the connectivity circle grouped and ordered according to

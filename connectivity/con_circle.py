@@ -361,11 +361,11 @@ def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     return fig, axes
 
 
-def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
-                                     out_fname='circle.png', title=None,
-                                     facecolor='white', fontsize_names=6.,
-                                     subplot=111, include_legend=False,
-                                     n_lines=None, fig=None, show=True):
+def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
+                                            out_fname='circle.png', title=None,
+                                            facecolor='white', fontsize_names=6.,
+                                            subplot=111, include_legend=False,
+                                            n_lines=None, fig=None, show=True):
     '''
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
