@@ -90,7 +90,9 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_
 
 
 def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
-                                     out_fname='circle.png'):
+                                     out_fname='circle.png', title=None,
+                                     subplot=111,
+                                     n_lines=None, show=True):
     '''
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
@@ -144,10 +146,20 @@ def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
 
     # Plot the graph using node_order and colours
     from mne.viz import plot_connectivity_circle
-    plot_connectivity_circle(con, node_order, n_lines=10, facecolor='white', textcolor='black',
+    fig = pl.figure(figsize=(8, 8), facecolor='white')
+    plot_connectivity_circle(con, node_order, n_lines=n_lines,
+                             facecolor='white', textcolor='black',
                              node_angles=node_angles, node_colors=label_colors,
-                             node_edgecolor='white',
-                             colorbar=False,
-                             title='test grouped con matrix')
+                             node_edgecolor='white', fig=fig,
+                             colorbar=False, show=show, subplot=subplot,
+                             title=title)
+
+    if include_legend:
+        import matplotlib.patches as mpatches
+        legend_patches = [mpatches.Patch(color=col, label=key)
+                          for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
+                                              labels.keys())]
+        pl.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
+                  mode=None, fontsize='small')
     if out_fname:
         pl.savefig(out_fname, facecolor='white')
