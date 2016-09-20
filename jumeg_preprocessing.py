@@ -287,7 +287,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 
         # apply cleaning
         meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
-                              n_pca_components=npca, copy=True)
+                              n_pca_components=npca)
         meg_clean.save(fnclean, overwrite=True)
 
         # plot ECG, EOG averages before and after ICA
