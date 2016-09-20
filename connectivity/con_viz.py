@@ -9,11 +9,13 @@ import scipy as sci
 import matplotlib.pyplot as pl
 import mne
 import yaml
+import pickle
 
 
-def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_factor=0.005, tube_radius=0.001):
-    """ Function to plot sensor connectivity showing strongest connections(n_con)
-        excluding sensors that are less than min_dist apart.
+def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
+                           scale_factor=0.005, tube_radius=0.001):
+    """ Function to plot sensor connectivity showing strongest
+        connections(n_con) excluding sensors that are less than min_dist apart.
         https://github.com/mne-tools/mne-python/blob/master/examples/connectivity/plot_sensor_connectivity.py
 
     Parameters
@@ -31,7 +33,8 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_
     min_dist : float
         Minimum distance between sensors allowed.
 
-    Note: Please modify scale factor and tube radius to appropriate sizes if the plot looks scrambled.
+    Note: Please modify scale factor and tube radius to appropriate sizes
+          if the plot looks scrambled.
     """
 
     # Now, visualize the connectivity in 3D
@@ -89,13 +92,18 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05, scale_
     mlab.view(*view)
 
 
-def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
+def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
+                                     node_order_size=68,
                                      out_fname='circle.png', title=None,
                                      subplot=111, include_legend=False,
-                                     n_lines=None, show=True):
+                                     n_lines=None, fig=None, show=True,
+                                     vmin=None, vmax=None,
+                                     colorbar=False):
     '''
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
+    orig_labels : list of str
+        Label names in the order as appears in con.
     '''
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
@@ -126,7 +134,6 @@ def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
     # the respective no. of regions in each cortex
     group_bound = [len(labels[key]) for key in labels.keys()]
     group_bound = [0] + group_bound[::-1] + group_bound
-
     group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
 
     # remove the first element of group_bound
@@ -141,17 +148,25 @@ def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
     group_boundaries.pop()
 
     from mne.viz.circle import circular_layout
-    node_angles = circular_layout(node_order, node_order, start_pos=90,
+    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
                                   group_boundaries=group_boundaries)
 
+    # the order of the node_colors must match that of orig_labels
+    # therefore below reordering is necessary
+    reordered_colors = [label_colors[node_order.index(orig)]
+                        for orig in orig_labels]
+
     # Plot the graph using node_order and colours
+    # orig_labels is the order on nodes in the con matrix (important)
     from mne.viz import plot_connectivity_circle
-    fig = pl.figure(figsize=(8, 8), facecolor='white')
-    plot_connectivity_circle(con, node_order, n_lines=n_lines,
+    plot_connectivity_circle(con, orig_labels, n_lines=n_lines,
                              facecolor='white', textcolor='black',
-                             node_angles=node_angles, node_colors=label_colors,
+                             node_angles=node_angles,
+                             node_colors=reordered_colors,
                              node_edgecolor='white', fig=fig,
-                             colorbar=False, show=show, subplot=subplot,
+                             fontsize_names=6, vmax=vmax, vmin=vmin,
+                             colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
+                             colorbar=colorbar, show=show, subplot=subplot,
                              title=title)
 
     if include_legend:
@@ -162,4 +177,4 @@ def plot_grouped_connectivity_circle(yaml_fname, con, node_order_size=68,
         pl.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
                   mode=None, fontsize='small')
     if out_fname:
-        pl.savefig(out_fname, facecolor='white')
+        pl.savefig(out_fname, facecolor='white', dpi=300)

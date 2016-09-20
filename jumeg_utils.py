@@ -9,6 +9,7 @@ Utilities module for jumeg
 
 import sys
 import os
+import os.path as op
 import numpy as np
 import scipy as sci
 import mne
@@ -1092,6 +1093,30 @@ def put_pngs_into_html(regexp, html_out='output.html'):
           </html>""" % (html_string)
     f.write(message)
     f.close()
+
+
+def crop_images(regexp, crop_dims=(150, 150, 1450, 700), extension='crop'):
+    '''Lists all files in directory that matches pattern regexp
+       and puts it into an html file with filename included.
+
+    regexp : str
+        String of dir path like '/home/kalka/*.png'
+    crop_dims : box tuple
+        Dimensions to crop image (using PIL)
+        (left, upper, right, lower) pixel values
+    extension : str
+        Output file name will be appended with extension.
+    '''
+    import glob
+    from PIL import Image
+    files = glob.glob(regexp)
+    for fname in files:
+        orig = Image.open(fname)
+        out_fname = op.splitext(fname)[0] + ',' + extension +\
+                    op.splitext(fname)[1]
+        cropim = orig.crop((150, 150, 1450, 700))
+        print 'Saving cropped image at %s' % out_fname
+        cropim.save(out_fname, fname.split('.')[1])
 
 
 def check_env_variables(env_variable=None, key=None):

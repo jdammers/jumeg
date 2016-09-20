@@ -11,6 +11,7 @@ http://martinos.org/mne/stable/generated/mne.viz.plot_connectivity_circle.html.
 import numpy as np
 import os.path as op
 import yaml
+import pickle
 
 import matplotlib.pyplot as plt
 
@@ -19,6 +20,8 @@ from mne.viz.utils import plt_show
 from mne.viz.circle import _plot_connectivity_circle_onpick
 from mne.externals.six import string_types
 from mne.fixes import tril_indices, normalize_colors
+
+from ..jumeg_utils import get_jumeg_path
 
 
 def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
@@ -134,7 +137,7 @@ def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     n_nodes = len(node_names)
     n_groups = len(group_node_order)
 
-    if node_angles is not None:
+    if group_node_angles is not None:
         if len(group_node_angles) != n_groups:
             raise ValueError('group_node_angles has to be the same length '
                              'as group_node_order')
@@ -363,13 +366,19 @@ def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
 def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
                                             out_fname='circle.png', title=None,
-                                            facecolor='white', fontsize_names=6.,
+                                            facecolor='white', fontsize_names=6,
                                             subplot=111, include_legend=False,
                                             n_lines=None, fig=None, show=True):
     '''
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
     '''
+
+    # load the label names in the original order (aparc)
+    labels_fname = get_jumeg_path() + '/examples/label_names.list'
+    with open(labels_fname, 'r') as f:
+        orig_labels = pickle.load(f)
+
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
@@ -428,20 +437,21 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
     group_boundaries.pop()
 
     # obtain the node angles
-    node_angles = circular_layout(node_order, node_order, start_pos=90,
+    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
                                   group_boundaries=group_boundaries)
+    # the order of the node_colors must match that of orig_labels
+    # therefore below reordering is necessary
+    reordered_colors = [label_colors[node_order.index(orig)]
+                        for orig in orig_labels]
 
     # Plot the graph using node_order and colours
-    # if fig is None:
-    #     fig = plt.figure(figsize=(8, 8), facecolor=facecolor)
-
-    _plot_connectivity_circle(con, node_order, n_lines=n_lines,
+    _plot_connectivity_circle(con, orig_labels, n_lines=n_lines,
                               facecolor=facecolor, textcolor='black',
                               group_node_order=group_node_order,
                               group_node_angles=group_node_angles,
                               group_colors=cortex_colors,
                               fontsize_groups=6, node_angles=node_angles,
-                              node_colors=label_colors, fontsize_names=8,
+                              node_colors=reordered_colors, fontsize_names=8,
                               node_edgecolor='white', fig=fig,
                               colorbar=False, show=show, subplot=subplot,
                               title=title)
@@ -454,4 +464,4 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
         plt.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
                    mode=None, fontsize='small')
     if out_fname:
-        plt.savefig(out_fname, facecolor='white')
+        plt.savefig(out_fname, facecolor='white', dpi=300)
