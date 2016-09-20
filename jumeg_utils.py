@@ -1108,7 +1108,11 @@ def crop_images(regexp, crop_dims=(150, 150, 1450, 700), extension='crop'):
         Output file name will be appended with extension.
     '''
     import glob
-    from PIL import Image
+    try:
+        from PIL import Image
+    except ImportError:
+        raise RuntimeError('For this method to work the PIL library is'
+                           ' required.')
     files = glob.glob(regexp)
     for fname in files:
         orig = Image.open(fname)

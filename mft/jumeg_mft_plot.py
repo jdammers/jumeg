@@ -7,8 +7,8 @@ Jumeg MFT Plotting.
 import numpy as np
 import matplotlib.pyplot as plt
 
-from nilearn.plotting import plot_stat_map
-from nilearn.image import index_img
+# from nilearn.plotting import plot_stat_map
+# from nilearn.image import index_img
 
 from mne import SourceEstimate, VolSourceEstimate
 from mne.transforms import invert_transform, apply_trans
