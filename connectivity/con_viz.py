@@ -178,3 +178,86 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                   mode=None, fontsize='small')
     if out_fname:
         pl.savefig(out_fname, facecolor='white', dpi=300)
+
+
+def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
+                                node_order_size,
+                                out_fname='circle.png', title=None,
+                                subplot=111, include_legend=False,
+                                n_lines=None, fig=None, show=True,
+                                vmin=None, vmax=None,
+                                colorbar=False):
+    '''
+    Plot the connectivity circle grouped and ordered according to
+    groups in the yaml input file provided. This is not specific to aparc and
+    does not automatically split the labels into left and right hemispheres.
+
+    orig_labels : list of str
+        Label names in the order as appears in con.
+    '''
+    # read the yaml file with grouping
+    if op.isfile(yaml_fname):
+        with open(yaml_fname, 'r') as f:
+            labels = yaml.load(f)
+    else:
+        print '%s - File not found.' % yaml_fname
+        sys.exit()
+
+    cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g']
+
+    # make list of label_names (without individual cortex locations)
+    label_names = list()
+    for lab in labels:
+        label_names.extend(labels[lab])
+
+    # here label_names are the node_order
+    node_order = label_names
+    assert len(node_order) == node_order_size, 'Node order length is correct.'
+
+    # the respective no. of regions in each cortex
+    group_bound = [len(labels[key]) for key in labels.keys()]
+    group_bound = [0] + group_bound
+    group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
+
+    # remove the first element of group_bound
+    # make label colours such that each cortex is of one colour
+    group_bound.pop(0)
+    label_colors = []
+    for ind, rep in enumerate(group_bound):
+        label_colors += [cortex_colors[ind]] * rep
+    assert len(label_colors) == len(node_order), 'Number of colours do not match'
+
+    # remove the last total sum of the list
+    group_boundaries.pop()
+
+    from mne.viz.circle import circular_layout
+    node_angles = circular_layout(orig_labels, label_names, start_pos=90,
+                                  group_boundaries=group_boundaries)
+
+    # the order of the node_colors must match that of orig_labels
+    # therefore below reordering is necessary
+    reordered_colors = [label_colors[node_order.index(orig)]
+                        for orig in orig_labels]
+
+    # Plot the graph using node_order and colours
+    # orig_labels is the order on nodes in the con matrix (important)
+    from mne.viz import plot_connectivity_circle
+    plot_connectivity_circle(con, orig_labels, n_lines=n_lines,
+                             facecolor='white', textcolor='black',
+                             node_angles=node_angles,
+                             node_colors=reordered_colors,
+                             node_edgecolor='white', fig=fig,
+                             fontsize_names=8, vmax=vmax, vmin=vmin,
+                             colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
+                             colorbar=colorbar, show=show, subplot=subplot,
+                             title=title)
+
+    if include_legend:
+        import matplotlib.patches as mpatches
+        legend_patches = [mpatches.Patch(color=col, label=key)
+                          for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
+                                              labels.keys())]
+        pl.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
+                  mode=None, fontsize='small')
+    if out_fname:
+        pl.savefig(out_fname, facecolor='white', dpi=300)
