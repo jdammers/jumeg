@@ -465,3 +465,105 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
                    mode=None, fontsize='small')
     if out_fname:
         plt.savefig(out_fname, facecolor='white', dpi=300)
+
+
+def plot_fica_grouped_circle(yaml_fname, con, node_order_size,
+                             out_fname='grouped_circle.png', title=None,
+                             facecolor='white', fontsize_names=6,
+                             subplot=111, include_legend=False,
+                             n_lines=None, fig=None, show=True):
+    '''
+    Plot the connectivity circle grouped and ordered according to
+    groups in the yaml input file provided.
+
+    This is not specific to 'aparc' parcellation and does not split the labels
+    into left and right hemispheres.
+
+    Note: Currently requires fica_names.txt in jumeg/examples. This needs to
+          be removed.
+    '''
+
+    # load the label names in the original order
+    # TODO remove empty lines / strings if any
+    # TODO remove below code from here
+    labels_fname = get_jumeg_path() + '/examples/fica_names.txt'
+    with open(labels_fname, 'r') as f:
+        orig_labels = [line.rstrip('\n') for line in f]
+
+    # read the yaml file with grouping
+    if op.isfile(yaml_fname):
+        with open(yaml_fname, 'r') as f:
+            labels = yaml.load(f)
+    else:
+        print '%s - File not found.' % yaml_fname
+        sys.exit()
+
+    cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g']
+
+    # make list of label_names (without individual cortex locations)
+    label_names = list()
+    for lab in labels:
+        label_names.extend(labels[lab])
+
+    group_labels = labels.keys()
+
+    # Save the plot order and create a circular layout
+    node_order = label_names
+
+    assert len(node_order) == node_order_size, 'Node order length is correct.'
+
+    # save the group order
+    group_node_order = group_labels
+
+    from mne.viz.circle import circular_layout
+    group_node_angles = circular_layout(group_node_order, group_node_order,
+                                        start_pos=75.)
+
+    # the respective no. of regions in each cortex
+    group_bound = [len(labels[key]) for key in labels.keys()]
+    group_bound = [0] + group_bound
+    # group_bound = [0] + group_bound[::-1] + group_bound
+
+    group_boundaries = [sum(group_bound[:i+1])
+                        for i in range(len(group_bound))]
+
+    # remove the first element of group_bound
+    # make label colours such that each cortex is of one colour
+    group_bound.pop(0)
+    label_colors = []
+    for ind, rep in enumerate(group_bound):
+        label_colors += [cortex_colors[ind]] * rep
+    assert len(label_colors) == len(node_order), 'Num. of colours do not match'
+
+    # remove the last total sum of the list
+    group_boundaries.pop()
+
+    # obtain the node angles
+    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
+                                  group_boundaries=group_boundaries)
+    # the order of the node_colors must match that of orig_labels
+    # therefore below reordering is necessary
+    reordered_colors = [label_colors[node_order.index(orig)]
+                        for orig in orig_labels]
+
+    # Plot the graph using node_order and colours
+    _plot_connectivity_circle(con, orig_labels, n_lines=n_lines,
+                              facecolor=facecolor, textcolor='black',
+                              group_node_order=group_node_order,
+                              group_node_angles=group_node_angles,
+                              group_colors=cortex_colors,
+                              fontsize_groups=6, node_angles=node_angles,
+                              node_colors=reordered_colors, fontsize_names=8,
+                              node_edgecolor='white', fig=fig,
+                              colorbar=False, show=show, subplot=subplot,
+                              title=title)
+
+    if include_legend:
+        import matplotlib.patches as mpatches
+        legend_patches = [mpatches.Patch(color=col, label=key)
+                          for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
+                                              labels.keys())]
+        plt.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
+                   mode=None, fontsize='small')
+    if out_fname:
+        plt.savefig(out_fname, facecolor='white', dpi=300)
