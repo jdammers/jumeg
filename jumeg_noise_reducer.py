@@ -4,8 +4,8 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 11.10.2016
- version    : 1.6
+ last update: 13.10.2016
+ version    : 1.7
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -887,15 +887,13 @@ def test_noise_reducer():
 
     infosig = copy.copy(raw.info)
     infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-    infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-    infosig['nchan'] = len(sigpick)
+    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typesig = channel_indices_by_type(infosig)
 
     # inforef not good w/ filtering, but anyway useless
     inforef = copy.copy(raw.info)
     inforef['chs'] = [raw.info['chs'][k] for k in refpick]
-    inforef['ch_names'] = [raw.info['ch_names'][k] for k in refpick]
-    inforef['nchan'] = len(refpick)
+    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typeref = channel_indices_by_type(inforef)
 
     # Read data in chunks:
@@ -982,15 +980,13 @@ def test_noise_reducer():
 
     infosig = copy.copy(raw.info)
     infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-    infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-    infosig['nchan'] = len(sigpick)
+    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typesig = channel_indices_by_type(infosig)
 
     # inforef not good w/ filtering, but anyway useless
     inforef = copy.copy(raw.info)
     inforef['chs'] = [raw.info['chs'][k] for k in refpick]
-    inforef['ch_names'] = [raw.info['ch_names'][k] for k in refpick]
-    inforef['nchan'] = len(refpick)
+    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typeref = channel_indices_by_type(inforef)
 
     # Read data in chunks:
