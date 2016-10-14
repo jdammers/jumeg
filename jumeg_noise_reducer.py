@@ -4,8 +4,8 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 14.06.2016
- version    : 1.4
+ last update: 13.10.2016
+ version    : 1.7
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -113,8 +113,8 @@ def plot_denoising(fname_raw, fmin=0, fmax=300, tmin=0.0, tmax=60.0,
     n_jobs : int
         Number of jobs to use for parallel computation.
     stim_name : str
-        Name of the stim channel. If stim_name is set, the plot of epochs average
-        is also shown alongside the PSD plots.
+        Name of the stim channel. If stim_name is set, the plot of epochs
+        average is also shown alongside the PSD plots.
     event_id : int
         ID of the stim event. (only when stim_name is set)
 
@@ -253,7 +253,8 @@ def perform_detrending(fname_raw, save=True):
         raw = Raw(fname, preload=True)
 
         # get channels
-        picks = mne.pick_types(raw.info, meg='mag', ref_meg=True, eeg=False, stim=False,
+        picks = mne.pick_types(raw.info, meg='mag', ref_meg=True,
+                               eeg=False, stim=False,
                                eog=False, exclude='bads')
         xval = np.arange(raw._data.shape[1])
 
@@ -332,7 +333,8 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
     ----------
     fname_raw : (list of) rawfile names
     raw : mne Raw objects
-        Allows passing of raw object as well.
+        Allows passing of (preloaded) raw object in addition to fname_raw
+        or solely (use fname_raw=None in this case).
     signals : list of string
               List of channels to compensate using noiseref.
               If empty use the meg signal channels.
@@ -356,12 +358,18 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                        (parameters are at present hard-coded!)
     return_raw : bool
         If return_raw is true, the raw object is returned and raw file
-        is not written to disk. It is suggested that this option be used in cases
-        where the noise_reducer is applied multiple times. [False]
-    complementary_signal : replaced signal by traces that would be subtracted [False]
+        is not written to disk unless fnout is explicitly specified.
+        It is suggested that this option be used in cases where the
+        noise_reducer is applied multiple times. [False]
+    fnout : explicit specification for an output file name [None]
+        Automatic filenames replace '-raw.fif' by ',nr-raw.fif'.
+    complementary_signal : replaced signal by traces that would be
+                           subtracted [False]
                            (can be useful for debugging)
-    detrending: boolean to ctrl subtraction of linear trend from all magn. chans [False]
-    checkresults : boolean to control internal checks and overall success [True]
+    detrending: boolean to ctrl subtraction of linear trend from all
+                magn. chans [False]
+    checkresults : boolean to control internal checks and overall success
+                   [True]
 
     Outputfile
     ----------
@@ -383,7 +391,8 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
     # handle error if Raw object passed with file list
     if raw and isinstance(fname_raw, list):
-        raise ValueError('List of file names cannot be combined with one Raw object')
+        raise ValueError('List of file names cannot be combined with'
+                         'one Raw object')
 
     # handle error if return_raw is requested with file list
     if return_raw and isinstance(fname_raw, list):
@@ -393,10 +402,21 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
     # handle error if Raw object is passed with detrending option
     #TODO include perform_detrending for Raw objects
     if raw and detrending:
-        raise ValueError('Please perform detrending on the raw file directly. Cannot perform'
-                         'detrending on the raw object')
+        raise ValueError('Please perform detrending on the raw file directly.'
+                         'Cannot perform detrending on the raw object')
 
-    fnraw = get_files_from_list(fname_raw)
+    # Handle combinations of fname_raw and raw object:
+    if fname_raw is not None:
+        fnraw = get_files_from_list(fname_raw)
+        have_input_file = True
+    elif raw is not None:
+        fnraw = [os.path.basename(raw.info['filename'])]
+        warnings.warn('Setting file name from Raw object')
+        have_input_file = False
+        if fnout is None and not return_raw:
+            raise ValueError('Refusing to waste resources without result')
+    else:
+        raise ValueError('Refusing Creatio ex nihilo')
 
     # loop across all filenames
     for fname in fnraw:
@@ -415,7 +435,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         else:
             # perform sanity check to make sure Raw object and file are same
             if os.path.basename(fname) != os.path.basename(raw.info['filename']):
-                warnings.warn('The file name within the Raw object and provided'
+                warnings.warn('The file name within the Raw object and provided\n   '
                               'fname are not the same. Please check again.')
 
         tc1 = time.clock()
@@ -460,17 +480,21 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             if verbose:
                 print ">>> Using all refchans."
             refexclude = "bads"
-            refpick = mne.pick_types(raw.info, ref_meg=True, meg=False, eeg=False,
-                                     stim=False, eog=False, exclude='bads')
+            refpick = mne.pick_types(raw.info, ref_meg=True, meg=False,
+                                     eeg=False, stim=False,
+                                     eog=False, exclude='bads')
         else:
-            refpick = channel_indices_from_list(raw.info['ch_names'][:], noiseref,
-                                                raw.info.get('bads'))
+            refpick = channel_indices_from_list(raw.info['ch_names'][:],
+                                                noiseref, raw.info.get('bads'))
         nref = len(refpick)
         if nref == 0:
             raise ValueError("No channel selected as noise reference")
 
         if verbose:
             print ">>> sigpick: %3d chans, refpick: %3d chans" % (nsig, nref)
+        badpick = np.intersect1d(sigpick, refpick, assume_unique=False)
+        if len(badpick) > 0:
+            raise Warning, "Intersection of signal and reference channels not empty"
 
         if reflp is None and refhp is None and refnotch is None:
             use_reffilter = False
@@ -536,8 +560,9 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
         infosig = copy.copy(raw.info)
         infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-        infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-        infosig['nchan'] = len(sigpick)
+        # the below fields are updated automatically when 'chs' is updated
+        # infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
+        # infosig['nchan'] = len(sigpick)
         idx_by_typesig = channel_indices_by_type(infosig)
 
         # Read data in chunks:
@@ -607,7 +632,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 # Calculate initial signal channel covariance:
                 # (only used as quality measure)
                 print ">>> initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))
-                for i in xrange(5):
+                for i in xrange(min(5,nsig)):
                     print ">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))
                 print ">>>"
 
@@ -714,7 +739,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             if verbose:
                 print ">>> no channel got worse: ", np.all(np.less_equal(sscovdata, sscovinit))
                 print ">>> final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))
-                for i in xrange(5):
+                for i in xrange(min(5,nsig)):
                     print ">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))
                 tc1 = time.clock()
                 tw1 = time.time()
@@ -723,15 +748,16 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
         if fnout is not None:
             fnoutloc = fnout
-        else:
+        elif return_raw:
+            fnoutloc = None
+        elif have_input_file:
             fnoutloc = fname[:fname.rfind('-raw.fif')] + ',nr-raw.fif'
-
-        if verbose:
-            print ">>> Saving '%s'..." % fnoutloc
-
-        if return_raw:
-            return raw
         else:
+            fnoutloc = None
+
+        if fnoutloc is not None:
+            if verbose:
+                print ">>> Saving '%s'..." % fnoutloc
             raw.save(fnoutloc, overwrite=True)
 
         tc1 = time.clock()
@@ -739,6 +765,10 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         if verbose:
             print ">>> Total run took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
 
+        if return_raw:
+            if verbose:
+                print ">>> Returning raw object..."
+            return raw
 
 ##################################################
 #
@@ -765,9 +795,12 @@ def test_noise_reducer():
     sigchanlist = None
     refchanlist = ['RFM 001', 'RFM 003', 'RFM 005', 'RFG ...']
     tmin = 15.
-    noise_reducer(dname, signals=sigchanlist, noiseref=refchanlist, tmin=tmin,
-                  reflp=refflt_lpfreq, refhp=refflt_hpfreq,
-                  exclude_artifacts=exclart, complementary_signal=True)
+    inraw = mne.io.Raw(dname, preload=True)
+    dname1 = dname[:dname.rfind('-raw.fif')] + ',test-raw.fif'
+    dname1nr = dname[:dname.rfind('-raw.fif')] + ',testnr-raw.fif'
+    noise_reducer(dname, raw=None, signals=sigchanlist, noiseref=refchanlist, tmin=tmin,
+                  reflp=refflt_lpfreq, refhp=refflt_hpfreq, fnout=None,
+                  exclude_artifacts=exclart, verbose=True, return_raw=False)
     print "########## behind of noisereducer call ##########"
 
     print "########## Read raw data:"
@@ -826,7 +859,7 @@ def test_noise_reducer():
             print "high-pass with cutoff-freq %.1f" % refflt_hpfreq
         # Adapt followg drop-chans cmd to use 'all-but-refpick'
         droplist = [raw.info['ch_names'][k] for k in xrange(raw.info['nchan']) if not k in refpick]
-        fltref = raw.drop_channels(droplist, copy=True)
+        fltref = raw.copy().drop_channels(droplist)
         tct = time.clock()
         twt = time.time()
         fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(xrange(nref)), method='iir')
@@ -854,15 +887,13 @@ def test_noise_reducer():
 
     infosig = copy.copy(raw.info)
     infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-    infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-    infosig['nchan'] = len(sigpick)
+    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typesig = channel_indices_by_type(infosig)
 
     # inforef not good w/ filtering, but anyway useless
     inforef = copy.copy(raw.info)
     inforef['chs'] = [raw.info['chs'][k] for k in refpick]
-    inforef['ch_names'] = [raw.info['ch_names'][k] for k in refpick]
-    inforef['nchan'] = len(refpick)
+    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typeref = channel_indices_by_type(inforef)
 
     # Read data in chunks:
@@ -949,15 +980,13 @@ def test_noise_reducer():
 
     infosig = copy.copy(raw.info)
     infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-    infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-    infosig['nchan'] = len(sigpick)
+    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typesig = channel_indices_by_type(infosig)
 
     # inforef not good w/ filtering, but anyway useless
     inforef = copy.copy(raw.info)
     inforef['chs'] = [raw.info['chs'][k] for k in refpick]
-    inforef['ch_names'] = [raw.info['ch_names'][k] for k in refpick]
-    inforef['nchan'] = len(refpick)
+    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typeref = channel_indices_by_type(inforef)
 
     # Read data in chunks:
@@ -1033,7 +1062,7 @@ def test_noise_reducer():
         # Calculate initial signal channel covariance:
         # (only used as quality measure)
         print "initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscov))
-        for i in xrange(5):
+        for i in xrange(min(5,nsig)):
             print "initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscov.flatten()[i]))
         print " "
     if nref < 6:
@@ -1095,7 +1124,7 @@ def test_noise_reducer():
 
     if nref < 5:
         print "weights-entries for first sigchans:"
-        for i in xrange(5):
+        for i in xrange(min(5,nsig)):
             print 'weights[sp(%2d)][r]=[' % i + ' '.join([' %+10.7f' %
                              val for val in weights[sigpick[i]][:]]) + ']'
 
@@ -1148,7 +1177,7 @@ def test_noise_reducer():
         sscovdata /= (n_samples - 1)
         print ">>> no channel got worse: ", np.all(np.less_equal(sscovdata, sscovinit))
         print "final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))
-        for i in xrange(5):
+        for i in xrange(min(5,nsig)):
             print "final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))
         tc1 = time.clock()
         tw1 = time.time()

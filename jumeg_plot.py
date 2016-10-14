@@ -120,8 +120,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     else:
         meg_clean_given = False
         meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
-                              n_pca_components=ica.n_components_,
-                              copy=True)
+                              n_pca_components=ica.n_components_)
 
     # plotting parameter
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
