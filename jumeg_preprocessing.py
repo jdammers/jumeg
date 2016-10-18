@@ -286,7 +286,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
                 fi_mne_notch.apply_filter(meg_raw._data, picks=picks)
 
         # apply cleaning
-        meg_clean = ica.apply(meg_raw, exclude=ica.exclude,
+        meg_clean = ica.apply(meg_raw.copy(), exclude=ica.exclude,
                               n_pca_components=npca)
         meg_clean.save(fnclean, overwrite=True)
 
