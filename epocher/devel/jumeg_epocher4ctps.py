@@ -1,11 +1,11 @@
 #import os
 import numpy as np
-import pandas as pd
+#import pandas as pd
 
 from jumeg.jumeg_base import jumeg_base
+from jumeg.epocher.jumeg_epocher_ctps import JuMEG_Epocher_CTPS
 
-
-class JuMEG_Epocher(JuMEG_Epocher_Events):
+class JuMEG_Epocher(JuMEG_Epocher_CTPS):
     def __init__ (self,template_name="DEFAULT",do_run=False,do_average=False,verbose=False,save=False):
 
         super(JuMEG_Epocher, self).__init__()
@@ -110,7 +110,37 @@ class JuMEG_Epocher(JuMEG_Epocher_Events):
 
         return (fname,raw,fhdf)
 
-    
-   
+
+    def apply_update_brain_responses(self,fname,raw=None,fname_ica=None,ica_raw=None,condition_list=None,**kwargv):
+          """
+
+          :param fname:
+          :param kwargv:
+          :return:
+          """
+
+          fhdr = None
+         # fhdr = self.ctps_ica_brain_responses_update(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+
+
+          # TODO: select ICs via ctps-surogates / threshold
+          #self.ctps_select_brain_response_ics(fhdr=fhdr)
+
+         # if kwargv['do_update']:
+          fhdr = self.ctps_ica_brain_responses_update(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+
+          #if kwargv['do_select']:
+          #   fhdr = self.ctps_ica_brain_responses_select(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+
+          #if kwargv['do_clean']:
+          #   fhdr = self.ctps_ica_brain_responses_clean(fname,raw=raw,fname_ica=fname_ica,ica_raw=ica_raw,condition_list=condition_list,**kwargv)
+
+          #self.ctps_brain_responses_average
+
+          print"===> Done apply_update_brain_responses"
+
+          return fname,raw,fhdr
+
+
 
 jumeg_epocher = JuMEG_Epocher()
