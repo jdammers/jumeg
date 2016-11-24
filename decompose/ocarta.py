@@ -252,7 +252,10 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
 
     # initialize training
     if np.any(initial_weights):
-        weights = initial_weights
+        # use unitrary version of input matrix
+        from scipy.linalg import sqrtm
+        weights = np.dot(sqrtm(np.linalg.inv(np.dot(initial_weights,
+                                                    initial_weights.conj().transpose()))), initial_weights)
     else:
         # initialize weights as identity matrix
         weights = np.identity(npc, dtype=np.float64)
@@ -1713,7 +1716,7 @@ class JuMEG_ocarta(object):
         for ch_type in ch_types:
 
             self._picks = pick_types(meg_raw.info, meg=ch_type, eeg=False,
-                                    eog=False, stim=False, exclude='bads')
+                                     eog=False, stim=False, exclude='bads')
             self._pca = None
 
             # perform initial training
@@ -1756,6 +1759,8 @@ class JuMEG_ocarta(object):
                 full_var = np.sum(self._pca.explained_variance_)
                 exp_var_ratio = self._pca.explained_variance_ / full_var
                 npc_denoising = np.sum(exp_var_ratio.cumsum() <= denoising) + 1
+                if npc_denoising < self.npc:
+                    npc_denoising = self.npc
                 sphering[npc_denoising:, :] = 0.
 
 
