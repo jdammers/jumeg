@@ -529,11 +529,12 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             if use_refantinotch:
                 rawref = raw.copy().drop_channels(droplist)
                 freqlast = np.min([5.01 * refnotch, 0.5 * raw.info['sfreq']])
+                # changing to fft filter because of the new mne0.13 notch_filter change
                 fltref.notch_filter(np.arange(refnotch, freqlast, refnotch),
-                                    picks=np.array(xrange(nref)), method='iir')
+                                    picks=np.array(xrange(nref)), method='fft')
                 fltref._data = (rawref._data - fltref._data)
             else:
-                fltref.filter(refhp, reflp, picks=np.array(xrange(nref)), method='iir')
+                fltref.filter(refhp, reflp, picks=np.array(xrange(nref)), method='fft')
             tc1 = time.clock()
             tw1 = time.time()
             if verbose:
@@ -862,7 +863,7 @@ def test_noise_reducer():
         fltref = raw.copy().drop_channels(droplist)
         tct = time.clock()
         twt = time.time()
-        fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(xrange(nref)), method='iir')
+        fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(xrange(nref)), method='fft')
         tc1 = time.clock()
         tw1 = time.time()
         print "filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
