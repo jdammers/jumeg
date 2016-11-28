@@ -259,12 +259,6 @@ def complex_ica(data, complex_mixing=True,
         idx_sort = np.argsort(Dc)[::-1]
         Dc = Dc[idx_sort]
 
-    # from sklearn.decomposition import RandomizedPCA
-    # pca = RandomizedPCA(n_components=None, whiten=False,
-    #                     copy=True)
-    # whitened_data = pca.fit_transform(data)
-
-
         if not complex_mixing:
             Dc = Dc.real
             Ec = Ec.real
@@ -302,15 +296,11 @@ def complex_ica(data, complex_mixing=True,
         if verbose:
             print ">>> PCA dimension is %d and ICA dimension is %d" % (pca_dim, ica_dim)
 
-        if pca_only:
-            pca_start = 0
-        else:
-            pca_start = 0
 
         # construct whitening and dewhitening matrices
-        Dc_sqrt = np.sqrt(Dc[pca_start:pca_dim])
+        Dc_sqrt = np.sqrt(Dc[0:pca_dim])
         Dc_sqrt_inv = 1.0 / Dc_sqrt
-        Ec = Ec[:, idx_sort[pca_start:pca_dim]]
+        Ec = Ec[:, idx_sort[0:pca_dim]]
         whiten_mat = np.dot(np.diag(Dc_sqrt_inv), Ec.conj().transpose())
         dewhiten_mat = np.dot(Ec, np.diag(Dc_sqrt))
 

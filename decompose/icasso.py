@@ -6,8 +6,8 @@
 ----------------------------------------------------------------------
  author     : Lukas Breuer
  email      : l.breuer@fz-juelich.de
- last update: 27.11.2015
- version    : 1.1
+ last update: 09.11.2016
+ version    : 1.2
 
 ----------------------------------------------------------------------
  This simple implementation of ICASSO is based on the following
@@ -68,11 +68,12 @@ import numpy as np
 class JuMEG_icasso(object):
 
     def __init__(self, ica_method='fourierica', average=False, nrep=50,
-                 fn_inv=None, src_loc_method='dSPM', snr=3.0,
+                 fn_inv=None, src_loc_method='dSPM', snr=1.0,
                  morph2fsaverage=True, stim_name=None, event_id=1,
                  flow=4.0, fhigh=34.0, tmin_win=0.0, tmax_win=1.0,
-                 envelopeICA=False, pca_dim=None, conv_eps=1e-9,
-                 max_iter=2000, tICA=False, lrate=1.0, cost_function=None):
+                 pca_dim=None, dim_reduction='MDL', conv_eps=1e-9,
+                 max_iter=2000, tICA=False, lrate=1.0, cost_function=None,
+                 decim_epochs=False):
         """
         Generate ICASSO object.
 
@@ -85,10 +86,6 @@ class JuMEG_icasso(object):
                 default: average=False
             nrep: number of repetitions ICA should be performed
                 default: nrep=50
-            envelopeICA: if set ICA is estimated on the envelope
-                of the Fourier transformed input data, i.e., the
-                mixing model is |x|=As
-                default: envelopeICA=False
             fn_inv: file name of inverse operator. If given
                 FourierICA is applied on data transformed to
                 source space
@@ -97,11 +94,59 @@ class JuMEG_icasso(object):
                 default: src_loc_method='dSPM'
             snr: signal-to-noise ratio for performing source
                 localization
-                default: snr=3.0
+                default: snr=1.0
             morph2fsaverage: should data be morphed to the
                 'fsaverage' brain?
                 default: morph2fsaverage=True
-            stim_name
+            stim_name: string which contains the name of the
+                stimulus channel. Only necessary if ICA should
+                be applied to evoked data.
+            event_id: integer of list of integer containing the
+                event IDs which should be used to generate epochs
+                default: event_id=1
+            flow: lower frequency border for estimating the optimal
+                de-mixing matrix using FourierICA
+                default: flow=4.0
+            fhigh: upper frequency border for estimating the optimal
+                de-mixing matrix using FourierICA
+                default: fhigh=34.0
+                Note: here default flow and fhigh are choosen to
+                   contain:
+                   - theta (4-7Hz)
+                   - low (7.5-9.5Hz) and high alpha (10-12Hz),
+                   - low (13-23Hz) and high beta (24-34Hz)
+            tmin_win: time of interest prior to stimulus onset.
+                Important for generating epochs to apply FourierICA
+                default=0.0
+            tmax_win: time of interest after stimulus onset.
+                Important for generating epochs to apply FourierICA
+                default=1.0
+            dim_reduction: {'', 'AIC', 'BIC', 'GAP', 'MDL', 'MIBS', 'explVar'}
+                Method for dimension selection. For further information about
+                the methods please check the script 'dimension_selection.py'.
+            pca_dim: Integer. The number of components used for PCA
+                decomposition.
+            conv_eps: iteration stops when weight changes are smaller
+                then this number
+                default: conv_eps = 1e-9
+            max_iter: integer containing the maximal number of
+                iterations to be performed in ICA estimation
+                default: max_iter=2000
+            tICA: bool if temporal ICA should be applied (and not)
+                FourierICA
+                default: tICA=False
+            lrate: float containg the learning rate which should be
+                used in the applied ICA algorithm
+                default: lrate=1.0
+            cost_function: string containg the cost-function to
+                use in the appled ICA algorithm. For further information
+                look in fourier_ica.py
+                default: cost_funtion=None
+            decim_epochs: integer. If set the number of epochs used
+                to estimate the optimal demixing matrix is decimated
+                to the given number.
+                default: decim_epochs=False
+
 
             Returns
             -------
@@ -135,7 +180,9 @@ class JuMEG_icasso(object):
         self.lrate = lrate                      # learning rate for the ICA algorithm
         self.tICA = tICA                        # should temporal ICA be performed?
         self.pca_dim = pca_dim
+        self.dim_reduction= dim_reduction
         self.cost_function = cost_function
+        self.decim_epochs = decim_epochs
 
 
         # make sure to chose meaningful parameters
@@ -190,7 +237,7 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # estimate linkage between components
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def linkage(self, dis):
+    def _linkage(self, dis):
 
         # initialize some variables
         dlen, dim = dis.shape
@@ -316,7 +363,7 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # estimate similarities
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def corrw(self):
+    def _corrw(self):
 
         # get some dimension information
         npc = int(self.W_est[0].shape[0])
@@ -346,7 +393,7 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # generate partitions from Z
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def z_to_partition(self, Z):
+    def _z_to_partition(self, Z):
 
         nz = Z.shape[0] + 1
         C = np.zeros((nz, nz))
@@ -375,7 +422,7 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # compute cluster statistics
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def clusterstat(self, S, partitions):
+    def _clusterstat(self, S, partitions):
 
         # number of clusters
         Ncluster = int(np.max(partitions) + 1)
@@ -448,7 +495,7 @@ class JuMEG_icasso(object):
     # unsupervised estimation of cluster validity'.
     # Neural Comput. 13 (11), 2573-2593.
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def rindex(self, dissimilarities, partitions, verbose=True):
+    def _rindex(self, dissimilarities, partitions, verbose=True):
 
         nPart = partitions.shape[0]
 
@@ -469,7 +516,7 @@ class JuMEG_icasso(object):
                 ri[k] = np.NaN
             else:
                 # compute cluster statistics
-                stat = self.clusterstat(dissimilarities, partitions[k, :])
+                stat = self._clusterstat(dissimilarities, partitions[k, :])
                 between = stat['between_avg']
                 between[range(len(between)), range(len(between))] = np.Inf
                 internal = stat['internal_avg'].transpose()
@@ -482,27 +529,27 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # estimate clusters
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def cluster(self, verbose=True):
+    def _cluster(self, verbose=True):
 
         # ------------------------------------------
         # compute dissimilarities
         # ------------------------------------------
-        similarities = self.corrw()
+        similarities = self._corrw()
         dissimilarities = 1.0 - similarities
 
 
         # ------------------------------------------
         # generate partitions
         # ------------------------------------------
-        Z, order = self.linkage(dissimilarities)
-        partitions = self.z_to_partition(Z)
+        Z, order = self._linkage(dissimilarities)
+        partitions = self._z_to_partition(Z)
 
 
         # ------------------------------------------
         # compute cluster validity
         # ------------------------------------------
         npc = int(self.W_est[0].shape[0])
-        indexR = self.rindex(dissimilarities, partitions[:npc, :], verbose=verbose)
+        indexR = self._rindex(dissimilarities, partitions[:npc, :], verbose=verbose)
 
 
         return Z, order, partitions, indexR, dissimilarities, similarities
@@ -513,7 +560,7 @@ class JuMEG_icasso(object):
     # estimate curve that decreases from v0 to vn with a
     # rate that is somewhere between linear and 1/t
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def potency_curve(self, v0, vn, t):
+    def _potency_curve(self, v0, vn, t):
 
         return v0 * ((1.0*vn/v0)**(np.arange(t)/(t-1.0)))
 
@@ -523,7 +570,7 @@ class JuMEG_icasso(object):
     # compute principal coordinates (using linear
     # Metric Multi-Dimensional Scaling)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def mmds(self, D):
+    def _mmds(self, D):
 
         nD = D.shape[0]
         # square dissimilarities
@@ -549,7 +596,7 @@ class JuMEG_icasso(object):
     # projects data vectors using Curvilinear Component
     # Analysis
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def cca(self, D, P, epochs, Mdist, alpha0, lambda0):
+    def _cca(self, D, P, epochs, Mdist, alpha0, lambda0):
 
         # check input data
         noc, dim = D.shape
@@ -588,8 +635,8 @@ class JuMEG_icasso(object):
             pdb.set_trace()
 
         # alpha and lambda
-        Alpha = self.potency_curve(alpha0, alpha0/100.0, train_len)
-        Lambda = self.potency_curve(lambda0, 0.01, train_len)
+        Alpha = self._potency_curve(alpha0, alpha0/100.0, train_len)
+        Lambda = self._potency_curve(lambda0, 0.01, train_len)
 
         # action
         for i in range(train_len):
@@ -625,7 +672,7 @@ class JuMEG_icasso(object):
     # between the projected points correspond to the
     # similarity matrix between IC estimates
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def projection(self, dis, verbose=True):
+    def _projection(self, dis, verbose=True):
 
         # initialize some parameter
         outputDim = 2    # we project onto a plane
@@ -642,11 +689,11 @@ class JuMEG_icasso(object):
             print ">>> Perform projection to plane..."
 
         # start from MMDS (linear Metric Multi-Dimensional Scaling)
-        init_proj = self.mmds(D)
+        init_proj = self._mmds(D)
         init_proj = init_proj[:, :outputDim]
         dummy = np.random.rand(nD, outputDim)
 
-        proj = self.cca(dummy, init_proj, epochs, D, alpha, radius)
+        proj = self._cca(dummy, init_proj, epochs, D, alpha, radius)
 
         return proj
 
@@ -656,7 +703,7 @@ class JuMEG_icasso(object):
     # to get the index of the component in the center
     # of each cluster
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def idx2centrotypes(self, P, similarities, mode='partition'):
+    def _idx2centrotypes(self, P, similarities, mode='partition'):
 
         if mode == 'index':
             nsim = len(P)
@@ -672,7 +719,7 @@ class JuMEG_icasso(object):
             centro_idx = np.zeros(Ncluster, dtype=np.int)
             for i in range(Ncluster):
                 idx = np.where(P == i)[0]
-                centro_idx[i] = self.idx2centrotypes(idx, similarities, mode='index')
+                centro_idx[i] = self._idx2centrotypes(idx, similarities, mode='index')
 
         else:
             print ">>> ERROR: Unknown operation mode!"
@@ -686,7 +733,7 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # get optimal demixing matrix W
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def getW(self, centro_idx):
+    def _getW(self, centro_idx):
 
         import types
 
@@ -711,10 +758,10 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # method to estimate the quality of a cluster
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def cluster_quality(self, partition, simililarities, mode='mean'):
+    def _cluster_quality(self, partition, simililarities, mode='mean'):
 
         Ncluster = np.max(partition)
-        stat = self.clusterstat(simililarities, partition)
+        stat = self._clusterstat(simililarities, partition)
 
         # compute score
         if mode == 'minmax':
@@ -740,7 +787,7 @@ class JuMEG_icasso(object):
     # to compute the stability (quality) indices of the
     # estimated clusters
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def stability(self, partitions, similarities, L=None):
+    def _stability(self, partitions, similarities, L=None):
 
         # check input parameter
         npc = int(self.W_est[0].shape[0])
@@ -755,7 +802,7 @@ class JuMEG_icasso(object):
             NofEstimates[i] = len(idx)
 
         # compute cluster quality index
-        Iq = self.cluster_quality(partition, similarities, mode='mean')
+        Iq = self._cluster_quality(partition, similarities, mode='mean')
 
         return Iq
 
@@ -764,7 +811,7 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # get optimal (de-)mixing matrix
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def get_results(self, partitions, similarities, L=None, sort_results=True):
+    def _get_results(self, partitions, similarities, L=None, sort_results=True):
 
         # check input parameter
         npc = int(self.W_est[0].shape[0])
@@ -776,11 +823,11 @@ class JuMEG_icasso(object):
             L = npc
 
         # get indices of ICs in the cluster centers
-        centro_idx = self.idx2centrotypes(partitions[L, :], similarities, mode='partition')
+        centro_idx = self._idx2centrotypes(partitions[L, :], similarities, mode='partition')
 
         # get optimal demixing matrix
-        W = self.getW(centro_idx)
-        Iq = self.stability(partitions, similarities, L=L)
+        W = self._getW(centro_idx)
+        Iq = self._stability(partitions, similarities, L=L)
 
         if sort_results:
             idx_sort = np.argsort(Iq)[::-1]
@@ -795,11 +842,123 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # prepare data for applying the fit routine
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def prepare_data_for_fit(self, fn_raw, stim_name=None, stim_delay=0,
-                             tmin_stim=0.0, tmax_stim=1.0, flow=4.0, fhigh=34.0,
-                             event_id=1, hamming_data=True, remove_outliers=True,
-                             fn_inv=None, contrast_id=[], baseline=(None, None),
-                             averaged_epochs=False, verbose=True):
+    def prepare_data_for_fit(self, fn_raw, stim_name=None,
+                             stim_delay=0, tmin_stim=0.0, tmax_stim=1.0,
+                             flow=4.0, fhigh=34.0,
+                             event_id=1, resp_id=None, corr_event_picking=None,
+                             hamming_data=True, remove_outliers=True,
+                             fn_inv=None, contrast_id=[],
+                             baseline=(None, None), averaged_epochs=False,
+                             decim_epochs=False, interpolate_bads=True,
+                             unfiltered=False, verbose=True):
+
+        '''
+        Routine to prepare the data for ICA application. Preparation
+        includes epoch generation,  transformation to Fourier space
+        (if desired) and source localization applied to single
+        epochs.
+
+            Parameters
+            ----------
+            fn_raw: filename of the input data (expect fif-file).
+            stim_name:  name of the stimulus channel. Note, for
+                applying FourierCIA data are chopped around stimulus
+                onset. If not set data are chopped in overlapping
+                windows
+                default: stim_names=None
+            stim_delay: delay of stimulus presentation in milliseconds
+                default: stim_delay=0
+            tmin_stim: time of interest prior to stimulus onset.
+                Important for generating epochs to apply FourierICA
+                default = 0.0
+            tmax_stim: time of interest after stimulus onset.
+                Important for generating epochs to apply FourierICA
+                default = 1.0
+            flow: lower frequency border for estimating the optimal
+                de-mixing matrix using FourierICA
+                default: flow=4.0
+            fhigh: upper frequency border for estimating the optimal
+                de-mixing matrix using FourierICA
+                default: fhigh=34.0
+                Note: here default flow and fhigh are choosen to
+                   contain:
+                   - theta (4-7Hz)
+                   - low (7.5-9.5Hz) and high alpha (10-12Hz),
+                   - low (13-23Hz) and high beta (24-34Hz)
+            event_id: ID of the event of interest to be considered in
+                the stimulus channel. Only of interest if 'stim_name'
+                is set
+                default: event_id=1
+            resp_id: Response ID for correct event estimation. Note:
+                Must be in the order corresponding to the 'event_id'
+                default: resp_id=None
+            corr_event_picking: if set should contain the complete python
+                path and name of the function used to identify only the
+                correct events
+            hamming_data: if set a hamming window is applied to each
+                epoch prior to Fourier transformation
+                default: hamming_data=True
+            remove_outliers: If set outliers are removed from the Fourier
+                transformed data.
+                Outliers are defined as windows with large log-average power (LAP)
+
+                     LAP_{c,t}=log \sum_{f}{|X_{c,tf}|^2
+
+                where c, t and f are channels, window time-onsets and frequencies,
+                respectively. The threshold is defined as |mean(LAP)+3 std(LAP)|.
+                This process can be bypassed or replaced by specifying a function
+                handle as an optional parameter.
+                remove_outliers=False
+            fn_inv: file name of inverse operator. If given
+                FourierICA is applied on data transformed to
+                source space
+            contrast_id:  If set FourierICA is applied to contrast epochs
+                between events in event_id and events in contrast_id.
+                is set
+                default: contrast_id=[]
+            baseline: If set baseline correction is applied to epochs prior to
+                ICA estimation.
+            averaged_epochs: Should epochs be averaged before
+                FourierICA application? Note, averaged data require
+                less memory!
+                default: average=False
+            decim_epochs: if set the number of epochs will be reduced (per
+                subject) to that number for the estimation of the demixing matrix.
+                Note: the epochs were chosen randomly from the complete set of
+                epochs.
+            interpolate_bads: if set bad channels are interpolated (using the
+                mne routine raw.interpolate_bads()).
+            unfiltered: bool
+                If true data are not filtered to a certain frequency range when
+                Fourier transformation is applied
+                default: unfiltered=False
+            verbose: bool, str, int, or None
+                If not None, override default verbose level
+                (see mne.verbose).
+                default: verbose=True
+
+            Returns
+            -------
+            meg_data: array
+                2D array containg the MEg data used for FourierICA estimation
+            src_loc_data: array
+                3D array containing the source localization
+                data used for FourierICA estimation
+                (nfreq x nepochs x nvoxel)
+            vertno: list
+                list containing two arrays with the order
+                of the vertices.
+            data_already_stft: boolean
+                'True' if data are transformed to Fourier space, otherwise
+                'False'
+            events: list
+                list containing the indices of all events used to generate the
+                epochs for applying FourierICA
+            sfreq: float
+                sampling frequency of the data
+            meg_channels: list
+                list containing the name of all MEG channels used for FourierICA
+        '''
 
 
         # ------------------------------------------
@@ -813,6 +972,10 @@ class JuMEG_icasso(object):
         # prepare data to apply FourierICA
         # ------------------------------------------
         meg_raw = Raw(fn_raw, preload=True)
+        # interpolate bad channels
+        if interpolate_bads:
+            meg_raw.interpolate_bads()
+
         meg_channels = pick_types(meg_raw.info, meg=True, eeg=False,
                                   eog=False, stim=False, exclude='bads')
         meg_data = meg_raw._data[meg_channels, :]
@@ -828,6 +991,28 @@ class JuMEG_icasso(object):
             if stim_delay:
                 stim_delay_tsl = int(np.round(stim_delay * meg_raw.info['sfreq']/1000.0))
                 events_all[:, 0] += stim_delay_tsl
+
+            # check if only correct events should be chosen
+            if corr_event_picking:
+                if isinstance(corr_event_picking, basestring):
+                    import importlib
+                    mod_name, func_name = corr_event_picking.rsplit('.', 1)
+                    mod = importlib.import_module(mod_name)
+                    func = getattr(mod, func_name)
+                    resp_name = 'STI 013' if stim_name == 'STI 014' else 'STI 014'
+                    response = find_events(meg_raw, stim_channel=resp_name, consecutive=True,
+                                           shortest_event=1)
+                    if np.any(resp_id):
+                        events_all, _ = func(events_all, response, sfreq, event_id, resp_id)
+                    else:
+                        events_all, _ = func(events_all, response, sfreq, event_id)
+
+                else:
+                    print ">>> ERROR: 'corr_event_picking' should be a string containing the complete python"
+                    print ">>>          path and name of the function used to identify only the correct events!"
+                    import pdb
+                    pdb.set_trace()
+
 
             if np.any(contrast_id):
                 contrast_events = events_all[events_all[:, 2] == contrast_id, 0]
@@ -853,7 +1038,6 @@ class JuMEG_icasso(object):
             print "           of the inverse operator is required!"
             import pdb
             pdb.set_trace()
-
 
 
         # ------------------------------------------
@@ -913,7 +1097,10 @@ class JuMEG_icasso(object):
                                   win_length_sec=win_length_sec,
                                   hamming_data=hamming_data,
                                   remove_outliers=remove_outliers,
-                                  baseline=baseline, verbose=verbose)
+                                  baseline=baseline,
+                                  decim_epochs=decim_epochs,
+                                  unfiltered=unfiltered,
+                                  verbose=verbose)
 
                 if np.any(contrast_id):
                     X_contrast, _ = apply_stft(meg_data, events=contrast_events,
@@ -923,6 +1110,7 @@ class JuMEG_icasso(object):
                                                hamming_data=hamming_data,
                                                remove_outliers=remove_outliers,
                                                baseline=baseline,
+                                               decim_epochs=decim_epochs,
                                                verbose=verbose)
 
 
@@ -1043,11 +1231,11 @@ class JuMEG_icasso(object):
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # perform ICASSO based FourierICA signal decomposit ion
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def fit_FourierICA(self, ica_data, events, sfreq,
-                       complex_mixing=True, hamming_data=False,
-                       remove_outliers=False, envelopeICA=False,
-                       contrast_id=[], normalized=True,
-                       data_already_stft=False, verbose=True):
+    def _fit_FourierICA(self, ica_data, events, sfreq,
+                        complex_mixing=True, hamming_data=False,
+                        remove_outliers=False, envelopeICA=False,
+                        normalized=True,  data_already_stft=False,
+                        verbose=True):
 
 
         # ------------------------------------------
@@ -1077,7 +1265,8 @@ class JuMEG_icasso(object):
                                             conv_eps=self.conv_eps,
                                             cost_function=self.cost_function,
                                             envelopeICA=envelopeICA,
-                                            lrate=self.lrate)
+                                            lrate=self.lrate,
+                                            decim_epochs=self.decim_epochs)
 
 
         # ------------------------------------------
@@ -1143,23 +1332,30 @@ class JuMEG_icasso(object):
     # perform ICASSO based ICA signal decomposition
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def fit(self, fn_raw, ica_method=None, average=False, stim_name=None,
-            event_id=None, stim_delay=0, tmin_win=None,
-            tmax_win=None, flow=None, fhigh=None, pca_dim=None,
+            event_id=None, stim_delay=0, corr_event_picking=None,
+            tmin_win=None, tmax_win=None, flow=None, fhigh=None,
+            dim_reduction=None, pca_dim=None,
             max_iter=None, conv_eps=None, complex_mixing=True,
             hamming_data=False, remove_outliers=False,
             envelopeICA=False, fn_inv=None, cost_function=None,
-            contrast_id=[], baseline=(None, None), verbose=True):
+            contrast_id=[], baseline=(None, None),
+            decim_epochs=False, interpolate_bads=True, verbose=True):
 
         """
         Perform ICASSO estimation. ICASSO is based on running ICA
         multiple times with slightly different conditions and
-        clustering the obtained components. Note, here FourierICA
-        is applied
+        clustering the obtained components. Note, here as default
+        FourierICA is applied.
 
 
             Parameters
             ----------
             fn_raw: filename of the input data (expect fif-file).
+            ica_method: Steing containing the information which ICA
+                method should be applied. You can choose between
+                'extended-infomax', 'fastica', 'infomax' and
+                'fourierica'
+                default: ica_method='fourierica'
             average: Should data be averaged across subjects before
                 FourierICA application? Note, averaged data require
                 less memory!
@@ -1175,6 +1371,9 @@ class JuMEG_icasso(object):
                 default: event_id=1
             stim_delay: delay of stimulus presentation in milliseconds
                 default: stim_delay=0
+            corr_event_picking: if set should contain the complete python
+                path and name of the function used to identify only the
+                correct events
             tmin_win: time of interest prior to stimulus onset.
                 Important for generating epochs to apply FourierICA
                 default = 0.0
@@ -1192,16 +1391,59 @@ class JuMEG_icasso(object):
                    - theta (4-7Hz)
                    - low (7.5-9.5Hz) and high alpha (10-12Hz),
                    - low (13-23Hz) and high beta (24-34Hz)
+            dim_reduction: {'', 'AIC', 'BIC', 'GAP', 'MDL', 'MIBS', 'explVar'}
+                Method for dimension selection. For further information about
+                the methods please check the script 'dimension_selection.py'.
             pca_dim: The number of PCA components used to apply FourierICA.
                 If pca_dim > 1 this refers to the exact number of components.
                 If between 0 and 1 pca_dim refers to the variance which
                 should be explained by the chosen components
                 default: pca_dim=0.9
             max_iter: maximum number od iterations used in FourierICA
-                default: max_iter=10000
+                default: max_iter=2000
             conv_eps: iteration stops when weight changes are smaller
                 then this number
-                default: conv_eps = 1e-16
+                default: conv_eps = 1e-9
+            complex_mixing: if mixing matrix should be real or complex
+                default: complex_mixing=True
+            hamming_data: if set a hamming window is applied to each
+                epoch prior to Fourier transformation
+                default: hamming_data=False
+            remove_outliers: If set outliers are removed from the Fourier
+                transformed data.
+                Outliers are defined as windows with large log-average power (LAP)
+
+                     LAP_{c,t}=log \sum_{f}{|X_{c,tf}|^2
+
+                where c, t and f are channels, window time-onsets and frequencies,
+                respectively. The threshold is defined as |mean(LAP)+3 std(LAP)|.
+                This process can be bypassed or replaced by specifying a function
+                handle as an optional parameter.
+                remove_outliers=False
+            envelopeICA: if set ICA is estimated on the envelope
+                of the Fourier transformed input data, i.e., the
+                mixing model is |x|=As
+                default: envelopeICA=False
+            fn_inv: file name of inverse operator. If given
+                FourierICA is applied on data transformed to
+                source space
+            cost_function: which cost-function should be used in the complex
+                ICA algorithm
+                'g1': g_1(y) = 1 / (2 * np.sqrt(lrate + y))
+                'g2': g_2(y) = 1 / (lrate + y)
+                'g3': g_3(y) = y
+            contrast_id:  If set FourierICA is applied to contrast epochs
+                between events in event_id and events in contrast_id.
+                is set
+                default: contrast_id=[]
+            baseline: If set baseline correction is applied to epochs prior to
+                ICA estimation.
+            decim_epochs: if set the number of epochs will be reduced (per
+                subject) to that number for the estimation of the demixing matrix.
+                Note: the epochs were chosen randomly from the complete set of
+                epochs.
+            interpolate_bads: if set bad channels are interpolated (using the
+                mne routine raw.interpolate_bads()).
             verbose: bool, str, int, or None
                 If not None, override default verbose level
                 (see mne.verbose).
@@ -1214,7 +1456,7 @@ class JuMEG_icasso(object):
             Iq: quality index of the clustering between
                 components belonging to one cluster
                 (between 0 and 1; 1 refers to small clusters,
-                i.e., components in one cluster a highly similar)
+                i.e., components in one cluster have a highly similar)
             fourier_ica_obj: FourierICA object. For further information
                 please have a look into the FourierICA routine
         """
@@ -1242,6 +1484,9 @@ class JuMEG_icasso(object):
         if cost_function:
             self.cost_function = cost_function
 
+        if dim_reduction:
+            self.dim_reduction = dim_reduction
+
         if pca_dim:
             self.pca_dim = pca_dim
 
@@ -1268,6 +1513,9 @@ class JuMEG_icasso(object):
 
         if conv_eps:
             self.conv_eps = conv_eps
+
+        if decim_epochs:
+            self.decim_epochs = decim_epochs
 
 
         # ------------------------------------------
@@ -1314,10 +1562,14 @@ class JuMEG_icasso(object):
                     self.prepare_data_for_fit(fnraw, stim_name=self.stim_name,
                                               tmin_stim=self.tmin_win, tmax_stim=self.tmax_win,
                                               flow=self.flow, fhigh=self.fhigh, event_id=self.event_id,
-                                              stim_delay=stim_delay, hamming_data=hamming_data,
-                                              fn_inv=self.fn_inv[idx], remove_outliers=remove_outliers,
+                                              corr_event_picking=corr_event_picking, stim_delay=stim_delay,
+                                              fn_inv=self.fn_inv[idx], hamming_data=hamming_data,
+                                              remove_outliers=remove_outliers,
                                               contrast_id=contrast_id, baseline=baseline,
-                                              averaged_epochs=average_epochs, verbose=verbose)
+                                              averaged_epochs=average_epochs,
+                                              decim_epochs=self.decim_epochs,
+                                              interpolate_bads=interpolate_bads,
+                                              verbose=verbose)
 
                 # normalize source data
                 fftsize, nwindows, nvoxel = src_loc.shape
@@ -1373,9 +1625,11 @@ class JuMEG_icasso(object):
                 self.prepare_data_for_fit(fn_raw, stim_name=self.stim_name,
                                           tmin_stim=self.tmin_win, tmax_stim=self.tmax_win,
                                           flow=self.flow, fhigh=self.fhigh, event_id=self.event_id,
-                                          stim_delay=stim_delay, hamming_data=hamming_data,
-                                          fn_inv=self.fn_inv, remove_outliers=remove_outliers,
-                                          baseline=baseline, verbose=verbose)
+                                          stim_delay=stim_delay, corr_event_picking=corr_event_picking,
+                                          fn_inv=self.fn_inv, hamming_data=hamming_data,
+                                          remove_outliers=remove_outliers, baseline=baseline,
+                                          decim_epochs=self.decim_epochs, interpolate_bads=interpolate_bads,
+                                          verbose=verbose)
             normalized = False
 
         self._sfreq = sfreq
@@ -1388,7 +1642,7 @@ class JuMEG_icasso(object):
             # import some modules
             from .complex_ica import cov
             from scipy.linalg import eigh
-            from .dimension_selection import aic_mdl
+            from .dimension_selection import aic_mdl, mibs, gap
 
             # concatenate STFT for consecutive windows in each channel
             fftsize, nwindows, nchan = meg_data.shape
@@ -1400,7 +1654,18 @@ class JuMEG_icasso(object):
             idx_sort = np.argsort(Dc.real)[::-1]
             Dc = Dc[idx_sort].real
             ntsl = Xmat_c.shape[0]
-            _, pca_dim = aic_mdl(Dc)
+
+
+            if self.dim_reduction == 'AIC':
+                pca_dim, _ = aic_mdl(Dc)
+            elif self.dim_reduction == 'BIC':
+                pca_dim = mibs(Dc, ntsl, use_bic=True)
+            elif self.dim_reduction == 'MIBS':
+                pca_dim = mibs(Dc, ntsl)
+            elif self.dim_reduction =='GAP':
+                pca_dim = gap(Dc)
+            else:  # self.dim_reduction == 'MDL'
+                _, pca_dim = aic_mdl(Dc)
 
 
             if pca_dim > 60:
@@ -1434,15 +1699,14 @@ class JuMEG_icasso(object):
             fourier_ica_obj = None
 
         elif self.ica_method == 'fourierica':
-            fourier_ica_obj = self.fit_FourierICA(ica_data, events, sfreq,
-                                                  complex_mixing=complex_mixing,
-                                                  hamming_data=hamming_data,
-                                                  remove_outliers=remove_outliers,
-                                                  envelopeICA=envelopeICA,
-                                                  contrast_id=contrast_id,
-                                                  normalized=normalized,
-                                                  data_already_stft=data_already_stft,
-                                                  verbose=verbose)
+            fourier_ica_obj = self._fit_FourierICA(ica_data, events, sfreq,
+                                                   complex_mixing=complex_mixing,
+                                                   hamming_data=hamming_data,
+                                                   remove_outliers=remove_outliers,
+                                                   envelopeICA=envelopeICA,
+                                                   normalized=normalized,
+                                                   data_already_stft=data_already_stft,
+                                                   verbose=verbose)
         else:
             print 'WARNING: chosen ICA method does not exist!'
             print 'Programm stops!'
@@ -1468,9 +1732,9 @@ class JuMEG_icasso(object):
                 print ">>>        Performing cluster analysis         <<<"
                 print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
 
-            Z, order, partitions, indexR, dis, sim = self.cluster()
-            proj = self.projection(dis)
-            A, W, Iq = self.get_results(partitions, sim)
+            Z, order, partitions, indexR, dis, sim = self._cluster()
+            proj = self._projection(dis)
+            A, W, Iq = self._get_results(partitions, sim)
 
 
         # ------------------------------------------

@@ -6,8 +6,8 @@
 ----------------------------------------------------------------------
  autor      : Lukas Breuer
  email      : l.breuer@fz-juelich.de
- last update: 31.03.2015
- version    : 1.0
+ last update: 13.10.2016
+ version    : 1.1
 
 ----------------------------------------------------------------------
  This simple implementation of FourierICA is part of the supplementary
@@ -74,7 +74,7 @@ import scipy as sc
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # estimate inverse kernel
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def calc_inv_kernel(fn_inv, method="dSPM", nave=1, snr=6.,
+def calc_inv_kernel(fn_inv, method="dSPM", nave=1, snr=1.,
                     pick_ori="normal", verbose=None):
 
     """
@@ -91,12 +91,25 @@ def calc_inv_kernel(fn_inv, method="dSPM", nave=1, snr=6.,
             default: method="dSPM"
         nave : number of averages used to regularize the solution
             default: nave=1
-        snr : signal-to-noise ratio
-            default: snr = 3.
+        snr : signal-to-noise ratio for source localization
+            default: snr = 1.
+        pick_ori : orientation of the sources for source
+            localization
+            default: pick_ori = "normal"
         verbose : bool, str, int, or None
             If not None, override default verbose level
             (see mne.verbose).
             default: verbose=None
+
+        Returns
+        -------
+        kernel: kernel for source localization
+        noise_norm: noise normalization matrix for source
+            localization. Important when 'dSPM' or 'sLORETA'
+            is used for source localization
+        vertno: array of vertex assignment for source
+            localization. For further information see mne
+            python manual
     """
 
     # -------------------------------------------
@@ -110,7 +123,9 @@ def calc_inv_kernel(fn_inv, method="dSPM", nave=1, snr=6.,
     # estimate inverse kernel
     # -------------------------------------------
     # load inverse solution
+    import mne.minimum_norm as min_norm
     inv_operator = min_norm.read_inverse_operator(fn_inv, verbose=verbose)
+
 
     # set up the inverse according to the parameters
     lambda2      = 1. / snr ** 2.   # the regularization parameter.
@@ -136,7 +151,7 @@ def calc_inv_kernel(fn_inv, method="dSPM", nave=1, snr=6.,
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def stft_source_localization(data, fn_inv, method="dSPM",
                              morph2fsaverage=False,
-                             nave=1, snr=3.,
+                             nave=1, snr=1.,
                              pick_ori="normal", verbose=True):
 
     """
@@ -147,19 +162,37 @@ def stft_source_localization(data, fn_inv, method="dSPM",
         ----------
         data: array of MEG data
             (only the data, no MNE-data object!)
-        kernel: kernel of the inverse operator.
-            (could be estimated using
-            mne.minimum_norm._assemble_kernel())
-        noise_norm: noise normalization array.
-            (could be estimated using
-            mne.minimum_norm._assemble_kernel())
+        fn_inv: String containing the filename
+            of the inverse operator (must be a fif-file)
+        method: string
+            which source localization method should be used?
+            MNE-based: "MNE" | "dSPM" | "sLORETA"
+            default: method="dSPM"
+        morph2fsaverage: If source localized data should be
+            morphed to the 'fsaverage' brain (important when
+            group analysis is applied)
+            default: morph2fsaverage=False
+        nave: number of averages used to regularize the solution
+            default: nave=1
+        snr: signal-to-noise ratio for source localization
+            default: snr = 1.
+        pick_ori: orientation of the sources for source
+            localization
+            default: pick_ori = "normal"
+        verbose: bool, str, int, or None
+            If not None, override default verbose level
+            (see mne.verbose).
+            default: verbose=None
+
 
         Returns
         -------
-        src_loc: SourceEstimate | VolSourceEstimate
-            The source estimates
-        estimation_time: time needed to perform source
-            localization (for one time slice)
+        src_loc_data: source localized data (only the
+            array containing the data in the dimension
+            #vertices x #timeslices)
+        vertno: array of vertex assignment for source
+            localization. For further information see mne
+            python manual
     """
 
     # -------------------------------------------
@@ -181,7 +214,6 @@ def stft_source_localization(data, fn_inv, method="dSPM",
     kernel, noise_norm, vertno = calc_inv_kernel(fn_inv, method=method,
                                                  nave=nave, snr=snr,
                                                  pick_ori=pick_ori)
-
 
     # -------------------------------------------
     # get some information from the
@@ -269,13 +301,133 @@ def stft_source_localization(data, fn_inv, method="dSPM",
 # routine to apply FourierICA combined with ICASSO to
 # a data set (on sensor-level)
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def apply_ICASSO_fourierICA(fn_raw, nrep=50, stim_name='STI 014', event_id=1,
+def apply_ICASSO_fourierICA(fn_raw, fn_inv=None, src_loc_method='dSPM',
+                            snr=1.0, morph2fsaverage=True,
+                            nrep=50, stim_name='STI 014', event_id=1,
                             tmin=-0.2, tmax=0.8, flow=4.0, fhigh=34.0,
-                            pca_dim=None, max_iter=10000, conv_eps=1e-10,
+                            pca_dim=None, decim_epochs=False,
+                            corr_event_picking=None,
+                            max_iter=10000, conv_eps=1e-10,
                             lrate=None, complex_mixing=True, hamming_data=False,
                             envelopeICA=False, remove_outliers=False,
                             cost_function=None, verbose=True,
-                            plot_dir=None, plot_res=True):
+                            plot_dir=None, fn_plot=None, plot_res=True):
+
+    '''
+    Interface for applying fourierICA combined with ICASSO.
+
+        Parameters
+        ----------
+        fn_raw: file name or list of filenames for data where
+            FourierICA and ICASSO should be applied to
+        fn_inv: file name of inverse operator. If given
+            FourierICA is applied on data transformed to
+            source space
+        src_loc_method: method used for source localization.
+            Only of interest if 'fn_inv' is set
+            default: src_loc_method='dSPM'
+        snr: signal-to-noise ratio for performing source
+            localization
+            default: snr=1.0
+        morph2fsaverage: should data be morphed to the
+            'fsaverage' brain?
+            default: morph2fsaverage=True
+        nrep: number of repetitions for ICASSO estimation
+            default: nrep=50
+        stim_name:  name of the stimulus channel. Note, for
+            applying FourierCIA data are chopped around stimulus
+            onset. If not set data are chopped in overlapping
+            windows
+            default: stim_names=None
+        event_id: ID of the event of interest to be considered in
+            the stimulus channel. Only of interest if 'stim_name'
+            is set
+            default: event_id=1
+        corr_event_picking: if set should contain the complete python
+            path and name of the function used to identify only the
+            correct events
+        tmin: time of interest prior to stimulus onset for epoch
+            generation (in seconds)
+            default: tmin=-0.2
+        tmax: time of interest after the stimulus onset for epoch
+            generation (in seconds)
+            default: tmin=0.8
+        flow: lower frequency border for estimating the optimal
+            de-mixing matrix using FourierICA
+            default: flow=4.0
+        fhigh: upper frequency border for estimating the optimal
+            de-mixing matrix using FourierICA
+            default: fhigh=34.0
+            Note: here default flow and fhigh are choosen to
+               contain:
+               - theta (4-7Hz)
+               - low (7.5-9.5Hz) and high alpha (10-12Hz),
+               - low (13-23Hz) and high beta (24-34Hz)
+        pca_dim: The number of PCA components used to apply FourierICA.
+            If pca_dim > 1 this refers to the exact number of components.
+            If between 0 and 1 pca_dim refers to the variance which
+            should be explained by the chosen components
+        decim_epochs: integer. If set the number of epochs used
+            to estimate the optimal demixing matrix is decimated
+            to the given number.
+            default: decim_epochs=False
+        max_iter: maximum number od iterations used in FourierICA
+            default: max_iter=10000
+        conv_eps: iteration stops when weight changes are smaller
+            then this number
+            default: conv_eps=1e-10,
+        lrate: float containg the learning rate which should be
+            used in the applied ICA algorithm
+            default: lrate=None
+        complex_mixing: if mixing matrix should be real or complex
+            default: complex_mixing=True
+        hamming_data: if set a hamming window is applied to each
+            epoch prior to Fourier transformation
+            default: hamming_data=False
+        envelopeICA: if set ICA is estimated on the envelope
+            of the Fourier transformed input data, i.e., the
+            mixing model is |x|=As
+            default: envelopeICA=False
+        remove_outliers: If set outliers are removed from the Fourier
+            transformed data.
+            Outliers are defined as windows with large log-average power (LAP)
+
+                 LAP_{c,t}=log \sum_{f}{|X_{c,tf}|^2
+
+            where c, t and f are channels, window time-onsets and frequencies,
+            respectively. The threshold is defined as |mean(LAP)+3 std(LAP)|.
+            This process can be bypassed or replaced by specifying a function
+            handle as an optional parameter.
+            default: remove_outliers=False
+        cost_function: which cost-function should be used in the complex
+            ICA algorithm
+            'g1': g_1(y) = 1 / (2 * np.sqrt(lrate + y))
+            'g2': g_2(y) = 1 / (lrate + y)
+            'g3': g_3(y) = y
+            default: cost_function=None
+        verbose: bool, str, int, or None
+            If not None, override default verbose level
+            (see mne.verbose).
+            default: verbose=True
+        plot_dir: directory for saving the result plots.
+            default: plot_dir=None
+        fn_plot: filename for saving the plot
+            default: None
+        plot_res: If True resulting FourierICA components are
+            plotted.
+            default: plot_res=True
+
+        Returns
+        -------
+        W_orig: estimated optimal de-mixing matrix
+        A_orig: estimated mixing matrix
+        quality: quality index of the clustering between
+            components belonging to one cluster
+            (between 0 and 1; 1 refers to small clusters,
+            i.e., components in one cluster a highly similar)
+        fourier_ica_obj: FourierICA object. For further information
+            please have a look into the FourierICA routine
+    '''
 
     # ------------------------------------------
     # import FourierICA module
@@ -291,12 +443,15 @@ def apply_ICASSO_fourierICA(fn_raw, nrep=50, stim_name='STI 014', event_id=1,
     # ------------------------------------------
     # apply FourierICA combined with ICASSO
     # ------------------------------------------
-    icasso_obj = JuMEG_icasso(nrep=nrep, envelopeICA=envelopeICA, lrate=lrate)
+    icasso_obj = JuMEG_icasso(fn_inv=fn_inv, nrep=nrep, envelopeICA=envelopeICA, lrate=lrate,
+                              src_loc_method=src_loc_method, snr=snr, morph2fsaverage=morph2fsaverage)
     W_orig, A_orig, quality, fourier_ica_obj, _, _ = icasso_obj.fit(fn_raw,
                                                                     stim_name=stim_name, event_id=event_id,
                                                                     tmin_stim=tmin, tmax_stim=tmax,
                                                                     flow=flow, fhigh=fhigh,
                                                                     pca_dim=pca_dim,
+                                                                    decim_epochs=decim_epochs,
+                                                                    corr_event_picking=corr_event_picking,
                                                                     max_iter=max_iter, conv_eps=conv_eps,
                                                                     complex_mixing=complex_mixing,
                                                                     hamming_data=hamming_data,
@@ -331,15 +486,17 @@ def apply_ICASSO_fourierICA(fn_raw, nrep=50, stim_name='STI 014', event_id=1,
         meg_data = meg_raw._data[meg_channels, :]
 
         # plot data
-        fn_fourier_ica = join(plot_dir, basename(fn_raw[:fn_raw.rfind('-raw.fif')] + ',fourierICA'))
+        if fn_plot:
+            fn_fourier_ica = join(plot_dir, basename(fn_plot))
+        else:
+            fn_fourier_ica = join(plot_dir, basename(fn_raw[:fn_raw.rfind('-raw.fif')] + ',fourierICA'))
+
         pk_values = plot_results(fourier_ica_obj, meg_data, W_orig, A_orig, meg_raw.info,
-                                 meg_channels, cluster_quality=quality, fnout=fn_fourier_ica,
-                                 show=False)
-    else:
-        pk_values = []
+                             meg_channels, cluster_quality=quality, fnout=fn_fourier_ica,
+                             show=False)
 
 
-    return W_orig, A_orig, quality, fourier_ica_obj, pk_values
+    return W_orig, A_orig, quality, fourier_ica_obj
 
 
 
@@ -348,11 +505,11 @@ def apply_ICASSO_fourierICA(fn_raw, nrep=50, stim_name='STI 014', event_id=1,
 # (STFT)
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
-               flow=1.0, fhigh=45.0, win_length_sec=1.0,
-               overlap_fac=2.0, hamming_data=False,
-               remove_outliers=True, fcnoutliers=[],
-               already_epoched=False, baseline=(None, None),
-               verbose=True):
+               flow=4.0, fhigh=34.0, win_length_sec=1.0,
+               overlap_fac=0.5, hamming_data=False,
+               remove_outliers=True, already_epoched=False,
+               baseline=(None, None), decim_epochs=False,
+               unfiltered=False, verbose=True):
 
     """
     The code determines the correct window size and
@@ -362,9 +519,73 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
     band-pass filter (gain=1) between the frequencies
     specified by the user.
 
-    --> overlap_fac ignored if events is set
+        Parameters
+        ----------
+        origdata: 2D-array containing the data for
+            fourier transformation (should have the form
+            #channels x #time_slices)
+        events: events used for generating the epochs. Only of
+            interest for evoked data.
+            default: events=[]
+        tpre: time of interest prior to stimulus onset.
+            default: tpre=0.0
+        sfreq: sampling frequency of the input data
+            default: sfreq=1017.25
+        flow: lower frequency border for Fourier transformation
+            default: flow=4.0
+        fhigh: upper frequency border for Fourier transformation
+            default: fhigh=34.0
+        win_length_sec: length of the window around the stimulus
+            onset.
+            default: win_length_sec=1.0
+        overlap_fac: How much to windows should overlap in percentage,
+            i.e. 0.5 means 50 % overlap.
+            Note: is ignored if events is set
+            default: overlap_fac=0.5
+        hamming_data: if set a hamming window is applied to each
+            epoch prior to Fourier transformation
+            default: hamming_data=False
+        remove_outliers: If set outliers are removed from the Fourier
+            transformed data.
+            Outliers are defined as windows with large log-average
+            power (LAP)
+
+                 LAP_{c,t}=log \sum_{f}{|X_{c,tf}|^2
+
+            where c, t and f are channels, window time-onsets and
+            frequencies, respectively. The threshold is defined as
+            |mean(LAP)+3 std(LAP)|. This process can be bypassed or
+            replaced by specifying a function handle as an optional
+            parameter.
+            default: remove_outliers=True
+        already_epoched: If set the already epoched data are directly
+            used. The data should than have the form
+            (#wtime_slices x #epochs x #nchan)
+            default: already_epoched=False
+        baseline: If set baseline correction is applied to epochs
+            prior to Fourier transformation
+            default: baseline=(None, None)
+        decim_epochs: if set the number of epochs will be reduced
+            (per subject) to that number for the estimation of the
+            demixing matrix.
+            Note: the epochs were chosen randomly from the complete
+            set of epochs.
+            default: decim_epochs=False
+        unfiltered: bool
+            If true data are not filtered to a certain frequency range
+            default: unfiltered=False
+        verbose: bool, str, int, or None
+            If not None, override default verbose level
+            (see mne.verbose).
+            default: verbose=True
+
+        Returns
+        -------
+        X: Array containing the Fourier transformed data
+        events: events used for generating the epochs
     """
 
+    # import FourierICA module
     from scipy import fftpack
 
     if verbose:
@@ -377,7 +598,7 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
     # compute number of time points in one window based on other
     # parameter
     win_size = np.floor(win_length_sec*sfreq)
-    win_inter = np.ceil(win_size/overlap_fac)
+    win_inter = np.ceil(win_size * overlap_fac)
 
     if already_epoched:
         win_size, nwindows, nchan = origdata.shape
@@ -393,7 +614,6 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
     else:
         nwindows = int(np.floor((ntsl-win_size)/win_inter+1))
 
-
     # compute frequency indices (for the STFT)
     startfftind = int(np.floor(flow*win_length_sec))
     if startfftind < 0:
@@ -408,7 +628,32 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
         import pdb
         pdb.set_trace()
 
+    # check if data should be filtered
+    if unfiltered:
+        startfftind = 0
+        endfftind = nyquistf - 1
+
     fftsize = int(endfftind-startfftind)
+
+    # check if decimation should be applied
+    win_sel = []
+    if decim_epochs:
+
+        # check if the chosen number is smaller than
+        # the number of detected epochs
+        if decim_epochs < nwindows:
+
+            idx_sel = np.sort(np.random.choice(nwindows, decim_epochs,
+                                               replace=False))
+            nwindows = decim_epochs
+
+            # check if events are given
+            if len(events):
+                events = events[idx_sel]
+
+            # or if windows are generated without epochs
+            else:
+                win_sel = idx_sel * win_inter
 
 
     # initialization of tensor X, which is the main data matrix input
@@ -419,6 +664,8 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
     if len(events):
         idx_start = events[0] + np.floor(tpre * sfreq)
         window = [idx_start, idx_start+win_size]
+    elif len(win_sel):
+        window = [win_sel[0], win_sel[0]+win_size]
     else:
         window = [0, win_size]
 
@@ -452,9 +699,10 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
         if len(events) and (iwin+1 < nwindows):
             idx_start = events[iwin+1] + np.floor(tpre * sfreq)
             window = [idx_start, idx_start+win_size]
+        elif len(win_sel) and (iwin+1 < nwindows):
+            window = [win_sel[iwin+1], win_sel[iwin+1]+win_size]
         else:
             window += win_inter
-
 
     # REMOVE OUTLIERS
     # Outliers are defined as windows with large log-average power (LAP)
@@ -466,19 +714,16 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
     # This process can be bypassed or replaced by specifying a function
     # handle as an optional parameter.
     if remove_outliers:
-        if fcnoutliers:
-            X = fcnoutliers[X]
-        else:
-            log_norms = np.log(np.sum(np.abs(X * X.conj()), axis=0))
-            outlier_thres = np.mean(log_norms) + 3 * np.std(log_norms)
-            outlier_indices = np.where(log_norms > outlier_thres)
+        log_norms = np.log(np.sum(np.abs(X * X.conj()), axis=0))
+        outlier_thres = np.mean(log_norms) + 3 * np.std(log_norms)
+        outlier_indices = np.where(log_norms > outlier_thres)
 
-            X[:, outlier_indices[0], outlier_indices[1]] = 0
+        X[:, outlier_indices[0], outlier_indices[1]] = 0
 
-            # print out some information if required
-            if verbose:
-                print "... Outliers removal: "
-                print ">>> removed %u windows" % len(outlier_indices[0])
+        # print out some information if required
+        if verbose:
+            print "... Outliers removal: "
+            print ">>> removed %u windows" % len(outlier_indices[0])
 
     return X, events
 
@@ -493,9 +738,11 @@ class JuMEG_fourier_ica(object):
 
     def __init__(self, events=[], tpre=0.0, overlap_fac=2.0, win_length_sec=1.0,
                  sfreq=1017.25, flow=4.0, fhigh=34.0, hamming_data=True,
-                 remove_outliers=False, fcnoutliers=[], complex_mixing=True,
+                 remove_outliers=False, complex_mixing=True,
                  pca_dim=0.95, zero_tolerance=1e-7, ica_dim=200, max_iter=10000,
-                 lrate=1.0, conv_eps=1e-16, cost_function='g2', envelopeICA=False):
+                 lrate=1.0, conv_eps=1e-16, cost_function='g2', envelopeICA=False,
+                 decim_epochs=False):
+
         """
         Generate a fourier_ica object.
 
@@ -552,6 +799,9 @@ class JuMEG_fourier_ica(object):
                 applying PCA). All eigenvalues smaller than this threshold are
                 discarded
                 default: zero_tolerance=1e-7
+            ica_dim: the number of ICA components used to apply FourierICA. If
+                pca_dim is lower the number is reduced to that number.
+                default: ica_dim = 200
             max_iter: maximum number od iterations used in FourierICA
                 default: max_iter=10000
             lrate: initial learning rate
@@ -568,6 +818,10 @@ class JuMEG_fourier_ica(object):
                 of the Fourier transformed input data, i.e., the
                 mixing model is |x|=As
                 default: envelopeICA=False
+            decim_epochs: if set the number of epochs will be reduced (per
+                subject) to that number for the estimation of the demixing matrix.
+                Note: the epochs were chosen randomly from the complete set of
+                epochs.
 
             Returns
             -------
@@ -590,7 +844,6 @@ class JuMEG_fourier_ica(object):
 
         self._hamming_data = hamming_data
         self._remove_outliers = remove_outliers
-        self._fcnoutliers = fcnoutliers
         self._complex_mixing = complex_mixing
         self._pca_dim = pca_dim
         self._zero_tolerance = zero_tolerance
@@ -600,6 +853,7 @@ class JuMEG_fourier_ica(object):
         self._conv_eps = conv_eps
         self.cost_function = cost_function
         self.envelopeICA = envelopeICA
+        self.decim_epochs = decim_epochs
         self.dmean = []
         self.dstd = []
 
@@ -721,18 +975,6 @@ class JuMEG_fourier_ica(object):
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    # set/get fcnoutliers
-    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def _set_fcnoutliers(self, fcnoutliers):
-        self._fcnoutliers = fcnoutliers
-
-    def _get_fcnoutliers(self):
-        return self._fcnoutliers
-
-    fcnoutliers = property(_get_fcnoutliers, _set_fcnoutliers)
-
-
-    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # set/get complex_mixing (for PCA decomposition)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     def _set_complex_mixing(self, complex_mixing):
@@ -839,15 +1081,13 @@ class JuMEG_fourier_ica(object):
             -------
             temporal_envelope: temporal envelop of the independent
                 components
-            pk_max: pk-values of the independent component
         """
 
         # chop data into epochs and apply short-time Fourier transform (STFT)
         X, _ = apply_stft(origdata, events=self.events, tpre=self.tpre, sfreq=self.sfreq,
                           flow=self.flow, fhigh=self.fhigh, win_length_sec=self.win_length_sec,
                           overlap_fac=self.overlap_fac, hamming_data=self.hamming_data,
-                          remove_outliers=False, fcnoutliers=self.fcnoutliers,
-                          verbose=False)
+                          remove_outliers=False, verbose=False)
 
         # get some size information from data
         fftsize, nwindows, nchan = X.shape
@@ -870,15 +1110,11 @@ class JuMEG_fourier_ica(object):
             fft_act[:, startfftind:endfftind] = act[:, iwin, :]
             temporal_envelope[iwin, :, :] = sc.fftpack.ifft(fft_act, n=ntsl, axis=1).real
 
-        from mne.preprocessing.ctps_ import ctps
-        ks_dynamics_orig, pk_dynamics_orig, _ = ctps(temporal_envelope)
-        pk_max = np.max(pk_dynamics_orig, axis=1)
-
         # average data if required
         if average:
             temporal_envelope = np.mean(temporal_envelope, axis=0)
 
-        return temporal_envelope, pk_max
+        return temporal_envelope
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -914,8 +1150,7 @@ class JuMEG_fourier_ica(object):
         X, _ = apply_stft(origdata, events=self.events, tpre=self.tpre, sfreq=self.sfreq,
                           flow=self.flow, fhigh=self.fhigh, win_length_sec=self.win_length_sec,
                           overlap_fac=self.overlap_fac, hamming_data=self.hamming_data,
-                          remove_outliers=False, fcnoutliers=self.fcnoutliers,
-                          verbose=False)
+                          remove_outliers=False, verbose=False)
 
         # get some size information from data
         fftsize, nwindows, nchan = X.shape
@@ -978,8 +1213,7 @@ class JuMEG_fourier_ica(object):
         X, _ = apply_stft(origdata, events=self.events, tpre=self.tpre, sfreq=self.sfreq,
                           flow=self.flow, fhigh=self.fhigh, win_length_sec=self.win_length_sec,
                           overlap_fac=self.overlap_fac, hamming_data=self.hamming_data,
-                          remove_outliers=False, fcnoutliers=self.fcnoutliers,
-                          verbose=False)
+                          remove_outliers=False, verbose=False)
 
         # get some size information from data
         fftsize, nwindows, nchan = X.shape
@@ -1000,50 +1234,6 @@ class JuMEG_fourier_ica(object):
         return fourier_ampl
 
 
-    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    # clean a data set
-    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    def clean_data(self, fn_raw, W_orig, A_orig, idx_keep,
-                   meg_channels=[]):
-
-        # import necessary modules
-        from mne import pick_types
-        from mne.io import Raw
-
-        # load data and get indices of MEG channel
-        meg_raw = Raw(fn_raw, preload=True)
-        if not np.any(meg_channels):
-            meg_channels = pick_types(meg_raw.info, meg=True, eeg=False,
-                                      eog=False, stim=False, exclude='bads')
-
-         # transform data into FFT- and ICA-space
-        meg_data = meg_raw._data[meg_channels, :]
-        fft_data = np.fft.fft(meg_data.astype(np.complex64))
-
-        # normalize data
-        fftsize = fft_data.shape[1]
-        fft_data = (fft_data - np.dot(np.ones((fftsize, 1)), self.dmean).transpose()) / \
-                   np.dot(np.ones((fftsize, 1)), self.dstd).transpose()
-
-        act = np.dot(W_orig, fft_data)
-
-        # remove ICs related to signal-of-interest
-        A_clean = A_orig.copy()
-
-        idx_zero = range(A_clean.shape[1])
-        idx_zero = np.setdiff1d(idx_zero, idx_keep)
-        A_clean[:, idx_zero] = 0
-
-        # transform data back into FFT- and MEG-space
-        # fft_data = np.dot(A_clean, act)
-        fft_data = np.dot(A_clean, act) * np.dot(np.ones((fftsize, 1)), self.dstd).transpose() + \
-                   np.dot(np.ones((fftsize, 1)), self.dmean).transpose()
-        meg_raw._data[meg_channels, :] = np.fft.ifft(fft_data).real
-
-        # save cleaned data object
-        fn_fourierICA = fn_raw[:fn_raw.rfind('-raw.fif')] + ',fourierICA-raw.fif'
-        meg_raw.save(fn_fourierICA, overwrite=True)
-
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # perform fourier based ICA signal decomposition
@@ -1051,14 +1241,15 @@ class JuMEG_fourier_ica(object):
     def fit(self, origdata, events=[], tpre=None, sfreq=None,
             flow=None, fhigh=None, win_length_sec=None,
             overlap_fac=None, hamming_data=None,
-            remove_outliers=None, fcnoutliers=None,
+            remove_outliers=None,
             complex_mixing=None, pca_dim=None,
             zero_tolerance=None, ica_dim=None,
             max_iter=None, lrate=None, conv_eps=None,
             data_already_stft=False,
             data_already_normalized=False,
             whiten_mat=[], dewhiten_mat=[],
-            pca_only=False, verbose=False):
+            pca_only=False, decim_epochs=False,
+            verbose=False):
 
         """
         Apply FourierICA to given data set.
@@ -1066,13 +1257,29 @@ class JuMEG_fourier_ica(object):
             Parameters
             ----------
             origdata: array of data to be decomposed [nchan, ntsl].
+            data_already_stft: if set data are not transposed to
+                Fourier space again (important when ICASSO is applied)
+                default: data_already_stft=False
+            data_already_normalized: if set data are not normalized
+                prior to ICA estimation (important when ICASSO is applied)
+                default: data_already_normalized=False
+            whiten_mat: if set this matrix is used for whitening,
+                i.e. PCA is not estimated again. This parameter is
+                important when ICASSO is used.
+                default: whiten_mat=[]
+            dewhiten_mat: if set this matrix is used for de-whitening,
+                i.e. PCA is not estimated again. This parameter is
+                important when ICASSO is used.
+                default: dewhiten_mat=[]
+            pca_only: if set only PCA is estimated and not ICA
+                default: pca_only=False
             verbose: bool, str, int, or None
                 If not None, override default verbose level
                 (see mne.verbose).
                 default: verbose=True
 
-            For all other parameters are explained in the
-            initialization of the FourierICA object
+            All other parameters are explained in the
+            initialization of the FourierICA object.
 
             Returns
             -------
@@ -1109,8 +1316,6 @@ class JuMEG_fourier_ica(object):
             self.hamming_data = hamming_data
         if remove_outliers:
             self.remove_outliers = remove_outliers
-        if fcnoutliers:
-            self.fcnoutliers = fcnoutliers
         if complex_mixing:
             self.complex_mixing = complex_mixing
         if pca_dim:
@@ -1125,7 +1330,8 @@ class JuMEG_fourier_ica(object):
             self.lrate = lrate
         if conv_eps:
             self._conv_eps = conv_eps
-
+        if decim_epochs:
+            self.decim_epochs = decim_epochs
 
 
         str_hamming_window = "True" if self.hamming_data else "False"
@@ -1160,7 +1366,8 @@ class JuMEG_fourier_ica(object):
                                    overlap_fac=self.overlap_fac,
                                    hamming_data=self.hamming_data,
                                    remove_outliers=self.remove_outliers,
-                                   fcnoutliers=self.fcnoutliers, verbose=verbose)
+                                   decim_epochs=self.decim_epochs,
+                                   verbose=verbose)
             self.events = events
 
         if not data_already_normalized:

@@ -303,12 +303,11 @@ def whitening(data, dim_reduction='',
     # -------------------------------------------
     X = data.copy()
     whiten = False
-    n_components = None if dim_reduction == '' else npc
     dmean = X.mean(axis=0)
     stddev = np.std(X, axis=0)
     X = (X - dmean[np.newaxis, :]) / stddev[np.newaxis, :]
 
-    pca = RandomizedPCA(n_components=n_components, whiten=whiten,
+    pca = RandomizedPCA(n_components=None, whiten=whiten,
                         copy=True)
 
     # -------------------------------------------
