@@ -174,7 +174,7 @@ def update_description(raw, comment):
     raw.info['description'] = str(raw.info['description']) + ' ; ' + comment
 
 
-def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True):
+def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True, return_chop=False):
     '''
     This function extracts specified duration of raw data
     and writes it into a fif file.
@@ -186,7 +186,8 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True):
     raw: Raw object or raw file name as a string.
     start_time: Time to extract data from in seconds. Default is 60.0 seconds.
     stop_time: Time up to which data is to be extracted. Default is 360.0 seconds.
-    save: bool, If True the raw file is written to disk.
+    save: bool, If True the raw file is written to disk. (default: True)
+    return_chop: bool, Return the chopped raw object. (default: False)
 
     '''
     if isinstance(raw, str):
@@ -198,16 +199,16 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True):
         return
     # Obtain indexes for start and stop times.
     assert start_time < stop_time, "Start time is greater than stop time."
-    start_idx = raw.time_as_index(start_time)
-    stop_idx = raw.time_as_index(stop_time)
-    data, times = raw[:, start_idx:stop_idx]
-    raw._data,raw._times = data, times
+    crop = raw.copy().crop(tmin=start_time, tmax=stop_time)
     dur = int((stop_time - start_time) / 60)
     if save:
-        #raw.save(raw.info['filename'].split('/')[-1].split('.')[0] + '_' + str(dur) + 'm-raw.fif')
-        raw.save(raw.info['filename'].split('-raw.fif')[0] + ',' + str(dur) + 'm-raw.fif')
+        crop.save(crop.info['filename'].split('-raw.fif')[0] + ',' + str(dur) + 'm-raw.fif')
     raw.close()
-    return
+    if return_chop:
+         return crop
+    else:
+        crop.close()
+        return
 
 
 ##################################################
