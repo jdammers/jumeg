@@ -633,7 +633,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
                                 picks=None,reject=None,proj=False,
                                 save_condition={"events":True,"epochs":True,"evoked":True}):
         
-        from jumeg.jumeg_4raw_data_plot import jumeg_4raw_data_plot as jplt
+        from jumeg.preprocbatch.jumeg_preprocbatch_plot import jumeg_preprocbatch_plot as jplt
         jplt.verbose = self.verbose
       
         ep,bc = self.events_apply_epochs_and_baseline(self.raw,evt=evt,reject=reject,proj=proj,picks=picks)      
@@ -867,9 +867,11 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
 
           for kbad in ( aev.keys() ):
               node_name = '/ocarta/' + kbad
-
-              if self.HDFobj.get(node_name) is None:
-                 continue
+            #--- ck if node exist 
+              try:             
+                  self.HDFobj.get(node_name)
+              except:
+                  continue
 
               artifact_events[kbad]= {'tmin':None,'tmax':None,'tsl':np.array([])}
 
@@ -927,7 +929,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
                 else:
                    bc_time_post = evt['time']['time_post']  
                 
-                picks_bc = jumeg_base.pick_exclude_trigger(ep)
+                picks_bc = jumeg_base.picks.exclude_trigger(ep)
                 
                 #ep_bc = mne.Epochs(self.raw,evt['bc']['events'],evt['bc']['event_id'],
                 #                   bc_time_pre,bc_time_post,baseline=None,
@@ -945,7 +947,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
                # picks_stim = jumeg_base.pick_stim_response(ep)
                # if picks_stim.size:
                #    ep._data[:,picks_stim,: ] += ep_bc_mean[:,picks_stim,np.newaxis]
-                bc =True
+                bc = True
  #--- 
         if self.verbose:
            print" ---> Epocher apply epoch and baseline -> mne epochs:" 
