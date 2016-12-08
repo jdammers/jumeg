@@ -164,6 +164,25 @@ def rescale_artifact_to_signal(signal, artifact):
     return rescaled_artifact / 1e15
 
 
+def check_read_raw(raw_name, preload=True):
+    '''
+    Checks if raw_name provided is a filename of raw object.
+    If it is a raw object, simply return, else read and return raw object.
+
+    raw_name: instance of mne.io.Raw | str
+        Raw object or filename to be read.
+    preload: bool
+        All data loaded to memory. Defaults to True.
+    '''
+    if isinstance(raw_name, mne.io.Raw):
+        return raw_name
+    elif isinstance(raw_name, str):
+        raw = mne.io.Raw(raw_name, preload=preload)
+        return raw
+    else:
+        raise RuntimeError('%s type not mne.io.Raw or string.' % raw_name)
+
+
 def peak_counter(signal):
     ''' Simple peak counter using scipy argrelmax function. '''
     return sci.signal.argrelmax(signal)[0].shape

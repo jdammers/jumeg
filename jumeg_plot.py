@@ -10,6 +10,7 @@ from mpl_toolkits.axes_grid import make_axes_locatable
 from jumeg.jumeg_utils import (get_files_from_list, thresholded_arr,
                                triu_indices)
 from jumeg.jumeg_base import jumeg_base
+from jumeg.jumeg_utils import check_read_raw
 from jumeg_math import (calc_performance,
                         calc_frequency_correlation)
 
@@ -17,6 +18,7 @@ try:
     import glassbrain
 except Exception as e:
     print ('Unable to import glassbrain check mayavi and pysurfer config.')
+
 
 def plot_powerspectrum(fname, raw=None, picks=None, dir_plots="plots",
                        tmin=None, tmax=None, fmin=0.0, fmax=450.0, n_fft=4096):
@@ -546,3 +548,182 @@ def plot_matrix_with_values(mat, cmap='seismic', colorbar=True):
     for (a, b), z in np.ndenumerate(mat):
         ax.text(b, a, z, ha='center', va='center')
     pl.show()
+
+
+def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
+                           stim_ch='STI 014', ecg_ch='EEG 002',
+                           eog1_ch='EEG 001', eog2_ch='EEG 003',
+                           eog_tmin=-0.5, eog_tmax=0.5, eog_id=998,
+                           eog_lfreq=8., eog_hfreq=20.,
+                           ecg_tmin=-0.5, ecg_tmax=0.5, ecg_id=999,
+                           ecg_lfreq=8., ecg_hfreq=20.,
+                           stim_tmin=-0.2, stim_tmax=0.8,
+                           eve_output='onset', overview_fname=None):
+    '''
+    Plot an overview of the artefact rejection with ECG, EOG vertical and EOG
+    horizontal channels. Shows the data before and after cleaning along with a
+    difference plot.
+
+    raw_orig: instance of mne.io.Raw | str
+        File name of raw object of the uncleaned data.
+    raw_clean: instance of mne.io.Raw | str
+        File name of raw object of the cleaned data.
+    stim_event_ids: list
+        List of stim or resp event ids. Defaults to [1].
+    eve_output: 'onset' | 'offset' | 'step'
+        Whether to report when events start, when events end, or both.
+    overview_fname: str | None
+        Name to save the plot generated. (considers raw_clean.info['filename'])
+
+    Notes: Time is always shown in milliseconds (1e3) and the MEG data from mag
+        is always in femtoTesla (fT) (1e15)
+    '''
+
+    from mne.preprocessing import create_ecg_epochs, create_eog_epochs
+
+    raw = check_read_raw(raw_orig, preload=True)
+    raw_clean = check_read_raw(raw_clean, preload=True)
+
+    if not overview_fname:
+        try:
+            overview_fname = raw_clean.info['filename'].rsplit('-raw.fif')[0] + ',overview-plot.png'
+        except:
+            overview_fname = 'overview-plot.png'
+
+    # stim related events
+    events = mne.find_events(raw, stim_channel=stim_ch, output='onset')
+    events_clean = mne.find_events(raw_clean, stim_channel=stim_ch, output='onset')
+
+    epochs = mne.Epochs(raw, events, event_id=stim_event_ids,
+                        tmin=stim_tmin, tmax=stim_tmax,
+                        picks=mne.pick_types(raw.info, meg=True, exclude='bads'))
+    evoked = epochs.average()
+    epochs_clean = mne.Epochs(raw_clean, events_clean, event_id=stim_event_ids,
+                              tmin=stim_tmin, tmax=stim_tmax,
+                              picks=mne.pick_types(raw_clean.info, meg=True, exclude='bads'))
+    evoked_clean = epochs_clean.average()
+
+    stim_diff_signal = mne.combine_evoked([evoked, evoked_clean],
+                                          weights=[1, -1])
+
+    # MEG signal around ECG events
+    ecg_epochs = create_ecg_epochs(raw, ch_name=ecg_ch, event_id=ecg_id,
+                                   picks=mne.pick_types(raw.info, meg=True, ecg=True, exclude=[ecg_ch]),
+                                   tmin=ecg_tmin, tmax=ecg_tmax,
+                                   l_freq=ecg_lfreq, h_freq=ecg_hfreq,
+                                   preload=True, keep_ecg=False, baseline=(None, None))
+
+    ecg_clean_epochs = create_ecg_epochs(raw_clean, ch_name=ecg_ch, event_id=ecg_id,
+                                         picks=mne.pick_types(raw.info, meg=True, ecg=True, exclude=[ecg_ch]),
+                                         tmin=ecg_tmin, tmax=ecg_tmax,
+                                         l_freq=ecg_lfreq, h_freq=ecg_hfreq,
+                                         preload=True, keep_ecg=False, baseline=(None, None))
+
+    stim_diff_ecg = mne.combine_evoked([ecg_epochs.average(), ecg_clean_epochs.average()],
+                                       weights=[1, -1])
+
+    # MEG signal around EOG1 events
+    eog1_epochs = create_eog_epochs(raw, ch_name=eog1_ch, event_id=eog_id,
+                                    picks=mne.pick_types(raw.info, meg=True, exclude='bads'),
+                                    tmin=eog_tmin, tmax=eog_tmax,
+                                    l_freq=eog_lfreq, h_freq=eog_hfreq,
+                                    preload=True, baseline=(None, None))
+
+    eog1_clean_epochs = create_eog_epochs(raw_clean, ch_name=eog1_ch, event_id=eog_id,
+                                          picks=mne.pick_types(raw.info, meg=True, exclude='bads'),
+                                          tmin=eog_tmin, tmax=eog_tmax,
+                                          l_freq=eog_lfreq, h_freq=eog_hfreq,
+                                          preload=True, baseline=(None, None))
+
+    stim_diff_eog1 = mne.combine_evoked([eog1_epochs.average(), eog1_clean_epochs.average()],
+                                        weights=[1, -1])
+
+    # MEG signal around EOG2 events
+    eog2_epochs = create_eog_epochs(raw, ch_name=eog2_ch, event_id=998,
+                                    picks=mne.pick_types(raw.info, meg=True, exclude='bads'),
+                                    tmin=eog_tmin, tmax=eog_tmax,
+                                    l_freq=eog_lfreq, h_freq=eog_hfreq,
+                                    preload=True, baseline=(None, None))
+
+    eog2_clean_epochs = create_eog_epochs(raw_clean, ch_name=eog2_ch, event_id=eog_id,
+                                          picks=mne.pick_types(raw.info, meg=True, exclude='bads'),
+                                          tmin=eog_tmin, tmax=eog_tmax,
+                                          l_freq=eog_lfreq, h_freq=eog_hfreq,
+                                          preload=True, baseline=(None, None))
+
+    stim_diff_eog2 = mne.combine_evoked([eog2_epochs.average(), eog2_clean_epochs.average()],
+                                        weights=[1, -1])
+
+    # plot the overview
+    fig = pl.figure('Overview', figsize=(10, 16))
+
+    ax1 = pl.subplot(421)
+    ax1.set_title('ECG - before (b) / after (r). %d events.' % len(ecg_epochs),
+                  fontdict=dict(fontsize='medium'))
+    ecg_evoked = ecg_epochs.average()
+    ecg_evoked_clean = ecg_clean_epochs.average()
+    for i in range(len(ecg_evoked.data)):
+        ax1.plot(ecg_evoked.times * 1e3,
+                 ecg_evoked.data[i] * 1e15, color='k', label='before')
+    for j in range(len(ecg_evoked_clean.data)):
+        ax1.plot(ecg_evoked_clean.times * 1e3,
+                 ecg_evoked_clean.data[j] * 1e15, color='r', label='after')
+    ylim_ecg = dict(mag=ax1.get_ylim())
+    ax1.set_xlim(ecg_tmin * 1e3, ecg_tmax * 1e3)
+    ax2 = pl.subplot(422)
+    stim_diff_ecg.plot(axes=ax2, ylim=ylim_ecg,
+                       titles=dict(mag='Difference'))
+
+    ax3 = pl.subplot(423)
+    ax3.set_title('EOG (h) - before (b) / after (r). %d events.' % len(eog1_epochs),
+                  fontdict=dict(fontsize='medium'))
+    eog1_evoked = eog1_epochs.average()
+    eog1_evoked_clean = eog1_clean_epochs.average()
+    for i in range(len(eog1_evoked.data)):
+        ax3.plot(eog1_evoked.times * 1e3,
+                 eog1_evoked.data[i] * 1e15, color='k', label='before')
+    for j in range(len(eog1_evoked_clean.data)):
+        ax3.plot(eog1_evoked_clean.times * 1e3,
+                 eog1_evoked_clean.data[j] * 1e15, color='r', label='after')
+    ylim_eog = dict(mag=ax3.get_ylim())
+    ax3.set_xlim(eog_tmin * 1e3, eog_tmax * 1e3)
+    ax4 = pl.subplot(424)
+    stim_diff_eog1.plot(axes=ax4, ylim=ylim_eog,
+                        titles=dict(mag='Difference'))
+
+    ax5 = pl.subplot(425)
+    ax5.set_title('EOG (v) - before (b) / after (r). %d events.' % len(eog2_epochs),
+                  fontdict=dict(fontsize='medium'))
+    eog2_evoked = eog2_epochs.average()
+    eog2_evoked_clean = eog2_clean_epochs.average()
+    for i in range(len(eog2_evoked.data)):
+        ax5.plot(eog2_evoked.times * 1e3,
+                 eog2_evoked.data[i] * 1e15, color='k', label='before')
+    for j in range(len(eog2_evoked_clean.data)):
+        ax5.plot(eog2_evoked_clean.times * 1e3,
+                 eog2_evoked_clean.data[j] * 1e15, color='r', label='after')
+    ylim_eog = dict(mag=ax5.get_ylim())
+    ax5.set_xlim(eog_tmin * 1e3, eog_tmax * 1e3)
+    ax6 = pl.subplot(426)
+    stim_diff_eog2.plot(axes=ax6, ylim=ylim_eog,
+                        titles=dict(mag='Difference'))
+
+    # plot the signal + diff
+    ax7 = pl.subplot(427)
+    ax7.set_title('MEG Signal around stim. %d events.' % len(epochs.events),
+                  fontdict=dict(fontsize='medium'))
+    for i in range(len(evoked.data)):
+        ax7.plot(evoked.times * 1e3,
+                 evoked.data[i] * 1e15, color='k', label='before')
+    for j in range(len(evoked_clean.data)):
+        ax7.plot(evoked_clean.times * 1e3,
+                 evoked_clean.data[j] * 1e15, color='r', label='after')
+    ax7.set_xlim(stim_tmin * 1e3, stim_tmax * 1e3)
+    ylim_diff = dict(mag=ax7.get_ylim())
+    ax8 = pl.subplot(428)
+    stim_diff_signal.plot(axes=ax8, ylim=ylim_diff,
+                          titles=dict(mag='Difference'))
+
+    pl.tight_layout()
+    pl.savefig(overview_fname)
+    pl.close('all')
