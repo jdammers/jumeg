@@ -4,6 +4,7 @@ Utilities module for jumeg
 
 # Authors: Jurgen Dammers (j.dammers@fz-juelich.de)
 #          Praveen Sripad (pravsripad@gmail.com)
+#          Eberhard Eich (e.eich@fz-juelich.de) ()
 #
 # License: BSD (3-clause)
 
@@ -1311,3 +1312,148 @@ def apply_percentile_threshold(in_data, percentile):
     ''' Return ndarray with all values below percentile set to 0. '''
     in_data[in_data <= np.percentile(in_data, percentile)] = 0.
     return in_data
+
+
+
+def channel_indices_from_list(fulllist, findlist, excllist=None):
+    """Get indices of matching channel names from list
+
+    Parameters
+    ----------
+    fulllist: list of channel names
+    findlist: list of (regexp) names to find
+              regexp are resolved using mne.pick_channels_regexp()
+    excllist: list of channel names to exclude,
+              e.g., raw.info.get('bads')
+    Returns
+    -------
+    chnpick: array with indices
+    """
+    chnpick = []
+    for ir in xrange(len(findlist)):
+        if findlist[ir].translate(None, ' ').isalnum():
+            try:
+                chnpicktmp = ([fulllist.index(findlist[ir])])
+                chnpick = np.array(np.concatenate((chnpick, chnpicktmp), axis=0),
+                                   dtype=int)
+            except:
+                print ">>>>> Channel '%s' not found." % findlist[ir]
+        else:
+            chnpicktmp = (mne.pick_channels_regexp(fulllist, findlist[ir]))
+            if len(chnpicktmp) == 0:
+                print ">>>>> '%s' does not match any channel name." % findlist[ir]
+            else:
+                chnpick = np.array(np.concatenate((chnpick, chnpicktmp), axis=0),
+                                   dtype=int)
+    if len(chnpick) > 1:
+        # Remove duplicates
+        chnpick = np.sort(np.array(list(set(np.sort(chnpick)))))
+
+    if excllist is not None and len(excllist) > 0:
+        exclinds = [fulllist.index(excllist[ie]) for ie in xrange(len(excllist))]
+        chnpick = list(np.setdiff1d(chnpick, exclinds))
+    return chnpick
+
+
+def time_shuffle_slices(fname_raw, shufflechans=None, tmin=None, tmax=None):
+    """Permute time slices for specified channels.
+
+    Parameters
+    ----------
+    fname_raw : (list of) rawfile names
+    shufflechans : list of string
+              List of channels to shuffle.
+              If empty use the meg, ref_meg, and eeg channels.
+              shufflechans may contain regexp, which are resolved
+              using mne.pick_channels_regexp().
+              All other channels are copied.
+    tmin : lower latency bound for shuffle region [start of trace]
+    tmax : upper latency bound for shuffle region [ end  of trace]
+           Slice shuffling can be restricted to one region in the file,
+           the remaining parts will contain plain copies.
+
+    Outputfile
+    ----------
+    <wawa>,tperm-raw.fif for input <wawa>-raw.fif
+
+    Returns
+    -------
+    TBD
+
+    Bugs
+    ----
+    - it's the user's responsibility to keep track of shuffled chans
+    - needs to load the entire data set for operation
+
+    TODO
+    ----
+    Return raw object and indices of time shuffled channels.
+    """
+    from math import floor, ceil
+    from mne.io.pick import pick_types, channel_indices_by_type
+
+    fnraw = get_files_from_list(fname_raw)
+
+    # loop across all filenames
+    for fname in fnraw:
+        if not op.isfile(fname):
+            print 'Exiting. File not present ', fname
+            sys.exit()
+        raw = mne.io.Raw(fname, preload=True)
+        # time window selection
+        # slices are shuffled in [tmin,tmax], but the entire data set gets copied.
+        if tmin is None:
+            tmin = 0.
+        if tmax is None:
+            tmax = (raw.last_samp - raw.first_samp) / raw.info['sfreq']
+        itmin = int(floor(tmin * raw.info['sfreq']))
+        itmax = int(ceil(tmax * raw.info['sfreq']))
+        if itmax-itmin < 1:
+            raise ValueError("Time-window for slice shuffling empty/too short")
+        print ">>> Set time-range to [%7.3f, %7.3f]" % (tmin, tmax)
+
+        if shufflechans is None or len(shufflechans) == 0:
+            shflpick = mne.pick_types(raw.info, meg=True, ref_meg=True,
+                                      eeg=True, eog=False, stim=False)
+        else:
+            shflpick = channel_indices_from_list(raw.info['ch_names'][:],
+                                                 shufflechans)
+
+        nshfl = len(shflpick)
+        if nshfl == 0:
+            raise ValueError("No channel selected for slice shuffling")
+
+        totbytype = ''
+        shflbytype = ''
+        channel_indices_by_type = mne.io.pick.channel_indices_by_type(raw.info)
+        for k in channel_indices_by_type.keys():
+            tot4key = len(channel_indices_by_type[k][:])
+            if tot4key>0:
+                totbytype = totbytype + "%s:" % k + \
+                            "%c%dd " % ('%', int(ceil(np.log10(tot4key+1)))) % tot4key
+                shflbytype = shflbytype + "%s:" % k + \
+                    "%c%dd " % ('%', int(ceil(np.log10(tot4key+1)))) % \
+                    len(np.intersect1d(shflpick, channel_indices_by_type[k][:]))
+        print ">>> %3d channels in file:  %s" % (len(raw.info['chs']), totbytype)
+        print ">>> %3d channels shuffled: %s" % (len(shflpick), shflbytype)
+
+        print "Calc shuffle-array..."
+        numslice = raw._data.shape[1]
+        lselbuf = np.arange(numslice)
+        lselbuf[itmin:itmax] = itmin + np.random.permutation(itmax-itmin)
+
+        print "Shuffling slices for selected channels:"
+        data, times = raw[:, 0:numslice]
+        # work on entire data stream
+        for isl in xrange(raw._data.shape[1]):
+            slice = np.take(raw._data, [lselbuf[isl]], axis=1)
+            data[shflpick, isl] = slice[shflpick].flatten()
+        # copy data to raw._data
+        for isl in xrange(raw._data.shape[1]):
+            raw._data[:, isl] = data[:, isl]
+
+        shflname = os.path.join(os.path.dirname(fname),
+                                os.path.basename(fname).split('-')[0]) + ',tperm-raw.fif'
+        print "Saving '%s'..." % shflname
+        raw.save(shflname, overwrite=True)
+    return
