@@ -1480,7 +1480,8 @@ def rescale_data(data, times, baseline, mode='mean', copy=True, verbose=None):
         If baseline is an array, then the given array will
         be used for computing the baseline correction i.e. the mean will be
         computed from the array provided. The array has to be the same length
-        as the time dimension of the data.
+        as the time dimension of the data. (Use case: if different prestim baseline
+        needs to be applied on evoked signals around the response)
         If baseline is None, no correction is applied.
     mode : None | 'ratio' | 'zscore' | 'mean' | 'percent' | 'logratio' | 'zlogratio' # noqa
         Do baseline correction with ratio (power is divided by mean
@@ -1516,32 +1517,9 @@ def rescale_data(data, times, baseline, mode='mean', copy=True, verbose=None):
         return data
 
     if isinstance(baseline, np.ndarray):
-        if times == baseline.shape:
+        if times.size == baseline.size:
             # use baseline array as data
-            # avoid potential "empty slice" warning
-            if data.shape[-1] > 0:
-                mean = np.mean(baseline, axis=-1)[..., None]
-            else:
-                mean = 0  # otherwise we get an ugly nan
-            if mode == 'mean':
-                data -= mean
-            if mode == 'logratio':
-                data /= mean
-                data = np.log10(baseline)  # a value of 1 means 10 times bigger
-            if mode == 'ratio':
-                data /= mean
-            elif mode == 'zscore':
-                std = np.std(baseline, axis=-1)[..., None]
-                data -= mean
-                data /= std
-            elif mode == 'percent':
-                data -= mean
-                data /= mean
-            elif mode == 'zlogratio':
-                data /= mean
-                data = np.log10(baseline)
-                std = np.std(baseline, axis=-1)[..., None]
-                data /= std
+            use_array = baseline
         else:
             raise ValueError('Size of times and baseline should be the same')
     else:
@@ -1565,30 +1543,31 @@ def rescale_data(data, times, baseline, mode='mean', copy=True, verbose=None):
         if imin >= imax:
             raise ValueError('Bad rescaling slice (%s:%s) from time values %s, %s'
                              % (imin, imax, bmin, bmax))
+        use_array = data[..., imin:imax]
 
-        # avoid potential "empty slice" warning
-        if data.shape[-1] > 0:
-            mean = np.mean(data[..., imin:imax], axis=-1)[..., None]
-        else:
-            mean = 0  # otherwise we get an ugly nan
-        if mode == 'mean':
-            data -= mean
-        if mode == 'logratio':
-            data /= mean
-            data = np.log10(data)  # a value of 1 means 10 times bigger
-        if mode == 'ratio':
-            data /= mean
-        elif mode == 'zscore':
-            std = np.std(data[..., imin:imax], axis=-1)[..., None]
-            data -= mean
-            data /= std
-        elif mode == 'percent':
-            data -= mean
-            data /= mean
-        elif mode == 'zlogratio':
-            data /= mean
-            data = np.log10(data)
-            std = np.std(data[..., imin:imax], axis=-1)[..., None]
-            data /= std
+    # avoid potential "empty slice" warning
+    if data.shape[-1] > 0:
+        mean = np.mean(use_array, axis=-1)[..., None]
+    else:
+        mean = 0  # otherwise we get an ugly nan
+    if mode == 'mean':
+        data -= mean
+    if mode == 'logratio':
+        data /= mean
+        data = np.log10(data)  # a value of 1 means 10 times bigger
+    if mode == 'ratio':
+        data /= mean
+    elif mode == 'zscore':
+        std = np.std(use_array, axis=-1)[..., None]
+        data -= mean
+        data /= std
+    elif mode == 'percent':
+        data -= mean
+        data /= mean
+    elif mode == 'zlogratio':
+        data /= mean
+        data = np.log10(data)
+        std = np.std(use_array, axis=-1)[..., None]
+        data /= std
 
     return data
