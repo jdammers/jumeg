@@ -551,13 +551,16 @@ def plot_matrix_with_values(mat, cmap='seismic', colorbar=True):
 
 
 def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
-                           stim_ch='STI 014', ecg_ch='EEG 002',
+                           stim_ch='STI 014', resp_ch=None,
+                           resp_event_ids=None,
+                           ecg_ch='EEG 002',
                            eog1_ch='EEG 001', eog2_ch='EEG 003',
                            eog_tmin=-0.5, eog_tmax=0.5, eog_id=998,
                            eog_lfreq=8., eog_hfreq=20.,
                            ecg_tmin=-0.5, ecg_tmax=0.5, ecg_id=999,
                            ecg_lfreq=8., ecg_hfreq=20.,
                            stim_tmin=-0.2, stim_tmax=0.8,
+                           resp_tmin=-0.6, resp_tmax=0.4,
                            eve_output='onset', overview_fname=None):
     '''
     Plot an overview of the artefact rejection with ECG, EOG vertical and EOG
@@ -570,6 +573,8 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
         File name of raw object of the cleaned data.
     stim_event_ids: list
         List of stim or resp event ids. Defaults to [1].
+    resp_event_ids: list
+        List of stim or resp event ids. Defaults to None.
     eve_output: 'onset' | 'offset' | 'step'
         Whether to report when events start, when events end, or both.
     overview_fname: str | None
@@ -605,6 +610,23 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
 
     stim_diff_signal = mne.combine_evoked([evoked, evoked_clean],
                                           weights=[1, -1])
+
+    if resp_ch:
+        # stim related events
+        resp_events = mne.find_events(raw, stim_channel=resp_ch, output='onset')
+        resp_events_clean = mne.find_events(raw_clean, stim_channel=resp_ch, output='onset')
+
+        resp_epochs = mne.Epochs(raw, resp_events, event_id=resp_event_ids,
+                            tmin=resp_tmin, tmax=resp_tmax,
+                            picks=mne.pick_types(raw.info, meg=True, exclude='bads'))
+        resp_evoked = resp_epochs.average()
+        resp_epochs_clean = mne.Epochs(raw_clean, resp_events_clean, event_id=resp_event_ids,
+                                  tmin=resp_tmin, tmax=resp_tmax,
+                                  picks=mne.pick_types(raw_clean.info, meg=True, exclude='bads'))
+        resp_evoked_clean = resp_epochs_clean.average()
+
+        resp_diff_signal = mne.combine_evoked([resp_evoked, resp_evoked_clean],
+                                              weights=[1, -1])
 
     # MEG signal around ECG events
     ecg_epochs = create_ecg_epochs(raw, ch_name=ecg_ch, event_id=ecg_id,
@@ -655,9 +677,14 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                                         weights=[1, -1])
 
     # plot the overview
-    fig = pl.figure('Overview', figsize=(10, 16))
+    if resp_ch:
+        nrows, ncols = 5, 2
+        fig = pl.figure('Overview', figsize=(10, 20))
+    else:
+        nrows, ncols = 4, 2
+        fig = pl.figure('Overview', figsize=(10, 16))
 
-    ax1 = pl.subplot(421)
+    ax1 = pl.subplot(nrows, ncols, 1)
     ax1.set_title('ECG - before (b) / after (r). %d events.' % len(ecg_epochs),
                   fontdict=dict(fontsize='medium'))
     ecg_evoked = ecg_epochs.average()
@@ -670,11 +697,11 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                  ecg_evoked_clean.data[j] * 1e15, color='r', label='after')
     ylim_ecg = dict(mag=ax1.get_ylim())
     ax1.set_xlim(ecg_tmin * 1e3, ecg_tmax * 1e3)
-    ax2 = pl.subplot(422)
+    ax2 = pl.subplot(nrows, ncols, 2)
     stim_diff_ecg.plot(axes=ax2, ylim=ylim_ecg,
                        titles=dict(mag='Difference'))
 
-    ax3 = pl.subplot(423)
+    ax3 = pl.subplot(nrows, ncols, 3)
     ax3.set_title('EOG (h) - before (b) / after (r). %d events.' % len(eog1_epochs),
                   fontdict=dict(fontsize='medium'))
     eog1_evoked = eog1_epochs.average()
@@ -687,11 +714,11 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                  eog1_evoked_clean.data[j] * 1e15, color='r', label='after')
     ylim_eog = dict(mag=ax3.get_ylim())
     ax3.set_xlim(eog_tmin * 1e3, eog_tmax * 1e3)
-    ax4 = pl.subplot(424)
+    ax4 = pl.subplot(nrows, ncols, 4)
     stim_diff_eog1.plot(axes=ax4, ylim=ylim_eog,
                         titles=dict(mag='Difference'))
 
-    ax5 = pl.subplot(425)
+    ax5 = pl.subplot(nrows, ncols, 5)
     ax5.set_title('EOG (v) - before (b) / after (r). %d events.' % len(eog2_epochs),
                   fontdict=dict(fontsize='medium'))
     eog2_evoked = eog2_epochs.average()
@@ -704,12 +731,12 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                  eog2_evoked_clean.data[j] * 1e15, color='r', label='after')
     ylim_eog = dict(mag=ax5.get_ylim())
     ax5.set_xlim(eog_tmin * 1e3, eog_tmax * 1e3)
-    ax6 = pl.subplot(426)
+    ax6 = pl.subplot(nrows, ncols, 6)
     stim_diff_eog2.plot(axes=ax6, ylim=ylim_eog,
                         titles=dict(mag='Difference'))
 
     # plot the signal + diff
-    ax7 = pl.subplot(427)
+    ax7 = pl.subplot(nrows, ncols, 7)
     ax7.set_title('MEG Signal around stim. %d events.' % len(epochs.events),
                   fontdict=dict(fontsize='medium'))
     for i in range(len(evoked.data)):
@@ -720,9 +747,26 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                  evoked_clean.data[j] * 1e15, color='r', label='after')
     ax7.set_xlim(stim_tmin * 1e3, stim_tmax * 1e3)
     ylim_diff = dict(mag=ax7.get_ylim())
-    ax8 = pl.subplot(428)
+    ax8 = pl.subplot(nrows, ncols, 8)
     stim_diff_signal.plot(axes=ax8, ylim=ylim_diff,
                           titles=dict(mag='Difference'))
+
+    if resp_ch:
+        # plot the signal + diff
+        ax9 = pl.subplot(nrows, ncols, 9)
+        ax9.set_title('MEG Signal around resp. %d events.' % len(resp_epochs.events),
+                      fontdict=dict(fontsize='medium'))
+        for i in range(len(resp_evoked.data)):
+            ax9.plot(resp_evoked.times * 1e3,
+                     resp_evoked.data[i] * 1e15, color='k', label='before')
+        for j in range(len(resp_evoked_clean.data)):
+            ax9.plot(resp_evoked_clean.times * 1e3,
+                     resp_evoked_clean.data[j] * 1e15, color='r', label='after')
+        ax9.set_xlim(resp_tmin * 1e3, resp_tmax * 1e3)
+        ylim_diff = dict(mag=ax9.get_ylim())
+        ax10 = pl.subplot(nrows, ncols, 10)
+        resp_diff_signal.plot(axes=ax10, ylim=ylim_diff,
+                              titles=dict(mag='Difference'))
 
     pl.tight_layout()
     pl.savefig(overview_fname)
