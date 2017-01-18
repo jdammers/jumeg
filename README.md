@@ -118,3 +118,8 @@ Please follow the below file name conventions when writing and reading your code
 If you choose a combination of different phase-locked components then simply add
 
    (,ctpsbr)
+
+12. Raw file after application of noise reducer gets the postfix ',nr'. e.g. ```109925_CAU01A_100715_0842_2_c,rfDC,nr-raw.fif```
+
+Typically the postfix ',nr' includes noise reducer applied for the removal of 50Hz, 60Hz and harmonics and low frequencies up to 5Hz. But sometimes 'nfr' is used to indicate removal of 50/60 Hz and 'nr' is used to indicate removal of low frequency noise.
+
