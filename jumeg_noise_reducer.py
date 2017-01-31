@@ -4,8 +4,8 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 13.10.2016
- version    : 1.7
+ last update: 31.01.2017
+ version    : 1.9
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -42,6 +42,7 @@ jumeg_noise_reducer.noise_reducer(fname_raw)
 # Author: EE
 #   150203/EE/
 #   150619/EE/ fix for tmin/tmax-arg
+#   170131/EE/ modified handling of refnotch-arg (no auto-harmonics)
 #
 # License: BSD (3-clause)
 
@@ -331,7 +332,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
     Parameters
     ----------
-    fname_raw : (list of) rawfile names
+    fname_raw : (list of) rawfile name(s)
     raw : mne Raw objects
         Allows passing of (preloaded) raw object in addition to fname_raw
         or solely (use fname_raw=None in this case).
@@ -352,7 +353,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             reflp > refhp: band-pass filter
             reflp is not None, refhp is None: low-pass filter
             reflp is None, refhp is not None: high-pass filter
-    refnotch : (base) notch frequency for reference signal filter [None]
+    refnotch : (list of) notch frequencies for reference signal filter [None]
                use raw(ref)-notched(ref) as reference signal
     exclude_artifacts: filter signal-channels thru _is_good() [True]
                        (parameters are at present hard-coded!)
@@ -410,7 +411,10 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         fnraw = get_files_from_list(fname_raw)
         have_input_file = True
     elif raw is not None:
-        fnraw = [os.path.basename(raw.info['filename'])]
+        if raw.info.has_key('filename'):
+            fnraw = [os.path.basename(raw.info['filename'])]
+        else:
+            fnraw = raw._filenames[0]
         warnings.warn('Setting file name from Raw object')
         have_input_file = False
         if fnout is None and not return_raw:
@@ -434,7 +438,11 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 raw = mne.io.Raw(fname, preload=True)
         else:
             # perform sanity check to make sure Raw object and file are same
-            if os.path.basename(fname) != os.path.basename(raw.info['filename']):
+            if raw.info.has_key('filename'):
+                fnintern = [os.path.basename(raw.info['filename'])]
+            else:
+                fnintern = raw._filenames[0]
+            if os.path.basename(fname) != os.path.basename(fnintern):
                 warnings.warn('The file name within the Raw object and provided\n   '
                               'fname are not the same. Please check again.')
 
@@ -506,14 +514,27 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
             use_refantinotch = False
             if refnotch is not None:
-                if reflp is None and reflp is None:
-                    use_refantinotch = True
-                    freqlast = np.min([5.01 * refnotch, 0.5 * raw.info['sfreq']])
-                    if verbose:
-                        print ">>> notches at freq %.1f and harmonics below %.1f" % (refnotch, freqlast)
-                else:
+                if reflp is not None or reflp is not None:
                     raise ValueError("Cannot specify notch- and high-/low-pass"
                                      "reference filter together")
+                nyquist = (0.5 * raw.info['sfreq'])
+                if isinstance(refnotch, list):
+                  notchfrqs = refnotch
+                else:
+                  notchfrqs = [ refnotch ]
+                notchfrqscln = []
+                for nfrq in notchfrqs:
+                    if not isinstance(nfrq,float) and not isinstance(nfrq,int):
+                        raise ValueError("Illegal entry for notch-frequency (",nfrq,")")
+                    if nfrq >= nyquist:
+                        warnings.warn('Ignoring notch frequency > 0.5*sample_rate=%.1fHz' % nyquist)
+                    else:
+                        notchfrqscln.append(nfrq)
+                if len(notchfrqscln) == 0:
+                    raise ValueError("Notch frequency list is (now) empty")
+                use_refantinotch = True
+                if verbose:
+                    print ">>> notches at freq ", notchfrqscln
             else:
                 if verbose:
                     if reflp is not None:
@@ -528,13 +549,11 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             fltref = raw.copy().drop_channels(droplist)
             if use_refantinotch:
                 rawref = raw.copy().drop_channels(droplist)
-                freqlast = np.min([5.01 * refnotch, 0.5 * raw.info['sfreq']])
-                # changing to fft filter because of the new mne0.13 notch_filter change
-                fltref.notch_filter(np.arange(refnotch, freqlast, refnotch),
-                                    picks=np.array(xrange(nref)), method='fft')
+                fltref.notch_filter(notchfrqscln,
+                                    picks=np.array(xrange(nref)), method='iir')
                 fltref._data = (rawref._data - fltref._data)
             else:
-                fltref.filter(refhp, reflp, picks=np.array(xrange(nref)), method='fft')
+                fltref.filter(refhp, reflp, picks=np.array(xrange(nref)), method='iir')
             tc1 = time.clock()
             tw1 = time.time()
             if verbose:
@@ -734,6 +753,8 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                     sigmean += raw_segmentsig.sum(axis=1)
                     sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
                     n_samples += raw_segmentsig.shape[1]
+            if n_samples <= 1:
+                raise ValueError('Too few samples to calculate final signal channel covariance')
             sigmean /= n_samples
             sscovdata -= n_samples * sigmean[:] * sigmean[:]
             sscovdata /= (n_samples - 1)
@@ -793,7 +814,7 @@ def test_noise_reducer():
 
     print "########## before of noisereducer call ##########"
     sigchanlist = ['MEG ..1', 'MEG ..3', 'MEG ..5', 'MEG ..7', 'MEG ..9']
-    sigchanlist = None
+    # sigchanlist = None
     refchanlist = ['RFM 001', 'RFM 003', 'RFM 005', 'RFG ...']
     tmin = 15.
     inraw = mne.io.Raw(dname, preload=True)
@@ -863,7 +884,7 @@ def test_noise_reducer():
         fltref = raw.copy().drop_channels(droplist)
         tct = time.clock()
         twt = time.time()
-        fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(xrange(nref)), method='fft')
+        fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(xrange(nref)), method='iir')
         tc1 = time.clock()
         tw1 = time.time()
         print "filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
@@ -931,6 +952,8 @@ def test_noise_reducer():
             logger.info("Artefact detected in [%d, %d]" % (first, last))
 
     #_check_n_samples(n_samples, len(picks))
+    if n_samples <= 1:
+        raise ValueError('Too few samples to calculate covariances')
     sigmean /= n_samples
     refmean /= n_samples
     sscovdata -= n_samples * sigmean[:] * sigmean[:]
@@ -1034,6 +1057,8 @@ def test_noise_reducer():
             logger.info("Artefact detected in [%d, %d]" % (first, last))
 
     #_check_n_samples(n_samples, len(picks))
+    if n_samples <= 1:
+        raise ValueError('Too few samples to calculate covariances')
     sscov /= (n_samples - 1)
     srcov /= (n_samples - 1)
     rrcov /= (n_samples - 1)
@@ -1173,6 +1198,8 @@ def test_noise_reducer():
                 sigmean += raw_segmentsig.sum(axis=1)
                 sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
                 n_samples += raw_segmentsig.shape[1]
+        if n_samples <= 1:
+            raise ValueError('Too few samples to calculate final signal channel covariances')
         sigmean /= n_samples
         sscovdata -= n_samples * sigmean[:] * sigmean[:]
         sscovdata /= (n_samples - 1)
