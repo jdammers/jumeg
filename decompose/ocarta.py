@@ -1613,7 +1613,7 @@ class JuMEG_ocarta(object):
         if meg_raw == None:
             meg_raw = Raw(fn_raw, preload=True, verbose=False)
         else:
-            fn_raw = meg_raw.info['filename']
+            fn_raw = meg_raw.filenames[0]
 
 
         # check input parameter
@@ -1850,5 +1850,3 @@ class JuMEG_ocarta(object):
 #   to simplify the call of the JuMEG_ocarta() help
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ocarta = JuMEG_ocarta()
-
-

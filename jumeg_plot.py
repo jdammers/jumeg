@@ -578,7 +578,7 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
     eve_output: 'onset' | 'offset' | 'step'
         Whether to report when events start, when events end, or both.
     overview_fname: str | None
-        Name to save the plot generated. (considers raw_clean.info['filename'])
+        Name to save the plot generated. (considers raw_clean.filenames[0])
 
     Notes: Time is always shown in milliseconds (1e3) and the MEG data from mag
         is always in femtoTesla (fT) (1e15)
@@ -591,7 +591,7 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
 
     if not overview_fname:
         try:
-            overview_fname = raw_clean.info['filename'].rsplit('-raw.fif')[0] + ',overview-plot.png'
+            overview_fname = raw_clean.filenames[0].rsplit('-raw.fif')[0] + ',overview-plot.png'
         except:
             overview_fname = 'overview-plot.png'
 

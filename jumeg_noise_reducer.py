@@ -412,7 +412,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         have_input_file = True
     elif raw is not None:
         if raw.info.has_key('filename'):
-            fnraw = [os.path.basename(raw.info['filename'])]
+            fnraw = [os.path.basename(raw.filenames[0])]
         else:
             fnraw = raw._filenames[0]
         warnings.warn('Setting file name from Raw object')
@@ -439,7 +439,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         else:
             # perform sanity check to make sure Raw object and file are same
             if raw.info.has_key('filename'):
-                fnintern = [os.path.basename(raw.info['filename'])]
+                fnintern = [os.path.basename(raw.filenames[0])]
             else:
                 fnintern = raw._filenames[0]
             if os.path.basename(fname) != os.path.basename(fnintern):
