@@ -19,6 +19,7 @@ from . import decompose
 from . import mft
 from . import jumeg_noise_reducer
 from . import connectivity
+from . import causality
 from .filter import jumeg_filter
 from . import jumeg_source_localize
 from .jumeg_utils import get_jumeg_path

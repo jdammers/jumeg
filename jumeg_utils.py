@@ -18,6 +18,7 @@ from mne.utils import logger
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
 
+
 def get_files_from_list(fin):
     ''' Return string of file or files as iterables lists '''
     if isinstance(fin, list):
@@ -28,6 +29,29 @@ def get_files_from_list(fin):
         else:
             fout = list(fin)
     return fout
+
+
+def reset_directory(path=None):
+    """
+    Check whether the directory exits, if yes, recreate the directory.
+    ----------
+    path : the target directory.
+    """
+    import shutil
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
+
+
+def set_directory(path=None):
+    """
+    Check whether the directory exits, if not, create the directory.
+    ----------
+    path : the target directory.
+
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 def retcode_error(command, subj):
