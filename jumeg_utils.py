@@ -148,7 +148,7 @@ def mark_bads_batch(subject_list, subjects_dir=None):
                 raw = mne.io.Raw(dirname + '/' + raw_fname, preload=True)
                 raw.plot(block=True)
                 print 'The bad channels marked are %s ' % (raw.info['bads'])
-                save_fname = dirname + '/' + raw.info['filename'].split('/')[-1].split('-raw.fif')[0] + '_bcc-raw.fif'
+                save_fname = dirname + '/' + raw.filenames[0].split('/')[-1].split('-raw.fif')[0] + '_bcc-raw.fif'
                 raw.save(save_fname)
     return
 
@@ -215,14 +215,14 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True, return_chop=
         raw = mne.io.Raw(raw, preload=True)
     # Check if data is longer than required chop duration.
     if (raw.n_times / (raw.info['sfreq'])) < (stop_time + start_time):
-        logger.info("The data is not long enough for file %s.") % (raw.info['filename'])
+        logger.info("The data is not long enough for file %s.") % (raw.filenames[0])
         return
     # Obtain indexes for start and stop times.
     assert start_time < stop_time, "Start time is greater than stop time."
     crop = raw.copy().crop(tmin=start_time, tmax=stop_time)
     dur = int((stop_time - start_time) / 60)
     if save:
-        crop.save(crop.info['filename'].split('-raw.fif')[0] + ',' + str(dur) + 'm-raw.fif')
+        crop.save(crop.filenames[0].split('-raw.fif')[0] + ',' + str(dur) + 'm-raw.fif')
     raw.close()
     if return_chop:
          return crop

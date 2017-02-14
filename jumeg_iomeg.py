@@ -35,7 +35,7 @@ def wrapper_brain_vision2fiff(header_fname):
                                  '/mne_brain_vision2fiff'
     os.system(mne_brain_vision2fiff_path + ' --header ' +
               header_fname + ' --out ' + header_fname.split('.')[0] + '-eeg')
-    # mne_brain_vision2fiff always adds _raw.fif extension 
+    # mne_brain_vision2fiff always adds _raw.fif extension
     # to its files, so it has to be renamed to -eeg.fif.
     os.system('mv %s %s' % (header_fname.split('.')[0] +
                             '-eeg_raw.fif', header_fname.split('.')[0] + '-eeg.fif'))
@@ -192,4 +192,3 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200,
 
     # Write the combined FIF file to disk.
     raw.save(raw_fname.split('-')[0] + '-raw.fif', overwrite=True)
-
