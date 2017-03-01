@@ -28,10 +28,20 @@ def compute_euclidean_stats(epoch, sensitivity, mode='adaptive',
     Parameters
     epoch: np.array
         The data from which to compute the Euclidean matrices.
+    sensitivity: float in range of [0,100]
+        Percentile to compute threshold used for clustering,
+        which must be between 0 and 100 inclusive.
     mode: str
         The mode in which to return the statistics results.
         Can be 'fixed' for fixed threshold or 'nearest'
         for nearest neighbour points.
+        When a fixed threshold is used, a single percentile based value is
+        used for all the epochs/windows of the data. If adaptive is chosen,
+        a threshold value for every epoch is used.
+        Note: Fixed threshold is currently incompletely implemented and
+        we do not suggest using it.
+    fraction: float | None
+        Ratio of the number of samples to be chosen for clustering.
 
     Returns
     If mode is fixed returns a fixed percentile threshold.
@@ -67,7 +77,30 @@ def compute_euclidean_stats(epoch, sensitivity, mode='adaptive',
 def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
                   min_samples=1):
     '''
-    # stepdetection
+    Perform clustering on difference in signals from one sample to another.
+    This method helps us to identify flux jumps and largespikes in the data.
+
+    Parameters
+    epochs: mne.Epochs
+    sensitivity_steps: float in range of [0,100]
+        Percentile to compute threshold used for clusterin
+        signals,
+        which must be between 0 and 100 inclusive.
+    picks: list
+        Picks of the channels to be used.
+    min_samples: int
+        Number of samples to be chosen for DBSCAN clustering.
+
+    Returns
+    afps: np.array
+        Power spectral density values (n_epochs, n_chans, n_freqs)
+    afp_suspects: list
+        Suspected bad channels.
+    afp_nearest_neighbour: list
+        The nearest neighbour identified before DBSCAN clustering.
+    zlimit_afp: float
+        A scaling value used for plotting.
+
     '''
     # epochs = epochs.get_data()
     afps, afp_suspects, afp_percentiles, afp_nearest_neighbour = [], [], [], []
@@ -80,6 +113,7 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
             afp_nearest_neighbour.append(nearest_neighbour)
             afp_percentiles.append(selected_threshold)
         elif mode is 'fixed':
+            #TODO complete fixed threshold computation
             # statistics and clustering for every epoch for fixed threshold
             afp, selected_threshold = compute_euclidean_stats(epoch, sensitivity_steps,
                                                       mode='fixed')
@@ -105,8 +139,27 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
 
 def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1):
     '''
-    # frequency analysis
-    min_samples is the same as neighbours_psd
+    Perform clustering on PSDs to identify bad channels.
+
+    Parameters
+    epochs: mne.Epochs
+    sensitivity_psd: float in range of [0,100]
+        Percentile to compute threshold used for clustering PSDs,
+        which must be between 0 and 100 inclusive.
+    picks: list
+        Picks of the channels to be used.
+    min_samples: int
+        Number of samples to be chosen for DBSCAN clustering.
+
+    Returns
+    psds: np.array
+        Power spectral density values (n_epochs, n_chans, n_freqs)
+    psd_suspects: list
+        Suspected bad channels.
+    psd_nearest_neighbour: list
+        The nearest neighbour identified before DBSCAN clustering.
+    zlimit_psd: float
+        A scaling value used for plotting.
     '''
     psds, freqs = mne.time_frequency.psd_welch(epochs, fmin=2., fmax=200.,
                                                picks=picks)
