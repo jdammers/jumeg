@@ -93,11 +93,11 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
 
 
 def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
-                                     node_order_size=68,
+                                     node_order_size=68, indices=None,
                                      out_fname='circle.png', title=None,
                                      subplot=111, include_legend=False,
                                      n_lines=None, fig=None, show=True,
-                                     vmin=None, vmax=None,
+                                     vmin=None, vmax=None, colormap='hot',
                                      colorbar=False):
     '''
     Plot the connectivity circle grouped and ordered according to
@@ -157,17 +157,17 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                         for orig in orig_labels]
 
     # Plot the graph using node_order and colours
-    # orig_labels is the order on nodes in the con matrix (important)
+    # orig_labels is the order of nodes in the con matrix (important)
     from mne.viz import plot_connectivity_circle
     plot_connectivity_circle(con, orig_labels, n_lines=n_lines,
                              facecolor='white', textcolor='black',
-                             node_angles=node_angles,
+                             node_angles=node_angles, colormap=colormap,
                              node_colors=reordered_colors,
                              node_edgecolor='white', fig=fig,
                              fontsize_names=6, vmax=vmax, vmin=vmin,
                              colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
                              colorbar=colorbar, show=show, subplot=subplot,
-                             title=title)
+                             indices=indices, title=title)
 
     if include_legend:
         import matplotlib.patches as mpatches
