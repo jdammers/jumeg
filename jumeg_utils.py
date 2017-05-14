@@ -358,6 +358,8 @@ def make_fftsurr_epochs(epochs, check_power=False):
     '''
     from matplotlib.mlab import fftsurr
 
+    if not epochs.preload:
+        epochs.load_data()
     surrogate = epochs.copy()
     surr = surrogate.get_data()
     for trial in range(len(surrogate)):
@@ -380,13 +382,15 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
 
     Parameters
     ----------
-    Epochs Object.
+    Epochs object.
 
     Output
     ------
-    Surrogate Epochs object
+    Surrogate Epochs object.
     '''
 
+    if not epochs.preload:
+        epochs.load_data()
     surrogate = epochs.copy()
     surr = surrogate.get_data()
     for trial in range(len(surrogate)):
@@ -394,9 +398,9 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
             surr[trial, channel, :] = randomize_phase(surr[trial, channel, :])
     surrogate._data = surr
     if check_power:
-        from mne.time_frequency import compute_epochs_psd
-        ps1, _ = compute_epochs_psd(epochs, epochs.picks)
-        ps2, _ = compute_epochs_psd(surrogate, surrogate.picks)
+        from mne.time_frequency import psd_welch
+        ps1, _ = psd_welch(epochs, epochs.picks)
+        ps2, _ = pas_welch(surrogate, surrogate.picks)
         # np.array_equal does not pass the assertion, due to minor changes in power.
         assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
 
