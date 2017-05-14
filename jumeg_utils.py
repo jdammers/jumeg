@@ -17,6 +17,7 @@ import mne
 from mne.utils import logger
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
+from sklearn.utils import check_random_state
 
 def get_files_from_list(fin):
     ''' Return string of file or files as iterables lists '''
@@ -324,7 +325,6 @@ def make_surrogates_epochs(epochs, check_pdf=False, random_state=None):
     ------
     Surrogate Epochs object
     '''
-    from sklearn.utils import check_random_state
     rng = check_random_state(random_state)
 
     surrogate = epochs.copy()
@@ -407,6 +407,40 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
     return surrogate
 
 
+def make_phase_shuffled_stcs_gen(stcs, random_state=None):
+    '''
+    Make surrogate STCs using sklearn. Destroy phase information in each trial by randomization.
+    The phase values are randomized in the frequency domain.
+
+    Parameters
+    ----------
+    STCs object or generator.
+
+    Output
+    ------
+    Surrrogate STCs object.
+
+    TODO
+    ----
+    Make the function accept any type of STC (not only generator)
+    and shuffle it.
+    '''
+
+    for stc in stcs:
+        print 'Computing surrogate for stc..'
+        surr_stc = stc.copy()
+        data = np.asarray(surr_stc.data)
+
+        # destroy signal across time axis in freq domain
+        data_freq = np.fft.rfft(data, axis=1)
+        rng = check_random_state(random_state)
+        data_freq = np.abs(data_freq) * np.exp(1j * rng.random_sample(data_freq.shape) * 2 * np.pi)
+        surr_stc._data = np.fft.irfft(data_freq, data.shape[1], axis=1)
+        assert not np.array_equal(stc.data, surr_stc.data), 'Surrogates incorrectly computed !'
+        assert not np.array_equal(stc._data, surr_stc._data), 'Surrogates incorrectly computed !'
+        del data, data_freq, rng
+        # return a generator
+        yield surr_stc
 
 #######################################################
 #                                                     #
@@ -998,7 +1032,6 @@ def randomize_phase(data, random_state=None):
         plot(y), axis([0,1000,-3,3])
         plt.show()
     '''
-    from sklearn.utils import check_random_state
     data = np.asarray(data)
     data_freq = np.fft.rfft(data, axis=0)
     rng = check_random_state(random_state)
