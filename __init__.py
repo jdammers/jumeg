@@ -8,6 +8,8 @@
 #
 # License: Simplified BSD
 
+__version__ = '0.1'
+
 # import ctps
 
 from . import jumeg_preprocessing 
