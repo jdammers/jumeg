@@ -1183,10 +1183,10 @@ class JuMEG_fourier_ica(object):
 
         # average signal over windows
         if average:
-            rec_signal_avg = np.mean(rec_signal, axis=0)
-            orig_avg = np.mean(orig_signal, axis=0)
+            rec_signal = np.mean(rec_signal, axis=0)
+            orig_signal = np.mean(orig_signal, axis=0)
 
-        return rec_signal_avg, orig_avg
+        return rec_signal, orig_signal
 
 
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
