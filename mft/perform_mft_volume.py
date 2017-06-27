@@ -1,7 +1,7 @@
 """
+====================
 Jumeg MFT example.
-
-Perform MFT on a volume based forward solution.
+====================
 """
 
 import numpy as np
@@ -9,8 +9,6 @@ import mne
 from mne.datasets import sample
 from jumeg_mft_funcs import apply_mft
 import jumeg_mft_plot
-
-print __doc__
 
 data_path = sample.data_path()
 subject = 'sample'
@@ -29,14 +27,14 @@ want_stim = False
 exclude = 'bads'
 include = []
 
-print "MFT parameters:"
-# mftpar = { 'prbfct':'Gauss',
-#           'prbcnt':np.array([[-1.039, 0.013,0.062],[-0.039, 0.013,0.062]]),
-#           'prbhw':np.array([[0.040,0.040,0.040],[0.040,0.040,0.040]]) }
-mftpar = {'prbfct': 'uniform',
-          'prbcnt': None,
-          'prbhw': None}
-mftpar.update({'iter': 8, 'currexp': 1.0})
+print "########## MFT parameter:"
+mftpar = { 'prbfct':'Gauss',
+          'prbcnt':np.array([[-1.039, 0.013,0.062],[-0.039, 0.013,0.062]]),
+          'prbhw':np.array([[0.040,0.040,0.040],[0.040,0.040,0.040]]) }
+# mftpar = { 'prbfct': 'uniform',
+#            'prbcnt': None,
+#            'prbhw': None}
+mftpar.update({'iter': 4, 'currexp': 1.0})
 mftpar.update({'regtype': 'PzetaE', 'zetareg': 1.00})
 # mftpar.update({ 'regtype':'classic', 'zetareg':1.0})
 mftpar.update({'solver': 'lu', 'svrelcut': 5.e-4})
@@ -51,53 +49,83 @@ print "mftpar['svrelcut'] = ", mftpar['svrelcut']
 cdmcut = 0.10
 print "cdmcut = ", cdmcut
 
-print "##### Calling apply_mft()"
-fwdmag, qualmft, stc_mft = apply_mft(fwdname, evoname, evocondition=evocondition,
-                                     subject=subject, meg=want_meg,
-                                     mftpar=mftpar, verbose='verbose')
+print "##########################"
+print "##### Read fwd-soln:"
+print "##########################"
+fwd = mne.read_forward_solution(fwdname, verbose=True)
 
-# get the data from the SourceEstimate
-stcdata = stc_mft.data
+# Select magnetometer channels:
+fwdmag = mne.io.pick.pick_types_forward(fwd, meg=want_meg, ref_meg=False,
+                                        eeg=False, exclude=exclude)
 
 print " "
 print "########## Some geo-numbers:"
 lhinds = np.where(fwdmag['source_rr'][:, 0] <= 0.)
 rhinds = np.where(fwdmag['source_rr'][:, 0] > 0.)
+ypinds = np.where(fwdmag['source_rr'][:, 1] > 0.)
+yninds = np.where(fwdmag['source_rr'][:, 1] <= 0.)
+lhfinds = np.array(np.setdiff1d(lhinds[0],ypinds[0]))
+lhbinds = np.array(np.setdiff1d(lhinds[0],yninds[0]))
+rhfinds = np.array(np.setdiff1d(rhinds[0],ypinds[0]))
+rhbinds = np.array(np.setdiff1d(rhinds[0],yninds[0]))
 print "> Discriminating lh/rh by sign of fwdmag['source_rr'][:,0]:"
-print "> lhinds[0].shape[0] = ", lhinds[0].shape[0], " rhinds[0].shape[0] = ",\
-    rhinds[0].shape[0]
+print "> lhinds[0].shape[0] = ", lhinds[0].shape[0], " rhinds[0].shape[0] = ", rhinds[0].shape[0]
 invmri_head_t = mne.transforms.invert_transform(fwdmag['info']['mri_head_t'])
 mrsrc = np.zeros(fwdmag['source_rr'].shape)
-mrsrc = mne.transforms.apply_trans(invmri_head_t['trans'], fwdmag['source_rr'],
-                                   move=True)
+mrsrc = mne.transforms.apply_trans(invmri_head_t['trans'], fwdmag['source_rr'], move=True)
 lhmrinds = np.where(mrsrc[:, 0] <= 0.)
 rhmrinds = np.where(mrsrc[:, 0] > 0.)
 print "> Discriminating lh/rh by sign of fwdmag['source_rr'][:,0] in MR coords:"
-print "> lhmrinds[0].shape[0] = ", lhmrinds[0].shape[0],\
-    " rhmrinds[0].shape[0] = ", rhmrinds[0].shape[0]
+print "> lhmrinds[0].shape[0] = ", lhmrinds[0].shape[0], " rhmrinds[0].shape[0] = ", rhmrinds[0].shape[0]
 
-# read the evoked
+print "########## prepare to put labels into label-files:"
+mylablist = []
+# mylab = mne.Label(lhinds[0],pos=fwdmag['source_rr'][lhinds[0],:],hemi='lh',name='test_lh', verbose=True)
+# mylablist.append(mylab)
+# mylab = mne.Label(rhinds[0],pos=fwdmag['source_rr'][rhinds[0],:],hemi='rh',name='test_rh', verbose=True)
+# mylablist.append(mylab)
+
+# mylab = mne.Label(lhfinds,pos=fwdmag['source_rr'][lhfinds,:],hemi='lhf',name='test_lhf', verbose=True)
+# mylablist.append(mylab)
+# mylab = mne.Label(lhbinds,pos=fwdmag['source_rr'][lhbinds,:],hemi='lhb',name='test_lhb', verbose=True)
+# mylablist.append(mylab)
+# mylab = mne.Label(rhfinds,pos=fwdmag['source_rr'][rhfinds,:],hemi='rhf',name='test_rhf', verbose=True)
+# mylablist.append(mylab)
+# mylab = mne.Label(rhbinds,pos=fwdmag['source_rr'][rhbinds,:],hemi='rhb',name='test_rhb', verbose=True)
+# mylablist.append(mylab)
+
+print "##################################"
+print "##### Calling apply_mft(mylablist)"
+print "##################################"
+fwdmag, qualmft, stc_mft = apply_mft(fwdname, evoname, evocondition=evocondition,
+                                     subject=subject, meg=want_meg,
+                                     calccdm='all', cdmcut=cdmcut, cdmlabels=mylablist,
+                                     mftpar=mftpar, verbose='verbose')
+
 evo = mne.read_evokeds(evoname, condition=evocondition, baseline=(None, 0))
 tmin = -0.2
 tstep = 1./evo.info['sfreq']
+stcdata = stc_mft.data
 
-# plot the results of the MFT
+# plotting routines
 jumeg_mft_plot.plot_global_cdv_dist(stcdata)
-jumeg_mft_plot.plot_visualize_mft_sources(fwdmag, stcdata, tmin=tmin,
-                                          tstep=tstep, subject=subject,
-                                          subjects_dir=subjects_dir)
+#print ">>>>> skipping jumeg_mft_plot.plot_visualize_mft_sources() (fails due to old PySurfer-version)"
+jumeg_mft_plot.plot_visualize_mft_sources(fwdmag, stcdata, tmin=tmin, tstep=tstep,
+                                          subject=subject, subjects_dir=subjects_dir)
 jumeg_mft_plot.plot_cdv_distribution(fwdmag, stcdata)
 jumeg_mft_plot.plot_max_amplitude_data(fwdmag, stcdata, tmin=tmin, tstep=tstep,
                                        subject=subject)
 jumeg_mft_plot.plot_max_cdv_data(stc_mft, lhmrinds, rhmrinds)
 jumeg_mft_plot.plot_cdvsum_data(stc_mft, lhmrinds, rhmrinds)
 jumeg_mft_plot.plot_quality_data(qualmft, stc_mft)
+jumeg_mft_plot.plot_cdm_data(qualmft, stc_mft)
 
-print_transforms = False
-if print_transforms:
-    print "##### Transforms:\nfwdmag['info']['mri_head_t']:",\
-        fwdmag['info']['mri_head_t']
-    invmri_head_t = mne.transforms.invert_transform(fwdmag['info']['mri_head_t'])
-    print "Inverse of fwdmag['info']['mri_head_t']:", invmri_head_t
+jumeg_mft_plot.plot_cdm_data(qualmft, stc_mft, cdmlabels=mylablist)
+jumeg_mft_plot.plot_jlong_labeldata(qualmft, stc_mft, mylablist)
+jumeg_mft_plot.plot_jtotal_labeldata(qualmft, stc_mft, mylablist)
+
+jumeg_mft_plot.plot_cdm_data(qualmft, stc_mft)
+jumeg_mft_plot.plot_jlong_data(qualmft, stc_mft)
+
 
 print "Done."
