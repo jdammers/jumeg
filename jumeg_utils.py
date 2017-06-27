@@ -400,7 +400,7 @@ def make_phase_shuffled_surrogates_epochs(epochs, check_power=False):
     if check_power:
         from mne.time_frequency import psd_welch
         ps1, _ = psd_welch(epochs, epochs.picks)
-        ps2, _ = pas_welch(surrogate, surrogate.picks)
+        ps2, _ = psd_welch(surrogate, surrogate.picks)
         # np.array_equal does not pass the assertion, due to minor changes in power.
         assert np.allclose(ps1, ps2), 'The power content does not match. Error.'
 
@@ -990,53 +990,6 @@ def triu_indices(n, k=0):
     - mask_indices : generic function accepting an arbitrary mask function.
     """
     return mask_indices(n, np.triu, k)
-
-
-# Function obtained from scot (https://github.com/scot-dev/scot)
-# Used to randomize the phase values of a signal.
-def randomize_phase(data, random_state=None):
-    '''
-    Phase randomization.
-
-    This function randomizes the input array's spectral phase along the first dimension.
-
-    Parameters
-    ----------
-    data : array_like
-        Input array
-
-    Returns
-    -------
-    out : ndarray
-        Array of same shape as `data`.
-
-    Notes
-    -----
-    The algorithm randomizes the phase component of the input's complex fourier transform.
-
-    Examples
-    --------
-    .. plot::
-        :include-source:
-
-        from pylab import *
-        from scot.datatools import randomize_phase
-        np.random.seed(1234)
-        s = np.sin(np.linspace(0,10*np.pi,1000)).T
-        x = np.vstack([s, np.sign(s)]).T
-        y = randomize_phase(x)
-        subplot(2,1,1)
-        title('Phase randomization of sine wave and rectangular function')
-        plot(x), axis([0,1000,-3,3])
-        subplot(2,1,2)
-        plot(y), axis([0,1000,-3,3])
-        plt.show()
-    '''
-    data = np.asarray(data)
-    data_freq = np.fft.rfft(data, axis=0)
-    rng = check_random_state(random_state)
-    data_freq = np.abs(data_freq) * np.exp(1j * rng.random_sample(data_freq.shape) * 2 * np.pi)
-    return np.fft.irfft(data_freq, data.shape[0], axis=0)
 
 
 def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False,
