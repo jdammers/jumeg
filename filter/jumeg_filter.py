@@ -6,20 +6,22 @@ import numpy as np
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 11.12.2014
- version    : 0.03141
+ last update: 09.11.2016
+ version    : 0.03142
 ---------------------------------------------------------------------- 
+ Butterworth filter design from  KD,JD
+ Oppenheim, Schafer, "Discrete-Time Signal Processing"
+----------------------------------------------------------------------
+ OBJ interface to MNE filter functions
+----------------------------------------------------------------------
+excluded:   
  Window Sinc Filter are taken from:
  The Scientist and Engineer's Guide to Digital Signal Processing
  By Steven W. Smith, Ph.D.
  Chapter 16: Window-Sinc Filter
  http://www.dspguide.com/ch16.htm
 ----------------------------------------------------------------------
- Butterworth filter design from  KD,JD
- Oppenheim, Schafer, "Discrete-Time Signal Processing"
-----------------------------------------------------------------------
- OBJ interface to MNE filter functions
-----------------------------------------------------------------------
+
  Dependency:
   numpy
   scipy
@@ -64,18 +66,6 @@ fi_bw_bp.calc_notches(50)
 fi_bw_bp.apply_filter(raw._data,picks)
 
 
-#===> make a window sinc bp 1-45 Hz with dc offset correction
-fi_ws_bp  = jumeg_filter( filter_method="ws",filter_type=ftype,fcut1=fcut1,fcut2=fcut2, remove_dcoffset=True, sampling_frequency=srate)
-
-#---> change some filter parameter  
-fi_ws_bp.filter_window               = "hamming"
-fi_ws_bp.filter_kernel_length_factor = 8.0
-fi_ws_bp.settling_time_factor        = 3.0
-
-#---> apply filter works inpalce !!!   
-fi_ws_bp.apply_filter(data)
-
-
 #=== make some filter objects
 fi_bw_obj = []
 for i in range(0,2):
@@ -114,15 +104,15 @@ def jumeg_filter(filter_method="bw",filter_type='bp',fcut1=1.0,fcut2=45.0,remove
     if filter_method.lower() == "bw"  :
        from jumeg.filter.jumeg_filter_bw import JuMEG_Filter_Bw
        return JuMEG_Filter_Bw(filter_type=filter_type,fcut1=fcut1, fcut2=fcut2, remove_dcoffset=remove_dcoffset, sampling_frequency=sampling_frequency,notch=notch, notch_width=notch_width,order=order)   	  
-    elif filter_method.lower() == "ws"  :
-       from jumeg.filter.jumeg_filter_ws import JuMEG_Filter_Ws
-       return JuMEG_Filter_Ws(filter_type=filter_type,fcut1=fcut1, fcut2=fcut2, remove_dcoffset=remove_dcoffset, sampling_frequency=sampling_frequency, filter_window=filter_window)
-       #, notch=notch, notch_width=notch_width)
     else : 
        from jumeg.filter.jumeg_filter_mne import JuMEG_Filter_MNE
        return JuMEG_Filter_MNE(filter_type=filter_type,njobs=njobs,fcut1=fcut1,fcut2=fcut2,remove_dcoffset=True,sampling_frequency=sampling_frequency,
                                mne_filter_method=mne_filter_method,mne_filter_length=mne_filter_length,trans_bandwith=trans_bandwith,notch=notch,notch_width=notch_width)
-
+    #elif filter_method.lower() == "ws"  :
+    #   from jumeg.filter.jumeg_filter_ws import JuMEG_Filter_Ws
+    #   return JuMEG_Filter_Ws(filter_type=filter_type,fcut1=fcut1, fcut2=fcut2, remove_dcoffset=remove_dcoffset, sampling_frequency=sampling_frequency, filter_window=filter_window)
+    #   #, notch=notch, notch_width=notch_width)
+  
   
 if __name__ == "__main__":
      jumeg_filter(**kwargv)

@@ -1,4 +1,32 @@
+'''Class JuMEG_Epocher_Events
+
+Class to extract event/epoch information and save to hdf5
+
+Author:
+         Frank Boers     <f.boers@fz-juelich.de>
+----------------------------------------------------------------
+extract mne-events per condition, save to HDF5 file
+
+#--- example via obj:
+from jumeg.epocher.jumeg_epocher import jumeg_epocher
+epocher= {"template_name": "LDAEP",
+          "fif_extention": ".fif",
+          "verbose":True,
+          "save": True}
+
+fname=test.fif
+raw=None
+
+fname,raw,fhdf = jumeg_epocher.apply_events_to_hdf(fname, raw=raw,**epocher)
+
+---> update 10.01.2017 FB
+     check event-code/conditions for none existing
+
+'''
+
+
 import os
+import warnings
 import numpy as np
 import pandas as pd
 # import matplotlib.pylab as pl
@@ -82,7 +110,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
              raw obj,
              e.g. parameters:
               {'event_id': 40, 'and_mask': 255,
-               'events': {'consecutive': True, 'output':'steps','stim_channel': 'STI 014',
+               'events': {'consecutive': True, 'output':'step','stim_channel': 'STI 014',
                'min_duration':0.002,'shortest_event': 2,'mask': 0}
               }
 
@@ -108,42 +136,50 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
         """
         if raw is None:
            print "ERROR in  <get_event_structure: No raw obj \n"
-           return None
+           return None,None
        #---
-        import pandas as pd
+       # import pandas as pd   done
         df = pd.DataFrame(columns = self.data_frame_stimulus_cols)
 
+        ev_id_idx = np.array([])
+        ev_onset  = np.array([])
+        ev_offset = np.array([])
        #---
         events           = param['events'].copy()
         events['output'] = 'step'
         ev               = mne.find_events(raw, **events) #-- return int64
-       
+
        #--- apply and mask e.g. 255 get the first 8 bits in Trigger channel
         if param['and_mask']:
            ev[:, 1:] = np.bitwise_and(ev[:, 1:], param['and_mask'])
            ev[:, 2:] = np.bitwise_and(ev[:, 2:], param['and_mask'])
 
-       #--- search and return only events with event_id in event_id-array
-       #--- shape =>(trials,3)  => [trial idx ,tsl-onset/ tsl-offset,event id]
-       #--- split this in onset offset
-          
         ev_onset  = np.squeeze( ev[np.where( ev[:,2] ),:])  # > 0
         ev_offset = np.squeeze( ev[np.where( ev[:,1] ),:])
 
         if param['event_id']:
-           ev_id     = jumeg_base.str_range_to_numpy(param['event_id'],exclude_zero=True)
+           ev_id = jumeg_base.str_range_to_numpy(param['event_id'],exclude_zero=True)
            
            #ev_onset  = np.squeeze( ev[np.where( np.in1d( ev[:,2],ev_id ) ), :])
            #ev_offset = np.squeeze( ev[np.where( np.in1d( ev[:,1],ev_id ) ), :])
-          
-           ev_id_idx = np.squeeze( np.where( np.in1d( ev_onset[:,2],ev_id )))
-           
-           ev_onset = ev_onset[ ev_id_idx,:]
-           ev_offset= ev_offset[ev_id_idx,:]  
-       
 
+          #--- check if code in events
+           if ( ev_id in np.unique(ev[:, 2]) ):
+              ev_id_idx = np.squeeze( np.where( np.in1d( ev_onset[:,2],ev_id )))
+              if ( ev_id_idx.size > 0 ):
+                   ev_onset = ev_onset[ ev_id_idx,:]
+                   ev_offset= ev_offset[ev_id_idx,:]
+              else:
+                  print'Warning => No such event code(s) found (ev_id_idx) -> event: ' + str( param['event_id'] )
+                  return None,None
+           else:
+               print'Warning => No such event code(s) found (ev_id) -> event: ' + str(param['event_id'])
+               return None,None
+
+       #---- use all event ids
         if ( ev_onset.size == 0 ):
-           return df
+            print'Warning => No such event code(s) found -> event: ' + str(param['event_id'])
+            return None,None
 
        #--- apply system delay if is defined e.g. auditory take`s 20ms to subjects ears
         if param['system_delay_ms']:
@@ -154,12 +190,28 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
         else:
            system_delay_is_applied = False
        
+        
        #-- avoid invalid index/dimension error if last offset is none
-        div          = ev_offset[:,0] - ev_onset[:ev_offset[:,0].size,0]
         df['id']     = ev_onset[:,2]
         df['onset']  = ev_onset[:,0]
         df['offset'] = np.zeros( ev_onset[:,0].size,dtype=np.long )
-        df['offset'][:ev_offset[:,0].size] = ev_offset[:,0]
+        div = np.zeros( ev_offset[:,0].size )
+        try:
+            if ( ev_onset[:,0].size >= ev_offset[:,0].size ):
+               div = ev_offset[:,0] - ev_onset[:ev_offset[:,0].size,0]
+               df['offset'][:ev_offset[:,0].size] = ev_offset[:,0]
+        
+            else:
+               idx_max = ev_offset[:,0].size
+               div = ev_offset[:,0] - ev_onset[:idx_max,0]    
+               df['offset'][:] = ev_offset[:idx_max,0]
+        except:
+            assert "ERROR dims onset offset will not fit\n"
+            
+            print ev_onset[:,0].size
+        print ev_offset[:,0].size
+        
+        
         return df,dict( {
                          'sfreq'        : raw.info['sfreq'],
                          'duration'     :{'mean':np.rint(div.mean()),'min':div.min(),'max':div.max()},
@@ -378,9 +430,11 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
                stimulus_data_frame,stimulus_info = self.events_find_events(raw,**parameter[ parameter['stimulus_channel'] ])
 
                if self.verbose:
-                  print "---> Stimulus Epocher Events Data Frame [stimulus channel]:"
+                  print "---> Stimulus Epocher Events Data Frame [stimulus channel]: "+ condi
                   print stimulus_data_frame
                   print"\n\n"
+
+               if stimulus_data_frame is None: continue
 
               #--- RESPONSE Matching task
               #--- match between stimulus and response
@@ -589,13 +643,14 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
         exclude_events = self.events_update_artifact_time_window(aev=exclude_events)
         
         for condi in epocher_condition_list:
-            evt             = self.events_hdf_to_mne_events(condi,exclude_events=exclude_events,time=time_param,baseline=bc_param,weights=None)
-            event_id[condi] = {'id':evt['event_id'],'trials': evt['events'].shape[0],'trials_weighted':0}
-          #---      
-            ep,bc = self.events_apply_epochs_and_baseline(self.raw,evt=evt,reject=reject,proj=proj,picks=picks)
-            
-            self.events_save_events(evt=evt,condition=condi,postfix=fif_postfix,picks=picks,reject=reject,proj=proj,save_condition=save_condition)       
-         #--- ck weighted events        
+            evt  = self.events_hdf_to_mne_events(condi,exclude_events=exclude_events,time=time_param,baseline=bc_param,weights=None)
+            if evt['events'].size:
+               event_id[condi] = {'id':evt['event_id'],'trials': evt['events'].shape[0],'trials_weighted':0}
+             #---
+               ep,bc = self.events_apply_epochs_and_baseline(self.raw,evt=evt,reject=reject,proj=proj,picks=picks)
+               self.events_save_events(evt=evt,condition=condi,postfix=fif_postfix,picks=picks,reject=reject,proj=proj,save_condition=save_condition)
+
+         #--- ck weighted events
          # "weights":{"mode":"equal_counts","selection":"median","skipp_first":null},
         if hasattr(weights,'mode') :      
            print "\n ---> Applying Weighted Export Events"            
@@ -609,10 +664,11 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
            
               for condi in event_id.keys():
                   evt = self.events_hdf_to_mne_events(condi,exclude_events=exclude_events,time=time_param,baseline=bc_param,weights=weights)
-                #---      
-                  ep,bc = self.events_apply_epochs_and_baseline(self.raw,evt=evt,reject=reject,proj=proj,picks=picks)
-                  event_id[condi]['trials_weighted'] = evt['events'].shape[0]
-                  self.events_save_events(evt=evt,condition=condi,postfix=fif_postfix+'W',picks=picks,reject=reject,proj=proj,save_condition=save_condition)       
+                #---
+                  if evt['events'].size:
+                     ep,bc = self.events_apply_epochs_and_baseline(self.raw,evt=evt,reject=reject,proj=proj,picks=picks)
+                     event_id[condi]['trials_weighted'] = evt['events'].shape[0]
+                     self.events_save_events(evt=evt,condition=condi,postfix=fif_postfix+'W',picks=picks,reject=reject,proj=proj,save_condition=save_condition)
             
         
         fhdf = self.HDFobj.filename
@@ -624,7 +680,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
                                 picks=None,reject=None,proj=False,
                                 save_condition={"events":True,"epochs":True,"evoked":True}):
         
-        from jumeg.jumeg_4raw_data_plot import jumeg_4raw_data_plot as jplt
+        from jumeg.preprocbatch.jumeg_preprocbatch_plot import jumeg_preprocbatch_plot as jplt
         jplt.verbose = self.verbose
       
         ep,bc = self.events_apply_epochs_and_baseline(self.raw,evt=evt,reject=reject,proj=proj,picks=picks)      
@@ -669,6 +725,8 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
                events for mne
         '''       
       #-----
+        events_idx = np.array([],dtype=np.int64)
+
         print " ---> START EPOCHER extract condition : " + condi 
         ep_key = '/epocher/' + condi
             
@@ -724,83 +782,99 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
               rt_type_idx = self.rt_type_as_index(ep_param['response_matching_type'])
        #--- find   response type idx
            events_idx = df[ evt['marker_type'] ][ (df['rt_type'] == rt_type_idx) & (df['bads'] != self.idx_bad) ].index
-           df['selected'][events_idx] = 1
-        
-       #--- apply weights to reduce/equalize number of events for all condition
-           if hasattr(weights,'min_counts'):
-              if weights['min_counts']:
-                 assert weights['min_counts'] <= events_idx.size,"!!!ERROR minimum required trials greater than number of trials !!!"
-                 w_value = 0.0
-                 if weights['min_counts'] < events_idx.size:
-                                 
-                    if weights['method']=='median':
-                         w_value = df['rt'][events_idx].median()                       
-                    elif weights['method']=='mean':
-                         w_value = df['rt'][events_idx].mean()        
-                    #else: # random      
-                   #     w_idx = np.random.shuffle( np.array( events_idx ) )
-                   
-                  #--- find minimum from median as index from events_idx => index of index !!! 
-                    w_idx = np.argsort( np.abs( np.array( df['rt'][events_idx] - w_value )))
-                    w_events_idx = np.array( events_idx[ w_idx[ 0:weights['min_counts'] ] ] )
-                    w_events_idx.sort()
-                    
-                    df['weighted_selected'][w_events_idx] = 1                           
-                     
-                    if self.verbose:
-                       print"RESPONSE MATCHING => Weighted event index => method:" + weights['method']+" => value: %0.3f" % (w_value)
-                       print w_events_idx
-                       print"RT :"                    
-                       print df['rt'][w_events_idx]
 
-                 elif weights['min_counts'] == events_idx.size:     
-                      df['weighted_selected'][events_idx] = 1           
-                      
-              #--- update new weighted event idx   
-                 events_idx = df[ df['weighted_selected'] > 0 ].index
-               
+           if events_idx.size:
+              #df.loc['selected',events_idx] = 1
+               df['selected'][events_idx] = 1
+              # data.loc[data['name'] == 'fred', 'A'] = 0
+
+              #--- apply weights to reduce/equalize number of events for all condition
+               if hasattr(weights,'min_counts'):
+                  if weights['min_counts']:
+                     assert weights['min_counts'] <= events_idx.size,"!!!ERROR minimum required trials greater than number of trials !!!"
+                     w_value = 0.0
+                     if weights['min_counts'] < events_idx.size:
+
+                        if weights['method']=='median':
+                             w_value = df['rt'][events_idx].median()
+                        elif weights['method']=='mean':
+                             w_value = df['rt'][events_idx].mean()
+                        #else: # random
+                       #     w_idx = np.random.shuffle( np.array( events_idx ) )
+
+                      #--- find minimum from median as index from events_idx => index of index !!!
+                        w_idx = np.argsort( np.abs( np.array( df['rt'][events_idx] - w_value )))
+                        w_events_idx = np.array( events_idx[ w_idx[ 0:weights['min_counts'] ] ] )
+                        w_events_idx.sort()
+
+                        df['weighted_selected'][w_events_idx] = 1
+                        #df.loc['weighted_selected',w_events_idx] = 1
+
+                        if self.verbose:
+                           print"RESPONSE MATCHING => Weighted event index => method:" + weights['method']+" => value: %0.3f" % (w_value)
+                           print w_events_idx
+                           print"RT :"
+                           print df['rt'][w_events_idx]
+
+                     elif weights['min_counts'] == events_idx.size:
+                          df['weighted_selected'][events_idx] = 1
+                          #df.loc['weighted_selected',events_idx] = 1
+
+                          #--- update new weighted event idx
+                     events_idx = df[ df['weighted_selected'] > 0 ].index
+
                  
         else :
    #--- no response matching
            events_idx = df[ evt['marker_type'] ][ df['bads'] != self.idx_bad ].index
-         #-- ck for eaqual number of trials over conditons   
-           if hasattr(weights,'min_counts'):
-              if weights['min_counts']:
-                 assert weights['min_counts'] <= events_idx.size,"!!!ERROR minimum required trials greater than number of trials !!!"
-                 
-                 if weights['min_counts'] < events_idx.size:
-                    w_idx = np.array( events_idx.values )
-                    np.random.shuffley(w_idx)
-                    w_events_idx = w_idx[0:weights['min_counts'] ]
-                    df['weighted_selected'][w_events_idx] = 1 
-                    events_idx = df[ df['weighted_selected'] > 0 ].index
-        
-                 elif weights['min_counts'] == events_idx.size:     
-                      df['weighted_selected'][events_idx] = 1           
-               
- #--- make event array     
-        evt['events']      = np.zeros(( events_idx.size, 3), dtype=np.long)
-        evt['events'][:,0] = df[ evt['marker_type'] ][events_idx]
-        
-        if  ep_param['marker_channel'] == 'response':
-            evt['events'][:,2] = ep_param['response']['event_id']
-        else:    
-            evt['events'][:,2] = df['id'][0]
-        evt['event_id'] = int( evt['events'][0,2] )
-        
-       #--- baseline events
-        #evt['bc']['output']      = ep_param[ evt['bc']['channel'] ]['events']['output']  
-        evt['bc']['events']      = np.zeros((events_idx.size,3),dtype=np.long) 
-        evt['bc']['events'][:,0] = df[ evt['bc']['output'] ][events_idx]
-            
-        if ep_param[ evt['bc']['channel'] ] == 'response':
-           evt['bc']['events'][:,2] = ep_param['response']['event_id']
-        else:    
-            evt['bc']['events'][:,2] = df['id'][0]
-        evt['bc']['event_id'] = int( evt['bc']['events'][0,2] )
-      
-      
-     #---update HDF: store df with updated bads & selected & restore user-attribute
+         #-- ck for eaqual number of trials over conditons#
+           if events_idx.size:
+               if hasattr(weights,'min_counts'):
+                  if weights['min_counts']:
+                     assert weights['min_counts'] <= events_idx.size,"!!!ERROR minimum required trials greater than number of trials !!!"
+
+                     if weights['min_counts'] < events_idx.size:
+                        w_idx = np.array( events_idx.values )
+                        np.random.shuffley(w_idx)
+                        w_events_idx = w_idx[0:weights['min_counts'] ]
+                        df['weighted_selected'][w_events_idx] = 1
+                        events_idx = df[ df['weighted_selected'] > 0 ].index
+
+                     elif weights['min_counts'] == events_idx.size:
+                          df['weighted_selected'][events_idx] = 1
+
+        if events_idx.size:
+
+          #--- make event array
+            evt['events']      = np.zeros(( events_idx.size, 3), dtype=np.long)
+            evt['events'][:,0] = df[ evt['marker_type'] ][events_idx]
+
+            if  ep_param['marker_channel'] == 'response':
+                evt['events'][:,2] = ep_param['response']['event_id']
+            else:
+                evt['events'][:,2] = df['id'][0]
+
+           #--- ck if events exist
+            evt['event_id'] = int( evt['events'][0,2] )
+
+           #--- baseline events
+            #evt['bc']['output']      = ep_param[ evt['bc']['channel'] ]['events']['output']
+            evt['bc']['events']      = np.zeros((events_idx.size,3),dtype=np.long)
+            evt['bc']['events'][:,0] = df[ evt['bc']['output'] ][events_idx]
+
+            if ep_param[ evt['bc']['channel'] ] == 'response':
+               evt['bc']['events'][:,2] = ep_param['response']['event_id']
+            else:
+                evt['bc']['events'][:,2] = df['id'][0]
+            evt['bc']['event_id'] = int( evt['bc']['events'][0,2] )
+        else:
+       #--- no events
+            evt['events']       = np.array([])
+            evt['event_id']     = np.array([])
+            evt['bc']['events'] = np.array([])
+
+
+    #---update HDF: store df with updated bads & selected & restore user-attribute
         storer_attrs = {'epocher_parameter': ep_param,'info_parameter':info_param}
         self.hdf_obj_update_dataframe(df,key=ep_key,reset=False,**storer_attrs)
       
@@ -858,9 +932,11 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
 
           for kbad in ( aev.keys() ):
               node_name = '/ocarta/' + kbad
-
-              if self.HDFobj.get(node_name) is None:
-                 continue
+            #--- ck if node exist 
+              try:             
+                  self.HDFobj.get(node_name)
+              except:
+                  continue
 
               artifact_events[kbad]= {'tmin':None,'tmax':None,'tsl':np.array([])}
 
@@ -894,18 +970,22 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
         input:
               raw obj
               evt=event dict
+              check for bad epochs due to short baseline onset/offset intervall and drop them
+              
         output:
               baseline corrected epoch data
               !!! exclude trigger channels: stim and resp !!!
               bc correction: true /false
         '''
-       
+           
+        ep_bads    = None
         ep_bc_mean = None
-        bc = False
+        bc         = False
+        
      #--- get epochs no bc correction 
         ep = mne.Epochs(self.raw,evt['events'],evt['event_id'],evt['time']['time_pre'],evt['time']['time_post'],
                         baseline=None,picks=picks,reject=reject,proj=proj,preload=True,verbose=False) # self.verbose)
-       
+            
         if ('bc' in evt.keys() ): 
           if evt['bc']['baseline']:   
              if len( evt['bc']['events'] ): 
@@ -918,34 +998,44 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF):
                 else:
                    bc_time_post = evt['time']['time_post']  
                 
-                picks_bc = jumeg_base.pick_exclude_trigger(ep)
+                picks_bc = jumeg_base.picks.exclude_trigger(ep)
                 
-                #ep_bc = mne.Epochs(self.raw,evt['bc']['events'],evt['bc']['event_id'],
-                #                   bc_time_pre,bc_time_post,baseline=None,
-                #                   picks=picks,reject=reject,proj=proj,preload=True,verbose=self.verbose)
+               #--- create baseline epochs -> from stimulus baseline
                 ep_bc = mne.Epochs(self.raw,evt['bc']['events'],evt['bc']['event_id'],
                                    bc_time_pre,bc_time_post,baseline=None,
                                    picks=picks_bc,reject=reject,proj=proj,preload=True,verbose=self.verbose)
              
-                ep_bc_mean = np.mean(ep_bc._data, axis = -1)
-                #print picks_bc
-             
-                ep._data[:,picks_bc,:] -= ep_bc_mean[:,:,np.newaxis]
+                
+               #--- check for equal epoch size epoch_baseline vs epoch for np bradcasting
+                ep_goods = np.intersect1d(ep_bc.selection,ep.selection)
                
-               #--- retain bc for stim/response 
-               # picks_stim = jumeg_base.pick_stim_response(ep)
-               # if picks_stim.size:
-               #    ep._data[:,picks_stim,: ] += ep_bc_mean[:,picks_stim,np.newaxis]
-                bc =True
+               #--- bad epochs & drop them
+                ep_bads  = np.array( np.where(np.in1d(ep_bc.selection,ep_goods,invert=True)) )
+                if ep_bads:
+                   ep_bc.drop(ep_bads.flatten())
+              #--- calc mean from bc epochs 
+                ep_bc_mean = np.mean(ep_bc._data, axis = -1)
+                ep._data[:,picks_bc,:] -= ep_bc_mean[:,:,np.newaxis]
+                bc = True
  #--- 
         if self.verbose:
            print" ---> Epocher apply epoch and baseline -> mne epochs:" 
            print ep
            print"      id: %d  <pre time>: %0.3f <post time>: %0.3f" % (evt['event_id'],evt['time']['time_pre'],evt['time']['time_post'])
            print" --> baseline correction : %r" %(bc)
+         
            if bc:
                 print"     done -> baseline correction"
                 print"     bc id: %d  <pre time>: %0.3f <post time>: %0.3f" % (evt['bc']['event_id'],bc_time_pre,bc_time_post)
+       
+                print"\n --> Epoch selection: "
+                print ep.selection
+                print" --> Baseline epoch selection: "
+                print ep_bc.selection
+                print"\n --> good epochs selected:"
+                print ep_goods
+                print"\n --> bad epochs & drop them:"             
+                print ep_bads
            print"\n"
        
         return ep,bc

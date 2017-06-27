@@ -7,8 +7,13 @@ import scipy.fftpack as scipack # import fft,ifft
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 11.12.2014
- version    : 0.03141
+ update: 11.12.2014
+
+ update: 21.12.2014
+  --> change float index to np.int64
+   -> VisibleDeprecationWarning: using a non-integer number instead of an integer will result in an error in the future
+
+ version    : 0.03142
 ---------------------------------------------------------------------- 
  Butterworth filter design from  KD,JD
  Oppenheim, Schafer, "Discrete-Time Signal Processing"
@@ -22,7 +27,7 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
      def __init__ (self,filter_type='bp',fcut1=1.0,fcut2=200.0,remove_dcoffset=True,sampling_frequency=1017.25,
                         notch=np.array([]),notch_width=2.0,order=4.0,settling_time_factor=5.0):
          super(JuMEG_Filter_Bw, self).__init__()
-         self._jumeg_filter_bw_version     = 0.0314
+         self._jumeg_filter_bw_version     = 0.03142
          self.__filter_method              = 'bw'
          
          self.sampling_frequency              = sampling_frequency
@@ -105,15 +110,16 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
          order = self.filter_order
 #----------         
          pad = np.ceil( self.sampling_frequency / 2.0 / self.fcut1 )
-         len = self.calc_zero_padding( M + pad  + 2 * self.settling_time_factor_timeslices)       
+         len = self.calc_zero_padding( M + pad  + 2 * self.settling_time_factor_timeslices)
 #-----------      
          nyq    = len / 2.0 + 1.0
          f_n    = self.sampling_frequency / 2.0
          f_res  = f_n  / nyq
 #-----------
-         darray                  = np.arange( nyq -1   ,dtype=np.float64 ) + 1.0
-         self.filter_kernel_data = np.zeros( 2 * (nyq -1),dtype=np.float64)
-         fkd_part1               = self.filter_kernel_data[1:nyq]       
+         nyq_idx = np.int64(nyq)
+         darray                  = np.arange( nyq_idx -1   ,dtype=np.float64 ) + 1.0
+         self.filter_kernel_data = np.zeros( 2 * (nyq_idx -1),dtype=np.float64)
+         fkd_part1               = self.filter_kernel_data[1:nyq_idx]
 #-----------  
  
          if   self.filter_type == 'lp' :
@@ -123,7 +129,7 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
                   
          elif self.filter_type == 'hp' :
                    omega       = fcut1 / ( darray * f_res ); 
-                   fkd_part1[:]= ( 1 / ( omega**( 2.0 * order ) +1.0 ) ) 
+                   fkd_part1[:]= ( 1 / ( omega**( 2.0 * order ) +1.0 ) )
     
          elif self.filter_type == 'bp' :
                    if (self.fcut1 > self.fcut2) :
@@ -151,17 +157,17 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
                  
                  sigma = n_fac * self.filter_notch_width / 2.0
                  freq  = np.arange(nyq,dtype=np.float64) * f_res - omega 
-                 min_idx  = np.argmin( np.abs( freq ) )
+                 min_idx  = np.int64( np.argmin( np.abs( freq ) ) )
                  self.filter_kernel_data[min_idx] = 0.0
-                 if ( min_idx > 1 ): 
-                      self.filter_kernel_data[1:min_idx] *= np.exp( - ( sigma / freq[1:min_idx] )**2 ) 
+                 if ( min_idx > 1 ):
+                      self.filter_kernel_data[1:min_idx] *= np.exp( - ( sigma / freq[1:min_idx] )**2 )
                  else : 
-                      self.filter_kernel_data[1] *= np.exp( - ( sigma / freq[1] )**2 ) 
+                      self.filter_kernel_data[1] *= np.exp( - ( sigma / freq[1] )**2 )
                  
-                 self.filter_kernel_data[min_idx+1:nyq] = self.filter_kernel_data[min_idx+1:nyq] * np.exp( - ( sigma/freq[min_idx+1:] )**2.0 )
+                 self.filter_kernel_data[min_idx+1:nyq_idx] = self.filter_kernel_data[min_idx+1:nyq_idx] * np.exp( - ( sigma/freq[min_idx+1:] )**2.0 )
    
 #--- construct the negative frequencies in filter kernel data
-         self.filter_kernel_data[nyq :] = fkd_part1[-1:0:-1]  
+         self.filter_kernel_data[nyq_idx :] = fkd_part1[-1:0:-1]
          
          if self.verbose :
              print"======================================="                    
@@ -222,7 +228,7 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
          self.data_plane_cplx    = np.zeros( data_length ,np.complex64 )
                   
        #--- init part of data array for input data => pointer to part of data_plane        
-         data_tsl_start_in        = self.settling_time_factor_timeslices  
+         data_tsl_start_in        = np.int64( self.settling_time_factor_timeslices )
          self.data_plane_data_in  = self.data_plane_cplx[data_tsl_start_in:data_tsl_start_in + number_of_input_samples].real    
      
        #--- init pre part of data array, till data onset 

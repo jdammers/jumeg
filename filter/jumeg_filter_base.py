@@ -6,7 +6,10 @@ import time
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 16.12.2014
+ update: 16.12.2014
+ update: 21.12.2016
+  --> add function calc_lowpass_value
+
  version    : 0.031415
 ---------------------------------------------------------------------- 
  Window sinc filter taken from:
@@ -54,8 +57,28 @@ class JuMEG_Filter_Base(object):
         self.__data_mean                   = 0.0
         self.__data_plane_isinit           = False
         self.__data_plane_data_in          = np.array([])
-        
-         
+
+        self._lp_for_srate = {'678': 200.0, '1017': 400.0}
+
+     def calc_lowpass_value(self,sf):
+         '''
+          extimates fcut1 for lowpass with respect 4D aquisition settings: sampling-rates & bandwidth
+          678  -> 200.0
+          1017 -> 400.0
+         :param
+          sf: sampling frequency default obj.sampling_frequency
+         :return:
+          value to set the fcut1 for lp
+          must be set in main pgr !!!
+         '''
+         sfreq = np.int64( self.sampling_frequency )
+         if sf:
+            sfreq = np.int64(sf)
+         if str(sfreq) in self._lp_for_srate:
+            return self._lp_for_srate[str(sfreq)]
+         else:
+            return sfreq/3.0
+
 #--- version
      def __get_version(self):
          return self.__jumeg_filter_base_version
@@ -373,6 +396,7 @@ class JuMEG_Filter_Base(object):
 
          if self.filter_notch.size :
             self.__filter_info_string += ",apply notch"
+            print self.filter_notch
          
          if ( self.remove_dcoffset ):
           self.__filter_info_string +=",remove DC offset"
@@ -550,7 +574,7 @@ class JuMEG_Filter_Base(object):
        
        self.data = data 
 
-       from joblib import Parallel, delayed
+      # from joblib import Parallel, delayed
 
        if self.verbose :
            t0 = time.time()
