@@ -4,13 +4,11 @@
 #          Juergen Dammers <j.dammers@fz-juelich.de>
 #          Eberhard Eich   <e.eich@fz-juelich.de>
 #          Denis Engemann  <d.engemann@fz-juelich.de>
-#          Praveen Sripad  <praveen.sripad@rwth-aachen.de>
+#          Praveen Sripad  <p.sripad@fz-juelich.de>
 #
 # License: Simplified BSD
 
-__version__ = '0.1'
-
-# import ctps
+__version__ = '1.0'
 
 from . import jumeg_preprocessing 
 from . import jumeg_math
