@@ -6,7 +6,6 @@ import sys
 import os.path as op
 import numpy as np
 import scipy as sci
-import matplotlib.pyplot as pl
 import mne
 import yaml
 import pickle
@@ -195,6 +194,7 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
     orig_labels : list of str
         Label names in the order as appears in con.
     '''
+    import matplotlib.pyplot as pl
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:

@@ -13,11 +13,11 @@ import os
 import os.path as op
 import numpy as np
 import scipy as sci
+from sklearn.utils import check_random_state
+
 import mne
 from mne.utils import logger
-import matplotlib.cm as cmx
-import matplotlib.colors as colors
-from sklearn.utils import check_random_state
+
 
 def get_files_from_list(fin):
     ''' Return string of file or files as iterables lists '''
@@ -1314,6 +1314,8 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
 def get_cmap(N):
     '''Returns a function that maps each index in 0, 1, ... N-1 to a distinct
     RGB color.'''
+    import matplotlib.cm as cmx
+    import matplotlib.colors as colors
     color_norm = colors.Normalize(vmin=0, vmax=N-1)
     scalar_map = cmx.ScalarMappable(norm=color_norm, cmap='hsv')
 

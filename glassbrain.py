@@ -15,6 +15,13 @@ labels = ['MFG','AG','MTG','PCC','MPFC']
 brain.add_coords(coords, color='green', labels=labels, scale_factor=1)
 brain.add_arrow(coords[:2,:], color='red')
 mlab.view(45,135)
+
+# Note: If used in a jumeg module, use this below import statements.
+# try:
+#     import glassbrain
+# except Exception as e:
+#     print ('Unable to import glassbrain check mayavi and pysurfer config.')
+
 '''
 
 import numpy as np
@@ -24,7 +31,6 @@ from mayavi import mlab
 from mayavi.mlab import pipeline as mp
 
 import surfer
-from surfer import utils
 
 class ConnecBrain(surfer.Brain):
     """
@@ -88,10 +94,10 @@ class ConnecBrain(surfer.Brain):
             foci_vtxs = surfer.utils.find_closest_vertices(self.geo[hemi].coords, coords)
             foci_coords = self.geo[hemi].coords[foci_vtxs]
         else:
-            foci_surf = utils.Surface(self.subject_id, hemi, map_surface,
+            foci_surf = surfer.utils.Surface(self.subject_id, hemi, map_surface,
                                    subjects_dir=self.subjects_dir)
             foci_surf.load_geometry()
-            foci_vtxs = utils.find_closest_vertices(foci_surf.coords, coords)
+            foci_vtxs = surfer.utils.find_closest_vertices(foci_surf.coords, coords)
             foci_coords = self.geo[hemi].coords[foci_vtxs]
 
         # Convert the color code
@@ -163,16 +169,14 @@ class ConnecBrain(surfer.Brain):
             foci_vtxs = surfer.utils.find_closest_vertices(self.geo[hemi].coords, coords)
             foci_coords = self.geo[hemi].coords[foci_vtxs]
         else:
-            foci_surf = utils.Surface(self.subject_id, hemi, map_surface,
+            foci_surf = surfer.utils.Surface(self.subject_id, hemi, map_surface,
                                    subjects_dir=self.subjects_dir)
             foci_surf.load_geometry()
-            foci_vtxs = utils.find_closest_vertices(foci_surf.coords, coords)
+            foci_vtxs = surfer.utils.find_closest_vertices(foci_surf.coords, coords)
             foci_coords = self.geo[hemi].coords[foci_vtxs]
-
 
         # foci_vtxs = surfer.utils.find_closest_vertices(self.geo[hemi].coords, coords)
         # foci_coords = self.geo[hemi].coords[foci_vtxs]
-
 
         # Convert the color code
         if not isinstance(color, tuple):
@@ -214,4 +218,3 @@ class ConnecBrain(surfer.Brain):
         self.arrows_dict[name] = al
 
         self._toggle_render(True, views)
-

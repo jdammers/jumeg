@@ -3,7 +3,7 @@
 --- jumeg.jumeg_4raw_data_noise_reducer
 --- modified by FB
 ----> interface for use of only one raw obj or one fif file
-----> use most jumeg_base cls functions  
+----> use most jumeg_base cls functions
 ----------------------------------------------------------------------
 
 --- !!! featuring the one and olny magic EE <jumeg.jumeg_noise_reducer>
@@ -51,19 +51,19 @@ jumeg_noise_reducer.noise_reducer(fname_raw)
 #
 # License: BSD (3-clause)
 
+import os
 import numpy as np
 import time
 import copy
 import warnings
 
-import os
 from math import floor, ceil
 import mne
 from mne.utils import logger
 from mne.epochs import _is_good
 from mne.io.pick import channel_indices_by_type
-from jumeg.jumeg_utils import get_files_from_list
-from jumeg.jumeg_base  import jumeg_base
+from .jumeg_utils import get_files_from_list
+from .jumeg_base import jumeg_base
 
 TINY = 1.e-38
 SVD_RELCUTOFF = 1.e-08
@@ -254,11 +254,11 @@ def perform_detrending(fname_raw,raw=None,save=True):
 
     from mne.io import Raw
     from numpy import poly1d, polyfit
-    
+
     raw = jumeg_base.get_raw_obj(fname_raw,raw=raw)
   # get channels
     picks = jumeg_base.pick_meg_and_ref_nobads()
-    
+
     xval  = np.arange(raw._data.shape[1])
   # loop over all channels
     for ipick in picks:
@@ -328,14 +328,14 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
 def noise_reducer_4raw_data(fname_raw,raw=None,signals=[],noiseref=[],detrending=None,
                   tmin=None,tmax=None,reflp=None,refhp=None,refnotch=None,
                   exclude_artifacts=True,checkresults=True,
-                  fif_extention="-raw.fif",fif_postfix="nr",                        
+                  fif_extention="-raw.fif",fif_postfix="nr",
                   reject={'grad':4000e-13,'mag':4e-12,'eeg':40e-6,'eog':250e-6},
                   complementary_signal=False,fnout=None,verbose=False,save=True):
 
     """Apply noise reduction to signal channels using reference channels.
-        
+
        !!! ONLY ONE RAW Obj Interface Version FB !!!
-           
+
     Parameters
     ----------
     fname_raw : rawfile name
@@ -367,13 +367,13 @@ def noise_reducer_4raw_data(fname_raw,raw=None,signals=[],noiseref=[],detrending
                            (can be useful for debugging)
     checkresults : boolean to control internal checks and overall success [True]
 
-    reject =  dict for rejection threshold 
+    reject =  dict for rejection threshold
               units:
               grad:    T / m (gradiometers)
               mag:     T (magnetometers)
               eeg/eog: uV (EEG channels)
               default=>{'grad':4000e-13,'mag':4e-12,'eeg':40e-6,'eog':250e-6}
-              
+
     save : save data to fif file
 
     Outputfile:
@@ -398,11 +398,11 @@ def noise_reducer_4raw_data(fname_raw,raw=None,signals=[],noiseref=[],detrending
         raise ValueError("Argument complementary_signal must be of type bool")
 
     raw,fname_raw = jumeg_base.get_raw_obj(fname_raw,raw=raw)
-    
-    
+
+
     if detrending:
        raw = perform_detrending(None,raw=raw, save=False)
-    
+
     tc1 = time.clock()
     tw1 = time.time()
 
@@ -443,8 +443,8 @@ def noise_reducer_4raw_data(fname_raw,raw=None,signals=[],noiseref=[],detrending
         # incl. ECG or powerline monitor.
         if verbose:
             print ">>> Using all refchans."
-            
-        refexclude = "bads"      
+
+        refexclude = "bads"
         refpick = jumeg_base.pick_ref_nobads(raw)
     else:
         refpick = channel_indices_from_list(raw.info['ch_names'][:], noiseref,
@@ -513,9 +513,9 @@ def noise_reducer_4raw_data(fname_raw,raw=None,signals=[],noiseref=[],detrending
     # _is_good() from mne-0.9.git-py2.7.egg/mne/epochs.py seems to
     # ignore ref-channels (not covered by dict) and checks individual
     # data segments - artifacts across a buffer boundary are not found.
-    
-    #--- !!! FB put to kwargs    
-    
+
+    #--- !!! FB put to kwargs
+
     #reject = dict(grad=4000e-13, # T / m (gradiometers)
     #              mag=4e-12,     # T (magnetometers)
     #              eeg=40e-6,     # uV (EEG channels)
@@ -698,7 +698,7 @@ def noise_reducer_4raw_data(fname_raw,raw=None,signals=[],noiseref=[],detrending
         sigmean /= n_samples
         sscovdata -= n_samples * sigmean[:] * sigmean[:]
         sscovdata /= (n_samples - 1)
-        
+
         if verbose:
             print ">>> no channel got worse: ", np.all(np.less_equal(sscovdata, sscovinit))
             print ">>> final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))
@@ -709,19 +709,19 @@ def noise_reducer_4raw_data(fname_raw,raw=None,signals=[],noiseref=[],detrending
             print ">>> signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))
             print ">>>"
 
-   #--- fb update 21.07.2015     
-    fname_out = jumeg_base.get_fif_name(raw=raw,postfix=fif_postfix,extention=fif_extention)                       
-      
-    if save:    
+   #--- fb update 21.07.2015
+    fname_out = jumeg_base.get_fif_name(raw=raw,postfix=fif_postfix,extention=fif_extention)
+
+    if save:
        jumeg_base.apply_save_mne_data(raw,fname=fname_out,overwrite=True)
-     
-             
+
+
     tc1 = time.clock()
     tw1 = time.time()
     if verbose:
        print ">>> Total run took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))
-        
-    return raw,fname_out  
+
+    return raw,fname_out
 
 ##################################################
 #
