@@ -75,13 +75,15 @@ Feb. 2014 (doi:10.1109/TBME.2013.2280143).
 ----------------------------------------------------------------------
 """
 
-from . import complex_ica
-from . import dimension_selection
-from . import fourier_ica
-from . import fourier_ica_plot
-from . import group_ica
-from . import ica
-from . import icasso
-from . import ocarta
+from .complex_ica import complex_ica
+# from . import dimension_selection
+from .fourier_ica import (apply_ICASSO_fourierICA, apply_stft,
+                          JuMEG_fourier_ica, stft_source_localization, fourier_ica)
+# from . import fourier_ica_plot
+from .group_ica import (group_fourierICA_src_space,
+                        group_fourierICA_src_space_resting_state, plot_group_fourierICA)
+# from . import ica
+from .icasso import JuMEG_icasso
+from .ocarta import JuMEG_ocarta
 
 

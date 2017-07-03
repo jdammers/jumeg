@@ -13,8 +13,6 @@ import os.path as op
 import yaml
 import pickle
 
-import matplotlib.pyplot as plt
-
 from mne.viz import circular_layout
 from mne.viz.utils import plt_show
 from mne.viz.circle import _plot_connectivity_circle_onpick
@@ -130,6 +128,7 @@ def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     axes : instance of matplotlib.axes.PolarAxesSubplot
         The subplot handle.
     """
+    import matplotlib.pyplot as plt
     import matplotlib.path as m_path
     import matplotlib.patches as m_patches
 
@@ -373,6 +372,8 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
     groups in the yaml input file provided.
     '''
 
+    import matplotlib.pyplot as plt
+
     # load the label names in the original order (aparc)
     labels_fname = get_jumeg_path() + '/examples/label_names.list'
     with open(labels_fname, 'r') as f:
@@ -482,6 +483,7 @@ def plot_fica_grouped_circle(yaml_fname, con, node_order_size,
           be removed.
     '''
 
+    import matplotlib.pyplot as plt
     # load the label names in the original order
     # TODO remove empty lines / strings if any
     # TODO remove below code from here

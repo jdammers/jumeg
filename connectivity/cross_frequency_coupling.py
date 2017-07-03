@@ -5,7 +5,6 @@
 
 import numpy as np
 from scipy.signal import hilbert
-import matplotlib.pyplot as pl
 import mne
 from mne.filter import band_pass_filter
 
@@ -78,7 +77,7 @@ def compute_and_plot_psd(data, sfreq, NFFT=512, show=True):
     freqs : ndarray
         Frequencies.
     """
-
+    import matplotlib.pyplot as pl
     if show is False:
         pl.ioff()
     power, freqs = pl.psd(data, Fs=sfreq, NFFT=NFFT)
@@ -165,6 +164,7 @@ def average_envelope_versus_phase(amplitude_envelope, phase):
         a_std[l] = np.std(amplitude_envelope[indices])
         angle[l] = k + 5
 
+    import matplotlib.pyplot as pl
     pl.figure('Average envelope versus phase')
     pl.plot(angle, a_mean, 'b')
     pl.fill_between(angle, a_mean + a_std, a_mean - a_std, color='gray')
@@ -210,6 +210,7 @@ def event_related_average(gamma, data, win=100, show=True):
         avg[i, :] = data[locs[i] - win: locs[i] + win]
 
     average = np.mean(avg, axis=0)
+    import matplotlib.pyplot as pl
     pl.plot(range(-win, win), average)
     return average
 

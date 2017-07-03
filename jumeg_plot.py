@@ -3,21 +3,13 @@ Plotting functions for jumeg.
 '''
 import os
 import numpy as np
-import matplotlib.pylab as pl
-import matplotlib.ticker as ticker
 import mne
-from mpl_toolkits.axes_grid import make_axes_locatable
-from jumeg.jumeg_utils import (get_files_from_list, thresholded_arr,
-                               triu_indices)
-from jumeg.jumeg_base import jumeg_base
-from jumeg.jumeg_utils import check_read_raw
-from jumeg_math import (calc_performance,
-                        calc_frequency_correlation)
 
-try:
-    import glassbrain
-except Exception as e:
-    print ('Unable to import glassbrain check mayavi and pysurfer config.')
+from .jumeg_utils import (get_files_from_list, thresholded_arr,
+                               triu_indices, check_read_raw)
+from .jumeg_base import jumeg_base
+from .jumeg_math import (calc_performance,
+                         calc_frequency_correlation)
 
 
 def plot_powerspectrum(fname, raw=None, picks=None, dir_plots="plots",
@@ -25,9 +17,7 @@ def plot_powerspectrum(fname, raw=None, picks=None, dir_plots="plots",
         '''
 
         '''
-        import os
         import matplotlib.pyplot as pl
-        import mne
         from distutils.dir_util import mkpath
 
         if raw is None:
@@ -64,6 +54,7 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
 
     fname = get_files_from_list(filenames)
 
+    import matplotlib.pyplot as pl
     # plot averages
     pl.ioff()  # switch off (interactive) plot visualisation
     factor = 1e15
@@ -100,6 +91,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     and after the cleaning process.
     '''
 
+    import matplotlib.pyplot as pl
     from mne.preprocessing import find_ecg_events, find_eog_events
     from jumeg import jumeg_math as jmath
 
@@ -264,6 +256,7 @@ def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
     show: bool (default False)
     '''
 
+    import matplotlib.pyplot as pl
     pl.ioff()
     if show:
         pl.ion()
@@ -353,7 +346,7 @@ def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
 #
 ###########################################################
 def drawmatrix_channels(in_m, channel_names=None, fig=None, x_tick_rot=0,
-                        size=None, cmap=pl.cm.RdBu_r, colorbar=True,
+                        size=None, cmap=None, colorbar=True,
                         color_anchor=None, title=None):
     r"""Creates a lower-triangle of the matrix of an nxn set of values. This is
     the typical format to show a symmetrical bivariate quantity (such as
@@ -386,12 +379,19 @@ def drawmatrix_channels(in_m, channel_names=None, fig=None, x_tick_rot=0,
     fig: a figure object
 
     """
+    import matplotlib.ticker as ticker
+    from mpl_toolkits.axes_grid import make_axes_locatable
+
     N = in_m.shape[0]
     ind = np.arange(N)  # the evenly spaced plot indices
 
     def channel_formatter(x, pos=None):
         thisind = np.clip(int(x), 0, N - 1)
         return channel_names[thisind]
+
+    if cmap is None:
+        from matplotlib.pyplot import cm
+        cmap = cm.RdBu_r
 
     if fig is None:
         fig = pl.figure()
@@ -502,6 +502,7 @@ def drawmatrix_channels(in_m, channel_names=None, fig=None, x_tick_rot=0,
 def draw_matrix(mat, th1=None, th2=None, clim=None, cmap=None):
     """Draw a matrix, optionally thresholding it.
     """
+    import matplotlib.pyplot as pl
     if th1 is not None:
         m2 = thresholded_arr(mat, th1, th2)
     else:
@@ -584,6 +585,7 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
         is always in femtoTesla (fT) (1e15)
     '''
 
+    import matplotlib.pyplot as pl
     from mne.preprocessing import create_ecg_epochs, create_eog_epochs
 
     raw = check_read_raw(raw_orig, preload=True)

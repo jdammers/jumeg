@@ -7,7 +7,7 @@
 import os
 import sys
 from mne import setup_source_space
-from jumeg_utils import (get_files_from_list, check_env_variables,
+from .jumeg_utils import (get_files_from_list, check_env_variables,
                          retcode_error)
 
 # using subprocess to run freesurfer commands (other option os.system)

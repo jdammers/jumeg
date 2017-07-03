@@ -46,18 +46,18 @@ jumeg_noise_reducer.noise_reducer(fname_raw)
 #
 # License: BSD (3-clause)
 
+import os
 import numpy as np
 import time
 import copy
 import warnings
-
-import os
 from math import floor, ceil
+
 import mne
 from mne.utils import logger
 from mne.epochs import _is_good
 from mne.io.pick import channel_indices_by_type
-from jumeg.jumeg_utils import get_files_from_list
+from .jumeg_utils import get_files_from_list
 
 TINY = 1.e-38
 SVD_RELCUTOFF = 1.e-08

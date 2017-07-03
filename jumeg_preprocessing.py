@@ -2,11 +2,10 @@
 
 import os
 import numpy as np
-import matplotlib.pyplot as pl
 import mne
 from mne.preprocessing import ctps_ as ctps
-from jumeg_utils import get_files_from_list
-from jumeg_plot import (plot_average, plot_performance_artifact_rejection,
+from .jumeg_utils import get_files_from_list
+from .jumeg_plot import (plot_average, plot_performance_artifact_rejection,
                               plot_compare_brain_responses)
 
 
@@ -744,6 +743,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 
     fnlist = get_files_from_list(fname_ctps)
 
+    import matplotlib.pyplot as pl
     # loop across all filenames
     pl.ioff()  # switch off (interactive) plot visualisation
     ifile = 0

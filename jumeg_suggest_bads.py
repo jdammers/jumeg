@@ -11,10 +11,9 @@ authors: Niko Kampel, n.kampel@gmail.com
 
 import numpy as np
 import mne
-import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 from sklearn.metrics.pairwise import euclidean_distances
-from jumeg.jumeg_utils import check_read_raw
+from .jumeg_utils import check_read_raw
 
 
 def compute_euclidean_stats(epoch, sensitivity, mode='adaptive',
@@ -253,6 +252,7 @@ def plot_autosuggest_summary(afp_nearest_neighbour, psd_nearest_neighbour,
 
     #TODO Improve documentation.
     '''
+    import matplotlib.pyplot as plt
     plt.style.use(['seaborn-deep'])
 
     # calculate data for summary_plot
@@ -333,6 +333,7 @@ def old_summary_plot():
 
     kept here only for archival purposes
     '''
+    import matplotlib.pyplot as plt
     summary_plot = plt.figure()
     plt.subplots_adjust(hspace=0)
     t = np.arange(len(minimap[1]))

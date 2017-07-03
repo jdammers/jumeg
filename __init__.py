@@ -10,7 +10,7 @@
 
 __version__ = '1.0'
 
-from . import jumeg_preprocessing 
+from . import jumeg_preprocessing
 from . import jumeg_math
 from . import jumeg_iomeg
 from . import jumeg_utils

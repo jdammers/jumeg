@@ -1,7 +1,7 @@
 #import os
 import mne
 
-from jumeg.jumeg_base  import jumeg_base
+from .jumeg_base import jumeg_base
 
 
 #################################################################
@@ -20,11 +20,11 @@ def apply_epocher_events_data(fname,raw=None,condition_list=None,do_run=False,**
 
     """
     from jumeg.epocher.jumeg_epocher  import jumeg_epocher
- 
+
     if do_run :
-                
+
        return jumeg_epocher.apply_events_to_hdf(fname,raw=raw,condition_list=condition_list, **kwargs)
-   
+
 
 
 #######################################################
@@ -38,13 +38,13 @@ def apply_create_noise_covariance_data(fname,raw=None,do_filter=True,filter_para
 
     Parameters
     ----------
-    fname : string 
+    fname : string
         containing the filename of the empty room file (must be a fif-file)
     do_filter: bool
         If true, the empy room file is filtered before calculating
         the covariance matrix. (Beware, filter settings are fixed.)
     filter_parameter: dict
-        dict with filter parameter and flags 
+        dict with filter parameter and flags
     do_run: bool
         execute this
     save: bool
@@ -53,11 +53,11 @@ def apply_create_noise_covariance_data(fname,raw=None,do_filter=True,filter_para
         If not None, override default verbose level
         (see mne.verbose).
         default: verbose=None
-        
+
     RETURN
     ---------
     full empty room filname as string
-    raw obj of input raw-obj or raw-empty-room obj    
+    raw obj of input raw-obj or raw-empty-room obj
     '''
 
     # -------------------------------------------
@@ -65,7 +65,7 @@ def apply_create_noise_covariance_data(fname,raw=None,do_filter=True,filter_para
     # -------------------------------------------
     from mne import compute_raw_data_covariance as cp_covariance
     from mne import write_cov
-    
+
     mne.verbose = verbose
 
     try:
@@ -76,25 +76,25 @@ def apply_create_noise_covariance_data(fname,raw=None,do_filter=True,filter_para
     if raw_empty :
    #--- picks meg channels
        filter_parameter.picks = jumeg_base.pick_meg_nobads(raw_empty)
-  
+
    #--- filter or get filter name
        filter_parameter.do_run = do_filter
 
        if do_filter :
           print "Filtering empty room fif with noise variance settings...\n"
           (fname_empty_room,raw_empty) = apply_filter_data(fname_empty_room,raw=raw_empty,**filter_parameter)
-    
+
 
    #--- update file name for saving noise_cov
     fname_empty_room_cov = fname_empty_room.split('-')[0] + ',empty-cov.fif'
-  
+
    #--- calc nois-covariance matrix
     if do_run :
        noise_cov_mat = cp_covariance(raw_empty,picks=filter_parameter.picks,verbose=verbose)
    #--- write noise-covariance matrix to disk
        if save :
           write_cov( fname_empty_room_cov, noise_cov_mat)
-    
+
     return fname_empty_room_cov
 
 
@@ -119,13 +119,13 @@ def apply_noise_reducer_data(fname,raw=None,do_run=True,verbose=False,save=True,
 
     fname_out = None
     nr_done   = False
-    
-    if do_run :  
+
+    if do_run :
        raw,fname_raw = jumeg_base.get_raw_obj(fname,raw=raw)
        fname_out = jumeg_base.get_fif_name(raw=raw,postfix=fif_postfix,extention=fif_extention,update_raw_fname=False)
-     
+
 #--- apply noise reducer for 50 Hz (and harmonics)
-     
+
        if (reflp or refhp):
           raw,fname_out = noise_reducer_4raw_data(fname,raw=raw,reflp=reflp,refhp=refhp,verbose=verbose,save=False,**kwargs['parameter'])
           kwargs['parameter']['detrending'] = None
@@ -135,15 +135,15 @@ def apply_noise_reducer_data(fname,raw=None,do_run=True,verbose=False,save=True,
               raw,fname_out = noise_reducer_4raw_data(None,raw=raw,refnotch=refn,verbose=verbose,save=False,**kwargs['parameter'])
               kwargs['parameter']['detrending'] = None
           nr_done = True
-  
-     
+
+
        # raw.info['filename'] = fname_out
-       
+
        if not nr_done :
           return fname_raw,raw
-  
+
        raw.info['filename'] = fname_out
-       
+
        if save:
           fname_out = jumeg_base.apply_save_mne_data(raw,fname=fname_out)
 
@@ -177,27 +177,27 @@ def apply_noise_reducer_data(fname,raw=None,do_run=True,verbose=False,save=True,
 def apply_filter_data(fname,raw=None,filter_method="mne",filter_type='bp',fcut1=1.0,fcut2=45.0,notch=None,notch_max=None,order=4,
                       remove_dcoffset = False,njobs=1,overwrite = False,do_run=True,verbose=False,save=True,picks=None,
                       fif_postfix=None, fif_extention='-raw.fif'):
-    ''' 
-    Applies the FIR FFT filter [bp,hp,lp,notches] to data array. 
+    '''
+    Applies the FIR FFT filter [bp,hp,lp,notches] to data array.
     filter_method : mne => fft mne-filter
                     bw  => fft butterwoth
-                    ws  => fft - windowed sinc 
+                    ws  => fft - windowed sinc
     '''
-            
-    from jumeg.filter import jumeg_filter
-   
- #--- define filter 
-    jfilter = jumeg_filter(filter_method=filter_method,filter_type=filter_type,fcut1=fcut1,fcut2=fcut2,njobs=njobs, 
-                                remove_dcoffset=True,order=order)
-    jfilter.verbose = verbose                     
 
-    
+    from jumeg.filter import jumeg_filter
+
+ #--- define filter
+    jfilter = jumeg_filter(filter_method=filter_method,filter_type=filter_type,fcut1=fcut1,fcut2=fcut2,njobs=njobs,
+                                remove_dcoffset=True,order=order)
+    jfilter.verbose = verbose
+
+
     if do_run :
        raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
-      
+
        if picks is None :
           picks = jumeg_base.pick_channels_nobads(raw)
-          
+
     #- apply filter for picks, exclude stim,resp,bads
        jfilter.sampling_frequency = raw.info['sfreq']
     #--- calc notch array 50,100,150 .. max
@@ -349,7 +349,7 @@ def apply_ica_data(fname,raw=None,do_run=False,verbose=False,save=True,fif_exten
 
     if do_run :
        raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
-      
+
        from mne.preprocessing import ICA
        picks = jumeg_base.pick_meg_nobads(raw)
 
@@ -475,12 +475,12 @@ def apply_ctps_brain_responses_cleaning_data(fname,raw=None,fname_ica=None,ica_r
 #
 #######################################################
 def apply_epocher_export_events_data(fname,raw=None,condition_list=None,**kwargv):
- 
+
     '''
     apply_export_events
-    
+
     fname,raw=None,condition_list=None,do_run=False,verbose=False,save=False
-     
+
     "events": {
           "template_name":"InKomp",
           "event_extention": ".eve",
