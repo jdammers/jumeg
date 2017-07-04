@@ -27,21 +27,24 @@ from sklearn.utils import check_random_state
 #     assert np.aray_equal(ps1, ps2), 'The power content does not match. Error.'
 
 
-class Surrogates(inst, picks=None):
+class Surrogates(object):
     '''
-    The surrogates class.
+    The Surrogates class.
     '''
-    def __init__(self, data_instance):
+    def __init__(self, inst, picks=None):
         '''
         Initialize the Surrogates object.
         '''
         from mne.io.base import BaseRaw
         from mne.epochs import BaseEpochs
         from mne.source_estimate import SourceEstimate
+        from mne.io.pick import _pick_data_channels
 
+        # flags
         self._normalized = False
         self._fft_cached = False
 
+        # cache
         self._original_data_fft = None
 
         if not isinstance(inst, (BaseEpochs, BaseRaw, SourceEstimate, np.ndarray)):
@@ -49,7 +52,7 @@ class Surrogates(inst, picks=None):
                              'SourceEstimate. Got type {0}'.format(type(inst)))
 
         # make sure right picks are taken
-        if picks is None and not isinstance(np.ndarray, SourceEstimate):
+        if picks is None and not isinstance(inst, (np.ndarray, SourceEstimate)):
             picks = _pick_data_channels(inst.info, with_ref_meg=False)
             print len(picks)
 
@@ -66,11 +69,11 @@ class Surrogates(inst, picks=None):
             # returns array of shape (n_epochs, n_channels, n_times)
         elif isinstance(inst, SourceEstimate):  # SourceEstimate
             self.original_data = inst.data
-            array of shape (n_dipoles, n_times)
+            # array of shape (n_dipoles, n_times)
         else:  # must be ndarray
             self.original_data = inst
 
-
+    @staticmethod
     def SimpleTestData():
         """
         Return Surrogates instance representing test a data set of 6 time
@@ -86,9 +89,9 @@ class Surrogates(inst, picks=None):
             ts[i, :] = np.sin(np.arange(200)*np.pi/15. + i*np.pi/2.) + \
                 np.sin(np.arange(200) * np.pi / 30.)
 
-        return Surrogates(ts)
+        return Surrogates(inst=ts)
 
-
+    @staticmethod
     def shuffle_time_points(data, axis=0, seed=None):
         '''
         Shuffling the time points of any data array. The probabiity density
@@ -115,7 +118,7 @@ class Surrogates(inst, picks=None):
 
         return shuffled_data
 
-
+    @staticmethod
     def shift_data(data, min_shift=0, max_shift=None, seed=None):
         '''
         Shifting the time points of any data array.
@@ -151,7 +154,7 @@ class Surrogates(inst, picks=None):
 
         return shifted_data
 
-
+    @staticmethod
     def randomize_phase_scot(data, seed=None):
         '''
         Phase randomization. This function randomizes the input array's spectral
@@ -177,12 +180,12 @@ class Surrogates(inst, picks=None):
         data_freq = np.fft.rfft(np.asarray(data), axis=0)
         rng = check_random_state(None)  # preferably always None
         # include random phases between 0 and 2 * pi
-        data_freq = np.abs(data_freq) *
-        np.exp(1j * rng.random_sample(data_freq.shape) * 2 * np.pi)
+        data_freq = (np.abs(data_freq) *
+                     np.exp(1j * rng.random_sample(data_freq.shape) * 2 * np.pi))
         # compute the ifft and return the real part
         return np.real(np.fft.irfft(data_freq, data.shape[axis], axis=0))
 
-
+    @staticmethod
     def randomize_phase(data):
         '''
         Surrogates by applying Fourier transform, randomizing the phases and
