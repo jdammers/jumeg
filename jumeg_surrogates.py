@@ -16,9 +16,9 @@ Tools to generate surrogates.
 # License: BSD (3-clause)
 
 import numpy as np
-from numpy import random
-import scipy as sci
-from scipy.signal import welch
+# from numpy import random
+# import scipy as sci
+# from scipy.signal import welch
 from sklearn.utils import check_random_state
 
 from mne.utils import logger
@@ -217,7 +217,8 @@ class Surrogates(object):
         if self._fft_cached:
             surrogates = self._original_data_fft
         else:
-            surrogates = np.fft.rfft(original_data, axis=1)
+            # the last axis is to be used (axis=0)
+            surrogates = np.fft.rfft(original_data, axis=0)
             self._original_data_fft = surrogates
             self._fft_cached = True
 
@@ -252,31 +253,35 @@ class Surrogates(object):
 
         min_shift and max_shift are required only when doing time_shift
         '''
+
+        if isinstance(self.instance, np.ndarray):
+            surrogate_matrix = np.zeros(n_surr, self.original_data.shape)
+            print surrogate_matrix.shape
+
+        # surrogate_list = []
         # do this n_surr times
         for i in xrange(n_surr):
             if mode == 'shuffle':
-                surrogate_data = shuffle_time_points(self.original_data,
-                                                     seed=seed)
+                surrogate_data = self.shuffle_time_points(self.original_data,
+                                                          seed=seed)
 
             if mode == 'time_shift':
-                surogate_data = shift_data(self.original_data,
-                                           min_shift=min_shift,
-                                           max_shift=max_shift, seed=seed)
+                surrogate_data = self.shift_data(self.original_data,
+                                                 min_shift=min_shift,
+                                                 max_shift=max_shift, seed=seed)
 
             if mode == 'randomize_phase':
-                surrogate_data = randomize_phase(self, self.original_data,
-                                                 seed=seed)
+                surrogate_data = self.randomize_phase(self, self.original_data)
 
             # now the surrogate is stored in surrogate_data
-            if isinstance(inst, BaseEpochs):
-                self.instance._data = surrogate_data
-            elif isinstance(inst, SourceEstimate):  # SourceEstimate
-                self.instance._data = surrogate_data
-            else:  # must be ndarray
-                self.original_data = inst
+            # TODO handle epochs and source estimates
+            # if isinstance(inst, (BaseEpochs, SourceEstimate)):
+            #     self.instance._data = surrogate_data
+            # else:  # must be ndarray
+            surrogate_matrix[i] = surrogate_data
 
-            # put it back in the correct instance
-
+        if isinstance(self.instance, np.ndarray):
+            return surrogate_matrix
 
     # if not return_generator:
     #     # return a list
