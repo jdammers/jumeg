@@ -8,7 +8,7 @@
 #
 # License: Simplified BSD
 
-__version__ = '1.0'
+__version__ = '2.0'
 
 from . import jumeg_preprocessing
 from . import jumeg_math
