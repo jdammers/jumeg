@@ -22,7 +22,20 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
 
 #=== getter & setter
 
-#--- HDFobj
+   #---  cp from jume_base compensate mne-changes  0.14dev
+    def set_raw_filename(self, raw, v):
+        if raw.info.has_key('filename'):
+            raw.info['filename'] = v
+        else:
+            raw._filename = [v]
+
+    def get_raw_filename(self, raw):
+        if raw.info.has_key('filename'):
+            return raw.info['filename']
+        else:
+            return raw.filenames[0]
+
+        #--- HDFobj
     def __set_hdf_obj(self, v):
          self.__hdf_obj = v
     def __get_hdf_obj(self):
@@ -47,7 +60,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
     def hdf_file_name_init(self,fname=None,raw=None):
         if fname is None:
            if raw :
-              fname = raw.info['filename']
+              fname = self.get_raw_filename(raw)
            else:
               fname = "TEST"
         self.__hdf_file_name = fname.split('c,rfDC')[0].strip('.fif') +'_' + self.template_name + self.hdf_postfix

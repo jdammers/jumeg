@@ -1,6 +1,64 @@
+<<<<<<< HEAD:jumeg_preproc_data.py
 
 import mne
 from jumeg.jumeg_base import jumeg_base
+=======
+#import os
+import mne
+
+from jumeg.jumeg_base  import jumeg_base
+
+"""
+Created on Tue Jun  2 13:38:32 2015
+
+@author: fboers
+
+---> update 23.12.2016 FB
+ --> add opt -feeg
+ --> to merge eeg BrainVision with meg in jumeg_processing_batch
+---> update 09.01.2017 FB
+     apply_merge_meeg: if do_run ==False ->return:  None, fif_name
+
+"""
+
+#################################################################
+#
+# apply_merge_meeg
+#
+#################################################################
+def apply_merge_meeg(fif_file,raw=None,eeg_fname=None,do_run=False,save=True,verbose=False,**kwargs):
+    # startcode=128,
+    # meg={'stim_channel':'STI 013'},eeg={'stim_channel':'STI 014','response_shift':1000,'stim_type':'RESPONSE'} ):
+    
+    """  
+    stim_channel               :'STI 013' 
+    startcode"                 :  128     
+    brainvision_response_shift : 1000
+    brainvision_channel_type   : RESPONSE
+               
+    merge brainvision eeg data into MEG-fif file
+
+    RETURN:
+           fname          : fif-file name,
+           raw            : raw obj
+
+    """
+    from jumeg.jumeg_merge_meeg import JuMEG_MergeMEEG
+
+    JMEEG = JuMEG_MergeMEEG(**kwargs)
+    
+    JMEEG.meg.filename = fif_file
+    JMEEG.meg.raw      = raw
+    JMEEG.eeg.filename = eeg_fname
+
+    JMEEG.do_save   = save
+    JMEEG.verbose   = verbose
+
+    if do_run:
+       return JMEEG.run()
+    else:
+       return JMEEG.get_fif_name(fname=fif_file,raw=raw,extention=JMEEG.meeg_extention,update_raw_fname=True),None
+>>>>>>> e0ad70aad714720b79332eadb0a2cf11a2ca00dd:preprocbatch/jumeg_preprocbatch.py
 
 #################################################################
 #
@@ -18,20 +76,11 @@ def apply_epocher_events_data(fname,raw=None,condition_list=None,do_run=False,**
 
     """
     from jumeg.epocher.jumeg_epocher  import jumeg_epocher
-
-    fname_epocher = None
-
+ 
     if do_run :
-       if raw is None:
-          if fname is None:
-             print"ERROR no file foumd!!\n"
-             return
-          raw = mne.io.Raw(fname,preload=True)
-          print"\n"
-
-       (fname,raw,fname_epocher) = jumeg_epocher.apply_update_epochs(fname,raw=raw,condition_list=condition_list, **kwargs)
-
-    return fname,raw,fname_epocher
+                
+       return jumeg_epocher.apply_events_to_hdf(fname,raw=raw,condition_list=condition_list, **kwargs)
+   
 
 
 #######################################################
@@ -72,10 +121,7 @@ def apply_create_noise_covariance_data(fname,raw=None,do_filter=True,filter_para
     # -------------------------------------------
     from mne import compute_raw_data_covariance as cp_covariance
     from mne import write_cov
-    from mne.io import Raw
-    from mne import pick_types
-    import os
-
+    
     mne.verbose = verbose
 
     try:
@@ -108,6 +154,192 @@ def apply_create_noise_covariance_data(fname,raw=None,do_filter=True,filter_para
     return fname_empty_room_cov
 
 
+'''
+fn_raw_nfr = fn_raw[:fn_raw.rfind('-raw.fif')] + ',nfr-raw.fif'
+            noise_reducer(fn_raw, refnotch=50, detrending=False,
+                          fnout=fn_raw_nfr, verbose=verbose)
+
+            # apply noise reducer for 60 Hz (and harmonics)
+            noise_reducer(fn_raw_nfr, refnotch=60, fnout=fn_raw_nfr, verbose=verbose)
+
+            # apply noise reducer for frequencies below 5 Hz
+            noise_reducer(fn_raw_nfr, reflp=5, verbose=verbose)
+            fn_raw_n = fn_raw_nfr[:fn_raw_nfr.rfind('-raw.fif')] + ',nr-raw.fif'
+            remove(fn_raw_nfr)
+
+            # plot power spectrum
+            fn_power_spect = join(plot_dir,  basename(fn_raw_n[:fn_raw_n.rfind('-raw.fif')] + ',denoising'))
+            plot_denoising([fn_raw, fn_raw_n], stim_name=stim_name,
+                           event_id=event_id, show=False, fnout=fn_power_spect,
+                           tmin_stim=tmin_stim, tmax_stim=tmax_stim)
+'''
+
+#################################################################
+#
+# apply noise reducer ( the magic ee once )
+# modified for raw obj support imports jumeg_noise_reducer_4raw_data
+#################################################################
+def apply_noise_reducer_data(fname,raw=None,do_run=True,verbose=False,save=True,plot=False,
+                             reflp=None, refhp=None, refnotch=None,fif_postfix="nr",fif_extention="-raw.fif",parameter=None): # **kwargs):
+    '''
+    Applies the noise reducer to raw obj data or to fif-file.
+            the magic ee once
+            fb modified for raw obj support
+            imports jumeg_noise_reducer_4raw_data
+    '''
+
+    import os
+
+#--- import noise_reducer and plot_power_spectrum function
+    # from jumeg.jumeg_4raw_data_noise_reducer import noise_reducer_4raw_data, plot_denoising_4raw_data
+    from jumeg.jumeg_noise_reducer import noise_reducer, plot_denoising
+
+    fname_out = None
+    nr_done   = False
+    
+    if do_run :  
+       raw,fname_raw = jumeg_base.get_raw_obj(fname,raw=raw)
+       fname_out = jumeg_base.get_fif_name(raw=raw,postfix=fif_postfix,extention=fif_extention,update_raw_fname=False)
+     
+#--- apply noise reducer for 50 Hz (and harmonics)
+     
+       if (reflp or refhp):
+          #raw, fname_out = noise_reducer_4raw_data(fname, raw=raw, reflp=reflp, refhp=refhp, verbose=verbose,
+          #                                          save=False, **kwargs['parameter'])
+
+          raw,fname_out = noise_reducer(fname,raw=raw,reflp=reflp,refhp=refhp,verbose=verbose,save=False,**parameter)
+          #parameter['detrending'] = None
+          nr_done = True
+       if refnotch:
+          for refn in refnotch:
+              # raw,fname_out = noise_reducer_4raw_data(None,raw=raw,refnotch=refn,verbose=verbose,save=False,**kwargs['parameter'])
+              raw, fname_out = noise_reducer(None, raw=raw, refnotch=refn, verbose=verbose, save=False,**parameter)
+              #parameter['detrending'] = None
+          nr_done = True
+  
+     
+       # raw.info['filename'] = fname_out
+       
+       if not nr_done :
+          return fname_raw,raw
+  
+       raw.info['filename'] = fname_out
+       
+       if save:
+          fname_out = jumeg_base.apply_save_mne_data(raw,fname=fname_out)
+
+       if plot:
+          print " --> noise reducer plot power spectrum"
+
+          from distutils.dir_util import mkpath
+
+          p,pdf = os.path.split(fname_raw)
+
+          plot_dir = p+ '/plots/'
+
+          mkpath(plot_dir)
+
+          fn_power_spect = plot_dir + pdf[:pdf.rfind('-raw.fif') ]+ ',denoising'
+
+          #plot_denoising_4raw_data([fname_raw, fname_out], show=False, fnout=fn_power_spect)
+          plot_denoising([fname_raw, fname_out], show=False, fnout=fn_power_spect)
+
+          print"---> noise reducer plot :"  + fn_power_spect
+
+    print "---> Done noise reducer: "+ fname_out
+
+    return (fname_out,raw)
+
+
+#################################################################
+#
+# apply noise reducer ( the magic ee once )
+# modified for raw obj support imports jumeg_noise_reducer_4raw_data
+#################################################################
+#def apply_noise_reducer(fname,raw=None, do_run=True, verbose=False, save=True, plot=False,
+#                             reflp=None, refhp=None, refnotch=None, fif_postfix="nr", fif_extention="-raw.fif",**kwargs):
+
+def apply_noise_reducer(fname,raw=None,do_run=True,verbose=False,save=True,plot=False,fif_postfix="nr",fif_extention="-raw.fif",
+                        return_raw =True,reflp=None,refhp=None,refnotch=None,parameter={}):
+    '''
+    Applies the noise reducer to raw obj data or to fif-file.
+            the magic ee once
+            fb modified for raw obj support
+            imports jumeg_noise_reducer_4raw_data
+    '''
+
+    import os
+
+    # --- import noise_reducer and plot_power_spectrum function
+    # from jumeg.jumeg_4raw_data_noise_reducer import noise_reducer_4raw_data, plot_denoising_4raw_data
+    from jumeg.jumeg_noise_reducer import noise_reducer, plot_denoising
+
+    fname_out = None
+    nr_done = False
+
+    if do_run:
+        raw, fname_raw = jumeg_base.get_raw_obj(fname, raw=raw)
+        fname_out = jumeg_base.get_fif_name(raw=raw, postfix=fif_postfix, extention=fif_extention,update_raw_fname=False)
+
+        # --- apply noise reducer for 50 Hz (and harmonics)
+        '''
+        "signals":[],
+        "noiseref":[],
+        "detrending": null,
+        "tmin": null,
+        "tmax": null,
+        "exclude_artifacts":true,
+        "checkresults":true,
+        "complementary_signal":false,
+        "return_raw":true
+        '''
+              
+        if ( reflp or refhp ):
+           # raw, fname_out = noise_reducer_4raw_data(fname,raw=raw,reflp=reflp,refhp=refhp,verbose=verbose,save=False,**parameter)
+           fin = None
+           raw = noise_reducer(fin,raw=raw,reflp=reflp,refhp=refhp,return_raw=True,verbose=verbose,**parameter)
+           parameter['detrending'] = None
+           nr_done = True
+            
+        if refnotch:
+            
+           for refn in refnotch:
+               # raw,fname_out = noise_reducer_4raw_data(None,raw=raw,refnotch=refn,verbose=verbose,save=False,**kwargs['parameter'])
+               raw = noise_reducer(fin, raw=raw, refnotch=refn,return_raw=True,**parameter)
+               parameter['detrending'] = None
+           nr_done = True
+
+        # raw.info['filename'] = fname_out
+
+        if not nr_done:
+            return fname_raw, raw
+        
+        if save:
+            fname_out = jumeg_base.apply_save_mne_data(raw, fname=fname_out)
+
+        if plot:
+            print " --> noise reducer plot power spectrum"
+
+            from distutils.dir_util import mkpath
+
+            p, pdf = os.path.split(fname_raw)
+
+            plot_dir = p + '/plots/'
+
+            mkpath(plot_dir)
+
+            fn_power_spect = plot_dir + pdf[:pdf.rfind('-raw.fif')] + ',denoising'
+
+            # plot_denoising_4raw_data([fname_raw, fname_out], show=False, fnout=fn_power_spect)
+            plot_denoising([fname_raw, fname_out], show=False, fnout=fn_power_spect)
+
+            print"---> noise reducer plot :" + fn_power_spect
+
+    print "---> Done noise reducer: " + fname_out
+
+    return (fname_out, raw)
+
+
 #################################################################
 #
 # apply filter on (raw) data
@@ -130,7 +362,9 @@ def apply_filter_data(fname,raw=None,filter_method="mne",filter_type='bp',fcut1=
                                 remove_dcoffset=True,order=order)
     jfilter.verbose = verbose
 
+    
     if do_run :
+<<<<<<< HEAD:jumeg_preproc_data.py
        if raw is None:
           if fname is None:
              print"ERROR no file foumd!!\n"
@@ -140,6 +374,12 @@ def apply_filter_data(fname,raw=None,filter_method="mne",filter_type='bp',fcut1=
 
        if picks is None :
           picks = jumeg_base.pick_channels_nobads(raw)
+=======
+       raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
+      
+       if picks is None :
+          picks = jumeg_base.picks.channels_nobads(raw)
+>>>>>>> e0ad70aad714720b79332eadb0a2cf11a2ca00dd:preprocbatch/jumeg_preprocbatch.py
 
     #- apply filter for picks, exclude stim,resp,bads
        jfilter.sampling_frequency = raw.info['sfreq']
@@ -159,7 +399,6 @@ def apply_filter_data(fname,raw=None,filter_method="mne",filter_type='bp',fcut1=
        if save :
           fnfilt = jumeg_base.apply_save_mne_data(raw,fname=fnfilt)
 
-
     else:
      #--- calc notch array 50,100,150 .. max
        if notch :
@@ -169,15 +408,39 @@ def apply_filter_data(fname,raw=None,filter_method="mne",filter_type='bp',fcut1=
        name_raw = fname.split('-')[0]
        fnfilt   = name_raw + "," + jfilter.filter_name_postfix + fif_extention
 
-
     return (fnfilt, raw)
-
 
 #################################################################
 #
 # apply_ocarta_data
 #
 #################################################################
+
+'''
+# ------------------------------------------
+        # apply OCARTA to remove ocular and cardiac
+        # artifacts
+        # ------------------------------------------
+        if apply_ocarta:
+            # import ocarta module
+            from jumeg.decompose import ocarta
+
+            # apply OCARTA
+            ocarta_obj = ocarta.JuMEG_ocarta(name_eog='EOG 001', explVar=0.95, percentile_eog=70, thresh_ecg=0.25) #, maxsteps=10, percentile_eog=70, flow=1, fhigh=20)
+            fn_ocarta = join(plot_dir, basename(fn_raw[:fn_raw.rfind('-raw.fif')] + ',ocarta_perf'))
+            ocarta_obj.fit(fn_raw, fn_perf_img=fn_ocarta, plot_template_OA=True,
+                           verbose=verbose, seg_length=120, shift_length=60)
+
+            from jumeg.jumeg_noise_reducer import plot_denoising
+            fn_raw_ocarta = fn_raw[:fn_raw.rfind('-raw.fif')] + ',ocarta-raw.fif'
+            fn_ocarta = join(plot_dir, basename(fn_raw[:fn_raw.rfind('-raw.fif')] + ',ocarta_stim'))
+            plot_denoising([fn_raw, fn_raw_ocarta], stim_name=stim_name,
+                           event_id=event_id, show=False, fnout=fn_ocarta,
+                           tmin_stim=tmin_stim, tmax_stim=tmax_stim)
+
+        # adjust fn_raw
+        fn_raw = fn_raw[:fn_raw.rfind('-raw.fif')] + ',ocarta-raw.fif'
+'''
 def apply_ocarta_data(fname,raw=None,do_run=True,verbose=False,template_name=None,**kwargs):
 
     #---- ocarta obj
@@ -196,35 +459,38 @@ def apply_ocarta_data(fname,raw=None,do_run=True,verbose=False,template_name=Non
 
     if do_run :
 
-       from jumeg.decompose.ocarta import ocarta
+       from jumeg.decompose import ocarta
+
+       oca = ocarta.JuMEG_ocarta()
 
        if kwargs['fit_parameter'] :
           kwargs['fit_parameter']['verbose'] = verbose
-          (raw,fnout) = ocarta.fit(fname,meg_raw=raw,**kwargs['fit_parameter'])
+
+          (raw,fnout) = oca.fit(fname,meg_raw=raw,**kwargs['fit_parameter'])
 
        else :
-          (raw,fnout) = ocarta.fit(fname,meg_raw=raw)
+          (raw,fnout) = oca.fit(fname,meg_raw=raw)
 
-       raw.info['filename'] = fnout
+       jumeg_base.set_raw_filename(raw,fnout)
 
       #--- save ocarta results into HDFobj
 
        if template_name :
 
-          ecg_parameter = {'num_events': ocarta.idx_R_peak[:,0].size,
-                           'ch_name': ocarta.name_ecg,'thresh' : ocarta.thresh_ecg,'explvar':ocarta.explVar,
-                           'freq_correlation':None,'performance':ocarta.performance_ca}
+          ecg_parameter = {'num_events': oca.idx_R_peak[:,0].size,
+                           'ch_name': oca.name_ecg,'thresh' : oca.thresh_ecg,'explvar':oca.explVar,
+                           'freq_correlation':None,'performance':oca.performance_ca}
 
-          eog_parameter  = {'num_events': ocarta.idx_eye_blink[:,0].size,
-                            'ch_name':ocarta.name_eog,'thresh' : None,'explvar':ocarta.explVar,
-                            'freq_correlation':None,'performance':ocarta.performance_oa}
+          eog_parameter  = {'num_events': oca.idx_eye_blink[:,0].size,
+                            'ch_name':oca.name_eog,'thresh' : None,'explvar':oca.explVar,
+                            'freq_correlation':None,'performance':oca.performance_oa}
 
      #--- save ecg & eog onsets in HDFobj
 
           from jumeg.epocher.jumeg_epocher import jumeg_epocher
 
-          (fnout,raw,fhdf) = jumeg_epocher.apply_update_ecg_eog(fnout,raw=raw,ecg_events=ocarta.idx_R_peak[:,0],ecg_parameter=ecg_parameter,
-                                                                eog_events=ocarta.idx_eye_blink[:,0],eog_parameter=eog_parameter,template_name=template_name)
+          (fnout,raw,fhdf) = jumeg_epocher.apply_update_ecg_eog(fnout,raw=raw,ecg_events=oca.idx_R_peak[:,0],ecg_parameter=ecg_parameter,
+                                                                eog_events=oca.idx_eye_blink[:,0],eog_parameter=eog_parameter,template_name=template_name)
 
           print "===> save ocarta info & events : " + fhdf
 
@@ -291,13 +557,8 @@ def apply_ica_data(fname,raw=None,do_run=False,verbose=False,save=True,fif_exten
     ICAobj = None
 
     if do_run :
-       if raw is None:
-          if fname is None:
-             print"ERROR no file foumd!!\n"
-             return
-          raw = mne.io.Raw(fname,preload=True)
-          print"\n"
-
+       raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
+      
        from mne.preprocessing import ICA
        picks = jumeg_base.pick_meg_nobads(raw)
 
@@ -342,13 +603,12 @@ def apply_ctps_brain_responses_data(fname,raw=None,fname_ica=None,ica_raw=None,c
 
     ctps= {'time_pre':-0.20,'time_post':0.50,'baseline':[None,0]},
 
-    exclude_events:{ eog_events:{ tmin:-0.4,tmax:0.4} }
     exclude_events={'eog_events':{ 'tmin':-0.4,'tmax':0.4} }
     '''
 
 
     fhdf = None
-
+    """
     if kwargv['do_run']:
 
        from jumeg.epocher.jumeg_epocher import jumeg_epocher
@@ -373,7 +633,7 @@ def apply_ctps_brain_responses_data(fname,raw=None,fname_ica=None,ica_raw=None,c
 
 
     print "===> Done JuMEG ctps fro brain responses : " + str(fhdf) + "\n"
-
+    """
     return (fname,raw,fhdf)
 
 
@@ -401,10 +661,11 @@ def apply_ctps_brain_responses_cleaning_data(fname,raw=None,fname_ica=None,ica_r
 
 
     """
-    print "===> Start JuMEG CTPs ICA cleaning: "
+    
+    # print "===> Start JuMEG CTPs ICA cleaning: "
 
     fout=None
-
+    """
     if do_run:
        from jumeg.epocher.jumeg_epocher import jumeg_epocher
 
@@ -415,5 +676,44 @@ def apply_ctps_brain_responses_cleaning_data(fname,raw=None,fname_ica=None,ica_r
        #TODO:  return global and or ctps-condition  as raw,epochs,average or names
 
     print "===> Done JuMEG MNE ICA clean: " + fhdf
-
+    
+    """
     return fhdf
+<<<<<<< HEAD:jumeg_preproc_data.py
+=======
+
+#######################################################
+#
+#  apply_epocher_export_events
+#
+#######################################################
+def apply_epocher_export_events_data(fname,raw=None,condition_list=None,**kwargv):
+ 
+    '''
+    apply_export_events
+    
+    fname,raw=None,condition_list=None,do_run=False,verbose=False,save=False
+     
+    "events": {
+          "template_name":"InKomp",
+          "event_extention": ".eve",
+          "export_condition":{"events":true,"epochs":true,"evoked":true},
+          "time":{"time_pre":None,"time_post":None,"baseline":None},
+          "baseline":{"type":"avg","channel":"stimulus","baseline":[null,0]},
+          "exclude_events":{"eog_events":{"tmin":-0.4,"tmax":0.6} },
+          "do_run": true,
+          "verbose": false
+    '''
+    fhdf = None
+
+    if kwargv['do_run']:
+
+       from jumeg.epocher.jumeg_epocher import jumeg_epocher
+       jumeg_epocher.verbose = kwargv['verbose']
+     #--- get export events from hdf obj, exclude EOG
+       fname,raw,fhdf = jumeg_epocher.apply_events_export_events(fname,raw=raw,condition_list=condition_list,**kwargv)
+
+    print "===> Done JuMEG apply epocher export events data: " + str(fhdf) + "\n"
+
+    return (fname,raw,fhdf)
+>>>>>>> e0ad70aad714720b79332eadb0a2cf11a2ca00dd:preprocbatch/jumeg_preprocbatch.py
