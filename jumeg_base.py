@@ -27,11 +27,8 @@ License: BSD 3 clause
 import os
 import mne
 
-<<<<<<< HEAD
-=======
 __version__= '2017.08.08.001'
 
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 '''
 class AccessorType(type):
     """
@@ -83,8 +80,6 @@ class JuMEG_Base_Basic(object):
     def __get_verbose(self):
         return self.__verbose
     verbose = property(__get_verbose, __set_verbose)
-<<<<<<< HEAD
-=======
 #--- debug
     def __set_debug(self,value):
         self.__debug = value
@@ -94,7 +89,6 @@ class JuMEG_Base_Basic(object):
     def __get_debug(self):
         return self.__debug
     debug = property(__get_debug, __set_debug)
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 
 #--- run
     def __set_do_run(self, v):
@@ -116,13 +110,8 @@ class JuMEG_Base_Basic(object):
     def __get_do_plot(self):
         return self.__do_plot
     do_plot = property(__get_do_plot,__set_do_plot)
-<<<<<<< HEAD
 
 
-=======
-
-
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 class JuMEG_Base_PickChannels(object):
      """ MNE Wrapper Class for mne.pick_types
          return list of channel index from mne.raw obj e.g. for special groups
@@ -389,11 +378,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
             return False
         return fname    
         
-<<<<<<< HEAD
-    def update_bad_channels(self,fname,raw=None,bads=None,preload=True,append=False,save=False,interpolate=False):
-=======
     def update_bad_channels(self,fname,raw=None,bads=None,preload=True,append=False,save=False,interpolate=False,postfix=None):
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         """
 
          :param fname:
@@ -433,18 +418,6 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                if bad_ch:
                   if bad_ch not in raw.info['bads']:
                      raw.info['bads'].append(bad_ch)
-<<<<<<< HEAD
-
-        if self.verbose:
-           print "\n --> Update bad-channels : " + self.get_raw_filename(raw)
-           print raw.info['bads']
-           print"\n"
-        
-        #--- save raw without interpolating 
-        if save:
-           raw.save( self.get_raw_filename(raw),overwrite=True)
-
-=======
         
         fif_out = self.get_fif_name(raw=raw,postfix=postfix)
 
@@ -455,21 +428,17 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            print raw.info['bads']
            print"\n"
               
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         if ( interpolate and raw.info['bads'] ) :
            print " --> Update BAD channels => interpolating: " + raw.info['filename']
            print " --> BADs : " 
            print raw.info['bads'] 
            print "\n\n"
            raw.interpolate_bads()
-<<<<<<< HEAD
-=======
      
       #--- save raw as bads-raw.fif
         if save:
            raw.save( fif_out,overwrite=True)
         self.set_raw_filename(raw,fif_out)
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
              
         return raw,raw.info['bads']
 
@@ -546,14 +515,9 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
             input : text file to open
                     start_path = <start_dir> [None]
                     txt file format e.g:
-<<<<<<< HEAD
-                    fif-file-name  --bads=MEG1,MEG123
-
-=======
                     fif-file-name  --feeg=myeeg.vhdr --bads=MEG1,MEG123 --startcode=123
        jumeg_merge_meeg -smeg /data/meg_stroe1/exp/INTEXT/eeg/INTEXT01/ -seeg /data/meg_stroe1/exp/INTEXT/mne/ -plist /data/meg_stroe1/exp/INTEXT/doc/ -flist 207006_merge_meeg.txt -sc 5 -b -v -r
    
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
                     0815/M100/121130_1306/1/0815_M100_121130_1306_1_c,rfDC-raw.fif --bads=A248
                     0815/M100/120920_1253/1/0815_M100_120920_1253_1_c,rfDC-raw.fif
                     0815/M100/130618_1347/1/0815_M100_130618_1347_1_c,rfDC-raw.fif --bads=A132,MEG199
@@ -564,46 +528,13 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         found_list = []
         # bads_dict  = dict()
         opt_dict = dict()
-<<<<<<< HEAD
-
-=======
         
         assert os.path.isfile(fin),"ERROR no list-file found: %s" %( fin ) 
            
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         try:
             fh = open( fin )
         except:
             assert "---> ERROR no such file list: " + fin
-<<<<<<< HEAD
-             #return found_list
-         
-        try:
-            for line in fh :
-                line  = line.rstrip()
-                fname = None
-                if line :
-                   if ( line[0] == '#') : continue
-                   opt = line.split()
-                   print opt
-                   if start_path :
-                      if os.path.isfile( start_path + "/" + opt[0] ):
-                         fname = start_path + "/" + opt[0]
-                      else:
-                         fname = opt[0]
-                   if os.path.isfile( fname ):
-                      found_list.append(fname)
-                      opt_dict[fname]= {'bads': None, 'feeg': None}
-                      for opi in opt[1:]:
-                          if ('--bads' in opi):
-                              _,opt_dict[fname]['bads'] = opi.split('--bads=')
-                          if ('--feeg' in opi):
-                              _,opt_dict[fname]['feeg'] = opi.split('--feeg=')
-
-        finally:           
-           fh.close()
-       
-=======
                 
         for line in fh :
             line  = line.strip()
@@ -633,7 +564,6 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         except:
             print"  -> UP`s error: can not close list-file:" +fin
         
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         if self.verbose :
            print " --> INFO << get_filename_list_from_file >> Files found: %d" % ( len(found_list) )
            print found_list
@@ -651,11 +581,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         '''
         from distutils.dir_util import mkpath
          
-<<<<<<< HEAD
-        if ( os.path.isfile( fname) and (overwrite == False) ) :
-=======
         if ( os.path.isfile(fname) and ( not overwrite) ) :
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
            print " --> File exist => skip saving data to : " + fname
         else:
           print ">>>> writing filtered data to disk..."

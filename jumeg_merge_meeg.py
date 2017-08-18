@@ -44,12 +44,9 @@ import mne
 from jumeg.jumeg_base                   import JuMEG_Base_IO
 from jumeg.filter.jumeg_filter          import jumeg_filter
 
-<<<<<<< HEAD
-=======
 
 __version__= '2017.08.08.001'
 
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 class JuMEG_MergeMEEG_HiLoRate(object):
       def __init__(self, system='MEG'):
           super(JuMEG_MergeMEEG_HiLoRate,self).__init__()
@@ -61,10 +58,7 @@ class JuMEG_MergeMEEG_HiLoRate(object):
           self.startcode= 128
           
           self.__verbose = False
-<<<<<<< HEAD
-=======
           self.__debug   = False
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
           
           self.data          = np.array([])
           self.times         = np.array([])
@@ -76,11 +70,6 @@ class JuMEG_MergeMEEG_HiLoRate(object):
           self.is_data_size_adjusted = False
         
         #---meg defaults
-<<<<<<< HEAD
-          self.event_parameter = {'and_mask':255,'stim_type':'RESPONSE','response_shift':None}
-          self.events          = {'consecutive': True, 'output': 'step', 'stim_channel': 'STI 014','min_duration': 0.00001, 'shortest_event': 1, 'mask': 0}
-      
-=======
           self.event_parameter = {'and_mask':255,'stim_type':'STIMULUS','response_shift':None}
           self.events          = {'consecutive': True, 'output': 'step', 'stim_channel': 'STI 014','min_duration': 0.00001, 'shortest_event': 1, 'mask': 0}
       
@@ -94,7 +83,6 @@ class JuMEG_MergeMEEG_HiLoRate(object):
           self.picks         = None
           self.raw           = None
           
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
       def ___get_stim_channel(self, v):
           return self.events['stim_channel']
       def ___set_stim_channel(self, v):
@@ -126,14 +114,6 @@ class JuMEG_MergeMEEG_HiLoRate(object):
       def __get_verbose(self):
           return self.__verbose
       verbose = property(__get_verbose, __set_verbose)
-<<<<<<< HEAD
-
-
-  #---   
-      def check_path(self):
-          print " --> " + self.system + " file name: " + str(self.filename)
-          assert( os.path.isfile( self.filename ) ),"---> ERROR " + self.system +" file: no such file: " + str(self.filename)
-=======
     
     #--- debug
       def __set_debug(self,value):
@@ -150,7 +130,6 @@ class JuMEG_MergeMEEG_HiLoRate(object):
           print" --> check path & file: " + self.system + " file name: " + str(self.filename)
           assert( os.path.isfile( self.filename ) ),"---> ERROR " + self.system +" file: no such file: " + str(self.filename)
           print"  -> OK"
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
           return True
 
       def __get_time_onset(self):
@@ -202,30 +181,18 @@ class JuMEG_MergeMEEG_HiLoRate(object):
           self.raw._data = self.raw._data[:, self.tsl_onset:self.tsl_end]  #+1
           self.is_data_size_adjusted = True
 
-<<<<<<< HEAD
-     # ---------------------------------------------------------------------------
-     # --- get_onset_and_events
-     # ----------------------------------------------------------------------------
-=======
      #---------------------------------------------------------------------------
      #--- get_onset_and_events
      #----------------------------------------------------------------------------
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
       def get_onset_and_events(self):
           print " --> call mne find events"
           ev_start_code_onset_idx = None
 
           ev = mne.find_events(self.raw, **self.events)
-<<<<<<< HEAD
-          print "\n -->EVENTS:"
-          print ev
-          print"\n"
-=======
           #if self.verbose:
           #   print "\n -->EVENTS:"
           #   print ev
           #   print"\n"
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
           
           if self.and_mask:
              ev[:, 1] = np.bitwise_and(ev[:, 1], self.and_mask)
@@ -238,12 +205,7 @@ class JuMEG_MergeMEEG_HiLoRate(object):
       
           ev_onsets  = np.squeeze( ev[np.where( ev[:,2] ),:])  # > 0
 
-<<<<<<< HEAD
-         # ev_offset = np.squeeze( ev[np.where( ev[:,1] ),:])
-       #--- check  if no startcode  -> startcode not in/any  np.unique(ev[:, 2])
-=======
         #--- check  if no startcode  -> startcode not in/any  np.unique(ev[:, 2])
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
           if ( self.startcode in np.unique(ev[:, 2]) ):
             
              if ev_onsets.ndim > 1 :
@@ -252,46 +214,29 @@ class JuMEG_MergeMEEG_HiLoRate(object):
              else: # only one event code
                 ev_start_code_onset_idx =  ev_onsets[ 0 ]
                 ev_onsets = np.array([ev_onsets])
-<<<<<<< HEAD
-                 
-=======
                 ev_id_idx = 0 
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
           else:
              print"---> ERROR no startcode found %d " % (self.startcode)
              print"---> Events: "
              print np.unique(ev[:, 2])
              print"\n"
-<<<<<<< HEAD
-             assert"ERROR no startcode found in events"
-=======
              assert"ERROR no startcode found in events"              
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
           
           if self.verbose:
              print "-"*50
              print" --> Onset & Events Info : " + self.system 
              print"  -> Onset index         : %d"%( ev_start_code_onset_idx)
-<<<<<<< HEAD
-             print"  -> Onsets              :"
-             print ev_onsets
-=======
              if self.debug:
                 print"  -> Onsets              :"
                 print ev_onsets
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
              print "-"*50
             
           return ev_start_code_onset_idx,ev_onsets
 
 class JuMEG_MergeMEEG(JuMEG_Base_IO):
-<<<<<<< HEAD
-    def __init__(self,adjust_size=True,save=True,startcode=128,meg={'stim_channel':'STI 013'},eeg={'stim_channel':'STI 014','response_shift':1000,'stim_type':'RESPONSE','and_mask':None} ):
-=======
     def __init__(self,adjust_size=True,save=True,startcode=128,copy_eeg_events_to_trigger=False,
                  meg={'stim_channel':'STI 014'},eeg={'stim_channel':'STI 014','response_shift':1000,'stim_type':'STIMULUS','and_mask':None} ):
         # meg={'stim_channel':'STI 013'},eeg={'stim_channel':'STI 014','response_shift':1000,'stim_type':'RESPONSE','and_mask':None} 
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         '''
         Class JuMEG_MergeMEEG
            -> merge BrainVision ECG/EOG signals into MEG Fif file
@@ -311,21 +256,12 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
 
              meg_fname  = None <full file name>
              eeg_fname  = None <eeg brainvision vhdr full file name> with extention <.vhdr>  
-<<<<<<< HEAD
-             meeg_extention    = ",eeg-raw.fif" output extention
-
-             stim_channel               = 'STI 013'
-             startcode                  = 128  start code for common onset in <stim_channel>
-             
-             brainvision_channel_type   = 'RESPONSE'
-=======
              meeg_extention    = ",meeg-raw.fif" output extention
 
              stim_channel               = 'STI 014'
              startcode                  = 128  start code for common onset in <stim_channel>
              
              brainvision_channel_type   = 'STIMULUS'
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
              brainvision_stim_channel   = 'STI 014'
              brainvision_response_shift = 1000 used for mne.io.read_raw_brainvision will be added to the response value
 
@@ -339,11 +275,7 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
              filter option: can be canged via <obj.filter>
               filter.filter_method = "bw"
               filter.filter_type   ='lp'
-<<<<<<< HEAD
-              filter.fcut1         = None automatic selected  200Hz or 400Hz
-=======
               filter.fcut1         = None -> automatic selected  200Hz or 400Hz
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
               
               
             return:
@@ -353,34 +285,19 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
 
         super(JuMEG_MergeMEEG,self).__init__()
 
-<<<<<<< HEAD
-        self.__version__= '2016.12.24.001'
-
-        self.meg = JuMEG_MergeMEEG_HiLoRate(system='MEG')
-        self.meg.stim_channel = meg['stim_channel']
-        self.meg.startcode    = startcode
-=======
         self.meg = JuMEG_MergeMEEG_HiLoRate(system='MEG')
         self.meg.stim_channel = meg['stim_channel']
         #self.meg.startcode    = startcode
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         
         self.eeg = JuMEG_MergeMEEG_HiLoRate(system='EEG')
         self.eeg.stim_channel   = eeg["stim_channel"]
         self.eeg.response_shift = eeg["response_shift"] # brainvision_response_shift to mark response bits to higher 8bit in STI channel
         self.eeg.stim_type      = eeg["stim_type"]
         self.eeg.and_mask       = eeg['and_mask']
-<<<<<<< HEAD
-        self.eeg.startcode      = startcode
-        self.brainvision_response_shift = self.eeg.response_shift
-        
-        self.DO_MERGE_EEG_TRIGGER = False
-=======
         #self.eeg.startcode      = startcode
         self.brainvision_response_shift = self.eeg.response_shift
         
         self.copy_eeg_events_to_trigger = copy_eeg_events_to_trigger
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         
        #--- output
         self.meeg_fname     = None
@@ -394,12 +311,8 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         self.filter     = jumeg_filter( filter_method="bw",filter_type='lp',fcut1=None,fcut2=None,remove_dcoffset=False,notch=[] )
         self.__event_id = 128
      
-<<<<<<< HEAD
-        self.verbose        = False
-=======
         self.verbose      = False
         self.debug        = False
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         self.do_adjust_data_size = adjust_size
         self.do_save        = save
         self.do_filter_meg  = True
@@ -407,21 +320,15 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         
         self.startcode      = startcode
       
-<<<<<<< HEAD
-=======
         self.bads_list      = []
         
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
     def ___get_ev_event_id(self):
         return self.__event_id
     def ___set_ev_event_id(self, v):
         self.__event_id = v 
-<<<<<<< HEAD
-=======
         self.meg.startcode = v
         self.eeg.startcode = v
         
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
     event_id  = property(___get_ev_event_id, ___set_ev_event_id)
     startcode = property(___get_ev_event_id, ___set_ev_event_id)
        
@@ -441,11 +348,7 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
 
         if self.meg.raw.info['sfreq'] > self.eeg.raw.info['sfreq']:
            assert "Warning EEG data sampling fequency %4.3f is lower than MEG data %4.3f " % (self.eeg.raw.info['sfreq'], self.meg.raw.info['sfreq'])
-<<<<<<< HEAD
-           return False
-=======
            # return False
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         return self.filter.calc_lowpass_value( self.meg.raw.info['sfreq'] )
 
 #---------------------------------------------------------------------------
@@ -510,36 +413,6 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
 # ----------------------------------------------------------------------------
     def check_data_drift(self):
         '''  check data drift: if last common meg/eeg event code onset is in time resolution uncertainty
-<<<<<<< HEAD
-             dt < 2 x meg sampling periode
-        '''
-        meg_dtmax  = self.meg.raw.times[ self.meg.ev_onsets[-1,0] ] - self.meg.raw.times[ self.meg.ev_onsets[0,0] ]
-        eeg_dtmax  = self.eeg.raw.times[ self.eeg.ev_onsets[-1, 0]] - self.eeg.raw.times[ self.eeg.ev_onsets[0,0] ]
-        dif = np.abs(meg_dtmax - eeg_dtmax)
-
-        if self.verbose:
-           print" --> check data drift:"
-           print"     MEG last event onset: %0.6f" % (meg_dtmax)
-           print"     EEG last event onset: %0.6f" % (eeg_dtmax)
-           print"     dt [ms]             : %0.6f" % (dif)
-           print"     meg sampling periode [ms]: %0.6f" % (1000.0 / self.meg.raw.info['sfreq'])
-           print" " + "-" * 50
-
-        if ( dif > 2000.0 / self.meg.raw.info['sfreq'] ):
-           assert('ERROR Data Drift ->last common meg/eeg event-code-onset is not in time resolution uncertainty')
-
-        return dif
-
-       #-- example stuff
-       #  dt_meg    = tmeg - np.roll(tmeg, 1)
-       #  dt_meg[0] = 0.0
-       #  dt_eeg    = teeg - np.roll(teeg, 1)
-       #  dt_eeg[0] = 0.0
-       #  plt.plot( dt/dt_eeg )
-       # mne.viz.plot_events(self.meg.ev_onsets, self.meg.raw.info['sfreq'],
-       #                      self.meg.tsl_onset)  # color=color,event_id=event_id)
-
-=======
              dt < 1 x meg sampling periode
         '''
         
@@ -619,7 +492,6 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         prev = np.maximum.accumulate(prev)
         return arr[prev][1:]
         
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 #----------------------------------------------------------------------------
 #--- run
 #----------------------------------------------------------------------------
@@ -632,8 +504,6 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
                    raw            : raw obj
 
         """
-<<<<<<< HEAD
-=======
         self.meg.verbose = self.verbose
         self.eeg.verbose = self.verbose
         self.meg.debug   = self.debug
@@ -643,25 +513,15 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         print"\n---> Start JuMEG MEEG Merger"  
         print"-" * 50
              
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         self.meg.check_path()
         self.eeg.check_path()
         self.check_ids()
 
-<<<<<<< HEAD
-        self.meg.verbose = self.verbose
-        self.eeg.verbose = self.verbose
-      
-       #--- load BV eeg
-        print"\n " + "-" * 50
-        print " --> load EEG BrainVision data: " + self.eeg.filename
-=======
        
        #--- load BV eeg
         print"-" * 50
         print " --> load EEG BrainVision data: " + self.eeg.filename
         self.eeg.reset()
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         self.eeg.raw,_ = self.get_raw_obj(self.eeg.filename,raw=self.eeg.raw)
        #--- get start code onset
         self.eeg.tsl_onset,self.eeg.ev_onsets = self.eeg.get_onset_and_events()
@@ -669,14 +529,9 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         self.eeg.picks = self.picks.eeg(self.eeg.raw)
 
        # --- load meg
-<<<<<<< HEAD
-        print"\n " + "-" * 50
-        print " --> load MEG data:             " + self.meg.filename
-=======
         print"-" * 50
         print " --> load MEG data:             " + self.meg.filename
         self.meg.reset()
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
         self.meg.raw, _   = self.get_raw_obj(self.meg.filename,raw=self.meg.raw)
        # --- start code onset
         self.meg.tsl_onset,self.meg.ev_onsets = self.meg.get_onset_and_events()
@@ -719,22 +574,6 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
                self.meg.raw.rename_channels(   { chname:ch.replace('_',' ')      } )
                meg_ch_idx += 1
             eeg_idx+=1
-<<<<<<< HEAD
-
-        if self.DO_MERGE_EEG_TRIGGER:
-           eeg_idx = self.eeg.raw.ch_names.index('STI 014')
-           # meg_idx = self.meg.raw.ch_names.index('STI 014')
-           chname  = 'STI 014'
-           d    = self.meg.raw._data[self.meg.raw.ch_names.index(chname), self.meg.tsl_onset:self.meg.tsl_end]
-           d[:] = self.eeg.raw._data[eeg_idx, self.eeg.tsl_resamples] - self.eeg.response_shift
-           d[ np.where( d < 0 ) ] = 0
-           
-           #self.meg.raw._data[self.meg.raw.ch_names.index(chname), self.meg.tsl_onset:self.meg.tsl_end] = self.eeg.raw._data[eeg_idx, self.eeg.tsl_resamples]
-           
-           #self.meg.raw._data[self.meg.raw.ch_names.index(chname), self.meg.tsl_onset:self.meg.tsl_end] -= self.eeg.response_shift
-           
-           
-=======
        
         if self.copy_eeg_events_to_trigger:
            print"\n --> Do copy EEG events to Trigger channel: STI 014" 
@@ -747,14 +586,10 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
            d    = self.meg.raw._data[self.meg.raw.ch_names.index(chname), self.meg.tsl_onset:self.meg.tsl_end]
            d[:] = deeg[self.eeg.tsl_resamples] - self.eeg.response_shift
            d[ np.where( d < 0 ) ] = 0        
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
            
       # --- adjust data size to merged data block -> cut meg-data to meg-onset <-> meg-end tsls
         if self.do_adjust_data_size:
            self.meg.adjust_data_size()
-<<<<<<< HEAD
-
-=======
            chname  = 'STI 014'
            print"Eventcode adjusted: " +chname
            print self.meg.raw._data[self.meg.raw.ch_names.index(chname)]
@@ -763,22 +598,12 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         if self.bads_list:
            self.update_bad_channels(None,raw=self.meg.raw,bads=self.bads_list)
            
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
        #--- save meeg
         print"\n*" + "-" * 50
         self.meeg_fname = self.get_fif_name(raw=self.meg.raw,extention=self.meeg_extention,update_raw_fname=True)
         print "---> start saving MEEG data: "+ self.meeg_fname
         if self.do_save:
            self.apply_save_mne_data(self.meg.raw,fname=self.meeg_fname,overwrite=True)
-<<<<<<< HEAD
-        print "---> DONE merge BrainVision EEG data to MEG"
-        print"*" + "-" * 50
-        print"\n"
-
-        return self.meeg_fname,self.meg.raw
-
-
-=======
         else:
            print" -->set Bads; bad-channels in meeg-raw file:"
            print self.picks.bads(self.meg.raw)
@@ -797,19 +622,11 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
 #-----------------------------------------------------------------------------------------
 #--- get_args
 #-----------------------------------------------------------------------------------------
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 def __get_args():
 
     info_global = """
          JuMEG Merge BrainVision EEG data to MEG Data
 
-<<<<<<< HEAD
-         ---> porcess fif file for experiment MEG94T
-          jumeg_merge_meeg -fmeg  <xyz.fif> -feeg <xyz.vdr>
-        """
-
-        # --- parser
-=======
          ---> merge eeg data with meg fif file 
           jumeg_merge_meeg -fmeg  <xyz.fif> -feeg <xyz.vdr> -r
          
@@ -836,18 +653,10 @@ def __get_args():
       """       
        
    # --- parser
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 
     parser = argparse.ArgumentParser(info_global)
 
    # ---input files
-<<<<<<< HEAD
-    parser.add_argument("-fmeg", "--meg_fname", help="meg fif  file name with full path", default='None')
-    parser.add_argument("-feeg", "--eeg_fname", help="eeg vhdr file name with full path", default='None')
-   # ---flags:
-    parser.add_argument("-v", "--verbose", action="store_true", help="verbose mode")
-    parser.add_argument("-r", "--run", action="store_true", help="!!! EXECUTE & RUN this program !!!")
-=======
     parser.add_argument("-fmeg", "--meg_fname",help="meg fif file + full path")
     parser.add_argument("-feeg", "--eeg_fname",help="<eeg vhdr> file + full path")
   
@@ -872,7 +681,6 @@ def __get_args():
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose mode")
     parser.add_argument("-d", "--debug",   action="store_true", help="debug mode")
     parser.add_argument("-r", "--run",     action="store_true", help="!!! EXECUTE & RUN this program !!!")
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 
     return parser.parse_args(), parser
 
@@ -882,16 +690,6 @@ def __get_args():
 def main(argv):
 
     opt, parser = __get_args()
-<<<<<<< HEAD
-
-    JuMEEG = JuMEG_MergeMEEG()
-    JuMEEG.meg.filename = opt.meg_fname
-    JuMEEG.eeg.filename = opt.eeg_fname
-    JuMEEG.verbose      = opt.verbose
-
-    if opt.run:
-       JuMEEG.run()
-=======
     df=40
     
     if opt.verbose :
@@ -980,16 +778,12 @@ def main(argv):
           
            JuMEEG.run()
 
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 
 if __name__ == "__main__":
     main(sys.argv)
 
 
 '''
-<<<<<<< HEAD
-jumeg_merge_meeg.py -r -fmeg ~/MEGBoers/data/exp/LDAEP/mne/200098/LDAEP02/130415_1526/1/200098_LDAEP02_130415_1526_1_c,rfDC-raw.fif -feeg ~/MEGBoers/data/exp/LDAEP/eeg/LDAEP02/200098_LDAEP02_2.vhdr
-=======
 EXAMPLE file
 
 #--- 207006
@@ -1019,6 +813,5 @@ EXAMPLE file
 #jumeg_merge_meeg.py -seeg /data/meg_store1/exp/INTEXT/eeg/INTEXT01/ -smeg /data/meg_store1/exp/INTEXT/mne/ -plist /data_meg_store1/exp/INTEXT/doc/ -flist intext_merge_meeg.txt -sc 5 -b -v -r
 
 #jumeg_merge_meeg.py -seeg ~/MEGBoers/data/exp/INTEXT/eeg/INTEXT01/ -smeg ~/MEGBoers/data/exp/INTEXT/mne/ -plist ~/MEGBoers/data/exp/INTEXT/doc/ -flist intext_merge_meeg.txt -sc 5 -b -v -r -d
->>>>>>> 8e92a8abe189134fc75059ccd32822543f0ab3b2
 
 '''
