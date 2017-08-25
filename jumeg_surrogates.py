@@ -16,9 +16,6 @@ Tools to generate surrogates.
 # License: BSD (3-clause)
 
 import numpy as np
-# from numpy import random
-# import scipy as sci
-# from scipy.signal import welch
 from sklearn.utils import check_random_state
 
 from mne.utils import logger
@@ -34,8 +31,10 @@ def check_power_spectrum(orig, surr):
     # the first sample point and the Nyquist central point of the FFT always
     # differ between the real and the surrogate data
     check_length = orig.shape[-1] / 2 - 1
-    orig_ps = np.round(np.abs(np.fft.fft(orig, axis=1))[:, 1:check_length], decimals=3)
-    surr_ps = np.round(np.abs(np.fft.fft(surr, axis=1))[:, 1:check_length], decimals=3)
+    orig_ps = np.round(np.abs(np.fft.fft(orig, axis=1))[:, 1:check_length],
+                       decimals=3)
+    surr_ps = np.round(np.abs(np.fft.fft(surr, axis=1))[:, 1:check_length],
+                       decimals=3)
     assert np.array_equal(orig_ps, surr_ps), 'Power spectrum not conserved.'
     print 'Surrogates OK.'
 
@@ -84,6 +83,7 @@ class Surrogates(object):
 
         else:  # must be ndarray
             self.original_data = inst
+            self.instance = inst.copy()
 
     def clear_cache(self):
         '''Clean up cache.'''
@@ -217,27 +217,71 @@ class Surrogates(object):
         if self._fft_cached:
             surrogates = self._original_data_fft
         else:
-            # the last axis is to be used (axis=0)
-            surrogates = np.fft.rfft(original_data, axis=0)
+            # the last axis is to be used (axis=-1)
+            surrogates = np.fft.rfft(original_data, axis=-1)
             self._original_data_fft = surrogates
             self._fft_cached = True
 
         rng = check_random_state(seed)
-        #  Get shapes
-        (N, n_time) = original_data.shape
-        len_phase = surrogates.shape[1]
+        #  get shapes
+        n_times = original_data.shape[-1]  # last dimension is time
 
         #  Generate random phases uniformly distributed in the
         #  interval [0, 2*Pi]
-        phases = rng.uniform(low=0, high=2 * np.pi, size=(N, len_phase))
+        phases = rng.uniform(low=0, high=2*np.pi, size=(surrogates.shape))
 
         #  Add random phases uniformly distributed in the interval [0, 2*Pi]
         surrogates *= np.exp(1j * phases)
 
         #  Calculate IFFT and take the real part, the remaining imaginary part
         #  is due to numerical errors.
-        return np.ascontiguousarray(np.real(np.fft.irfft(surrogates, n=n_time,
-                                                         axis=1)))
+        return np.ascontiguousarray(np.real(np.fft.irfft(surrogates, n=n_times,
+                                                         axis=-1)))
+
+    def _generate_surrogates(self, mode='randomize_phase', n_surr=1,
+                             seed=None, min_shift=0, max_shift=None):
+        '''
+        Private function to compute surrogates and return a generator.
+        '''
+        # do this n_surr times
+        for i in xrange(n_surr):
+            print 'computing surrogate %d ' % i
+
+            if mode == 'shuffle':
+                surrogate_data = self.shuffle_time_points(self.original_data,
+                                                          seed=seed)
+            elif mode == 'time_shift':
+                surrogate_data = self.shift_data(self.original_data,
+                                                 min_shift=min_shift,
+                                                 max_shift=max_shift, seed=seed)
+            elif mode == 'randomize_phase':
+                surrogate_data = self.randomize_phase(self.original_data,
+                                                      seed=seed)
+            else:
+                raise RuntimeError('Unknown mode provided, should be one of'
+                                   'shuffle, time_shift or randomize_phase')
+
+            assert self.original_data.shape == surrogate_data.shape,\
+                ('Error: Shape mismatch after surrogate computation !')
+
+            # now the surrogate is stored in surrogate_data
+            if isinstance(self.instance, BaseEpochs):
+                self.instance._data = surrogate_data
+                yield self.instance
+            elif isinstance(self.instance, SourceEstimate):
+                # create a new instance with the new data
+                new_instance = SourceEstimate(surrogate_data,
+                                              self.instance.vertices,
+                                              tmin=self.instance.tmin,
+                                              tstep=self.instance.tstep,
+                                              subject=self.instance.subject)
+                yield new_instance
+            elif isinstance(self.instance, np.ndarray):
+                yield surrogate_data
+            else:
+                raise RuntimeError('Unknown instance.')
+
+            del surrogate_data
 
     def compute_surrogates(self, mode='randomize_phase', n_surr=1,
                            seed=None, min_shift=0, max_shift=None,
@@ -247,44 +291,26 @@ class Surrogates(object):
         instance.
 
         n_surr: number of surrogates to compute.
-        return_gen: If set, a generator will be returned instead of the data.
+        return_generator: If set, a generator will be returned instead of the data.
         mode: the type of surrogates to compute. One of shuffle, time_shift,
               or phase randomize
-
         min_shift and max_shift are required only when doing time_shift
         '''
+        my_surrogate = self._generate_surrogates(mode=mode, n_surr=n_surr,
+                                                 seed=seed, min_shift=min_shift,
+                                                 max_shift=max_shift)
 
-        if isinstance(self.instance, np.ndarray):
-            surrogate_matrix = np.zeros(n_surr, self.original_data.shape)
-            print surrogate_matrix.shape
+        if isinstance(self.instance, BaseEpochs):
+            print RuntimeWarning('WARNING: Currently surrogates on Epochs '
+                                 'only returns a generator.')
+            return_generator = True
 
-        # surrogate_list = []
-        # do this n_surr times
-        for i in xrange(n_surr):
-            if mode == 'shuffle':
-                surrogate_data = self.shuffle_time_points(self.original_data,
-                                                          seed=seed)
-
-            if mode == 'time_shift':
-                surrogate_data = self.shift_data(self.original_data,
-                                                 min_shift=min_shift,
-                                                 max_shift=max_shift, seed=seed)
-
-            if mode == 'randomize_phase':
-                surrogate_data = self.randomize_phase(self, self.original_data)
-
-            # now the surrogate is stored in surrogate_data
-            # TODO handle epochs and source estimates
-            # if isinstance(inst, (BaseEpochs, SourceEstimate)):
-            #     self.instance._data = surrogate_data
-            # else:  # must be ndarray
-            surrogate_matrix[i] = surrogate_data
-
-        if isinstance(self.instance, np.ndarray):
-            return surrogate_matrix
-
-    # if not return_generator:
-    #     # return a list
-    #     stcs = [stc for stc in stcs]
-    #
-    # return stcs
+        if return_generator:  # simply return the generator
+            return my_surrogate
+        else:
+            # make a list if generator is not required
+            my_surrogate_list = list(my_surrogate)
+            if isinstance(self.instance, np.ndarray):
+                # if ndarray, return an array instead of a list
+                my_surrogate_list = np.array(my_surrogate_list)
+            return my_surrogate_list
