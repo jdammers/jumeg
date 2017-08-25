@@ -773,3 +773,28 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
     pl.tight_layout()
     pl.savefig(overview_fname)
     pl.close('all')
+
+
+def plot_phases_polar(phases):
+    '''
+    Plot phase values on a polar projection with radius 1.
+
+    Parameters
+    ----------
+    phases: ndarray
+        Phase values in radians.
+
+    Example
+    -------
+    # plot von mises distribution
+    mu = 0.  # circular mean phase
+    kappa = np.pi / 2  # circular dispersion
+    von = np.random.vonmises(mu, kappa, size=100)
+    plot_phases_polar(von)
+    '''
+
+    # plot circular projection
+    ax = pl.subplot(111, polar=True)
+    radii = np.ones(phases.shape)
+    bars = ax.bar(phases, radii, bottom=0., width=(np.pi/180))
+    pl.show()
