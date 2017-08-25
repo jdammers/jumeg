@@ -1328,3 +1328,27 @@ def rescale_data(data, times, baseline, mode='mean', copy=True, verbose=None):
         data /= std
 
     return data
+
+
+def rank_estimation(data):
+    '''
+    Function to estimate the rank of the data using different rank estimators.
+    '''
+    from jumeg.decompose.ica import whitening
+    from jumeg.decompose.dimension_selection import mibs, gap, aic_mdl
+
+    nchan, ntsl = data.shape
+
+    # perform PCA to get sorted eigenvalues
+    data_w, pca = whitening(data.T)
+
+    # apply different rank estimators
+    # MIBS, BIC, GAP, AIC, MDL, pct95, pct99
+    rank1 = mibs(pca.explained_variance_, ntsl)  # MIBS
+    rank2 = mibs(pca.explained_variance_, ntsl, use_bic=True)  # BIC
+    rank3 = gap(pca.explained_variance_)  # GAP
+    rank4, rank5 = aic_mdl(pca.explained_variance_)  # AIC, MDL
+    rank6 = np.where(pca.explained_variance_ratio_.cumsum() <= 0.95)[0].size
+    rank7 = np.where(pca.explained_variance_ratio_.cumsum() <= 0.99)[0].size
+    rank_all = np.array([rank1, rank2, rank3, rank4, rank5, rank6, rank7])
+    return (rank_all, np.median(rank_all))
