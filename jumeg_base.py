@@ -610,11 +610,11 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         if raw is not None:
            fname = self.get_raw_filename(raw)
          #--- first trivial check if raw obj is the empty room obj   
-           if fname.endswith('epmpty.fif'):
+           if fname.endswith('empty.fif'):
               return(fname,raw)
                
          #--- ck if fname is the empty-room fie  
-        if fname.endswith('epmpty.fif'):
+        if fname.endswith('empty.fif'):
            fname_empty_room = fname  
          #--- ok more difficult lets start searching ..
         else : 

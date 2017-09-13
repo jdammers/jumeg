@@ -800,7 +800,7 @@ def plot_phases_polar(phases):
     pl.show()
 
 
-def plot_histo_fit_gaussian(data, nbins=100, facecol='blue',
+def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
                             linecol='r--', title='Data Distribution',
                             fnout=False, show=False):
     '''
@@ -809,6 +809,7 @@ def plot_histo_fit_gaussian(data, nbins=100, facecol='blue',
     '''
     import matplotlib.pyplot as pl
     from scipy import stats
+    data = orig_data.copy()
     data -= data.mean()
     data /= data.std()
     print 'Data of shape %s will be flattened.' % (data.shape,)

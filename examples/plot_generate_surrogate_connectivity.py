@@ -5,6 +5,7 @@ import matplotlib.pyplot as pl
 
 from jumeg.jumeg_surrogates import Surrogates
 
+from mne.connectivity import spectral_connectivity
 from mne.datasets import sample
 from mne.minimum_norm import read_inverse_operator, apply_inverse_epochs
 import mne
@@ -50,13 +51,59 @@ label_ts = mne.extract_label_time_course(stcs, labels, src, mode='mean_flip',
                                          return_generator=False)
 
 # compute surrogates on the first STC extracted for 68 labels
-n_surr = 10
-surr_ts = Surrogates(label_ts[0])
-surr_label_ts = surr_ts.compute_surrogates(n_surr=n_surr, return_generator=True)
+n_surr = 5
+fmin = 8.
+fmax = 13.
+sfreq = raw.info['sfreq']  # the sampling frequency
+con_methods = ['coh', 'plv', 'wpli']
+n_rois = len(labels)
+full_surr_con = np.zeros((3, n_rois, n_rois, 1, n_surr))
+
+real_con, freqs, times, n_epochs, n_tapers = spectral_connectivity(
+    label_ts, method=con_methods, mode='fourier', sfreq=sfreq,
+    fmin=fmin, fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=4)
+
+# loop through each of the label_ts from each epoch (i.e. 71)
+# for my_label_ts in label_ts:
+surr_ts = Surrogates(np.array(label_ts))
+surr_ts.original_data.shape
+surr_label_ts = surr_ts.compute_surrogates(n_surr=n_surr,
+                                           return_generator=True)
+
+for ind_surr, surr in enumerate(surr_label_ts):
+    con, freqs, times, n_epochs, n_tapers = spectral_connectivity(
+        surr, method=con_methods, mode='fourier', sfreq=sfreq,
+        fmin=fmin, fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=4)
+
+    # con shape (method, n_signals, n_signals, n_freqs)
+    full_surr_con[:, :, :, :, ind_surr] = con
+    assert full_surr_con.flatten().max() <= 1., 'Maximum connectivity is above 1.'
+    assert full_surr_con.flatten().min() >= 0., 'Minimum connectivity is 0.'
+
+surr_ts.clear_cache()
 
 # visualize the surrogates
-pl.plot(label_ts[0][0, :], 'b')
-for lts in surr_label_ts:
-    pl.plot(lts[0, :], 'r')
-pl.title('Extracted label time courses - real vs surrogates')
-pl.show()
+# pl.plot(label_ts[0][0, :], 'b')
+# for lts in surr_label_ts:
+#     pl.plot(lts[0, :], 'r')
+# pl.title('Extracted label time courses - real vs surrogates')
+# pl.show()
+
+
+def sanity_check_con_matrix(con):
+    '''
+    Check if the connectivity matrix provided satisfies necessary conditions.
+    This is done to ensure that the data remains clean and spurious values are
+    easily detected.
+    Expected a connectivity matrix of shape
+    (n_methods x n_rois x n_rois x n_freqs x n_surr)
+    '''
+    n_methods, n_rois, n_rois, n_freqs, n_surr = con.shape
+    assert np.any(con), 'Matrix is not all zeros.'
+    assert not (con == con[0]).all(), 'All rows are equal - methods not different.'
+    for surr in range(1, n_surr):
+        assert not (con[:, :, :, :, surr] == con[:, :, :, :, 0]).all(), 'All surrogates are equal.'
+        assert not np.triu(con[0, :, :, 0, surr]).any(), 'Matrices not symmetric.'
+
+
+sanity_check_con_matrix(full_surr_con)
