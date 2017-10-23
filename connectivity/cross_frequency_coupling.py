@@ -7,11 +7,11 @@ import numpy as np
 from scipy.signal import hilbert
 import matplotlib.pyplot as pl
 import mne
-from mne.filter import band_pass_filter
+from mne.filter import filter_data
 
 
 def filter_and_make_analytic_signal(data, sfreq, l_phase_freq, h_phase_freq,
-                                    l_amp_freq, h_amp_freq, method='fft',
+                                    l_amp_freq, h_amp_freq, method='fir',
                                     n_jobs=1):
     """ Filter data to required range and compute analytic signal from it.
 
@@ -24,7 +24,7 @@ def filter_and_make_analytic_signal(data, sfreq, l_phase_freq, h_phase_freq,
     l_amp_freq, h_amp_freq : float
         Low and high amplitude modulated frequencies.
     method : 'fft' or 'iir'
-        Filter method to be used. (mne.filter.band_pass_filter)
+        Filter method to be used. (mne.filter.filter_data)
     n_jobs : int
         Number of parallel jobs to run.
 
@@ -43,11 +43,12 @@ def filter_and_make_analytic_signal(data, sfreq, l_phase_freq, h_phase_freq,
     n_jobs = 4
     method = 'fft'
     l_phase_freq, h_phase_freq, l_amp_freq, h_amp_freq = 6, 10, 60, 150
-
-    theta = band_pass_filter(data, sfreq, l_phase_freq,
-                             h_phase_freq, method=method, n_jobs=n_jobs)
-    gamma = band_pass_filter(data, sfreq, l_amp_freq, h_amp_freq,
-                             method=method, n_jobs=n_jobs)
+    
+    theta = filter_data(data, sfreq, l_phase_freq, h_phase_freq,
+                        n_jobs=njobs, method=method)
+    
+    gamma = filter_data(data, sfreq, l_amp_freq, h_amp_freq,
+                        n_jobs=njobs, method=method)
 
     # phase of the low freq modulating signal
     phase = np.angle(hilbert(theta))
@@ -287,7 +288,7 @@ def modulation_index2d(data, sfreq):
         2 dimensional modulation index
     """
 
-    from mne.filter import band_pass_filter
+    from mne.filter import filter_data
     from scipy.signal import hilbert
 
     flow = np.arange(2, 40, 1)
@@ -300,14 +301,14 @@ def modulation_index2d(data, sfreq):
     n_jobs = 2
 
     for i in range(0, flow.size):
-        theta = band_pass_filter(data, sfreq, flow[i], flow[i] + flow_step,
-                                 method=method, n_jobs=n_jobs)
+        theta = filter_data(data, sfreq, flow[i], flow[i] + flow_step,
+                            method=method, n_jobs=n_jobs)
         theta = theta[sfreq: data.size - sfreq]
         phase = np.angle(hilbert(theta))
 
         for j in range(0, fhigh.size):
-            gamma = band_pass_filter(data, sfreq, fhigh[j], fhigh[j] + fhigh_step,
-                                     method=method, n_jobs=n_jobs)
+            gamma = filter_data(data, sfreq, fhigh[j], fhigh[j] + fhigh_step,
+                                method=method, n_jobs=n_jobs)
             gamma = gamma[sfreq: data.size - sfreq]
             amp = np.abs(hilbert(gamma))
 
