@@ -330,9 +330,9 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     # vertical EOG
     if name_eog_ver in meg_raw.ch_names:
         idx_eog_ver = [meg_raw.ch_names.index(name_eog_ver)]
-        eog_ver_filtered = mne.filter.band_pass_filter(meg_raw[idx_eog_ver, :][0],
-                                                       meg_raw.info['sfreq'],
-                                                       Fp1=flow, Fp2=fhigh)
+        eog_ver_filtered = mne.filter.filter_data(meg_raw[idx_eog_ver, :][0],
+                                                  meg_raw.info['sfreq'],
+                                                  l_freq=flow, h_freq=fhigh)
         eog_ver_scores = ica.score_sources(meg_raw, target=eog_ver_filtered,
                                            score_func=score_func)
         # plus 1 for any()
@@ -346,9 +346,9 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
     # horizontal EOG
     if name_eog_hor in meg_raw.ch_names:
         idx_eog_hor = [meg_raw.ch_names.index(name_eog_hor)]
-        eog_hor_filtered = mne.filter.band_pass_filter(meg_raw[idx_eog_hor, :][0],
-                                                       meg_raw.info['sfreq'],
-                                                       Fp1=flow, Fp2=fhigh)
+        eog_hor_filtered = mne.filter.filter_data(meg_raw[idx_eog_hor, :][0],
+                                                  meg_raw.info['sfreq'],
+                                                  l_freq=flow, h_freq=fhigh)
         eog_hor_scores = ica.score_sources(meg_raw, target=eog_hor_filtered,
                                            score_func=score_func)
         # plus 1 for any()
@@ -416,9 +416,9 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
         else:
             # use correlation
             idx_ecg = [meg_raw.ch_names.index(name_ecg)]
-            ecg_filtered = mne.filter.band_pass_filter(meg_raw[idx_ecg, :][0],
-                                                       meg_raw.info['sfreq'],
-                                                       Fp1=flow, Fp2=fhigh)
+            ecg_filtered = mne.filter.filter_data(meg_raw[idx_ecg, :][0],
+                                                  meg_raw.info['sfreq'],
+                                                  l_freq=flow, h_freq=fhigh)
             ecg_scores = ica.score_sources(meg_raw, target=ecg_filtered,
                                            score_func=score_func)
             idx_ecg = np.where(np.abs(ecg_scores) >= thresh)[0]
