@@ -293,7 +293,9 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         # plot ECG, EOG averages before and after ICA
         print ">>>> create performance image..."
         plot_performance_artifact_rejection(meg_raw, ica, fnica_ar,
-                                            show=False, verbose=False)
+                                            show=False, verbose=False,
+                                            name_ecg=name_ecg,
+                                            name_eog=name_eog_ver)
 
 
 #######################################################
