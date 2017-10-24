@@ -15,7 +15,7 @@ import numpy as np
 import scipy as sci
 import mne
 from mne.utils import logger
-import matplotlib.cm as cmx
+import matplotlib.cm as cmxf
 import matplotlib.colors as colors
 
 def get_files_from_list(fin):
@@ -417,14 +417,14 @@ def get_peak_ecg(ecg, sfreq=1017.25, flow=10, fhigh=20,
     # -------------------------------------------
     # import necessary modules
     # -------------------------------------------
-    from mne.filter import band_pass_filter
+    from mne.filter import filter_data
     from jumeg.jumeg_math import calc_tkeo
     from scipy.signal import argrelextrema as extrema
 
     # -------------------------------------------
     # filter ECG to get rid of noise and drifts
     # -------------------------------------------
-    fecg = band_pass_filter(ecg, sfreq, flow, fhigh,
+    fecg = filter_data(ecg, sfreq, flow, fhigh,
                             n_jobs=1, method='fft')
     ecg_abs = np.abs(fecg)
 
