@@ -129,20 +129,30 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
       
     #---- filter lp hp bp bs br  
        if   self.filter_type =='lp' :
-            data[:,:] = mne.filter.low_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
+            # l_freq is None and h_freq is not None: low-pass filter
+            data[:,:] = mne.filter.filter_data(data,Fs,h_freq=fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
                                        iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
        
        elif self.filter_type =='hp' :
-            data[:, :] = mne.filter.high_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
+            # l_freq is not None and h_freq is None: high-pass filter
+            data[:, :] = mne.filter.filter_data(data,Fs,l_freq=fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
                                         iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
             
        elif self.filter_type =='bp' :
-            data[:,:] = mne.filter.band_pass_filter(data,Fs,fcut1,fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,
+            data[:,:] = mne.filter.filter_data(data,Fs,l_freq=fcut1,h_freq=fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,
                                                     method = method,iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
                                      
        
        elif self.filter_type in ['bs','br'] :
-            data[:,:] = mne.filter.band_stop_filter(data,Fs,fcut1,fcut2,filter_length = fl,trans_bandwidth = tbw,method = method,
+            # band stop filter: l_freq > h_freq
+            if fcut1 > fcut2:
+                lower_freq = fcut1
+                higher_freq = fcut2
+            else:
+                lower_freq = fcut2
+                higher_freq = fcut1
+            
+            data[:,:] = mne.filter.filter_data(data,Fs,l_freq=lower_freq,h_freq=higher_freq,filter_length = fl,trans_bandwidth = tbw,method = method,
                                         iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
 
                                     
