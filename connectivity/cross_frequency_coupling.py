@@ -11,7 +11,7 @@ from mne.filter import filter_data
 
 
 def filter_and_make_analytic_signal(data, sfreq, l_phase_freq, h_phase_freq,
-                                    l_amp_freq, h_amp_freq, method='fir',
+                                    l_amp_freq, h_amp_freq, method='fft',
                                     n_jobs=1):
     """ Filter data to required range and compute analytic signal from it.
 
