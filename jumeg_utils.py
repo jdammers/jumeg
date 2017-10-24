@@ -15,7 +15,7 @@ import numpy as np
 import scipy as sci
 import mne
 from mne.utils import logger
-import matplotlib.cm as cmxf
+import matplotlib.cm as cmx
 import matplotlib.colors as colors
 
 def get_files_from_list(fin):
