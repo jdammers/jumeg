@@ -97,7 +97,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                      subplot=111, include_legend=False,
                                      n_lines=None, fig=None, show=True,
                                      vmin=None, vmax=None, colormap='hot',
-                                     colorbar=False):
+                                     colorbar=False, colorbar_pos=(-0.3, 0.1)):
     '''
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
@@ -164,7 +164,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                              node_colors=reordered_colors,
                              node_edgecolor='white', fig=fig,
                              fontsize_names=6, vmax=vmax, vmin=vmin,
-                             colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
+                             colorbar_size=0.2, colorbar_pos=colorbar_pos,
                              colorbar=colorbar, show=show, subplot=subplot,
                              indices=indices, title=title)
 

@@ -793,6 +793,7 @@ def plot_phases_polar(phases):
     plot_phases_polar(von)
     '''
 
+    import matplotlib.pyplot as pl
     # plot circular projection
     ax = pl.subplot(111, polar=True)
     radii = np.ones(phases.shape)
@@ -818,7 +819,7 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     mu, sigma = stats.norm.fit(data.flatten())  # get mu and sigma from the data
 
     # plot histogram of the data
-    n, bins, patches = pl.hist(data.flatten(), nbins, normed=1,
+    n, bins, patches = pl.hist(data.flatten(), nbins, normed=True,
                                 facecolor=facecol, alpha=0.75)
 
     # add a 'best fit' line
