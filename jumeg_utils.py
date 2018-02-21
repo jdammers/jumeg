@@ -1352,3 +1352,28 @@ def rank_estimation(data):
     rank7 = np.where(pca.explained_variance_ratio_.cumsum() <= 0.99)[0].size
     rank_all = np.array([rank1, rank2, rank3, rank4, rank5, rank6, rank7])
     return (rank_all, np.median(rank_all))
+
+def clip_eog2(eog, clip_to_value):
+    '''
+    Function to clip the EOG channel to a certain clip_to_value.
+    All peaks higher than given value are pruned.
+    Note: this may be used when peak detection for artefact removal fails due to
+    abnormally high peaks in the EOG channel. 
+    
+    Can be applied to a raw file using the below code:
+
+    # apply the above function to one channel (here 276) of the raw object
+    raw.apply_function(clip_eog2, clip_to_value=clip_to_value, picks=[276],
+                       dtype=None, n_jobs=2)
+
+    # saw the raw file
+    raw.save(raw.info['filename'].split('-raw.fif')[0] + ',eogclip-raw.fif',
+             overwrite=False)
+    '''
+    if clip_to_value < 0: 
+        eog_clipped = np.clip(eog, clip_to_value, np.max(eog))
+    elif clip_to_value > 0:
+        eog_clipped = np.clip(eog, np.min(eog), clip_to_value)
+    else:
+        print 'Zero clip_to_value is ambigious !! Please check again.'
+    return eog_clipped
