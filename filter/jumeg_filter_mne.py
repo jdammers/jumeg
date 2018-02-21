@@ -10,10 +10,7 @@ import mne
  version    : 0.03141
 ---------------------------------------------------------------------- 
  jumeg obj filter interface to the MNE filter types
- mne.low_pass_filter
- mne.high_pass_filter
- mne.band_pass_filter
- mne.band_stop_filter
+ mne.filter.filter_data
  mne.notch_filter
 ----------------------------------------------------------------------
 
