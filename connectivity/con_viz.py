@@ -92,6 +92,7 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
 
 
 def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
+                                     labels_mode=None,
                                      node_order_size=68, indices=None,
                                      out_fname='circle.png', title=None,
                                      subplot=111, include_legend=False,
@@ -103,7 +104,12 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     groups in the yaml input file provided.
     orig_labels : list of str
         Label names in the order as appears in con.
+    labels_mode : str | None
+        'blank' mode plots no labels on the circle plot,
+        'cortex_only' plots only the name of the cortex on one representative
+        node and None plots all of the orig_label names provided.
     '''
+    import matplotlib.pyplot as plt
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
@@ -155,28 +161,54 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     reordered_colors = [label_colors[node_order.index(orig)]
                         for orig in orig_labels]
 
+    # labels mode decides the labels printed for each of the nodes
+    if labels_mode is 'blank':
+        # show nothing, only the empty circle plot
+        my_labels = ['' for orig in orig_labels]
+    elif labels_mode is 'cortex_only':
+        # show only the names of cortex areas on one representative node
+        replacer = dict({'caudalanteriorcingulate': 'cingulate',
+                         'insula': 'insula', 'parstriangularis': 'frontal',
+                         'precuneus': 'parietal', 'lingual': 'occipital',
+                         'transversetemporal': 'temporal'})
+
+        replaced_labels = []
+        for myl in orig_labels:
+            if myl.split('-lh')[0] in replacer.keys():
+                replaced_labels.append(replacer[myl.split('-lh')[0]] + '-lh')
+            elif myl.split('-rh')[0] in replacer.keys():
+                replaced_labels.append(replacer[myl.split('-rh')[0]] + '-rh')
+            else:
+                replaced_labels.append('')
+        my_labels = replaced_labels
+    else:
+        # show all the node labels as originally given
+        my_labels = orig_labels
+
     # Plot the graph using node_order and colours
     # orig_labels is the order of nodes in the con matrix (important)
     from mne.viz import plot_connectivity_circle
-    plot_connectivity_circle(con, orig_labels, n_lines=n_lines,
-                             facecolor='white', textcolor='black',
-                             node_angles=node_angles, colormap=colormap,
-                             node_colors=reordered_colors,
-                             node_edgecolor='white', fig=fig,
-                             fontsize_names=6, vmax=vmax, vmin=vmin,
-                             colorbar_size=0.2, colorbar_pos=colorbar_pos,
-                             colorbar=colorbar, show=show, subplot=subplot,
-                             indices=indices, title=title)
-
+    fig, axes = plot_connectivity_circle(con, my_labels, n_lines=n_lines,
+                                         facecolor='white', textcolor='black',
+                                         node_angles=node_angles, colormap=colormap,
+                                         node_colors=reordered_colors,
+                                         node_edgecolor='white', fig=fig,
+                                         fontsize_names=10, padding=10.,
+                                         vmax=vmax, vmin=vmin, colorbar_size=0.2,
+                                         colorbar_pos=colorbar_pos,
+                                         colorbar=colorbar, show=show,
+                                         subplot=subplot,
+                                         indices=indices, title=title)
     if include_legend:
         import matplotlib.patches as mpatches
         legend_patches = [mpatches.Patch(color=col, label=key)
                           for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
                                               labels.keys())]
-        pl.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
-                  mode=None, fontsize='small')
+        plt.legend(handles=legend_patches, loc=3, ncol=1,
+                   mode=None, fontsize='medium')
+    fig.tight_layout()
     if out_fname:
-        pl.savefig(out_fname, facecolor='white', dpi=300)
+        fig.savefig(out_fname, facecolor='white', dpi=600)
 
 
 def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
@@ -260,4 +292,4 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
         pl.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
                   mode=None, fontsize='small')
     if out_fname:
-        pl.savefig(out_fname, facecolor='white', dpi=300)
+        pl.savefig(out_fname, facecolor='white', dpi=600)

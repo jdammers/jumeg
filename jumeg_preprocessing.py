@@ -413,6 +413,7 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
             _, pk, _ = ctps.ctps(ica_epochs.get_data())
 
             pk_max = np.max(pk, axis=1)
+            ecg_scores = pk_max
             idx_ecg = np.where(pk_max >= thresh)[0]
         else:
             # use correlation
@@ -428,7 +429,7 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
         print ">>>> NOTE: No ECG channel found!"
         idx_ecg = np.array([0])
 
-    return idx_ecg
+    return idx_ecg, ecg_scores
 
 
 #######################################################
