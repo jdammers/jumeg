@@ -98,7 +98,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                      subplot=111, include_legend=False,
                                      n_lines=None, fig=None, show=True,
                                      vmin=None, vmax=None, colormap='hot',
-                                     colorbar=False, colorbar_pos=(-0.3, 0.1)):
+                                     colorbar=False, colorbar_pos=(-0.3, 0.1),
+                                     bbox_inches=None, tight_layout=None):
     '''
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
@@ -108,6 +109,10 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         'blank' mode plots no labels on the circle plot,
         'cortex_only' plots only the name of the cortex on one representative
         node and None plots all of the orig_label names provided.
+    bbox_inches : None | 'tight'
+    tight_layout : bool
+
+    NOTE: yaml order fix helps preserves the order of entries in the yaml file.
     '''
     import matplotlib.pyplot as plt
     # read the yaml file with grouping
@@ -124,7 +129,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     # make list of label_names (without individual cortex locations)
     label_names = list()
     for lab in labels:
-        label_names.extend(labels[lab])
+        # label_names.extend(labels[lab])
+        label_names += lab.values()[0]  # yaml order fix
 
     lh_labels = [name + '-lh' for name in label_names]
     rh_labels = [name + '-rh' for name in label_names]
@@ -137,7 +143,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     assert len(node_order) == node_order_size, 'Node order length is correct.'
 
     # the respective no. of regions in each cortex
-    group_bound = [len(labels[key]) for key in labels.keys()]
+    # group_bound = [len(labels[key]) for key in labels.keys()]
+    group_bound = [len(key.values()[0]) for key in labels]  # yaml order fix
     group_bound = [0] + group_bound[::-1] + group_bound
     group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
 
@@ -193,7 +200,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                          node_angles=node_angles, colormap=colormap,
                                          node_colors=reordered_colors,
                                          node_edgecolor='white', fig=fig,
-                                         fontsize_names=10, padding=10.,
+                                         fontsize_title=12,
+                                         fontsize_names=10, padding=6.,
                                          vmax=vmax, vmin=vmin, colorbar_size=0.2,
                                          colorbar_pos=colorbar_pos,
                                          colorbar=colorbar, show=show,
@@ -201,14 +209,22 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                          indices=indices, title=title)
     if include_legend:
         import matplotlib.patches as mpatches
-        legend_patches = [mpatches.Patch(color=col, label=key)
-                          for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
-                                              labels.keys())]
+        # yaml order fix
+        legend_patches = [mpatches.Patch(color=col, label=llab.keys()[0])
+                          for col, llab in zip(['g', 'r', 'c', 'y', 'b', 'm'],
+                                               labels)]
+        # legend_patches = [mpatches.Patch(color=col, label=key)
+        #                   for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
+        #                                       labels.keys())]
         plt.legend(handles=legend_patches, loc=3, ncol=1,
                    mode=None, fontsize='medium')
-    fig.tight_layout()
+
+    if tight_layout:
+        fig.tight_layout()
+
     if out_fname:
-        fig.savefig(out_fname, facecolor='white', dpi=600)
+        fig.savefig(out_fname, facecolor='white',
+                    dpi=600, bbox_inches=bbox_inches)
 
 
 def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
@@ -225,6 +241,8 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
 
     orig_labels : list of str
         Label names in the order as appears in con.
+
+    NOTE: The order of entries in the yaml file is not preserved.
     '''
     import matplotlib.pyplot as pl
     # read the yaml file with grouping
