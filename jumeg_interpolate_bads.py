@@ -20,6 +20,9 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
         Either ``'accurate'`` or ``'fast'``, determines the quality of the
         Legendre polynomial expansion used for interpolation of MEG
         channels.
+    origin : None | list
+        If None, origin is set to sensor center of mass, otherwise use the
+        coordinates provided as origin.
     verbose : bool, str, int, or None
         If not None, override default verbose level (see
         :func:`mne.verbose` and :ref:`Logging documentation <tut_logging>`
@@ -30,9 +33,6 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
     inst : instance of Raw, Epochs, or Evoked
         The modified instance.
 
-    Notes
-    -----
-    .. versionadded:: 0.9.0
     """
 
     from mne.channels.interpolation import _interpolate_bads_eeg
@@ -60,6 +60,9 @@ def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
         Either `'accurate'` or `'fast'`, determines the quality of the
         Legendre polynomial expansion used for interpolation. `'fast'` should
         be sufficient for most applications.
+    origin : None | list
+        If None, origin is set to sensor center of mass, otherwise use the
+        coordinates provided as origin.
     verbose : bool, str, int, or None
         If not None, override default verbose level (see :func:`mne.verbose`
         and :ref:`Logging documentation <tut_logging>` for more).
