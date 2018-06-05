@@ -41,7 +41,7 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
         raise ValueError('Data must be preloaded.')
 
     _interpolate_bads_eeg(inst)
-    _interpolate_bads_meg(inst, mode=mode)
+    _interpolate_bads_meg(inst, origin=origin, mode=mode)
 
     if reset_bads is True:
         inst.info['bads'] = []
@@ -82,7 +82,7 @@ def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
     info_from = pick_info(inst.info, picks_good)
     info_to = pick_info(inst.info, picks_bad)
 
-    if origin is not None:
+    if origin is None:
 
         posvec = np.array([inst.info['chs'][p]['loc'][0:3] for p in picks_meg])
         cogpos = np.mean(posvec, axis=0)
@@ -97,7 +97,7 @@ def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
         origin = (cogposhd[0], cogposhd[1], cogposhd[2])
 
     else:
-        origin = (0., 0., 0.04)
+        origin = origin
 
     mapping = _map_meg_channels(info_from, info_to, mode=mode, origin=origin)
     _do_interp_dots(inst, mapping, picks_good, picks_bad)
