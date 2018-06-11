@@ -6,7 +6,15 @@ from mne.channels.interpolation import _do_interp_dots
 
 
 def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbose=None):
-    """Interpolate bad MEG and EEG channels.
+    """
+    Interpolate bad MEG and EEG channels.
+    We added this method since the original interpolation routine resulted
+    in some interpolated channels having amplitudes being magnitudes smaller
+    than the channels they are being interpolated from.
+
+    _interpolate_bads_meg(inst, origin=None) now calculates the center of mass
+    of the sensors and uses that as origin (written by Eberhard).
+
 
     Operates in place.
 
@@ -22,7 +30,7 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
         channels.
     origin : None | list
         If None, origin is set to sensor center of mass, otherwise use the
-        coordinates provided as origin.
+        coordinates provided as origin. The old standard value is (0., 0., 0.04)
     verbose : bool, str, int, or None
         If not None, override default verbose level (see
         :func:`mne.verbose` and :ref:`Logging documentation <tut_logging>`
@@ -62,7 +70,7 @@ def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
         be sufficient for most applications.
     origin : None | list
         If None, origin is set to sensor center of mass, otherwise use the
-        coordinates provided as origin.
+        coordinates provided as origin. The old standard value is (0., 0., 0.04)
     verbose : bool, str, int, or None
         If not None, override default verbose level (see :func:`mne.verbose`
         and :ref:`Logging documentation <tut_logging>` for more).
