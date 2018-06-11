@@ -29,7 +29,7 @@ ica = ICA(method='fastica', n_components=60, random_state=None,
 # fit ica object to filtered data
 ica.fit(raw_filt, picks=picks, reject=reject, verbose=True)
 
-# save mean and standard deviation of filtered MEG channels
+# save mean and standard deviation of filtered MEG channels for the standard mne routine
 pca_mean_filt = ica.pca_mean_.copy()
 pca_pre_whitener_filt = ica._pre_whitener.copy()  # this is the standard deviation of MEG channels
 
@@ -40,16 +40,20 @@ pca_pre_whitener_filt = ica._pre_whitener.copy()  # this is the standard deviati
 raw_filt_clean = apply_ica_replace_mean_std(raw_filt, ica, picks=picks, reject=reject, exclude=ica.exclude,
                                             n_pca_components=None)
 
+# save mean and standard deviation of filtered MEG channels with mean and std replaced
+pca_mean_replaced_filt = ica.pca_mean_.copy()
+pca_pre_whitener_replaced_filt = ica._pre_whitener.copy()
+
 raw_clean = apply_ica_replace_mean_std(raw_unfilt, ica, picks=picks, reject=reject, exclude=ica.exclude,
                                        n_pca_components=None)
 
 # save mean and standard deviation of unfiltered MEG channels
-pca_mean_unfilt = ica.pca_mean_
-pca_pre_whitener_unfilt = ica._pre_whitener
+pca_mean_replaced_unfilt = ica.pca_mean_
+pca_pre_whitener_replaced_unfilt = ica._pre_whitener
 
 # compare filtered and unfiltered data
 for idx in range(0, len(pca_mean_filt)):
-    print pca_mean_filt[idx], pca_mean_unfilt[idx]
+    print pca_mean_filt[idx], pca_mean_replaced_filt[idx], pca_mean_replaced_unfilt[idx]
 
 for idx in range(0, len(pca_pre_whitener_filt)):
-    print pca_pre_whitener_filt[idx], pca_pre_whitener_unfilt[idx]
+    print pca_pre_whitener_filt[idx], pca_pre_whitener_replaced_filt[idx], pca_pre_whitener_replaced_unfilt[idx]
