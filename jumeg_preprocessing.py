@@ -486,11 +486,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
                tmin=-0.2, tmax=0.4, name_stim='STI 014', event_id=None,
                baseline=(None, 0), proj=False):
 
-    """
-    Applies CTPS to a list of ICA files.
-
-    Returns ctps dictionary.
-    """
+    ''' Applies CTPS to a list of ICA files. '''
 
     from jumeg.filter import jumeg_filter
 
@@ -605,8 +601,6 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
             # Note; loading example: dctps = np.load(fnctps).items()
         else:
             event_id = None
-
-    return np.load(fnctps+'.npy').item()
 
 #######################################################
 #
@@ -816,76 +810,6 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
         pl.savefig(fnfig, dpi=100)
     pl.ion()  # switch on (interactive) plot visualisation
 
-
-########################################################################
-#
-# plot CTPS phase clustering
-#
-########################################################################
-def plot_ctps_phase(phase_trial, pk_dyn, times, color=None, alpha=0.5,
-              title=None, figsize=None, dpi=None, show=True):
-    """ Plot cross trial phase clustering for a single source
-
-    Parameters
-    ----------
-    phase_trial : ndarray
-        The phase trial values (epochs x time slices).
-    pk_dyn : ndarray
-        The normalized kuiper values (traces X time slices).
-    times : ndarray
-        The time at each particular sample in seconds, relative to
-        the trial window
-    color : dict | None
-        The colors used for plotting. If None, defaults to:
-        `dict(phase='steelblue', kuiper='r')`.
-    alpha : float
-        The transparency for the phase values.
-    title : str
-        The title of the plot. If None, defaults to 'Cross Trial
-        Phase Clustering'.
-    figsize : tuple | None
-        The pylab figure size, tuple of integers. If None, pylab
-        defaults will be employed.
-    dpi : int | None
-        The plot resolution in points per inch. If None, pylab
-        defaults will be employed.
-    show : bool
-        If False, figure will not be displayed immediately.
-
-    Returns
-    -------
-    fig : instance of matplotlib figure
-
-    """
-    if any([k.ndim > 2 for k in phase_trial, pk_dyn]):
-        raise ValueError('This function can only display single sources '
-                         'from epochs x time slices data.')
-
-    import matplotlib.pylab as pl
-    if title is None:
-        title = 'Cross Trial Phase Clustering'
-
-    fig = pl.figure(figsize=figsize, dpi=dpi)
-    pl.xlim(times[[0, -1]])
-    pl.title(title)
-    pl.xlabel('Time (ms)')
-    pl.ylabel('Phase values')
-    ntrial, nsamp = phase_trial.shape
-    #_plot_ctps(pl, phase_trial, pk_dyn, times, color, alpha=alpha)
-
-    for i in range(ntrial):
-        pl.plot(times, phase_trial[i, :], color='steelblue', linestyle='None',
-                marker='o', ms=2.5, alpha=alpha)
-
-    pl.plot(times, pk_dyn, color='red', linewidth=2.5, label='Kuiper index')
-
-    pl.legend()
-    pl.tight_layout()
-
-    if show:
-        pl.show()
-
-    return fig
 
 #######################################################
 #

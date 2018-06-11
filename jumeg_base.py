@@ -22,33 +22,12 @@ License: BSD 3 clause
  --> add neww CLS JuMEG_Base_FIF_IO
  --> to merge eeg BrainVision with meg in jumeg_processing_batch
 
----> update 05.09.2017 FB
- --> update get_empty_room_fif
- --> use CLS function to read <empty room fif file> instead of mne.io stuff
- 
----> update 05.04.2018 FB
- --> update JuMEG_Base_PickChannels.picks2label
- --> get lable list from index picks
-
----> update 13.04.2018 FB
- --> add pprint.PrettyPrinter(indent=4) as pp
-  -> prints formated dict self.pp( my-dict)
- --> add line function
-  -> prints line --- self.line()
-
 '''
 
 import os
+import mne
 
-import warnings
-with warnings.catch_warnings():
-     warnings.filterwarnings("ignore",category=DeprecationWarning)
-     import mne
-
-import pprint
-
-__version__= "2018.04.13.001"
-
+__version__= '2017.08.08.001'
 
 '''
 class AccessorType(type):
@@ -87,7 +66,6 @@ class JuMEG_Base_Basic(object):
         self.__do_save       = False
         self.__do_plot       = False
 
-        self._pp = pprint.PrettyPrinter(indent=4)
 #--- version
     def __get_version(self):
         return self.__version
@@ -133,74 +111,6 @@ class JuMEG_Base_Basic(object):
         return self.__do_plot
     do_plot = property(__get_do_plot,__set_do_plot)
 
-    def line(self,n=50,char="-"):
-        """ line: prints a line for nice printing  and separate
-        Parameters:
-        -----------
-        n   : factor to print n x times character <n=50>
-        char: character to print n x times        <"-">
-        
-        Returns:
-        ----------
-        print a seperator line 
-        
-        Example:
-        ---------
-        from jumeg.jumeg_base import jumeg_base as jb   
-        jb.line()
-        --------------------------------------------------
-        
-        jb.line(n=10,char="x")
-        xxxxxxxxxx
-        """
-        print char*n  
-    
-    def pp(self,param, head=None,l1=True,l2=True):
-        """ prints pretty formated dictonary
-        
-        Parameters:
-        -----------
-        param: dictionary
-        head: print head string <None>
-        l1  : print line at first line <None>
-        l2  : print line at last line<None>
-        
-        Returns:
-        --------    
-        print out dictionary in terminal
-        
-        Example
-        ---------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        
-        param={"A":"Atest","AA":{"test1":"Hello","test2":"World"},
-               "B":"Btest","BB":{"test1":"Hello","test2":"Space"}}
-        jb.pp( param,head="HelloWorld")
-        
-        """
-        if l1  : self.line()
-        if head: print(head)
-        self._pp.pprint(param)
-        if l2  : self.line()
-        
-    def is_number(self,n):
-        """ check if input is a number:  isinstance of int or float
-        Parameters:
-        ------------            
-        n: value to check
-        
-        Returns:
-        ---------
-        True / False
-        
-        Example
-        ---------
-        from jumeg.jumeg_base import jumeg_base as jb  
-        
-        jb.is_number(123)
-         True
-        """
-        return isinstance(n,(int, float) ) 
 
 class JuMEG_Base_PickChannels(object):
      """ MNE Wrapper Class for mne.pick_types
@@ -216,49 +126,21 @@ class JuMEG_Base_PickChannels(object):
          type : 'grad' | 'mag' | 'eeg' | 'stim' | 'eog' | 'emg' | 'ecg' |'ref_meg' | 'resp' | 'exci' | 'ias' | 'syst' | 'misc'|'seeg' | 'chpi'  
      
          Example:
-         ---------   
-         from jumeg.jumeg_base import jumeg_base as jb  
-        
-         jb.picks.meg( raw )
+         picks = JuMEG_Base_PickChannels()
+
+         picks.meg( raw )
          return meg channel index array => 4D Magnes3600 => [0 .. 247]
          
-         jb.picks.meg_nobads( raw )
+         picks.meg_nobads( raw )
          return meg channel index array without bad channels
-       
-         extended function:
-         jb.picks.picks2labels(raw,picks)
          
-         jb.picks.labels2picks(raw,labels)
-         
-        #---- 
-         or only import this class
-         from jumeg.jumeg_base import JuMEG_Base_PickChannels
-         
-         picks = JuMEG_Base_PickChannels()
-         picks.meg_nobads( raw ) 
      """        
      def __init__ (self):
          import mne
-        # self.__version__  = __version__
+         self.__version__  = 20160623
         
 #--- MNE foool fct  -> picks preselected channel groups
-     # picks index to label
-     #  ch_names = raw.ch_names()
-     #  sort([ch_names[i] for i in picks]) 
-     
-     def picks2labels(self,raw,picks):
-         ''' input raw, picks as numpy array int64 return label list''' 
-         ch_names = raw.ch_names
-         return ([ch_names[i] for i in picks]) 
-     
-     def labels2picks(self,raw,labels):
-         ''' input raw, picks as numpy array int64 return label list''' 
-         picks=[]
-         ch_names=raw.ch_names
-         for l in labels:
-             picks.append( ch_names.index(l)) 
-         return picks     
-     
+
      def channels(self,raw):
          ''' call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None'''
          return mne.pick_types(raw.info,meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=[])       
@@ -341,7 +223,7 @@ class JuMEG_Base_PickChannels(object):
 
      def exclude_trigger(self, raw):
          ''' call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None '''
-         return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False)       
+         return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=False,resp=False)       
 
      def bads(self,raw):
          """ return raw.info[bads] """
@@ -354,16 +236,8 @@ class JuMEG_Base_StringHelper(object):
         self.__version__  = 20160623
          
     def isString(self, s):
-        """ check if is string return True/False
+        """
          http://ideone.com/uB4Kdc
-        
-        Example
-        -------- 
-        from jumeg.jumeg_base import jumeg_base as jb  
-        
-        jb.isString("Hell World")
-         True
-         
         """
         if (isinstance(s, str)):
            return True
@@ -376,104 +250,39 @@ class JuMEG_Base_StringHelper(object):
         return False    
 
     def str_range_to_list(self, seq_str):
-        """make a list of inergers from string
-        ref:
-        http://stackoverflow.com/questions/6405208/how-to-convert-numeric-string-ranges-to-a-list-in-python
-           
-        Parameters
-        ----------
-        seq_str: string
-        
-        Returns
-        --------
-        list of numbers
-        
-        Example
-        --------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        
-        jb.str_range_to_list("1,2,3-6,8,111")
-        
-        "1,3,5"         => [1,3,5]
-        "1-5"           => [1,2,3,4,5]
-        "1,2,3-6,8,111" => [1,2,3,4,5,6,8,111]
+        """
+         inpiut: string   txt= '1,2,3-6,8,111'
+         output: list     [1,2,3,4,5,6,8,111]
+         copy from:
+         http://stackoverflow.com/questions/6405208/how-to-convert-numeric-string-ranges-to-a-list-in-python
         """
         xranges = [(lambda l: xrange(l[0], l[-1]+1))(map(int, r.split('-'))) for r in seq_str.split(',')]
          # flatten list of xranges
         return [y for x in xranges for y in x]
       
-    def str_range_to_numpy(self, seq_str,exclude_zero=False,unique=False): 
-        """converts integer string to numpy array 
-        Parameters
-        ----------
-        input       : integer numbers as string
-        exclude_zero: exclude 0  <False>
-        unique      : return only unique numbers <False>
-        
-        Returns
-        --------
-        integer numbers as numpy array dtype('int64')
-        
-        Example
-        --------
-        
-        from jumeg.jumeg_base import jumeg_base as jb 
-        
-        s = "0,1,2,3,0,1,4,3,0"
-        
-        jb.str_range_to_numpy(s)
-          array([0, 1, 2, 3, 0, 1, 4, 3, 0])
-        
-        jb.str_range_to_numpy(s,unique=True)
-          array([0, 1, 2, 3, 4])
-              
-        jb.str_range_to_numpy(s,exclude_zero=True)
-          array([1, 2, 3, 1, 4, 3])
-        
-        jb.str_range_to_numpy(s,unique=True,exclude_zero=True)
-          array([1, 2, 3, 4]) 
-           
+    def str_range_to_numpy(self, seq_str,exclude_zero=False): 
+        """
+         converts array to numpy array 
+         input : [1,2,3]
+         out numpy array with unique numbers
         """
         import numpy as np
 
         if seq_str is None:
            return np.unique( np.asarray( [ ] ) )
         if self.isString(seq_str):
-           anr = np.asarray (self.str_range_to_list( seq_str ) )
+           anr = self.str_range_to_list( seq_str )
         else:
-           anr = np.asarray( [seq_str] )
-           
-        if unique:
-           anr = np.unique( anr ) 
+           anr = np.unique( np.asarray( [seq_str] ) )
         if exclude_zero:
            return anr[ np.where(anr) ] 
         return anr
 
 class JuMEG_Base_FIF_IO(JuMEG_Base_Basic,JuMEG_Base_StringHelper):
-    """ handels mne fif I/O for meg and eeg [BrainVision] data
-        workaround to manage different MNE versions
-        
-    """
     def __init__ (self):
         super(JuMEG_Base_FIF_IO, self).__init__()
         
     def set_raw_filename(self,raw,v):
-        """ set filename in raw obj"
-        Parameters:
-        -----------
-        raw     : rawobj to modify
-        filename: filename
-        
-        Returns:
-        ----------
-        None
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-         
-        jb.set_raw_filename(raw,"/data/test-raw.fif")
-        """
         if raw.info.has_key('filename'):
             raw.info['filename'] = v
         else:
@@ -481,22 +290,6 @@ class JuMEG_Base_FIF_IO(JuMEG_Base_Basic,JuMEG_Base_StringHelper):
             raw._filenames.append(v)
 
     def get_raw_filename(self,raw):
-        """ get filename from raw obj
-        Parameters:
-        -----------
-        raw     : rawobj to modify
-               
-        Returns:
-        ----------
-        first filename or None
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-         
-        fname = jb.get_raw_filename(raw)
-        
-        """
         if raw:
            if raw.info.has_key('filename'):
               return raw.info['filename']
@@ -511,174 +304,21 @@ class JuMEG_Base_FIF_IO(JuMEG_Base_Basic,JuMEG_Base_StringHelper):
            return os.path.basename(f)
 
     def get_id(self,v=0,f=None):
-        """ get id from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        subject id in fif filename
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_id(f=f)
-        "211776"
-        
-        """
         return self.__get_from_fifname(v=v,f=f)
 
     def get_scan(self,v=1,f=None):
-        """ get scan from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        scan in fif filename
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_scan(f=f)
-        "FREEVIEW01"
-        """
-        return self.__get_from_fifname(v=v,f=f)
-    
-    def get_date(self,v=2,f=None):
-        """ get session from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        date in fif filename
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_session(f=f)
-        "180115"
-        """
         return self.__get_from_fifname(v=v,f=f)
 
-    def get_time(self,v=3,f=None):
-        """ get time from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        time in fif filename
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_run(f=f)
-        "1414"
-        """
+    def get_session(self,v=2,f=None):
         return self.__get_from_fifname(v=v,f=f)
-    
-    def get_session(self,f=None):
-        """ get session from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        session in fif filename
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_session(f=f)
-        "180115_1414"
-        """
-        return self.get_date(f=f)+"_"+self.get_time(f=f)
-      
-    def get_run(self,v=4,f=None):
-        """ get run from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        run in fif filename
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_run(f=f)
-        "1"
-        """
+
+    def get_run(self,v=3,f=None):
         return self.__get_from_fifname(v=v,f=f)
 
     def get_postfix(self,f=None):
-        """ get postfix from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        postfix in fif filename
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_postfix(f=f)
-        "bcc,tr,nr,ar-raw"
-        
-        """
-        return os.path.basename(f).split('_')[-1].split('.')[0]
+        return os.path.basename(self.raw.info['filename']).split('_')[-1].split('.')[0]
 
     def get_extention(self,f=None):
-        """ get extention from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        file extention in fif filename  <fif>; without leading <.>
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_extention(f=f)
-        "fif"
-       
-        """
         if f:
             fname = f
         else:
@@ -686,25 +326,6 @@ class JuMEG_Base_FIF_IO(JuMEG_Base_Basic,JuMEG_Base_StringHelper):
         return os.path.basename(fname).split('_')[-1].split('.')[-1]
 
     def get_postfix_extention(self,f=None):
-        """ get postfix with extention from fifname 
-        
-        Parameters:
-        -----------
-        f  : filename <None>
-        
-        Returns:
-        ----------
-        postfix with extention in fif filename 
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        f='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        
-        jb.get_postfix_extention(f=f)
-        "bcc,tr,nr,ar-raw.fif"
-       
-        """
         if f:
             fname = f
         else:
@@ -714,11 +335,6 @@ class JuMEG_Base_FIF_IO(JuMEG_Base_Basic,JuMEG_Base_StringHelper):
    
 
 class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
-    """I/O class to handle higher order work on raw obj
-       e.g.: read in raw obj from meg, eeg or ica data
-             update bad channels
-            
-    """
     def __init__ (self):
         super(JuMEG_Base_IO, self).__init__()
         
@@ -732,28 +348,17 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
     def get_fif_name(self, fname=None, raw=None, postfix=None, extention="-raw.fif", update_raw_fname=False):
         """
-        Parameters:
-        -----------
-        fname            : base file name
-        raw              : raw obj, if defined get filename from raw obj                <None>
-        update_raw_fname : if true and raw is obj will update raw obj filename in place <False>
-        postfix          : string to add for applied operation                          <None>
-        extention        : string to add as extention                                   <-raw.fif>
+        Returns fif filename
+        based on input file name and applied operation
 
-        Returns:
+        Parameters
         ----------
-        fif filename, based on input file name and applied operation
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        
-        f  ='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        raw,fraw=jb.get_raw_obj(f)
-        
-        jb.get_fif_name(raw=raw)
-        "/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif"
-        
+        fname      : base file name
+        raw              = <raw obj>     : if defined get filename from raw obj
+        update_raw_fname = <False/True>  : if true and raw is obj will update raw obj filename in place
+        postfix          = <my postfix>  : string to add for applied operation [None]
+        extention        = <my extention>: string to add as extention  [raw.fif]
+
         """
         if raw:
            fname = self.get_raw_filename(raw)
@@ -774,39 +379,18 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         return fname    
         
     def update_bad_channels(self,fname,raw=None,bads=None,preload=True,append=False,save=False,interpolate=False,postfix=None):
-        """ update bad channels in raw obj
-        
-        Parameters:
-        -----------
-        fname   : file name
-        raw     : raw obj, if defined get filename from raw obj <None>
-        bads    : list of bad channels                          <None> 
-        postfix : add postfix to filename                       <None>
-        
-        Flags:
-         preload : mne loar flag                                <True>
-         append  : add bads to bads if true or overwrite        <False>
-         postfix : add postfix to filename                      <None>
-         save    : will raw with changes in bads                <False>
-         interpolate: apply mne badchannel interpolation        <False>
-         
-        Returns:
-        ----------
-        return: raw, bad channel list        
-        
-        Example:
-        ----------
-        from jumeg.jumeg_base import jumeg_base as jb 
-        
-        f  ='/data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar-raw.fif'
-        bads=["MEG 010","MEG 157"] or bads="MEG 010,MEG 157"
-        raw,bads_list = jb.update_bad_channels(f,raw=raw,postfix="bads",save=True,bads=bads)
-        
-        saved bads as new fif file:
-        /data/exp/FREEVIEWING/epocher/211776_FREEVIEW01_180115_1414_1_c,rfDC,meeg_bcc,tr,nr,ar,bads-raw.fif
-        
         """
-        #TODO: if  new bads ==  old bads in raw then  exit
+
+         :param fname:
+         :param raw:
+         :param bads:
+         :param preload:
+         :param append:
+         :param save:
+         :return: raw, bad channel list
+
+        """
+         #TODO: if  new bads ==  old bads in raw then  exit
 
         if save:
            preload = True
@@ -860,19 +444,13 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
 
 #--- helper function
     def get_ica_raw_obj(self,fname_ica,ica_raw=None):
-        """check for <ica filename> or <ica raw obj>
-        if <ica_raw> obj is None load <ica raw obj> from <ica filename>
-
-        Parameters:
-        -----------  
-        fname_ica: ica filename 
-        raw_ica  : ica raw obj <None> 
-        
-        Returns:
-        --------
-        <ica raw obj>,ica raw obj filename
-        
-        """
+        ''' 
+           check for <ica filename> or <ica raw obj>
+           if filename -> load ica fif file
+           input : filename
+                   raw_ica = icaraw obj 
+           return: raw ica obj,filename from ica raw obj 
+        '''
         if ica_raw is None:
            if fname_ica is None:
               assert "---> ERROR no file foumd!!\n\n"
@@ -887,20 +465,17 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         return ica_raw,self.get_raw_filename(ica_raw)
             
     def get_raw_obj(self,fname_raw,raw=None,path=None,preload=True):
-        """load file in fif format <*.raw> or brainvision eeg data
-        check for filename or raw obj
-        check for meg or brainvision eeg data *.vhdr
-        if filename -> load fif file
-        
-        Parameters
-        ----------
-        fname_raw: name of raw-file 
-        raw      : raw obj <None>
-        
-        Results
-        ----------
-        raw obj,fname from raw obj 
-        """
+        ''' 
+           check for filename or raw obj
+           chek for meg or brainvision eeg data *.vhdr
+           if filename -> load fif file
+           input : filename
+                   raw : raw obj 
+           return: raw obj,fname from raw obj 
+        '''
+
+        fnout = None
+
         if raw is None:
            assert(fname_raw),"---> ERROR no file foumd!!\n"
            if self.verbose:
@@ -914,23 +489,18 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                #--- ToDo may decide for eeg-name .eeg or.vhdr
            else:
                raw = mne.io.Raw(fn,preload=preload)
-       
+               fnout=self.get_raw_filename(raw)
+
         assert(raw), "---> ERROR in jumeg.jumeg_base.get_raw_obj => could not get raw obj:\n ---> FIF name: " + fname_raw
    
-        return raw,self.get_raw_filename(raw)
-
+        return raw,fnout
 
 
     def get_files_from_list(self, fin):
-        """ get filename or filenames from a list
-        Parameters
-        ----------
-        filename or list of filenames
-        
-        Results
-        -------
-        files as iterables lists 
-        """
+        ''' 
+            input : filename or list of filenames
+             return: files as iterables lists 
+        '''
         if isinstance(fin, list):
            fout = fin
         else:
@@ -941,31 +511,20 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         return fout
 
     def get_filename_list_from_file(self, fin, start_path = None):
-        """ loads filenames with options / parameter form a text file
-        
-        Parameters
-        ----------
-        fin       : text file to open
-        start_path: start dir <None>
-        
-        Results
-        --------
-        list of existing files with full path and dict with bad-channels (as string e.g. A132,MEG199,MEG246)
-        
-        Example
-        --------
-        txt file format:
-          
-          fif-file-name  --feeg=myeeg.vhdr --bads=MEG1,MEG123 --startcode=123
-          e.g.:
-          0815/M100/121130_1306/1/0815_M100_121130_1306_1_c,rfDC-raw.fif --bads=A248
-          0815/M100/120920_1253/1/0815_M100_120920_1253_1_c,rfDC-raw.fif
-          0815/M100/130618_1347/1/0815_M100_130618_1347_1_c,rfDC-raw.fif --bads=A132,MEG199
+        ''' 
+            input : text file to open
+                    start_path = <start_dir> [None]
+                    txt file format e.g:
+                    fif-file-name  --feeg=myeeg.vhdr --bads=MEG1,MEG123 --startcode=123
+       jumeg_merge_meeg -smeg /data/meg_stroe1/exp/INTEXT/eeg/INTEXT01/ -seeg /data/meg_stroe1/exp/INTEXT/mne/ -plist /data/meg_stroe1/exp/INTEXT/doc/ -flist 207006_merge_meeg.txt -sc 5 -b -v -r
+   
+                    0815/M100/121130_1306/1/0815_M100_121130_1306_1_c,rfDC-raw.fif --bads=A248
+                    0815/M100/120920_1253/1/0815_M100_120920_1253_1_c,rfDC-raw.fif
+                    0815/M100/130618_1347/1/0815_M100_130618_1347_1_c,rfDC-raw.fif --bads=A132,MEG199
 
-        call with program:
-        jumeg_merge_meeg -smeg /data/meg_stroe1/exp/INTEXT/eeg/INTEXT01/ -seeg /data/meg_stroe1/exp/INTEXT/mne/ -plist /data/meg_stroe1/exp/INTEXT/doc/ -flist 207006_merge_meeg.txt -sc 5 -b -v -r
-         where -flist 207006_merge_meeg.txt is the text file
-        """
+
+            return: list of existing files with full path and dict with bad-channels (as string e.g. A132,MEG199,MEG246)
+        '''
         found_list = []
         # bads_dict  = dict()
         opt_dict = dict()
@@ -987,12 +546,9 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                if start_path :
                   if os.path.isfile( start_path + "/" + fname ):
                      fname = start_path + "/" + fname
-               #print "Fname: "+fname
-
                if os.path.isfile( fname ):
                   found_list.append(fname)
-                  #print "found Fname: "+fname
-   
+                     
                opt_dict[fname]= {}
                for opi in opt[1:]:
                    opkey,opvalue=opi.split('=')
@@ -1018,18 +574,11 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         return found_list,opt_dict
 
     def apply_save_mne_data(self,raw,fname="test.fif",overwrite=True):
-        """saving mne raw obj to fif format
-        
-        Parameters
-        ----------
-        raw      : raw obj
-        fname    : file name <None>
-        overwrite: <True>
-        
-        Returns
-        ----------
-        filename
-        """
+        '''
+            Apply saving mne raw obj as fif 
+            input : raw=raw obj, fname=file name, overwrite=True
+            return: filename
+        '''
         from distutils.dir_util import mkpath
          
         if ( os.path.isfile(fname) and ( not overwrite) ) :
@@ -1045,21 +594,15 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         return fname
 
     def get_empty_room_fif(self,fname=None,raw=None, preload=True):
-        """find empty room file for input file name or RAWobj 
-        assuming <empty room file> is the last recorded file for this id scan at this specific day
-        e.g.: /data/mne/007/M100/131211_1300/1/1007_M100_131211_1300_1_c,rfDC-raw.fif
-        search for id:007 scan:M100 date:13:12:11 and extention: <empty.fif>
-        
-        Parameters
-        ----------
-        raw    : raw obj
-        fname  : file name <None>
-        preload: will load and return empty-room-raw obj instead of raw <True>
-        
-        Returns
-        ---------
-        full empty room filename, empty-room-raw obj or raw depends on preload option
-        """
+        '''
+            find empty room file for input file name or RAWobj 
+            assuming <empty room file> is the last recorded file for this id scan at this specific day
+            e.g.: /data/mne/007/M100/131211_1300/1/1007_M100_131211_1300_1_c,rfDC-raw.fif
+                  search for id:007 scan:M100 date:13:12:11 and extention: <empty.fif>
+            input : raw=raw obj, fname=file name,
+                    preload=True will load and return empty-room-raw obj instead of raw
+            return: full empty room filename, empty-room-raw obj or raw depends on preload option
+        '''
         import glob
 
         fname_empty_room = None
@@ -1067,11 +610,11 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         if raw is not None:
            fname = self.get_raw_filename(raw)
          #--- first trivial check if raw obj is the empty room obj   
-           if fname.endswith('epmpty.fif'):
+           if fname.endswith('empty.fif'):
               return(fname,raw)
                
          #--- ck if fname is the empty-room fie  
-        if fname.endswith('epmpty.fif'):
+        if fname.endswith('empty.fif'):
            fname_empty_room = fname  
          #--- ok more difficult lets start searching ..
         else : 
@@ -1092,13 +635,128 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         if fname_empty_room and preload:
            if self.verbose:
               print "\n --> Empty Room FIF file found: %s \n"  % (fname_empty_room)
-           
-           return self.get_raw_obj(fname_empty_room,raw=None,preload=True) # return raw,fname
 
-           # return( fname_empty_room, mne.io.Raw(fname_empty_room, preload=True) )
+           return( fname_empty_room, mne.io.Raw(fname_empty_room, preload=True) )
+        
 
-   
 #---
 jumeg_base       = JuMEG_Base_IO()
 jumeg_base_basic = JuMEG_Base_Basic()
 
+
+"""
+
+
+class JuMEG_Base_FIFIO(JuMEG_Base_IO):
+   '''
+       support for good old 4D file structure on harddisk
+       => id scan session run postfix extention
+        0007_ODDBall_190101_1200_1_c,rfDC-raw.fif
+
+        set parameter:
+        start_path = '.'
+        experiment = 'nn'
+        type       = 'mne' ['mne' or 'eeg'] folder
+
+        id        = '007'
+        scan      = 'TEST'
+        session   = '130314_1131'
+        run       = '1'
+        postfix   = 'c,rfDC-raw'
+        extention = '.fif'
+
+    '''
+    def __init__ (self):
+        super(JuMEG_Base_FIFIO, self).__init__()
+        self.__version__  = 20160623
+        self.verbose      = False
+
+        self.start_path = '.'
+        self.experiment = 'nn'
+        self.type       = 'mne'
+
+        self.id        = None
+        self.scan      = None
+        self.session   = None
+        self.run       = '1'
+        self.postfix   = 'c,rfDC-raw'
+        self.extention = '.fif'
+
+    def __ck_pdfs(self):
+        l = []
+        if self.id:
+           l.append(self.id)
+        if self.scan:
+           l.append(self.scan)
+        if self.session:
+           l.append(self.session)
+        if self.run:
+           l.append(self.run)
+        return l
+
+    def __get_mne_path(self):
+        return self.start_path + os.sep + self.experiment + os.sep + self.type + os.sep
+    type_path = property(__get_mne_path)
+
+    def __get_pfif(self):
+        return os.sep.join( self.__ck_pdfs() )
+        # return self.id + os.sep + self.scan + os.sep + self.session + os.sep + self.run + os.sep
+    pfif = property(__get_pfif)
+
+    def __get_full_path(self):
+        return self.type_path + os.sep + self.pfif
+    path = property(__get_full_path)
+
+    def __get_name(self):
+        l = self.__ck_pdfs()
+        if self.postfix:
+           l.append(self.postfix)
+        if self.extention:
+           return '_'.join(l) + self.extention
+        return '_'.join(l)
+        # return self.id + '_' + self.scan +'_'+ self.session +'_'+ self.run +'_'+ self.postfix + self.extention
+    name = property(__get_name)
+
+    def __get_full_name(self):
+        return self.type_path + os.sep + self.pfif  +os.sep + self.name
+    full_name = property(__get_full_name)
+
+
+class JuMEG_Base_BrainVisionIO(JuMEG_Base_FIFIO):
+    '''
+
+    '''
+
+    def __init__(self):
+        super(JuMEG_Base_BrainVisionIO, self).__init__()
+        self.__version__ = 20160623
+        self.verbose = False
+
+        self.start_path = '.'
+        self.experiment = 'nn'
+        self.type = 'eeg'
+
+        self.id = None
+        self.scan = None
+        self.session = None
+        self.run = '1'
+        self.postfix = None
+        self.extention = '.vhdr'
+
+    def __get_mne_path(self):
+        return self.start_path + os.sep + self.experiment + os.sep + self.type + os.sep
+
+    type_path = property(__get_mne_path)
+
+    def __get_full_path(self):
+        return self.type_path + os.sep + self.scan + os.sep
+
+    path = property(__get_full_path)
+
+    def __get_full_name(self):
+        return self.path + self.name
+
+    full_name = property(__get_full_name)
+
+
+"""

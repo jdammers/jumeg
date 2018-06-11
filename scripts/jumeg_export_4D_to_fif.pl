@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #=======================================================================
 # jumeg_export_4D_to_fifjumeg_export_4D_to_fif.pl
 # Autor: F B 12.09.2014
@@ -32,7 +32,7 @@ my $VERSION ="0.0013";
 
 my @IDs = ();
 
-my $path_bti = "/data/MEG/meg_store2/megdaw_data21";
+my $path_bti = "/data/meg_store2/megdaw_data21";
 
    $path_bti = $ENV{MEG_BTI_DATA_DISK} if ( defined( $ENV{MEG_BTI_DATA_DISK} ) );
 
