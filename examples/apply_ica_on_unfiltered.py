@@ -1,5 +1,5 @@
 import mne
-from jumeg.decompose.ica_on_unfiltered import apply_ica_on_unfiltered
+from jumeg.decompose.ica_replace_mean_std import apply_ica_replace_mean_std
 from mne.datasets import sample
 from mne.preprocessing import ICA
 
@@ -33,14 +33,15 @@ ica.fit(raw_filt, picks=picks, reject=reject, verbose=True)
 pca_mean_filt = ica.pca_mean_.copy()
 pca_pre_whitener_filt = ica._pre_whitener.copy()  # this is the standard deviation of MEG channels
 
-raw_filt_clean = ica.apply(raw_filt, exclude=ica.exclude, n_pca_components=None)
-
-# use the same arguments for apply_ica_on_unfiltered as when you are initializing the ICA
-# object and when you are applying it to the filtered data
+# use the same arguments for apply_ica_replace_mean_std as when you are initializing the ICA
+# object and when you are fitting it to the data
 # the ica object is modified in place!!
 
-raw_clean = apply_ica_on_unfiltered(raw_unfilt, ica, picks=picks, reject=reject, exclude=ica.exclude,
-                                    n_pca_components=None, replace_pre_whitener=True)
+raw_filt_clean = apply_ica_replace_mean_std(raw_filt, ica, picks=picks, reject=reject, exclude=ica.exclude,
+                                            n_pca_components=None)
+
+raw_clean = apply_ica_replace_mean_std(raw_unfilt, ica, picks=picks, reject=reject, exclude=ica.exclude,
+                                       n_pca_components=None)
 
 # save mean and standard deviation of unfiltered MEG channels
 pca_mean_unfilt = ica.pca_mean_

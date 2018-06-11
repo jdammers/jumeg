@@ -8,14 +8,16 @@ from mne.utils import _reject_data_segments
 from mne.io.pick import pick_types, pick_info, _pick_data_channels, _DATA_CH_TYPES_SPLIT
 
 
-def apply_ica_on_unfiltered(inst, ica, picks=None, include=None, exclude=None, n_pca_components=None, start=None,
-                            stop=None, decim=None, reject=None, flat=None, tstep=2.0, replace_pre_whitener=True,
-                            reject_by_annotation=True):
+def apply_ica_replace_mean_std(inst, ica, picks=None, include=None, exclude=None, n_pca_components=None, start=None,
+                               stop=None, decim=None, reject=None, flat=None, tstep=2.0, replace_pre_whitener=True,
+                               reject_by_annotation=True):
 
     """
-    First, calculates pca_mean_ and _pre_whitener based on the unfiltered input
-    data (inst) and modifies those in the ica object in place. The SAME PARAMETERS
-    SHOULD BE USED AS the ones used for ica.fit() with filtered data.
+    Calculates pca_mean_ and _pre_whitener based on the data provided. This is
+    necessary because in mne.preprocessing.ICA the standard deviation (_pre_whitener)
+    of the MEG channels is calculated incorrectly.
+    The ica object is modified in place. The SAME PARAMETERS SHOULD BE USED AS the
+    ones used for ica.fit() with filtered data.
     Then the altered ica object is applied to the unfiltered input data (inst).
 
     This method ensures that the correct mean and standard deviation are used for
