@@ -11,4 +11,4 @@ fname_raw = data_path + '/MEG/sample/sample_audvis_raw.fif'
 raw = mne.io.Raw(fname_raw, preload=True)
 mybads, raw = suggest_bads(raw, show_raw=False, summary_plot=False)
 
-interpolate_bads(raw, reset_bads=True)
+interpolate_bads(raw, origin=None, reset_bads=True)
