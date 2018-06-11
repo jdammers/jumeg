@@ -53,7 +53,11 @@ pca_pre_whitener_replaced_unfilt = ica._pre_whitener
 
 # compare filtered and unfiltered data
 for idx in range(0, len(pca_mean_filt)):
-    print pca_mean_filt[idx], pca_mean_replaced_filt[idx], pca_mean_replaced_unfilt[idx]
+    print '%10.6f\t%10.6f\t%10.6f' % (pca_mean_filt[idx], pca_mean_replaced_filt[idx], pca_mean_replaced_unfilt[idx])
+    if idx >= 9:
+        break
 
 for idx in range(0, len(pca_pre_whitener_filt)):
     print pca_pre_whitener_filt[idx], pca_pre_whitener_replaced_filt[idx], pca_pre_whitener_replaced_unfilt[idx]
+    if idx >= 9:
+        break
