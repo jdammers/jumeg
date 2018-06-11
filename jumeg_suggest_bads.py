@@ -497,6 +497,10 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
     # if any of the channels' psds are all zeros, mark as suspect
     zero_suspects = [ind for ind in range(psds.shape[1]) if not np.any(psds[:, ind, :])]
 
+    print "Bad channels (jumps):", list(set([item+1 for sublist in afp_suspects for item in sublist]))
+    print "Bad channels (unusual):", list(set([item+1 for sublist in psd_suspects for item in sublist]))
+    print "Bad channels (dead):", list(set([item+1 for item in zero_suspects]))
+
     # reduce lists of marked epochs to lists of bad channels
     picks_autodetect = \
         list(set().union([item for sublist in psd_suspects for item in sublist],
@@ -510,7 +514,7 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
     marks = list(set(picks_autodetect) | set(picks_bad) | set(zero_suspects))
 
     # show summary plot for enhanced manual inspection
-    #TODO zero suspects do not have any colour coding for the moment
+    # TODO zero suspects do not have any colour coding for the moment
     if summary_plot:
         fig = \
             plot_autosuggest_summary(afp_nearest_neighbour, psd_nearest_neighbour,
@@ -523,10 +527,18 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
     # channel names in str
     marked = [raw.ch_names[i] for i in marks]
     # add suggested channels to the raw.info
+    marked.sort()
+    print marked
     raw.info['bads'] = marked
     print 'Suggested bad channels: ', marked
 
     if show_raw:
-        raw.plot(block=True)
+
+        if raw.info['bads'] == [u'MEG 007', u'MEG 010', u'MEG 142', u'MEG 156', u'RFM 011']:
+            print "Only dead channels marked as bad -> do not plot"
+        else:
+            print "---------------> Plot raw <---------------"
+            raw.plot(block=True)
+            marked = raw.info['bads']  # in case marked channels change during raw.plot()
 
     return marked, raw

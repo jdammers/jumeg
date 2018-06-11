@@ -23,6 +23,8 @@ fname,raw,fhdf = jumeg_epocher.apply_events_to_hdf(fname, raw=raw,**epocher)
 
 ---> update 10.01.2017 FB
      check event-code/conditions for none existing
+---> update 02.04.2018 FB
+     cleaning
 
 '''
 
@@ -31,10 +33,12 @@ import numpy as np
 import pandas as pd
 
 from jumeg.jumeg_base import jumeg_base
-from jumeg.epocher.jumeg_epocher_events import JuMEG_Epocher_Events
+from jumeg.epocher.jumeg_epocher_epochs import JuMEG_Epocher_Epochs
 
-class JuMEG_Epocher(JuMEG_Epocher_Events):
-    def __init__ (self,template_name="DEFAULT",do_run=False,do_average=False,verbose=False,save=False):
+__version__="2018.04.13.001"
+
+class JuMEG_Epocher(JuMEG_Epocher_Epochs):
+    def __init__ (self,template_path=None,template_name="DEFAULT",do_run=False,do_average=False,verbose=False,save=False):
 
         super(JuMEG_Epocher, self).__init__()
 
@@ -43,24 +47,27 @@ class JuMEG_Epocher(JuMEG_Epocher_Events):
         self.do_average    = do_average
         self.do_save       = save
         self.verbose       = verbose
-
+        
+        if template_path:
+           self.template_path = template_path
+           
         self.template_name = template_name
 
        #--- init CLS Events->HDF file name & extention
-        self.hdf_postfix      = '-epocher.hdf5'
-        self.hdf_stat_postfix = '-epocher-stats.csv'
+       # self.hdf_postfix      = '-epocher.hdf5'
+       # self.hdf_stat_postfix = '-epocher-stats.csv'
 
 #---
-    def apply_events_to_hdf(self, fname,raw=None,condition_list=None,picks=None,**kwargv):
+    def apply_events_to_hdf(self, fname,raw=None,condition_list=None,picks=None,**kwargs):
         """
         find stimulus and/or response events for each condition; save to hdf5 format
         """
 
-        if kwargv['template_name']:
-           self.template_name = kwargv['template_name']
+        if kwargs['template_name']:
+           self.template_name = kwargs['template_name']
 
-        if kwargv['verbose']:
-           self.verbose = kwargv['verbose']
+        if kwargs['verbose']:
+           self.verbose = kwargs['verbose']
 
         self.template_update_file()
 
@@ -95,8 +102,6 @@ class JuMEG_Epocher(JuMEG_Epocher_Events):
         """
        #--- TODO: ck for HDFobj open / close; may use self.HDFobj
 
-        import pandas as pd
-
         if template_name:
            self.template_name = template_name
            
@@ -118,25 +123,26 @@ class JuMEG_Epocher(JuMEG_Epocher_Events):
         return (fname,raw,fhdf)
 
 #---
-    def apply_events_export_events(self,fname,raw=None,condition_list=None,picks=None,**kwargv):
+    def apply_events_export_events(self,fname,raw=None,condition_list=None,picks=None,**kwargs):
         """
          export events and epochs for condition into mne fif data
          
         """
 
-        if kwargv['template_name']:
-           self.template_name = kwargv['template_name']
+        if kwargs['template_name']:
+           self.template_name = kwargs['template_name']
 
-        if kwargv['verbose']:
-           self.verbose = kwargv['verbose']
+        if kwargs['verbose']:
+           self.verbose = kwargs['verbose']
 
         # self.template_update_file()
 
         fhdf      = None
         raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)        
-        evt_ids   = self.events_export_events(raw=raw,fhdf=fhdf,condition_list=condition_list,**kwargv['parameter'])
+        evt_ids   = self.events_export_events(raw=raw,fhdf=fhdf,condition_list=condition_list,**kwargs['parameter'])
         
-        print "===> DONE apply events export events: " + fname +"\n"
+        # print "===> DONE apply events export events: " + fname +"\n"
+        #print "===> DONE apply events export events: " + fhdf +"\n"
 
         return (fname,raw,evt_ids)
     
