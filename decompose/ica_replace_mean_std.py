@@ -13,15 +13,19 @@ def apply_ica_replace_mean_std(inst, ica, picks=None, include=None, exclude=None
                                reject_by_annotation=True):
 
     """
-    Calculates pca_mean_ and _pre_whitener based on the data provided. This is
-    necessary because in mne.preprocessing.ICA the standard deviation (_pre_whitener)
-    of the MEG channels is calculated incorrectly.
-    The ica object is modified in place. The SAME PARAMETERS SHOULD BE USED AS the
-    ones used for ica.fit() with filtered data.
-    Then the altered ica object is applied to the unfiltered input data (inst).
+    Calculates pca_mean_ and _pre_whitener based on the data provided before applying
+    the ica object to the input data. This is necessary because in mne.preprocessing.ICA
+    the standard deviation (_pre_whitener) of the MEG channels is calculated incorrectly.
+    The ica object is modified in place. The SAME PARAMETERS SHOULD BE USED AS the ones
+    used for ica.fit().
 
-    This method ensures that the correct mean and standard deviation are used for
-    whitening the input data.
+    Use case for unfiltered data:
+    Sometimes it is best to fit ICA on filtered and cleaned data in order to improve
+    the quality of decomposition. The fitted ICA object cannot be applied directly to
+    the unfiltered data due to changes in the mean and standard deviation between the
+    filtered and unfiltered data. This function can be used in this case. It computes
+    the correct mean and std values from given unfiltered data and includes it in the
+    ica object.
 
     Parameters
     ----------
