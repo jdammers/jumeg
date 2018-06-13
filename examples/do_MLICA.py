@@ -118,8 +118,6 @@ ic_eog = get_ics_ocular(raw_chop, ica,
                         name_eog_hor=eog1_ch, name_eog_ver=eog2_ch,
                         score_func='pearsonr')
 
-import pdb; pdb.set_trace()
-
 bads_corr_ctps += list(ic_ecg) + list(ic_eog)
 bads_corr_ctps = list(set(bads_corr_ctps))
 bads_corr_ctps.sort()
