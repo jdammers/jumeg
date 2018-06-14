@@ -5,9 +5,9 @@ results to correlation & ctps analysis.
 
 Apply ICA object to filtered and unfiltered data.
 
-Ahmad Hasasneh, Nikolas Kampel, Praveen Sripad, N. Jon Shah, and Jürgen Dammers
-“Deep Learning Approach for Automatic Classification of Ocular and Cardiac
-Artifacts in MEG Data,”
+Ahmad Hasasneh, Nikolas Kampel, Praveen Sripad, N. Jon Shah, and Juergen Dammers
+"Deep Learning Approach for Automatic Classification of Ocular and Cardiac
+Artifacts in MEG Data"
 Journal of Engineering, vol. 2018, Article ID 1350692,10 pages, 2018.
 https://doi.org/10.1155/2018/1350692
 """
@@ -33,6 +33,7 @@ ecg_thresh, eog_thresh = 0.3, 0.3
 ecg_ch = 'ECG 001'
 eog1_ch = 'EOG 001'
 eog2_ch = 'EOG 002'
+reject = {'mag': 5e-12}
 refnotch = [50., 100., 150., 200., 250., 300., 350., 400.]
 
 # example filname
@@ -73,8 +74,7 @@ ica = ICA(method='fastica', n_components=n_components, random_state=None,
           max_pca_components=None, max_iter=1000, verbose=None)
 
 # do the ICA decomposition on downsampled raw
-ica.fit(raw_ds_chop, picks=picks, reject={'mag': 5e-12},
-        verbose=None)
+ica.fit(raw_ds_chop, picks=picks, reject=reject, verbose=None)
 
 sources = ica.get_sources(raw_ds_chop)._data
 
@@ -90,7 +90,7 @@ model_scores = model.predict([mm, chop_reshaped], verbose=1)
 
 bads_MLICA = []
 
-print model_scores
+# print model_scores
 
 for idx in range(0, len(model_scores)):
     if model_scores[idx][0] > MLICA_threshold:
@@ -125,8 +125,9 @@ print 'Bad components from correlation & ctps:', bads_corr_ctps
 from jumeg.decompose.ica_replace_mean_std import apply_ica_replace_mean_std
 # exclude bad components identified by MLICA
 ica.exclude = bads_MLICA
-raw_filtered_chop_clean = apply_ica_replace_mean_std(raw_filtered_chop, picks=picks,
-                                                     reject={'mag': 5e-12}, verbose=None)
+raw_filtered_chop_clean = apply_ica_replace_mean_std(raw_filtered_chop, ica, picks=picks,
+                                                     reject=reject, exclude=ica.exclude,
+                                                     n_pca_components=None)
 
-raw_chop_clean = apply_ica_replace_mean_std(raw_chop, picks=picks, reject={'mag': 5e-12},
-                                            verbose=None)
+raw_chop_clean = apply_ica_replace_mean_std(raw_chop, ica, picks=picks, reject=reject,
+                                            exclude=ica.exclude, n_pca_components=None)
