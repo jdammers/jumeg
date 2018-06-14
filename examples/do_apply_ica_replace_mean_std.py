@@ -1,3 +1,10 @@
+"""
+Compute the ica object on filtered data and then apply it
+to unfiltered data.
+Show a comparison of mean and standard deviation for:
+mne & filtered data, jumeg & filtered data, jumeg & unfiltered data
+"""
+
 import mne
 from jumeg.decompose.ica_replace_mean_std import apply_ica_replace_mean_std
 from mne.datasets import sample
@@ -14,11 +21,11 @@ subjects_dir = data_path + '/subjects'
 fname_raw = data_path + '/MEG/sample/sample_audvis_raw.fif'
 
 raw = mne.io.Raw(fname_raw, preload=True)
+raw_filt = raw.copy().filter(flow, fhigh, method='fir', n_jobs=2, fir_design='firwin', phase='zero')
 
 # use 60s of data
-raw = raw.crop(0, 60)
-
-raw_filt = raw.copy().filter(flow, fhigh, method='fir', n_jobs=2, fir_design='firwin', phase='zero')
+raw_filt.crop(0, 60)
+raw.crop(0, 60)
 raw_unfilt = raw.copy()
 
 picks = mne.pick_types(raw.info, meg=True, exclude='bads')
