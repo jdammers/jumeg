@@ -1,3 +1,10 @@
+"""
+Compute the ica object on filtered data and then apply it
+to unfiltered data.
+Show a comparison of mean and standard deviation for:
+mne & filtered data, jumeg & filtered data, jumeg & unfiltered data
+"""
+
 import mne
 from jumeg.decompose.ica_replace_mean_std import apply_ica_replace_mean_std
 from mne.datasets import sample

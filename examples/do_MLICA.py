@@ -1,7 +1,7 @@
 """
-Compute ICA components and identify ECG and EOG artifacts using
-MLICA as well as correlation & ctps. Print a comparison of
-identified components using both methods.
+Compute ICA object based on filtered and downsampled data.
+Identify ECG and EOG artifacts using MLICA and compare
+results to correlation & ctps analysis.
 """
 
 import matplotlib.pylab as plt
