@@ -1,22 +1,20 @@
+"""
+Compute ICA components and identify ECG and EOG artifacts using
+MLICA as well as correlation & ctps. Print a comparison of
+identified components using both methods.
+"""
+
+import matplotlib.pylab as plt
+plt.ion()
 import numpy as np
 import mne
 from mne.preprocessing import ICA
-from mne.preprocessing import create_eog_epochs, create_ecg_epochs
-import matplotlib.pylab as plt
-plt.ion()
 from keras.models import load_model
 from jumeg.jumeg_noise_reducer import noise_reducer
 from jumeg.jumeg_preprocessing import get_ics_cardiac, get_ics_ocular
 
-refnotch = [50., 100., 150., 200., 250., 300., 350., 400.]
-
-# example filname
-raw_fname = '/Users/kiefer/Dropbox/Juelich/FreeViewing/Data/203404/203404_FREEVIEW01_180323_1410_3_c,rfDC,meeg_bcc-raw.fif'
-# load the model for artifact rejection:
-model_name = '/data/megraid26/meg_commons/MLICA/models_MLICA_paper_090418/x_validation_shuffle_v4/split_23/split_23-25-0.939.hdf5'
-model = load_model(model_name)
-
 # config
+MLICA_threshold = 0.8
 n_components = 60
 njobs = 4  # for downsampling
 tmin = 0
@@ -24,9 +22,17 @@ tmax = tmin + 15000
 flow_ecg, fhigh_ecg = 8, 20
 flow_eog, fhigh_eog = 1, 20
 ecg_thresh, eog_thresh = 0.3, 0.3
-ecg_ch = 'ECG'
-eog1_ch = 'EOG hor'
-eog2_ch = 'EOG ver'
+ecg_ch = 'ECG 001'
+eog1_ch = 'EOG 001'
+eog2_ch = 'EOG 002'
+refnotch = [50., 100., 150., 200., 250., 300., 350., 400.]
+
+# example filname
+raw_fname = '/data/megraid21/sripad/cau_fif_data/jumeg_test_data/109925_CAU01A_100715_0842_2_c,rfDC-raw.fif'
+
+# load the model for artifact rejection:
+model_name = '/data/megraid26/meg_commons/MLICA/models_MLICA_paper_090418/x_validation_shuffle_v4/split_23/split_23-25-0.939.hdf5'
+model = load_model(model_name)
 
 # noise reducer
 raw_nr = noise_reducer(raw_fname, reflp=5., return_raw=True)
@@ -73,10 +79,9 @@ bads_MLICA = []
 print model_scores
 
 for idx in range(0, len(model_scores)):
-    if model_scores[idx][0] > 0.80:
+    if model_scores[idx][0] > MLICA_threshold:
         bads_MLICA.append(idx)
 
-print bads_MLICA
 ica.exclude = bads_MLICA
 
 # visualisation
@@ -122,7 +127,8 @@ bads_corr_ctps += list(ic_ecg) + list(ic_eog)
 bads_corr_ctps = list(set(bads_corr_ctps))
 bads_corr_ctps.sort()
 ica.exclude = bads_corr_ctps  # to sort and remove repeats
-
-print 'Bad components are', ica.exclude
 # visualisation
 ica.plot_sources(raw_chop, block=True)
+
+print 'Bad components from MLICA:', bads_MLICA
+print 'Bad components from correlation & ctps:', ica.exclude
