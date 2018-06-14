@@ -2,6 +2,12 @@
 Compute ICA object based on filtered and downsampled data.
 Identify ECG and EOG artifacts using MLICA and compare
 results to correlation & ctps analysis.
+
+Ahmad Hasasneh, Nikolas Kampel, Praveen Sripad, N. Jon Shah, and Jürgen Dammers
+“Deep Learning Approach for Automatic Classification of Ocular and Cardiac
+Artifacts in MEG Data,”
+Journal of Engineering, vol. 2018, Article ID 1350692,10 pages, 2018.
+https://doi.org/10.1155/2018/1350692
 """
 
 import matplotlib.pylab as plt
@@ -85,50 +91,26 @@ for idx in range(0, len(model_scores)):
 ica.exclude = bads_MLICA
 
 # visualisation
-ica.plot_sources(raw_ds_chop, block=True)
+# ica.plot_sources(raw_ds_chop, block=True)
 
 # compare MLICA to results from correlation and ctps analysis
 ica.exclude = []
 
-print 'Computing scores and identifying components..'
-ecg_scores = ica.score_sources(raw_chop, target=ecg_ch, score_func='pearsonr',
-                               l_freq=flow_ecg, h_freq=fhigh_ecg, verbose=False)
-# horizontal channel
-eog1_scores = ica.score_sources(raw_chop, target=eog1_ch, score_func='pearsonr',
-                                l_freq=flow_eog, h_freq=fhigh_eog, verbose=False)
-# vertical channel
-eog2_scores = ica.score_sources(raw_chop, target=eog2_ch, score_func='pearsonr',
-                                l_freq=flow_eog, h_freq=fhigh_eog, verbose=False)
-
-# print the top ecg, eog correlation scores
-ecg_inds = np.where(np.abs(ecg_scores) > ecg_thresh)[0]
-eog1_inds = np.where(np.abs(eog1_scores) > eog_thresh)[0]
-eog2_inds = np.where(np.abs(eog2_scores) > eog_thresh)[0]
-highly_corr = list(set(np.concatenate((ecg_inds, eog1_inds, eog2_inds))))
-print 'Highly correlated artifact components are', highly_corr
-
-
-bads_corr_ctps = []
-bads_corr_ctps += highly_corr
-
+print 'Identifying components..'
 # get ECG/EOG related components using JuMEG
-ic_ecg = get_ics_cardiac(raw_chop, ica,
-                         flow=flow_ecg, fhigh=fhigh_ecg,
-                         thresh=ecg_thresh,
-                         tmin=-0.5, tmax=0.5, name_ecg=ecg_ch,
-                         score_func='pearsonr',
-                         use_CTPS=True)
-ic_eog = get_ics_ocular(raw_chop, ica,
-                        flow=flow_eog, fhigh=fhigh_eog, thresh=eog_thresh,
-                        name_eog_hor=eog1_ch, name_eog_ver=eog2_ch,
-                        score_func='pearsonr')
+ic_ecg = get_ics_cardiac(raw_chop, ica, flow=flow_ecg, fhigh=fhigh_ecg,
+                         thresh=ecg_thresh, tmin=-0.5, tmax=0.5,
+                         name_ecg=ecg_ch, use_CTPS=True)
+ic_eog = get_ics_ocular(raw_chop, ica, flow=flow_eog, fhigh=fhigh_eog,
+                        thresh=eog_thresh, name_eog_hor=eog1_ch,
+                        name_eog_ver=eog2_ch, score_func='pearsonr')
 
-bads_corr_ctps += list(ic_ecg) + list(ic_eog)
-bads_corr_ctps = list(set(bads_corr_ctps))
+bads_corr_ctps = list(ic_ecg) + list(ic_eog)
+bads_corr_ctps = list(set(bads_corr_ctps))  # remove potential duplicates
 bads_corr_ctps.sort()
 ica.exclude = bads_corr_ctps  # to sort and remove repeats
 # visualisation
-ica.plot_sources(raw_chop, block=True)
+# ica.plot_sources(raw_chop, block=True)
 
 print 'Bad components from MLICA:', bads_MLICA
 print 'Bad components from correlation & ctps:', ica.exclude
