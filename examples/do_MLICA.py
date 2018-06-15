@@ -20,6 +20,7 @@ from mne.preprocessing import ICA
 from keras.models import load_model
 from jumeg.jumeg_noise_reducer import noise_reducer
 from jumeg.jumeg_preprocessing import get_ics_cardiac, get_ics_ocular
+from jumeg.jumeg_plot import plot_performance_artifact_rejection
 
 # config
 MLICA_threshold = 0.8
@@ -131,3 +132,13 @@ raw_filtered_chop_clean = apply_ica_replace_mean_std(raw_filtered_chop, ica, pic
 
 raw_chop_clean = apply_ica_replace_mean_std(raw_chop, ica, picks=picks, reject=reject,
                                             exclude=ica.exclude, n_pca_components=None)
+
+fnout_fig = '109925_CAU01A_100715_0842_2_c,rfDC,0-45hz,ar-perf'
+
+# create copy of original data since apply_ica_replace_mean_std changes the input data in place (raw and ica)
+raw_copy = raw.copy().crop(tmin=tmin*4./1000, tmax=tmax*4./1000)
+plot_performance_artifact_rejection(raw_copy, ica, fnout_fig,
+                                    meg_clean=raw_chop_clean,
+                                    show=False, verbose=False,
+                                    name_ecg=ecg_ch,
+                                    name_eog=eog2_ch)
