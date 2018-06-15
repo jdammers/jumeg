@@ -106,7 +106,7 @@ print 'Identifying components..'
 # get ECG/EOG related components using JuMEG
 ic_ecg = get_ics_cardiac(raw_filtered_chop, ica, flow=flow_ecg, fhigh=fhigh_ecg,
                          thresh=ecg_thresh, tmin=-0.5, tmax=0.5,
-                         name_ecg=ecg_ch, use_CTPS=True)
+                         name_ecg=ecg_ch, use_CTPS=True)[0]  # returns both ICs and scores (take only ICs)
 ic_eog = get_ics_ocular(raw_filtered_chop, ica, flow=flow_eog, fhigh=fhigh_eog,
                         thresh=eog_thresh, name_eog_hor=eog1_ch,
                         name_eog_ver=eog2_ch, score_func='pearsonr')
