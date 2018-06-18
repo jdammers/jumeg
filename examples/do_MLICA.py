@@ -72,7 +72,7 @@ raw_filtered_chop = raw_filtered.copy().crop(tmin=tmin*4./1000, tmax=tmax*4./100
 raw_chop = raw.copy().crop(tmin=tmin*4./1000, tmax=tmax*4./1000)
 
 ica = ICA(method='fastica', n_components=n_components, random_state=None,
-          max_pca_components=None, max_iter=3000, verbose=None)
+          max_pca_components=None, max_iter=5000, verbose=None)
 
 # do the ICA decomposition on downsampled raw
 ica.fit(raw_ds_chop, picks=picks, reject=reject, verbose=None)
