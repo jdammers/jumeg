@@ -38,11 +38,11 @@ reject = {'mag': 5e-12}
 refnotch = [50., 100., 150., 200., 250., 300., 350., 400.]
 
 # example filname
-raw_fname = "/data/megraid21/sripad/cau_fif_data/jumeg_test_data/" \
+raw_fname = "/Volumes/megraid21/sripad/cau_fif_data/jumeg_test_data/" \
             "109925_CAU01A_100715_0842_2_c,rfDC-raw.fif"
 
 # load the model for artifact rejection:
-model_name = "/data/megraid26/meg_commons/MLICA/models_MLICA_paper_090418/" \
+model_name = "/Volumes/megraid26/meg_commons/MLICA/models_MLICA_paper_090418/" \
              "x_validation_shuffle_v4/split_23/split_23-25-0.939.hdf5"
 
 model = load_model(model_name)
@@ -71,8 +71,8 @@ raw_ds_chop = raw_ds.copy().crop(tmin=tmin*4./1000, tmax=tmax*4./1000)  # downsa
 raw_filtered_chop = raw_filtered.copy().crop(tmin=tmin*4./1000, tmax=tmax*4./1000)
 raw_chop = raw.copy().crop(tmin=tmin*4./1000, tmax=tmax*4./1000)
 
-ica = ICA(method='fastica', n_components=n_components, random_state=None,
-          max_pca_components=None, max_iter=1000, verbose=None)
+ica = ICA(method='fastica', n_components=n_components, random_state=42,
+          max_pca_components=None, max_iter=2000, verbose=None)
 
 # do the ICA decomposition on downsampled raw
 ica.fit(raw_ds_chop, picks=picks, reject=reject, verbose=None)
@@ -107,7 +107,7 @@ print 'Identifying components..'
 # get ECG/EOG related components using JuMEG
 ic_ecg = get_ics_cardiac(raw_filtered_chop, ica, flow=flow_ecg, fhigh=fhigh_ecg,
                          thresh=ecg_thresh, tmin=-0.5, tmax=0.5,
-                         name_ecg=ecg_ch, use_CTPS=True)[0]  # returns both ICs and scores (take only ICs)
+                         name_ecg=ecg_ch, use_CTPS=True)  # returns both ICs and scores (take only ICs)
 ic_eog = get_ics_ocular(raw_filtered_chop, ica, flow=flow_eog, fhigh=fhigh_eog,
                         thresh=eog_thresh, name_eog_hor=eog1_ch,
                         name_eog_ver=eog2_ch, score_func='pearsonr')
