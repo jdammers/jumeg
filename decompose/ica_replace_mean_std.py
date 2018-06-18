@@ -116,7 +116,7 @@ def apply_ica_replace_mean_std(inst, ica, picks=None, include=None, exclude=None
     on the input data. This is necessary because in mne.preprocessing.ICA the standard
     deviation (_pre_whitener) of the MEG channels is calculated incorrectly.
 
-    THE INPUT DATA AS WELL AS THE ICA OBJECT ARE MODIFIED IN PLACE. The SAME PARAMETERS
+    THE INPUT DATA AS WELL AS THE ICA OBJECT ARE MODIFIED IN PLACE. THE SAME PARAMETERS
     SHOULD BE USED AS THE ONES FOR ica.fit().
 
     Use case for unfiltered data:
