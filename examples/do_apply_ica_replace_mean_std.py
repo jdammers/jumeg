@@ -30,8 +30,8 @@ raw_unfilt = raw.copy()
 
 picks = mne.pick_types(raw.info, meg=True, exclude='bads')
 
-ica = ICA(method='fastica', n_components=60, random_state=None,
-          max_pca_components=None, max_iter=1500, verbose=False)
+ica = ICA(method='fastica', n_components=60, random_state=42,
+          max_pca_components=None, max_iter=5000, verbose=False)
 
 # fit ica object to filtered data
 ica.fit(raw_filt, picks=picks, reject=reject, verbose=True)
