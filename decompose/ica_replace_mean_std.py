@@ -8,16 +8,116 @@ from mne.utils import _reject_data_segments
 from mne.io.pick import pick_types, pick_info, _pick_data_channels, _DATA_CH_TYPES_SPLIT
 
 
+def ica_update_mean_std(inst, ica, picks=None, start=None, stop=None, decim=None, reject=None,
+                        flat=None, tstep=2.0, reject_by_annotation=True):
+    """
+    Returns the modified ica object after replacing pca_mean and _pre_whitener.
+
+    This is necessary because in mne.preprocessing.ICA the standard deviation
+    (_pre_whitener) of the MEG channels is calculated incorrectly. THE SAME PARAMETERS
+    SHOULD BE USED AS THE ONES USED FOR ica.fit().
+
+    Use case for unfiltered data:
+    Sometimes it is best to fit ICA on filtered and cleaned data in order to improve
+    the quality of decomposition. The fitted ICA object cannot be applied directly to
+    the unfiltered data due to changes in the mean and standard deviation between the
+    filtered and unfiltered data. This function can be used in this case. It computes
+    the correct mean and std values from given unfiltered data and includes it in the
+    ica object.
+
+    Parameters
+    ----------
+    inst : instance of Raw or Epochs.
+        The data to be processed. The instance is modified inplace.
+    ica : mne.preprocessing.ica
+        The ica object used for processing of the data.
+    picks : array-like of int
+        Channels to be included for the calculation of pca_mean_ and _pre_whitener.
+        This selection SHOULD BE THE SAME AS the one used in ica.fit().
+    start : int | float | None
+        First sample to include. If float, data will be interpreted as
+        time in seconds. If None, data will be used from the first sample.
+    stop : int | float | None
+        Last sample to not include. If float, data will be interpreted as
+        time in seconds. If None, data will be used to the last sample.
+    decim : int | None
+        Increment for selecting each nth time slice. This parameter SHOULD BE THE
+        SAME AS the one used in ica.fit(). If None, all samples within ``start`` and
+        ``stop`` are used.
+    reject : dict | None
+        Rejection parameters based on peak-to-peak amplitude. This parameter SHOULD BE
+        THE SAME AS the one used in ica.fit().
+        Valid keys are 'grad', 'mag', 'eeg', 'seeg', 'ecog', 'eog', 'ecg',
+        'hbo', 'hbr'.
+        If reject is None then no rejection is done. Example::
+
+            reject = dict(grad=4000e-13, # T / m (gradiometers)
+                          mag=4e-12, # T (magnetometers)
+                          eeg=40e-6, # V (EEG channels)
+                          eog=250e-6 # V (EOG channels)
+                          )
+
+        It only applies if `inst` is of type Raw.
+    flat : dict | None
+        Rejection parameters based on flatness of signal.
+        This parameter SHOULD BE THE SAME AS the one used in ica.fit().
+        Valid keys are 'grad', 'mag', 'eeg', 'seeg', 'ecog', 'eog', 'ecg',
+        'hbo', 'hbr'.
+        Values are floats that set the minimum acceptable peak-to-peak
+        amplitude. If flat is None then no rejection is done.
+        It only applies if `inst` is of type Raw.
+    tstep : float
+        Length of data chunks for artifact rejection in seconds.
+        This parameter SHOULD BE THE SAME AS the one used in ica.fit().
+        It only applies if `inst` is of type Raw.
+    reject_by_annotation : bool
+        Whether to omit bad segments from the data before fitting.
+        This parameter SHOULD BE THE SAME AS the one used in ica.fit().
+        If True, annotated segments with a description that starts with 'bad' are
+        omitted. Has no effect if ``inst`` is an Epochs or Evoked object.
+        Defaults to True.
+
+        .. versionadded:: mne v0.14.0
+
+    Returns
+    -------
+    out : instance of mne.preprocessing.ICA
+        The modified ica object with pca_mean_ and _pre_whitener replaced.
+    """
+
+    ica = ica.copy()
+
+    pre_whitener = None
+
+    if isinstance(inst, (BaseRaw, BaseEpochs)):
+        _check_for_unsupported_ica_channels(picks, inst.info)
+        if isinstance(inst, BaseRaw):
+            pca_mean_, pre_whitener = get_pca_mean_and_pre_whitener_raw(inst, picks, start, stop, decim, reject, flat,
+                                                                        tstep, pre_whitener, reject_by_annotation)
+        elif isinstance(inst, BaseEpochs):
+            pca_mean_, pre_whitener = get_pca_mean_and_pre_whitener_epochs(inst, picks, decim, pre_whitener)
+    else:
+        raise ValueError('Data input must be of Raw or Epochs type')
+
+    ica.pca_mean_ = pca_mean_
+    ica._pre_whitener = pre_whitener
+
+    return ica
+
+
 def apply_ica_replace_mean_std(inst, ica, picks=None, include=None, exclude=None, n_pca_components=None, start=None,
                                stop=None, decim=None, reject=None, flat=None, tstep=2.0, replace_pre_whitener=True,
                                reject_by_annotation=True):
 
     """
-    Calculates pca_mean_ and _pre_whitener based on the data provided before applying
-    the ica object to the input data. This is necessary because in mne.preprocessing.ICA
-    the standard deviation (_pre_whitener) of the MEG channels is calculated incorrectly.
-    The ica object is modified in place. The SAME PARAMETERS SHOULD BE USED AS the ones
-    used for ica.fit().
+    Use instead of ica.apply().
+
+    Returns the cleaned input data after calculating pca_mean_ and _pre_whitener based
+    on the input data. This is necessary because in mne.preprocessing.ICA the standard
+    deviation (_pre_whitener) of the MEG channels is calculated incorrectly.
+
+    THE INPUT DATA AS WELL AS THE ICA OBJECT ARE MODIFIED IN PLACE. THE SAME PARAMETERS
+    SHOULD BE USED AS THE ONES FOR ica.fit().
 
     Use case for unfiltered data:
     Sometimes it is best to fit ICA on filtered and cleaned data in order to improve
@@ -96,7 +196,7 @@ def apply_ica_replace_mean_std(inst, ica, picks=None, include=None, exclude=None
     Returns
     -------
     out : instance of Raw or Epochs
-        The processed data.
+        The cleaned data.
     """
 
     if replace_pre_whitener:
