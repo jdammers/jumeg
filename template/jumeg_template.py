@@ -108,21 +108,23 @@ class JuMEG_Template(JuMEG_Base_Basic):
     def __init__ (self,template_name='DEFAULT'):
         super(JuMEG_Template, self).__init__()
 
-        #self.__template_path     = os.getenv('JUMEG_PATH_TEMPLATE',self.__JUMEG_PATH_TEMPLATE)
-        self.__template_name     = template_name
-        self.__template_list     = []
-        self.__template_name_list= []
-        self.__template_postfix  = "template"
-        self.__template_suffix   = '.json'
-        self.__template_dic      = {}
-        self.__template_data     = dict()
-        self.__verbose           = False
-        self.__template_isUpdate = False
+        self._template_path     = "123"#None  # os.getenv('JUMEG_PATH_TEMPLATE',self.__JUMEG_PATH_TEMPLATE)
+        self._template_name     = template_name
+        self._template_list     = []
+        self._template_name_list= []
+        self._template_postfix  = "template"
+        self._template_suffix   = '.json'
+        self._template_dic      = {}
+        self._template_data     = dict()
+        self._verbose           = False
+        self._template_isUpdate = False
 
-
-        self.__template_path = self.template_path_default
+        self.template_path = self.template_path_default
         self.template_update_name_list()
-
+        
+#---
+     
+        
 #---
     def __get_template_path_default(self):
         return os.path.abspath( os.path.dirname(__file__) ) + '/../examples/templates'
@@ -130,60 +132,60 @@ class JuMEG_Template(JuMEG_Base_Basic):
 
 #--- template name
     def __get_template_name(self):
-        return self.__template_name
+        return self._template_name
 
     def __set_template_name(self, value):
-         self.__template_name = value
+         self._template_name = value
     template_name = property(__get_template_name,__set_template_name)
 
 #--- template path
     def __get_template_path(self):
-        return self.__template_path
+       return self._template_path
 
     def __set_template_path(self,v):
-        self.__template_path = v
+        self._template_path = v
     template_path = property(__get_template_path,__set_template_path)
 
 #--- template data
     def __get_template_data(self):
-        return  self.__template_data
+        return  self._template_data
 
     def __set_template_data(self, value):
-        self.__template_data = value
+        self._template_data = value
     template_data = property(__get_template_data,__set_template_data)
 
 #--- template_postfix
     def __get_template_postfix(self):
-        return self.__template_postfix
+        return self._template_postfix
     def __set_template_postfix(self,v):
-        self.__template_postfix = v
+        self._template_postfix = v
     template_postfix = property(__get_template_postfix,__set_template_postfix)
 
 #--- template_suffix
     def __get_template_suffix(self):
-        return  self.__template_suffix
+        return  self._template_suffix
     
     def __set_template_suffix(self, value):
-        self.__template_suffix = value
+        self._template_suffix = value
     template_suffix = property(__get_template_suffix,__set_template_suffix)
 
 #---template_isUpdate
     def __get_template_isUpdate(self):
-        return self.__template_isUpdate
+        return self._template_isUpdate
     template_isUpdate = property(__get_template_isUpdate)
 
 #---
     def template_get_name_from_list(*args):
         if type( args[1] ) == int :
-           return args[0].__template_name_list[ args[1] ]  # self = args[0]
+           return args[0]._template_name_list[ args[1] ]  # self = args[0]
         else :
-           return args[0].__template_name_list
+           return args[0]._template_name_list
     
     def __get_template_name_list(self):
-         return self.__template_name_list
+         return self._template_name_list
    
     def __set_template_name_list(self,value):
-         self.__template_name_list = value
+         self._template_name_list = value
     template_name_list = property(__get_template_name_list,__set_template_name_list)
     
     def template_update_name_list(self):
@@ -194,28 +196,28 @@ class JuMEG_Template(JuMEG_Base_Basic):
          self.template_name_list = pat.sub('', str.join(',',flist) ).split(',')
 #---
 
-    def __get_template_file_name(self):
-         return  self.template_name +"_"+ self.template_postfix +"_"+ self.tempalte_suffix
-    template_file_name = property(__get_template_file_name)
+    def __get_template_filename(self):
+         return  self.template_name +"_"+ self.template_postfix + self.template_suffix
+    template_filename = property(__get_template_filename)
     
     
-    def __get_full_template_file_name(self):
-        return self.template_path + '/' + self.template_name +'_'+ self.template_postfix + self.template_suffix
-    template_full_file_name = property(__get_full_template_file_name)
+    def __get_full_template_filename(self):
+        return self.template_path + '/' + self.template_filename
+    template_full_filename = property(__get_full_template_filename)
 
 
     def template_update_file(self):
           self.template_data = dict()
-          self.__template_isUpdate = False
+          self._template_isUpdate = False
 
-          f = open( self.template_full_file_name )
+          f = open( self.template_full_filename )
           try:
               self.template_data = json.load(f)
               self.template_data = _decode_dict(self.template_data)
               f.close()
-              self.__template_isUpdate = True
+              self._template_isUpdate = True
           except ValueError as e:
-              print "\n---> ERROR loading Template File: " +self.template_full_file_name 
+              print "\n---> ERROR loading Template File: " +self.template_full_filename 
               print(' --> invalid json: %s' % e)
          
           assert self.template_data,"---> ERROR in template file format [json]\n"  
@@ -226,7 +228,20 @@ class JuMEG_Template(JuMEG_Base_Basic):
           return dict2obj( self.template_data )
     
     def template_update_and_merge_dict(self, d, u, depth=-1):
-        """
+        """ update and merge template parameter overwrite defaults
+        
+        Parameters
+        ----------
+        dict with defaults parameter
+        dict with parameter to merge or update
+        depth: recusive level <-1>
+                
+        Result
+        -------
+        dict with merged and updated parameters
+        
+        Example
+        -------
         copy from:
         http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
         
@@ -294,28 +309,6 @@ class JuMEG_Template_Experiments(JuMEG_Template):
         self.template_name    = 'default'
         self.template_postfix = 'jumeg_experiment_template'
 
-
-
-'''
-class JuMEG_Template_Epocher(JuMEG_Template):
-    def __init__ (self):
-        super(JuMEG_Template_Epocher, self).__init__()
-        self.__JUMEG_PATH_TEMPLATE_EPOCHER = self._JUMEG_PATH_TEMPLATE + '/jumeg_epocher'
-        self.template_path    = os.getenv('JUMEG_PATH_TEMPLATE_EPOCHER',self._JUMEG_PATH_TEMPLATE_EPOCHER)
-        self.template_name    = 'default'
-        self.template_list    = []
-        self.template_postfix = 'jumeg_epocher_template'
-      
-template_epocher  = JuMEG_Template_Epocher()
-
-
-#jumeg_template_experiment = JuMEG_Template_Experiments()
-#jumeg_template_averager   = JuMEG_Template_Averager()
-
-#jumeg_template_experiment = JuMEG_Template_Experiments()
-#jumeg_template_epocher    = JuMEG_Template_Epocher()
-
-'''
 
 experiment = JuMEG_Template_Experiments()
 
