@@ -115,4 +115,4 @@ def jumeg_filter(filter_method="bw",filter_type='bp',fcut1=1.0,fcut2=45.0,remove
   
   
 if __name__ == "__main__":
-     jumeg_filter(**kwargv)
+   jumeg_filter(**kwargs)
