@@ -6,21 +6,18 @@ import mne
 ---------------------------------------------------------------------- 
  autor      : Frank Boers 
  email      : f.boers@fz-juelich.de
- last update: 28.05.2015
- version    : 0.03141
+----------------------------------------------------------------------  
+ update: 27.06.2018 CK,FB
+ change mne filter call to <mne.filter.filter_data
 ---------------------------------------------------------------------- 
  jumeg obj filter interface to the MNE filter types
- mne.low_pass_filter
- mne.high_pass_filter
- mne.band_pass_filter
- mne.band_stop_filter
+ mne.filter.filter_data 
  mne.notch_filter
 ----------------------------------------------------------------------
-
-----------------------------------------------------------------------
-
 '''
 from jumeg.filter.jumeg_filter_base import JuMEG_Filter_Base
+
+__version__="v2018-06-27-001"
 
 class JuMEG_Filter_MNE(JuMEG_Filter_Base):
      def __init__ (self,filter_type='bp',njobs=4,fcut1=1.0,fcut2=200.0,remove_dcoffset=True,sampling_frequency=1017.25, 
@@ -28,7 +25,7 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
                    
          super(JuMEG_Filter_MNE, self).__init__()
          
-         self.__jumeg_filter_mne_version    = 0.03141
+         self.__jumeg_filter_mne_version    = __version__
          self.__filter_method               = 'mne'
          
          self.__mne_filter_method           = mne_filter_method  #fft
@@ -129,20 +126,30 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
       
     #---- filter lp hp bp bs br  
        if   self.filter_type =='lp' :
-            data[:,:] = mne.filter.low_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
+            # l_freq is None and h_freq is not None: low-pass filter
+            data[:,:] = mne.filter.filter_data(data,Fs,h_freq=fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
                                        iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
        
        elif self.filter_type =='hp' :
-            data[:, :] = mne.filter.high_pass_filter(data,Fs,fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
+            # l_freq is not None and h_freq is None: high-pass filter
+            data[:, :] = mne.filter.filter_data(data,Fs,l_freq=fcut1,filter_length = fl,trans_bandwidth = tbw,method = method,
                                         iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
             
        elif self.filter_type =='bp' :
-            data[:,:] = mne.filter.band_pass_filter(data,Fs,fcut1,fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,
+            data[:,:] = mne.filter.filter_data(data,Fs,l_freq=fcut1,h_freq=fcut2,filter_length = fl, l_trans_bandwidth = tbw, h_trans_bandwidth = tbw,
                                                     method = method,iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
                                      
        
        elif self.filter_type in ['bs','br'] :
-            data[:,:] = mne.filter.band_stop_filter(data,Fs,fcut1,fcut2,filter_length = fl,trans_bandwidth = tbw,method = method,
+            # band stop filter: l_freq > h_freq
+            if fcut1 > fcut2:
+                lower_freq = fcut1
+                higher_freq = fcut2
+            else:
+                lower_freq = fcut2
+                higher_freq = fcut1
+            
+            data[:,:] = mne.filter.filter_data(data,Fs,l_freq=lower_freq,h_freq=higher_freq,filter_length = fl,trans_bandwidth = tbw,method = method,
                                         iir_params = None,picks = picks,n_jobs = njobs,copy = False,verbose = v)
 
                                     
