@@ -18,6 +18,7 @@ from . import jumeg_plot
 from . import decompose
 from . import mft
 from . import jumeg_noise_reducer
+from . import jumeg_noise_reducer_hcp
 from . import connectivity
 from .filter import jumeg_filter
 from . import jumeg_source_localize
