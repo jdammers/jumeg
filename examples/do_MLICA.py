@@ -12,6 +12,7 @@ Journal of Engineering, vol. 2018, Article ID 1350692,10 pages, 2018.
 https://doi.org/10.1155/2018/1350692
 """
 
+import os.path as op
 import matplotlib.pylab as plt
 plt.ion()
 import numpy as np
@@ -21,6 +22,7 @@ from keras.models import load_model
 from jumeg.jumeg_noise_reducer import noise_reducer
 from jumeg.jumeg_preprocessing import get_ics_cardiac, get_ics_ocular
 from jumeg.jumeg_plot import plot_performance_artifact_rejection
+from jumeg.jumeg_utils import get_jumeg_path
 
 # config
 MLICA_threshold = 0.8
@@ -37,13 +39,16 @@ eog2_ch = 'EOG 002'
 reject = {'mag': 5e-12}
 refnotch = [50., 100., 150., 200., 250., 300., 350., 400.]
 
+data_path = op.join(get_jumeg_path(), 'data')
+print data_path
+
 # example filname
-raw_fname = "/data/megraid21/sripad/cau_fif_data/jumeg_test_data/" \
+raw_fname = "/Volumes/megraid21/sripad/cau_fif_data/jumeg_test_data/" \
             "109925_CAU01A_100715_0842_2_c,rfDC-raw.fif"
 
-# load the model for artifact rejection:
-model_name = "/data/megraid26/meg_commons/MLICA/models_MLICA_paper_090418/" \
-             "x_validation_shuffle_v4/split_23/split_23-25-0.939.hdf5"
+# load the model for artifact rejection
+# the details of the model is provided in the x_validation_shuffle_v4_split_23.txt
+model_name = op.join(data_path, "dcnn_model.hdf5")
 
 model = load_model(model_name)
 

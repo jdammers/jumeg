@@ -226,6 +226,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         fig.savefig(out_fname, facecolor='white',
                     dpi=600, bbox_inches=bbox_inches)
 
+    return fig
 
 def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
                                 node_order_size,
