@@ -461,7 +461,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         else:
             itmin = int(floor(tmin * raw.info['sfreq']))
         if tmax is None:
-            itmax = raw.last_samp
+            itmax = raw.last_samp - raw.first_samp
         else:
             itmax = int(ceil(tmax * raw.info['sfreq']))
 
