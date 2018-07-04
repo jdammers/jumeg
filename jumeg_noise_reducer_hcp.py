@@ -4,8 +4,8 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 31.01.2017
- version    : 1.9
+ last update: 26.06.2018
+ version    : 1.10
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -43,6 +43,7 @@ jumeg_noise_reducer.noise_reducer(fname_raw)
 #   150203/EE/
 #   150619/EE/ fix for tmin/tmax-arg
 #   170131/EE/ modified handling of refnotch-arg (no auto-harmonics)
+#   180629/EE/ explicite spec. for reference-filter ('firwin','hann')
 #
 # License: BSD (3-clause)
 
@@ -549,11 +550,12 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             fltref = raw.copy().drop_channels(droplist)
             if use_refantinotch:
                 rawref = raw.copy().drop_channels(droplist)
-                fltref.notch_filter(notchfrqscln,
-                                    picks=np.array(xrange(nref)), method='fft')
+                fltref.notch_filter(notchfrqscln, fir_design='firwin', fir_window='hann', \
+                                    picks=np.array(xrange(nref)), method='fir')
                 fltref._data = (rawref._data - fltref._data)
             else:
-                fltref.filter(refhp, reflp, picks=np.array(xrange(nref)), method='fft')
+                fltref.filter(refhp, reflp, fir_design='firwin', fir_window='hann', \
+                              picks=np.array(xrange(nref)), method='fir')
             tc1 = time.clock()
             tw1 = time.time()
             if verbose:
