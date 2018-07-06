@@ -23,17 +23,17 @@ subject = 'fsaverage'
 aparc = mne.read_labels_from_annot(subject, subjects_dir=subjects_dir, parc='aparc')
 
 # nodes in one hemisphere can be plotted as well
-# aparc_lh = [lab for lab in aparc if lab.hemi == 'lh']
+aparc_lh = [lab for lab in aparc if lab.hemi == 'lh']
 
 coords = []
 
-# plot 10 nodes only for better viz
-for lab in aparc[:10]:
+# plot 10 nodes from left hemisphere only for better viz
+for lab in aparc_lh[:10]:
     if lab.name is 'unknown-lh':
         continue
     # get the center of mass
     com = lab.center_of_mass('fsaverage')
-    # obtain mni coordinated to the vertex
+    # obtain mni coordinated to the vertex from left hemi
     coords_ = mne.vertex_to_mni(com, hemis=0, subject=subject, subjects_dir=subjects_dir)[0]
     coords.append(coords_)
 
