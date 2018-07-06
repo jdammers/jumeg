@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 '''utility functions for causality analysis'''
 
 import math
@@ -172,89 +173,90 @@ def _consistency(X, E):
     cons = 1 - np.linalg.norm(Rs - Rr, 2) / np.linalg.norm(Rr, 2)
     return cons
 
-
+#
 # def compute_morder(X):
-    '''Compute a suitable model order for the given data.
-
-    Parameters
-    X: Data array (trials, channels, samples)
-
-    Returns
-    morder: Model order
-
-    Note: The array will be reshaped to channels, samples, trials.
-    '''
-    print('Reshaping to - (sources, samples, trials)')
-    X = X.transpose(1, 2, 0)
-    print('data is of shape ', X.shape)
-
-    print('computing the model order..')
-    p_max = 0
-    # the shape is (sources, samples, trials)
-    n, m, N = X.shape
-    if p_max == 0:
-        p_max = m - 1
-    q = p_max
-    q1 = q + 1
-    XX = np.zeros((n, q1, m + q, N))
-    for k in xrange(q1):
-        XX[:, k, k:k + m, :] = X
-    q1n = q1 * n
-    bic = np.empty((q, 1))
-    bic.fill(np.nan)
-    I = np.identity(n)
-
-    # initialise recursion
-    AF = np.zeros((n, q1n))  # forward AR coefficients
-    AB = np.zeros((n, q1n))  # backward AR coefficients
-
-    k = 1
-    kn = k * n
-    M = N * (m - k)
-    kf = range(0, kn)
-    kb = range(q1n - kn, q1n)
-    XF = np.reshape(XX[:, 0:k, k:m, :], (kn, M), order='F')
-    XB = np.reshape(XX[:, 0:k, k - 1:m - 1, :], (kn, M), order='F')
-
-    CXF = np.linalg.cholesky(XF.dot(XF.T)).T
-    CXB = np.linalg.cholesky(XB.dot(XB.T)).T
-    AF[:, kf] = np.linalg.solve(CXF.T, I)
-    AB[:, kb] = np.linalg.solve(CXB.T, I)
-
-    while k <= q - 1:
-        print('model order = %d' % k)
-        tempF = np.reshape(XX[:, 0:k, k:m, :], (kn, M), order='F')
-        af = AF[:, kf]
-        EF = af.dot(tempF)
-        tempB = np.reshape(XX[:, 0:k, k - 1:m - 1, :], (kn, M), order='F')
-        ab = AB[:, kb]
-        EB = ab.dot(tempB)
-        CEF = np.linalg.cholesky(EF.dot(EF.T)).T
-        CEB = np.linalg.cholesky(EB.dot(EB.T)).T
-        R = np.dot(np.linalg.solve(CEF.T, EF.dot(EB.T)), np.linalg.inv(CEB))
-        CRF = np.linalg.cholesky(I - R.dot(R.T)).T
-        CRB = np.linalg.cholesky(I - (R.T).dot(R)).T
-        k = k + 1
-        kn = k * n
-        M = N * (m - k)
-        kf = np.arange(kn)
-        kb = range(q1n - kn, q1n)
-        AFPREV = AF[:, kf]
-        ABPREV = AB[:, kb]
-        AF[:, kf] = np.linalg.solve(CRF.T, AFPREV - R.dot(ABPREV))
-        AB[:, kb] = np.linalg.solve(CRB.T, ABPREV - R.T.dot(AFPREV))
-        E = np.linalg.solve(AF[:, :n], AF[:, kf]).dot(np.reshape(XX[:, :k, k:m,
-                                                      :], (kn, M), order='F'))
-        DSIG = np.linalg.det((E.dot(E.T)) / (M - 1))
-        i = k - 1
-        K = i * n * n
-        L = -(M / 2) * math.log(DSIG)
-        bic[i - 1] = -2 * L + K * math.log(M)
-
-    # morder = np.nanmin(bic), np.nanargmin(bic) + 1
-    morder = np.nanargmin(bic) + 1
-
-    return morder
+#     '''Compute a suitable model order for the given data.
+#
+#     Parameters
+#     X: Data array (trials, channels, samples)
+#
+#     Returns
+#     morder: Model order
+#
+#     Note: The array will be reshaped to channels, samples, trials.
+#     '''
+#     print('Reshaping to - (sources, samples, trials)')
+#     X = X.transpose(1, 2, 0)
+#     print('data is of shape ', X.shape)
+#
+#     print('computing the model order..')
+#     p_max = 0
+#     # the shape is (sources, samples, trials)
+#     n, m, N = X.shape
+#     if p_max == 0:
+#         p_max = m - 1
+#     q = p_max
+#     q1 = q + 1
+#     XX = np.zeros((n, q1, m + q, N))
+#     for k in xrange(q1):
+#         XX[:, k, k:k + m, :] = X
+#     q1n = q1 * n
+#     bic = np.empty((q, 1))
+#     bic.fill(np.nan)
+#     I = np.identity(n)
+#
+#     # initialise recursion
+#     AF = np.zeros((n, q1n))  # forward AR coefficients
+#     AB = np.zeros((n, q1n))  # backward AR coefficients
+#
+#     k = 1
+#     kn = k * n
+#     M = N * (m - k)
+#     kf = range(0, kn)
+#     kb = range(q1n - kn, q1n)
+#     XF = np.reshape(XX[:, 0:k, k:m, :], (kn, M), order='F')
+#     XB = np.reshape(XX[:, 0:k, k - 1:m - 1, :], (kn, M), order='F')
+#
+#     CXF = np.linalg.cholesky(XF.dot(XF.T)).T
+#     CXB = np.linalg.cholesky(XB.dot(XB.T)).T
+#     AF[:, kf] = np.linalg.solve(CXF.T, I)
+#     AB[:, kb] = np.linalg.solve(CXB.T, I)
+#
+#     while k <= q - 1:
+#         print('model order = %d' % k)
+#         tempF = np.reshape(XX[:, 0:k, k:m, :], (kn, M), order='F')
+#         af = AF[:, kf]
+#         EF = af.dot(tempF)
+#         tempB = np.reshape(XX[:, 0:k, k - 1:m - 1, :], (kn, M), order='F')
+#         ab = AB[:, kb]
+#         EB = ab.dot(tempB)
+#         CEF = np.linalg.cholesky(EF.dot(EF.T)).T
+#         CEB = np.linalg.cholesky(EB.dot(EB.T)).T
+#         R = np.dot(np.linalg.solve(CEF.T, EF.dot(EB.T)), np.linalg.inv(CEB))
+#         CRF = np.linalg.cholesky(I - R.dot(R.T)).T
+#         CRB = np.linalg.cholesky(I - (R.T).dot(R)).T
+#         k = k + 1
+#         kn = k * n
+#         M = N * (m - k)
+#         kf = np.arange(kn)
+#         kb = range(q1n - kn, q1n)
+#         AFPREV = AF[:, kf]
+#         ABPREV = AB[:, kb]
+#         AF[:, kf] = np.linalg.solve(CRF.T, AFPREV - R.dot(ABPREV))
+#         AB[:, kb] = np.linalg.solve(CRB.T, ABPREV - R.T.dot(AFPREV))
+#         E = np.linalg.solve(AF[:, :n], AF[:, kf]).dot(np.reshape(XX[:, :k, k:m,
+#                                                       :], (kn, M), order='F'))
+#         DSIG = np.linalg.det((E.dot(E.T)) / (M - 1))
+#         i = k - 1
+#         K = i * n * n
+#         L = -(M / 2) * math.log(DSIG)
+#         bic[i - 1] = -2 * L + K * math.log(M)
+#
+#     # morder = np.nanmin(bic), np.nanargmin(bic) + 1
+#     morder = np.nanargmin(bic) + 1
+#
+#     return morder
+#
 
 
 def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
@@ -346,7 +348,7 @@ def prepare_causality_matrix(cau, surr, freqs, nfft, sfreq, surr_thresh=95):
     return np.array(cau_con), np.array(max_cons), np.array(max_surrs)
 
 
-def compute_order(X, m_max, verbose=False):
+def compute_order(X, m_max, verbose=True):
     """Estimate AR order with BIC
 
     Parameters
