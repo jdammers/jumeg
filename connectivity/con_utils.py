@@ -78,3 +78,36 @@ def weighted_con_matrix(con, epochs, picks_epochs, sigma=20):
     # add the weights matrix to connectivity matrix to get the weighted connectivity matrix
     weighted_con_matrix = con + dist_weights_matrix
     return weighted_con_matrix
+
+
+def make_communities(con, top_n=3):
+    '''
+    Given an adjacency matrix, return list of nodes belonging to the top_n
+    communities based on Networkx Community algorithm.
+
+    Returns:
+    top_nodes_list: list (of length top_n)
+        Indices/nodes of the network that belongs to the top_n communities
+    n_communities: int
+        Total number of communities found by the algorithm.
+    '''
+    import networkx as nx
+    import community
+    G = nx.Graph(con)
+
+    # apply the community detection algorithm
+    part = community.best_partition(G)
+
+    from collections import Counter
+    top_communities = Counter(part.values()).most_common()[:top_n]
+    n_communities = len(Counter(part.values()))
+    # gets tuple (most_common, number_most_common)
+    top_nodes_list = []
+    for common, _ in top_communities:
+        top_nodes_list.append([node_ind for node_ind in part if part[node_ind] == common])
+
+    # nx.draw_networkx(G, pos=nx.spring_layout(G), cmap=plt.get_cmap("jet"),
+    #                  node_color=values, node_size=35, with_labels=False)
+
+    return top_nodes_list, n_communities
+
