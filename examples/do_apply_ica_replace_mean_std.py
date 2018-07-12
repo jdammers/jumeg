@@ -6,9 +6,8 @@ mne & filtered data, jumeg & filtered data, jumeg & unfiltered data
 """
 
 import mne
-from jumeg.decompose.ica_replace_mean_std import apply_ica_replace_mean_std
+from jumeg.decompose.ica_replace_mean_std import ICA, apply_ica_replace_mean_std
 from mne.datasets import sample
-from mne.preprocessing import ICA
 
 flow = 1.
 fhigh = 45.
