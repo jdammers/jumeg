@@ -472,9 +472,10 @@ def apply_mft(fwdname, datafile, evocondition=None, meg='mag',
                                          baseline=(None, 0), verbose=verbose)
             if len(indathndl) > 1:
                 raise ValueError(">>>>> need to specify a condition for this datafile. Aborting-")
-            picks = mne.io.pick.pick_types(indathndl[0].info, meg=meg, ref_meg=False,
+            indathndl = indathndl[0]
+            picks = mne.io.pick.pick_types(indathndl.info, meg=meg, ref_meg=False,
                                            eeg=False, stim=False, exclude=exclude)
-            data = indathndl[0].data[picks,:]
+            data = indathndl.data[picks, :]
         else:
             indathndl = mne.read_evokeds(datafile, condition=evocondition,
                                          baseline=(None, 0), verbose=verbose)
