@@ -5,7 +5,7 @@ from mne.preprocessing.ica import _check_start_stop, _check_for_unsupported_ica_
 from mne.channels.channels import _contains_ch_type
 from mne.io.base import BaseRaw
 from mne.epochs import BaseEpochs
-from mne.utils import _reject_data_segments
+from mne.utils import _reject_data_segments, check_version
 from mne.io.pick import pick_types, pick_info, _pick_data_channels, _DATA_CH_TYPES_SPLIT
 
 
@@ -394,6 +394,7 @@ class ICA(ICA_ORIG):
     verbose : bool, str, int, or None
         If not None, override default verbose level (see :func:`mne.verbose`
         and :ref:`Logging documentation <tut_logging>` for more).
+
     Attributes
     ----------
     current_fit : str
@@ -441,6 +442,23 @@ class ICA(ICA_ORIG):
                  n_pca_components=None, noise_cov=None, random_state=None,
                  method='fastica', fit_params=None, max_iter=200,
                  verbose=None):
+
+        # check if version of mne is at least 0.16.1 or newer
+        if check_version('mne', '0.16.1'):
+            print ""
+            print ""
+            print "jumeg.ica_replace_mean_std.ICA has only been tested with"
+            print "mne-python up to version 0.16.1. Your Version of mne-python"
+            print "is more recent."
+            print "Please check if any arguments for initializing the ICA"
+            print "object changed and implement these changes for the call"
+            print "to the super class below. Furthermore, check if substan-"
+            print "tial changes have been made to ICA._pre_whiten() and"
+            print "implement these changes while making sure that the stan-"
+            print "dard deviation is being calculated on a per-channel basis."
+            print ""
+
+            raise EnvironmentError("ICA has not been tested with your version of mne-python.")
 
         super(ICA, self).__init__(n_components=n_components, max_pca_components=max_pca_components,
                                   n_pca_components=n_pca_components, noise_cov=noise_cov,
