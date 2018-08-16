@@ -931,7 +931,9 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
 
 
 def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None, 
-              figure=None, axes=None, save=False, fname_save=None):
+              figure=None, axes=None, cmap='hot',symmetric_cbar=False,
+              threshold='min', save=False, fname_save=None):
+
   """ Plot a volume source space estimation.
   
   Parameters
@@ -959,6 +961,20 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
   axes : matplotlib.figure.axes | None
       Specify the axes of the given figure to plot in. Only necessary if
       a figure is passed.
+  threshold : a number, None, or 'auto'
+      If None is given, the image is not thresholded.
+      If a number is given, it is used to threshold the image:
+      values below the threshold (in absolute value) are plotted
+      as transparent. If auto is given, the threshold is determined
+      magically by analysis of the image.
+  cmap : matplotlib colormap, optional
+      The colormap for specified image. The ccolormap *must* be
+      symmetrical.
+  symmetric_cbar : boolean or 'auto', optional, default 'auto'
+      Specifies whether the colorbar should range from -vmax to vmax
+      or from vmin to vmax. Setting to 'auto' will select the latter if
+      the range of the whole image is either positive or negative.
+      Note: The colormap will always be set to range from -vmax to vmax.
   save : bool | None
       Default is False. If True the plot is forced to close and written to disk
       at fname_save location
@@ -982,9 +998,8 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
   img_data = img.get_data()
   aff = img.affine
   if time_sample is None:
-    t = int(np.where(np.sum(vstcdata,axis=0)
-                     ==np.max(np.sum(vstcdata,axis=0)))
-            [0]) # global maximum amp in time
+      # global maximum amp in time
+      t = int(np.where(np.sum(vstcdata,axis=0) == np.max(np.sum(vstcdata,axis=0)))[0])
   else:
     print '    Time slice', time_sample
     t = time_sample
@@ -1002,16 +1017,17 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
   slice_z = int(cut_coords[2])
   print ('    Coords [mri-space]:' 
          + 'X: ', slice_x,'Y: ',slice_y,'Z: ', slice_z )
-  temp_t1_fname = subjects_dir + subject +'/mri/T1.mgz'
+  temp_t1_fname = os.path.join(subjects_dir, subject, 'mri', 'T1.mgz')
+
   vstc_plt = plotting.plot_stat_map( index_img( img, t ), temp_t1_fname,
                                      figure=figure, axes=axes,
                                      display_mode = 'ortho',
-                                     threshold= vstcdata.min(),
+                                     threshold=threshold,
                                      annotate=True,
                                      title='%s | t=%.2f ms'
                                      % (subject, t_in_ms),
                                      cut_coords=(slice_x, slice_y, slice_z),
-                                     cmap='hot' )
+                                     cmap=cmap, symmetric_cbar=symmetric_cbar)
   if save:
     if fname_save == None:
         print 'please provide an filepath to save .png'
