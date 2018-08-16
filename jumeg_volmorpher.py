@@ -5,7 +5,8 @@
 #
 # License: BSD (3-clause)
 
-from jumeg.jumeg_utils import loadingBar
+# from jumeg.jumeg_utils import loadingBar
+loadingBar=None
 import mne
 import numpy as np
 from scipy.optimize import leastsq
