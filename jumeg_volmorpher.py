@@ -105,46 +105,47 @@ def _trans_from_est(params):
 
 def auto_match_labels(fname_subj_src, label_list_subject,
                       fname_temp_src, label_list_template,
-                      volume_labels, template_spacing, subject_dir,
+                      volume_labels, template_spacing,
                       e_func, fname_save, save_trans=False):
-    """ Matches a subjects volume source space labelwise to another volume 
-        source space
+    """
+    Matches a subject's volume source space labelwise to another volume
+    source space
     
     Parameters
     ----------
     fname_subj_src : string
-          Filename of the first volume source space
+        Filename of the first volume source space
     fname_temp_src : string
-          Filename of the second volume source space to match on
+        Filename of the second volume source space to match on
     volume_labels : list of volume Labels
-          List of the volume labels of intrest
+        List of the volume labels of interest
     template_spacing : int | float
-          The grid distances of the second volume source space in mm
-    subjects_dir : string
-        Path to SUBJECTS_DIR if it is not set in the environment.
+        The grid distances of the second volume source space in mm
     e_func : string | None
-          Error function, either 'balltree' or 'euclidean'. If None, the
-          default 'balltree' function is used.
-    save : bool
-          If it is True the transformation matrix for each label is saved 
-          as a dictionary. False is default
+        Error function, either 'balltree' or 'euclidean'. If None, the
+        default 'balltree' function is used.
+    fname_save : str
+        File name under which the transformation matrix is to be saved.
+    save_trans : bool
+        If it is True the transformation matrix for each label is saved
+        as a dictionary. False is default
   
     Returns
     -------
     label_trans_dic : dict
-          Dictionary of all the labels transformation matrizes
+        Dictionary of all the labels transformation matrizes
     label_trans_dic_err : dict
-          Dictionary of all the labels transformation matrizes distance
-          errors (mm)
+        Dictionary of all the labels transformation matrizes distance
+        errors (mm)
     label_trans_dic_mean_dist : dict
-          Dictionary of all the labels transformation matrizes mean
-          distances (mm)
+        Dictionary of all the labels transformation matrizes mean
+        distances (mm)
     label_trans_dic_max_dist : dict
-          Dictionary of all the labels transformation matrizes max
-          distance (mm)
+        Dictionary of all the labels transformation matrizes max
+        distance (mm)
     label_trans_dic_var_dist : dict
-          Dictionary of all the labels transformation matrizes distance
-          error variance (mm)
+        Dictionary of all the labels transformation matrizes distance
+        error variance (mm)
     """
 
     if e_func == 'balltree':
