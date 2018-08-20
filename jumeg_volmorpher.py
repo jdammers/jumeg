@@ -278,28 +278,28 @@ def auto_match_labels(fname_subj_src, label_list_subject,
 
             if e_func == 'balltree':
                 all_dist_max_l.append(np.array(
-                    (np.max(errfunc(to_match_points[:, :3], temp_tree)))
+                    np.max(errfunc(to_match_points[:, :3], temp_tree))
                 ))
                 all_dist_mean_l.append(np.array(
-                    (np.mean(errfunc(to_match_points[:, :3], temp_tree)))
+                    np.mean(errfunc(to_match_points[:, :3], temp_tree))
                 ))
-                all_dist_var_l.append(np.array(
-                    (np.var(errfunc(to_match_points[:, :3], temp_tree)))
-                ))
+                all_dist_var_l.append(np.array(np.var(
+                    errfunc(to_match_points[:, :3], temp_tree)
+                )))
                 all_dist_err_l.append(np.array(
                     errfunc(to_match_points[:, :3], temp_tree))
                 )
 
             if e_func == 'euclidean':
                 all_dist_max_l.append(np.array(
-                    (np.max(errfunc(to_match_points[:, :3], t_pts)))
+                    np.max(errfunc(to_match_points[:, :3], t_pts))
                 ))
                 all_dist_mean_l.append(np.array(
-                    (np.mean(errfunc(to_match_points[:, :3], t_pts)))
+                    np.mean(errfunc(to_match_points[:, :3], t_pts))
                 ))
-                all_dist_var_l.append(np.array(
-                    (np.var(errfunc(to_match_points[:, :3], t_pts)))
-                ))
+                all_dist_var_l.append(np.array(np.var(
+                    errfunc(to_match_points[:, :3], t_pts)
+                )))
                 all_dist_err_l.append(np.array(
                     errfunc(to_match_points[:, :3], t_pts))
                 )
