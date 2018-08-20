@@ -512,18 +512,21 @@ class ICA(ICA_ORIG):
 
 
 def read_ica(fname):
-    """Restore ICA solution from fif file.
+    """
+    Restore ICA solution from fif file. The resulting ICA object is initialized
+    as an instance of jumeg.decompose.ica_replace_mean_std.ICA
+
     Parameters
     ----------
     fname : str
         Absolute path to fif file containing ICA matrices.
         The file name should end with -ica.fif or -ica.fif.gz.
+
     Returns
     -------
     ica : instance of ICA
         The ICA estimator.
     """
-    # TODO: do I actually need this?
 
     from mne.utils import logger, check_fname
     from mne.io.open import fiff_open
