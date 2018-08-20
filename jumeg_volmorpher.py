@@ -416,21 +416,21 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
     Parameters
     ----------
     vsrc_subject_from : instance of SourceSpaces
-            The source spaces that will be transformed.
+        The source spaces that will be transformed.
     volume_labels : list
-          List of the volume labels of intrest
+        List of the volume labels of interest
     subject_to : str | None
-            The template subject.
-    subject_dir : string, or None
-            Path to SUBJECTS_DIR if it is not set in the environment.
+        The template subject.
+    subjects_dir : string, or None
+        Path to SUBJECTS_DIR if it is not set in the environment.
     
     Returns
     -------
     transformed_p : array
-          Transformed points from subject volume source space to volume source
-          space of the template subject.
+        Transformed points from subject volume source space to volume source
+        space of the template subject.
     idx_vertices : array
-          Array of idxs for all transformed vertices in the volume source space.
+        Array of idxs for all transformed vertices in the volume source space.
     """
     subj_vol = vsrc_subject_from
     subject = subj_vol[0]['subject_his_id']
@@ -452,7 +452,8 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
             mat_mak_trans_dict_arr = np.load(fname_lw_trans)
 
         except:
-            print 'MatchMaking Transformations file NOT found\n'
+            print 'MatchMaking Transformations file NOT found:'
+            print fname_lw_trans, '\n'
             print 'Please calculate the according transformation matrix dictionary'
             print 'by using the jumeg.jumeg_volmorpher.auto_match_labels function.'
 
