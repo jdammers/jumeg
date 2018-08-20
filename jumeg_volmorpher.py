@@ -266,53 +266,8 @@ def auto_match_labels(fname_subj_src, label_list_subject,
             init_trans[2, 3] = initial_transl[2]
             init_trans[3, 3] = 1.
 
-            def find_min(s_pts, init_trans):
-                sourr = template_spacing / 1e3
-                auto_match_iters = np.array([[0., 0., 0.],
-                                             [0., 0., sourr], [0., 0., sourr * 2], [0., 0., sourr * 3],
-                                             [sourr, 0., 0.], [sourr * 2, 0., 0.], [sourr * 3, 0., 0.],
-                                             [0., sourr, 0.], [0., sourr * 2, 0.], [0., sourr * 3, 0.],
-                                             [0., 0., -sourr], [0., 0., -sourr * 2], [0., 0., -sourr * 3],
-                                             [-sourr, 0., 0.], [-sourr * 2, 0., 0.], [-sourr * 3, 0., 0.],
-                                             [0., -sourr, 0.], [0., -sourr * 2, 0.], [0., -sourr * 3, 0.]])
-
-                poss_trans = []
-                for p, i in enumerate(auto_match_iters):
-                    # initial translation value
-                    tx, ty, tz = init_trans[0, 3] + i[0], init_trans[1, 3] + i[1], init_trans[2, 3] + i[2]
-                    sx, sy, sz = init_trans[0, 0], init_trans[1, 1], init_trans[2, 2]
-                    rx, ry, rz = 0, 0, 0
-                    x0 = (tx, ty, tz, rx, ry, rz)
-
-                    def error(x):
-                        tx, ty, tz, rx, ry, rz = x
-                        trans0 = np.zeros([4, 4])
-                        trans0[:3, :3] = rotation3d(rx, ry, rz) * [sx, sy, sz]
-                        trans0[0, 3] = tx
-                        trans0[1, 3] = ty
-                        trans0[2, 3] = tz
-                        # rotate and scale
-                        est = np.dot(s_pts, trans0[:3, :3].T)
-                        # translate
-                        est += trans0[:3, 3]
-                        if e_func == 'balltree':
-                            err = errfunc(est[:, :3], temp_tree)
-                        elif e_func == 'euclidean':
-                            err = errfunc(est[:, :3], t_pts)
-                        return err
-
-                    est, _, info, msg, _ = leastsq(error, x0, full_output=True)
-                    est = np.concatenate((est, (init_trans[0, 0],
-                                                init_trans[1, 1],
-                                                init_trans[2, 2])
-                                          ))
-                    trans = _trans_from_est(est)
-                    poss_trans.append(trans)
-
-                return (poss_trans)
-
         # Find the min summed distance for initial transformation
-        poss_trans = find_min(s_pts, init_trans)
+        poss_trans = find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_trans)
         all_dist_max_l = []
         all_dist_mean_l = []
         all_dist_var_l = []
@@ -406,6 +361,56 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     else:
         return (label_trans_dic, label_trans_dic_err, label_trans_dic_mean_dist,
                 label_trans_dic_max_dist, label_trans_dic_var_dist)
+
+
+def find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_trans):
+    """
+    Aux. function for auto_match_labels.
+    """
+
+    sourr = template_spacing / 1e3
+    auto_match_iters = np.array([[0., 0., 0.],
+                                 [0., 0., sourr], [0., 0., sourr * 2], [0., 0., sourr * 3],
+                                 [sourr, 0., 0.], [sourr * 2, 0., 0.], [sourr * 3, 0., 0.],
+                                 [0., sourr, 0.], [0., sourr * 2, 0.], [0., sourr * 3, 0.],
+                                 [0., 0., -sourr], [0., 0., -sourr * 2], [0., 0., -sourr * 3],
+                                 [-sourr, 0., 0.], [-sourr * 2, 0., 0.], [-sourr * 3, 0., 0.],
+                                 [0., -sourr, 0.], [0., -sourr * 2, 0.], [0., -sourr * 3, 0.]])
+
+    poss_trans = []
+    for p, i in enumerate(auto_match_iters):
+        # initial translation value
+        tx, ty, tz = init_trans[0, 3] + i[0], init_trans[1, 3] + i[1], init_trans[2, 3] + i[2]
+        sx, sy, sz = init_trans[0, 0], init_trans[1, 1], init_trans[2, 2]
+        rx, ry, rz = 0, 0, 0
+        x0 = (tx, ty, tz, rx, ry, rz)
+
+        def error(x):
+            tx, ty, tz, rx, ry, rz = x
+            trans0 = np.zeros([4, 4])
+            trans0[:3, :3] = rotation3d(rx, ry, rz) * [sx, sy, sz]
+            trans0[0, 3] = tx
+            trans0[1, 3] = ty
+            trans0[2, 3] = tz
+            # rotate and scale
+            est = np.dot(s_pts, trans0[:3, :3].T)
+            # translate
+            est += trans0[:3, 3]
+            if e_func == 'balltree':
+                err = errfunc(est[:, :3], temp_tree)
+            elif e_func == 'euclidean':
+                err = errfunc(est[:, :3], t_pts)
+            return err
+
+        est, _, info, msg, _ = leastsq(error, x0, full_output=True)
+        est = np.concatenate((est, (init_trans[0, 0],
+                                    init_trans[1, 1],
+                                    init_trans[2, 2])
+                              ))
+        trans = _trans_from_est(est)
+        poss_trans.append(trans)
+
+    return poss_trans
 
 
 def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
