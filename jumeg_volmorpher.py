@@ -446,18 +446,22 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
         fname_lw_trans = (subjects_dir + subject + '/' +
                           '%s_%s_vol-%.2f_lw-trans.npy' % (subject, subject_to,
                                                            indiv_spacing))
-        if os.path.exists(fname_lw_trans):
-            print '    MatchMaking Transformations file found.'
+
+        try:
             mat_mak_trans_dict_arr = np.load(fname_lw_trans)
-            label_trans_ID = mat_mak_trans_dict_arr[0]['ID']
-            print '    Reading MatchMaking file %s..' % label_trans_ID
-            label_trans_dic = mat_mak_trans_dict_arr[0]['Labeltransformation']
-            print '    [done]'
-        else:
-            print '    MatchMaking Transformations file NOT found\n'
-            print """    Please calculate the according transformation matrix
-            dictionary by using the jumeg.jumeg_volmorpher.automatch_labels
-            function"""
+
+        except:
+            print 'MatchMaking Transformations file NOT found\n'
+            print 'Please calculate the according transformation matrix dictionary'
+            print 'by using the jumeg.jumeg_volmorpher.auto_match_labels function.'
+
+            import sys
+            sys.exit(-1)
+
+
+        label_trans_ID = mat_mak_trans_dict_arr[0]['ID']
+        print '    Reading MatchMaking file %s..' % label_trans_ID
+        label_trans_dic = mat_mak_trans_dict_arr[0]['Labeltransformation']
     else:
         label_trans_dic = label_trans_dic
 
