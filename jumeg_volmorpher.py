@@ -154,37 +154,37 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     if e_func == 'euclidean':
         err_function = 'Euclidean Error Function'
         errfunc = _point_cloud_error
-    if e_func == None:
-        print '\nPlease provide your desired Error Function\n'
+    if e_func is None:
+        print 'No Error Function provided, using BallTree instead'
+        err_function = 'BallTree Error Function'
+        errfunc = _point_cloud_error_balltree
 
     subj_src = mne.read_source_spaces(fname_subj_src)
     subject_from = subj_src[0]['subject_his_id']
     x, y, z = subj_src[0]['rr'].T
     subj_p = np.c_[x, y, z]
     subject = subj_src[0]['subject_his_id']
-    label_list_subject = label_list_subject
 
     temp_src = mne.read_source_spaces(fname_temp_src)
     subject_to = temp_src[0]['subject_his_id']
     x1, y1, z1 = temp_src[0]['rr'].T
     temp_p = np.c_[x1, y1, z1]
     template = temp_src[0]['subject_his_id']
-    label_list_template = label_list_template
 
     print """\n#### Attempting to match %d volume source space labels from
     Subject: '%s' to Template: '%s' with
     %s...""" % (len(volume_labels), subject, template, err_function)
     vert_sum = []
     vert_sum_temp = []
-    for i in volume_labels:
-        vert_sum.append(label_list_subject[i].shape[0])
-        vert_sum_temp.append(label_list_template[i].shape[0])
-        for j in volume_labels:
-            if i != j:
-                h = np.intersect1d(label_list_subject[i], label_list_subject[j])
+    for label_i in volume_labels:
+        vert_sum.append(label_list_subject[label_i].shape[0])
+        vert_sum_temp.append(label_list_template[label_i].shape[0])
+        for label_j in volume_labels:
+            if label_i != label_j:
+                h = np.intersect1d(label_list_subject[label_i], label_list_subject[label_j])
                 if h.shape[0] > 0:
-                    print "In Label:", i, """ are vertices from
-            Label:""", j, "(", h.shape[0], ")"
+                    print "In Label:", label_i, """ are vertices from
+            Label:""", label_j, "(", h.shape[0], ")"
                     break
 
     print '    # N subject vertices:', np.sum(np.asarray(vert_sum))
@@ -486,12 +486,13 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
     transformed_p = np.array([[0, 0, 0]])
     vert_sum = []
     idx_vertices = []
-    for p, labels in enumerate(volume_labels):
-        loadingBar(p, len(volume_labels), task_part=labels)
-        vert_sum.append(label_list[labels].shape[0])
-        idx_vertices.append(label_list[labels])
-        trans_p = subj_p[label_list[labels]]
-        trans = label_trans_dic[labels]
+    # TODO: p stands for points?
+    for p, label in enumerate(volume_labels):
+        loadingBar(p, len(volume_labels), task_part=label)
+        vert_sum.append(label_list[label].shape[0])
+        idx_vertices.append(label_list[label])
+        trans_p = subj_p[label_list[label]]
+        trans = label_trans_dic[label]
         # apply trans
         trans_p = apply_trans(trans, trans_p)
         del trans
