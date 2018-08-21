@@ -233,17 +233,20 @@ def auto_match_labels(fname_subj_src, label_list_subject,
             t_x_diff = np.max(t_x) - np.min(t_x)
             t_y_diff = np.max(t_y) - np.min(t_y)
             t_z_diff = np.max(t_z) - np.min(t_z)
-            # Calculate a scaling factor for the subject to match tempalte size
+            # Calculate a scaling factor for the subject to match template size
             # and avoid 'Nan' by zero division
-            if t_x_diff == 0 and s_x_diff == 0:
+
+            if t_x_diff == 0 or s_x_diff == 0:
                 x_scale = 0.
             else:
                 x_scale = t_x_diff / s_x_diff
-            if t_y_diff == 0 and s_y_diff == 0:
+
+            if t_y_diff == 0 or s_y_diff == 0:
                 y_scale = 0.
             else:
                 y_scale = t_y_diff / s_y_diff
-            if t_z_diff == 0 and s_z_diff == 0:
+
+            if t_z_diff == 0 or s_z_diff == 0:
                 z_scale = 0.
             else:
                 z_scale = t_z_diff / s_z_diff
