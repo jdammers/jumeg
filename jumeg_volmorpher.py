@@ -519,8 +519,8 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
 def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                      volume_labels, subject_to, fname_vsrc_subject_to,
                      cond, n_iter, interpolation_method, normalize,
-                     subjects_dir, unwanted_to_zero=True,
-                     label_trans_dic=None, fname_save_stc=None, save_stc=False):
+                     subjects_dir, unwanted_to_zero=True, label_trans_dic=None,
+                     fname_save_stc=None, save_stc=False, plot=False):
     """ Perform a volume morphing from one subject to a template.
     
     Parameters
@@ -543,6 +543,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         Path to SUBJECTS_DIR if it is not set in the environment.
     save : bool
         True to save. False is default
+    plot : bool
+        Plot the morphed stc.
   
     Returns
     -------
@@ -711,25 +713,29 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                            vertices=temp_vol[0]['vertno'],
                            data=new_data[inter_m + '_norm'])
                 stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
-                _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                             interpolation_method,
-                                             subj_vol, label_list_subject_from,
-                                             temp_vol, label_list_subject_to,
-                                             volume_labels, subject_from,
-                                             subject_to, cond=cond, n_iter=n_iter,
-                                             subjects_dir=subjects_dir, save=True)
+
+                if plot:
+                    _volumemorphing_plot_results(stc_orig, stc_morphed,
+                                                 interpolation_method,
+                                                 subj_vol, label_list_subject_from,
+                                                 temp_vol, label_list_subject_to,
+                                                 volume_labels, subject_from,
+                                                 subject_to, cond=cond, n_iter=n_iter,
+                                                 subjects_dir=subjects_dir, save=True)
             else:
                 _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
                            vertices=temp_vol[0]['vertno'], data=new_data[inter_m])
                 stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
-                _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                             interpolation_method,
-                                             subj_vol, temp_vol,
-                                             volume_labels,
-                                             subject_from, subject_to,
-                                             cond=cond, n_iter=n_iter,
-                                             subjects_dir=subjects_dir,
-                                             save=True)
+
+                if plot:
+                    _volumemorphing_plot_results(stc_orig, stc_morphed,
+                                                 interpolation_method,
+                                                 subj_vol, temp_vol,
+                                                 volume_labels,
+                                                 subject_from, subject_to,
+                                                 cond=cond, n_iter=n_iter,
+                                                 subjects_dir=subjects_dir,
+                                                 save=True)
         print '[done]'
         print '####             Volume Morphing           ####'
         print '####                  DONE                 ####'
@@ -887,7 +893,9 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     print '    [done]'
 
     # Stc per label  
-    fig, axs = plt.subplots(len(volume_labels) / 5, 5, figsize=(15, 15),
+    # fig, axs = plt.subplots(len(volume_labels) / 5, 5, figsize=(15, 15),
+    #                         facecolor='w', edgecolor='k')
+    fig, axs = plt.subplots(int(np.ceil(len(volume_labels) / 5.)), 5, figsize=(15, 15),
                             facecolor='w', edgecolor='k')
     fig.subplots_adjust(hspace=.6, wspace=.255,
                         bottom=0.089, top=.9,
