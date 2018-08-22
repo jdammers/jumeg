@@ -176,9 +176,12 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     %s...""" % (len(volume_labels), subject, template, err_function)
     vert_sum = []
     vert_sum_temp = []
+
     for label_i in volume_labels:
         vert_sum.append(label_list_subject[label_i].shape[0])
         vert_sum_temp.append(label_list_template[label_i].shape[0])
+
+        # check for overlapping labels
         for label_j in volume_labels:
             if label_i != label_j:
                 h = np.intersect1d(label_list_subject[label_i], label_list_subject[label_j])
@@ -199,13 +202,17 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     start_time = time.time()
     del subj_src, temp_src
 
-    for p, label in enumerate(volume_labels):
-        loadingBar(count=p, total=len(volume_labels),
+    for label_idx, label in enumerate(volume_labels):
+        loadingBar(count=label_idx, total=len(volume_labels),
                    task_part='%s' % label)
         # Select coords for label and check if they exceed the label size limit
         s_pts = subj_p[label_list_subject[label]]
         t_pts = temp_p[label_list_template[label]]
-        if s_pts.shape[0] < 6:
+
+        if s_pts.shape[0] == 0:
+            raise ValueError("The label does not contain any vertices for the subject.")
+
+        elif s_pts.shape[0] < 6:
             while s_pts.shape[0] < 6:
                 s_pts = np.concatenate((s_pts, s_pts))
 
@@ -222,7 +229,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
         else:
             if e_func == 'balltree':
                 temp_tree = BallTree(t_pts)
-            if e_func == 'euclidean':
+            elif e_func == 'euclidean':
                 continue
             # Get the x-,y-,z- min and max Limits to create the span for each axis
             s_x, s_y, s_z = s_pts.T
@@ -250,6 +257,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
                 z_scale = 0.
             else:
                 z_scale = t_z_diff / s_z_diff
+
             # Find center of mass
             cm_s = np.mean(s_pts, axis=0)
             cm_t = np.mean(t_pts, axis=0)
@@ -258,7 +266,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
             init_trans = np.zeros([4, 4])
             if label[0] == 'L':
                 init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
-            if label[0] == 'R':
+            elif label[0] == 'R':
                 init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
 
             # =============================================================================
@@ -345,7 +353,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
         label_trans_dic_err.update({label: all_dist_err})
 
     if save_trans:
-        print '\n    Writing Transformationmatrices to file..'
+        print '\n    Writing Transformation matrices to file..'
         fname_lw_trans = fname_save
         mat_mak_trans_dict = {}
         mat_mak_trans_dict['ID'] = '%s -> %s' % (subject_from, subject_to)
