@@ -995,7 +995,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     axes : matplotlib.figure.axes | None
         Specify the axes of the given figure to plot in. Only necessary if
         a figure is passed.
-    threshold : a number, None, or 'auto'
+    threshold : a number, None, 'auto', or 'min'
         If None is given, the image is not thresholded.
         If a number is given, it is used to threshold the image:
         values below the threshold (in absolute value) are plotted
@@ -1053,6 +1053,8 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
            + 'X: ', slice_x, 'Y: ', slice_y, 'Z: ', slice_z)
     temp_t1_fname = os.path.join(subjects_dir, subject, 'mri', 'T1.mgz')
 
+    if threshold == 'min':
+        threshold = vstcdata.min()
     vstc_plt = plotting.plot_stat_map(index_img(img, t), temp_t1_fname,
                                       figure=figure, axes=axes,
                                       display_mode='ortho',
