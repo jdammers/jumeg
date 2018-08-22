@@ -519,8 +519,8 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
 def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                      volume_labels, subject_to, fname_vsrc_subject_to,
                      cond, n_iter, interpolation_method, normalize,
-                     subjects_dir, Unwanted_to_Zero=True,
-                     label_trans_dic=None, save_stc=False):
+                     subjects_dir, unwanted_to_zero=True,
+                     label_trans_dic=None, fname_save_stc=None, save_stc=False):
     """ Perform a volume morphing from one subject to a template.
     
     Parameters
@@ -547,11 +547,11 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     Returns
     -------
     In Case of save_stc=True:
-      new-data : VolSourceEstimate
+      stc_morphed : VolSourceEstimate
             Volume source estimate for the destination subject.
             
     In Case of save_stc=False:
-      new-data : dict
+      new_data : dict
           One or more new stc data array
     """
     print '####                  START                ####'
@@ -575,7 +575,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                                    '_vertno_labelwise.npy')
     label_list_subject_to = np.load(fname_label_list_subject_to).item()
 
-    # Check for vertice duplicates    
+    # Check for vertex duplicates
     label_list_subject_from = _remove_vert_duplicates(subject_from, subj_vol,
                                                       label_list_subject_from,
                                                       subjects_dir)
@@ -600,7 +600,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     for inter_m in interpolation_method:
 
         print '\n#### Attempting to interpolate STC Data for every time sample..'
-        print '    Interpolationmethod: ', inter_m
+        print '    Interpolation method: ', inter_m
         st_time = time.time()
         xt, yt, zt = temp_vol[0]['rr'][temp_vol[0]['inuse'].astype(bool)].T
         inter_data = np.zeros([xt.shape[0], ntimes])
@@ -612,8 +612,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         if inter_m == 'linear':
             inter_data = np.nan_to_num(inter_data)
 
-        if Unwanted_to_Zero:
-            print '#### Setting all unknown vertex values to Zero..'
+        if unwanted_to_zero:
+            print '#### Setting all unknown vertex values to zero..'
 
             # vertnos_unknown = label_list_subject_to['Unknown']
             # vert_U_idx = np.array([], dtype=int)
@@ -656,6 +656,10 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                                              )
             d2 = np.zeros(stc_orig.data.shape)
             d2[subj_LOI_idx, :] = stc_orig.data[subj_LOI_idx, :]
+
+            if not stc_orig.data.flags["WRITEABLE"]:
+                stc_orig.data.setflags(write=1)
+
             stc_orig.data[:, :] = d2[:, :]
 
         if normalize:
@@ -693,9 +697,14 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     if save_stc:
         print '\n#### Attempting to write interpolated STC Data to file..'
         for inter_m in interpolation_method:
-            fname_stc_orig_morphed = (fname_stc_orig[:-7] +
-                                      '_morphed_to_%s_%s-vl.stc' % (subject_to,
-                                                                    inter_m))
+
+            if fname_save_stc is None:
+                fname_stc_orig_morphed = (fname_stc_orig[:-7] +
+                                          '_morphed_to_%s_%s-vl.stc' % (subject_to,
+                                                                        inter_m))
+            else:
+                fname_stc_orig_morphed = fname_save_stc
+
             print '    Destination:', fname_stc_orig_morphed
             if normalize:
                 _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
