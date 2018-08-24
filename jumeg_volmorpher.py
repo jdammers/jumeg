@@ -162,18 +162,24 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     subj_src = mne.read_source_spaces(fname_subj_src)
     subject_from = subj_src[0]['subject_his_id']
     x, y, z = subj_src[0]['rr'].T
+    # hlight: subj_p contains the coordinates of the vertices
     subj_p = np.c_[x, y, z]
+    # hlight: how is subject different from subject_from?
     subject = subj_src[0]['subject_his_id']
 
     temp_src = mne.read_source_spaces(fname_temp_src)
     subject_to = temp_src[0]['subject_his_id']
     x1, y1, z1 = temp_src[0]['rr'].T
+    # hlight: temp_p contains the coordinates of the vertices
     temp_p = np.c_[x1, y1, z1]
+    # hlight: how is template different from subject_to?
     template = temp_src[0]['subject_his_id']
 
     print """\n#### Attempting to match %d volume source space labels from
     Subject: '%s' to Template: '%s' with
     %s...""" % (len(volume_labels), subject, template, err_function)
+
+    # hlight: wouldn't it be easier to just sum up the shape of the label list instead of making a list?
     vert_sum = []
     vert_sum_temp = []
 
@@ -186,8 +192,8 @@ def auto_match_labels(fname_subj_src, label_list_subject,
             if label_i != label_j:
                 h = np.intersect1d(label_list_subject[label_i], label_list_subject[label_j])
                 if h.shape[0] > 0:
-                    print "In Label:", label_i, """ are vertices from
-            Label:""", label_j, "(", h.shape[0], ")"
+                    print 'Label %s contains %d vertices from label %s' % (label_i, h.shape[0], label_i)
+                    # hlight: why break here? Couldn't there be overlap with other labels as well?
                     break
 
     print '    # N subject vertices:', np.sum(np.asarray(vert_sum))
@@ -205,10 +211,13 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     for label_idx, label in enumerate(volume_labels):
         loadingBar(count=label_idx, total=len(volume_labels),
                    task_part='%s' % label)
+        print ''
+
         # Select coords for label and check if they exceed the label size limit
         s_pts = subj_p[label_list_subject[label]]
         t_pts = temp_p[label_list_template[label]]
 
+        # hlight: what's the significance of s_pts having less than 6 elements?
         if s_pts.shape[0] == 0:
             raise ValueError("The label does not contain any vertices for the subject.")
 
@@ -243,6 +252,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
             # Calculate a scaling factor for the subject to match template size
             # and avoid 'Nan' by zero division
 
+            # hlight: fix comparison of float with zero
             if t_x_diff == 0 or s_x_diff == 0:
                 x_scale = 0.
             else:
@@ -264,6 +274,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
             initial_transl = (cm_t - cm_s)
             # Perform the transformation of the initial transformation matrix
             init_trans = np.zeros([4, 4])
+            # hlight: what happens if the label is neither left nor right? -> init_trans is filled with zeros
             if label[0] == 'L':
                 init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
             elif label[0] == 'R':
@@ -277,6 +288,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
             init_trans[2, 3] = initial_transl[2]
             init_trans[3, 3] = 1.
 
+        # hlight: if t_pts.shape[0] == 0: errfunc, temp_tree, and init_trans are not defined or rather the previous ones are used
         # Find the min summed distance for initial transformation
         poss_trans = find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_trans)
         all_dist_max_l = []
@@ -396,6 +408,7 @@ def find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_tr
         rx, ry, rz = 0, 0, 0
         x0 = (tx, ty, tz, rx, ry, rz)
 
+        # hlight: possible to take this outside of find_min?
         def error(x):
             tx, ty, tz, rx, ry, rz = x
             trans0 = np.zeros([4, 4])
@@ -539,9 +552,22 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         Filepath of the template subjects volume source space
     interpolation_method : string | None
         Either 'balltree' or 'euclidean'. Default is 'balltree'
+    cond : str (Not really needed)
+        Experimental condition under which the data was recorded.
+    n_iter : int (Not really needed)
+        Number of iterations performed during MFT.
+    normalize : bool
+        hlight: what to say here?
     subjects_dir : string, or None
         Path to SUBJECTS_DIR if it is not set in the environment.
-    save : bool
+    unwanted_to_zero : bool
+        hlight: what to say here?
+    label_trans_dic : dict
+        hlight: what to say here?
+    fname_save_stc : None | str
+        File name for the morphed volume stc file to be saved under.
+        If fname_save_stc is None, use the standard file name convention.
+    save_stc : bool
         True to save. False is default
     plot : bool
         Plot the morphed stc.
@@ -658,7 +684,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                                              )
             d2 = np.zeros(stc_orig.data.shape)
             d2[subj_LOI_idx, :] = stc_orig.data[subj_LOI_idx, :]
-
+            # TODO: why is in stc_orig.data.flags WRITEABLE=False ?? causes crash
             if not stc_orig.data.flags["WRITEABLE"]:
                 stc_orig.data.setflags(write=1)
 
