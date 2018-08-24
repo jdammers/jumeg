@@ -782,8 +782,8 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         Name of the subject on which to morph as named in the SUBJECTS_DIR
     cond : str | None
         Evoked contition as a string to give the plot more intel
-    n_iter : str | None
-        Source localization method as a string to give the plot more intel
+    n_iter : int
+        Number of iterations performed during MFT.
     subjects_dir : string, or None
         Path to SUBJECTS_DIR if it is not set in the environment.
 
@@ -833,8 +833,8 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     fig.text(0.985, 0.25, 'Amplitude [T]', color='white', size='large',
              horizontalalignment='right', verticalalignment='center',
              rotation=-90, transform=ax2.transAxes)
-    plt.suptitle('VolumeMorphing from %s to %s | Cond.: %s, Iter.: %s'
-                 % (subject_from, subject_to, cond, n_iter[4:]),
+    plt.suptitle('VolumeMorphing from %s to %s | Cond.: %s, Iter.: %d'
+                 % (subject_from, subject_to, cond, n_iter),
                  fontsize=16, color='white')
     fig.set_facecolor('black')
     plt.tight_layout()
@@ -914,15 +914,14 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         axs[p].set_ylabel('Amplitude [T]')
         axs[p].set_xlim(stc_orig.times[0], stc_orig.times[-1])
         axs[p].get_xaxis().grid(True)
-    fig.suptitle('Summed activision in volume labels - %s[%.2f]' % (subject_from, indiv_spacing)
-                 + ' -> %s [%.2f] | Cond.: %s, Iter.: %s'
-                 % (subject_to, temp_spacing, cond, n_iter[4:]),
+
+    fig.suptitle('Summed activity in volume labels - %s[%.2f]' % (subject_from, indiv_spacing)
+                 + ' -> %s [%.2f] | Cond.: %s, Iter.: %d'
+                 % (subject_to, temp_spacing, cond, n_iter),
                  fontsize=16)
     if save:
-        fname_save_fig = (directory +
-                          '/%s_%s_vol-%.2f_%s_%s_labelwise-stc.png'
-                          % (subject_from, subject_to,
-                             indiv_spacing, cond, n_iter))
+        fname_save_fig = os.path.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_labelwise-stc.png')
+        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond, n_iter)
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
         plt.close()
@@ -938,12 +937,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
 
     f, (ax1) = plt.subplots(1, figsize=(16, 5))
     ax1.plot(stc_orig.times, stc_orig.data.sum(axis=0), '#00868B', linewidth=1,
-             label='%s' % (subject_from))
+             label='%s' % subject_from)
     ax1.plot(stc_orig.times, new_data.sum(axis=0), '#CD7600', linewidth=1,
-             label='%s morphed' % (subject_from))
+             label='%s morphed' % subject_from)
     ax1.set_title('Summed Source Amplitude - %s[%.2f] ' % (subject_from, indiv_spacing)
-                  + '-> %s [%.2f] | Cond.: %s, Iter.: %s'
-                  % (subject_to, temp_spacing, cond, n_iter[4:]))
+                  + '-> %s [%.2f] | Cond.: %s, Iter.: %d'
+                  % (subject_to, temp_spacing, cond, n_iter))
     ax1.text(stc_orig.times[0],
              np.maximum(stc_orig.data.sum(axis=0), new_data.sum(axis=0)).max(),
              """Total Amplitude Difference: %+.2f %%
@@ -960,10 +959,8 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     ax1.get_xaxis().grid(True)
     plt.tight_layout()
     if save:
-        fname_save_fig = (directory +
-                          '/%s_%s_vol-%.2f_%s_%s_stc.png'
-                          % (subject_from, subject_to,
-                             indiv_spacing, cond, n_iter))
+        fname_save_fig = os.path.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_stc.png')
+        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond, n_iter)
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
         plt.close()
