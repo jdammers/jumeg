@@ -1021,6 +1021,9 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
            + 'X: ', slice_x, 'Y: ', slice_y, 'Z: ', slice_z)
     temp_t1_fname = os.path.join(subjects_dir, subject, 'mri', 'T1.mgz')
 
+    if threshold == 'min':
+        threshold = vstcdata.min()
+
     vstc_plt = plotting.plot_stat_map(index_img(img, t), temp_t1_fname,
                                       figure=figure, axes=axes,
                                       display_mode='ortho',
