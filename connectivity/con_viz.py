@@ -524,7 +524,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                          node_colors=reordered_colors,
                                          node_edgecolor='white', fig=fig,
                                          fontsize_title=12,
-                                         fontsize_names=10, padding=6.,
+                                         fontsize_names=10, padding=2.,
                                          vmax=vmax, vmin=vmin, colorbar_size=0.2,
                                          colorbar_pos=colorbar_pos,
                                          colorbar=colorbar, show=show,
@@ -641,13 +641,16 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
 def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   labels_mode='cortex_only', title='Causal Metric',
                                   out_fname='causality_circle.png', colormap='Blues',
-                                  figsize=(10, 6), show=False, colorbar=False):
+                                  figsize=(10, 6), show=False, colorbar=False,
+                                  vmin=None, vmax=None, tight_layout=False, **kwargs):
 
     con_l = np.tril(caus, k=-1)
     con_u = np.triu(caus, k=1).T
 
-    vmin = np.min([np.min(con_l[con_l != 0]), np.min(con_u[con_u != 0])])
-    vmax = np.max([np.max(con_l[con_l != 0]), np.max(con_u[con_u != 0])])
+    if vmin is None or vmax is None:
+        print 'Setting vmin and vmax'
+        vmin = np.min([np.min(con_l[con_l != 0]), np.min(con_u[con_u != 0])])
+        vmax = np.max([np.max(con_l[con_l != 0]), np.max(con_u[con_u != 0])])
 
     import matplotlib.pyplot as plt
     fig = plt.figure(num=None, figsize=figsize)
@@ -655,6 +658,13 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
 
     if colorbar:
         colorbar = [False, True]
+    else:
+        colorbar = [False, False]
+
+    if tight_layout:
+        tight_layout = [False, True]
+    else:
+        tight_layout = [None, None]
 
     for ii, cond in enumerate(conds):
         plot_grouped_connectivity_circle(yaml_fname, conds[ii],
@@ -665,4 +675,5 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                          fig=fig, subplot=(1, 1, 1),
                                          vmin=vmin, vmax=vmax,
                                          n_lines=n_lines, colormap=colormap,
-                                         colorbar=colorbar[ii], arrow=True)
+                                         colorbar=colorbar[ii], arrow=True,
+                                         tight_layout=tight_layout[ii], **kwargs)

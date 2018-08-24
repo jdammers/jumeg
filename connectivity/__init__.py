@@ -11,4 +11,4 @@ from .con_utils import weighted_con_matrix, find_distances_matrix
 from .con_circle import (plot_labelled_group_connectivity_circle,
                          plot_fica_grouped_circle)
 from .causality import (do_mvar_evaluation, prepare_causality_matrix,
-                        compute_order)
+                        compute_order, make_frequency_bands)

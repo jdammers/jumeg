@@ -287,7 +287,7 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
 
 
 def prepare_causality_matrix(cau, surr, freqs, nfft, sfreq, surr_thresh=95):
-    '''Prepare a final causality matrix after avraging across frequency bands.
+    '''Prepare a final causality matrix after averaging across frequency bands.
 
     1. Average across freq bands.
     2. Zero the diagonals.
@@ -304,7 +304,7 @@ def prepare_causality_matrix(cau, surr, freqs, nfft, sfreq, surr_thresh=95):
     surr_thresh: Percentile value of surrogate to be applied as threshold.
 
     Return
-    cau_array: array (n_nodes, n_nodes, n_bands)
+    cau_array: array (n_bands, n_nodes, n_nodes)
     '''
     n_nodes, nfft = cau.shape[0], cau.shape[-1]
     delta_F = sfreq / float(2 * nfft)
@@ -346,6 +346,42 @@ def prepare_causality_matrix(cau, surr, freqs, nfft, sfreq, surr_thresh=95):
         cau_con.append(cau_band)
 
     return np.array(cau_con), np.array(max_cons), np.array(max_surrs)
+
+
+def make_frequency_bands(cau, freqs, sfreq):
+    '''Average connectivity/causality matrix across given frequency bands.
+
+    Parameters
+    cau: array (n_nodes, n_nodes, n_freqs)
+    sfreq: Sampling frequency
+    freqs: Frequency bands
+        e.g. [(4, 8), (8, 12), (12, 18), (18, 30), (30, 45)]
+
+    Return
+    cau_array: array (n_bands, n_nodes, n_nodes)
+    '''
+    n_nodes, nfft = cau.shape[0], cau.shape[-1]
+    delta_F = sfreq / float(2 * nfft)
+    n_freqs = len(freqs)
+
+    cau_con = []  # contains list of avg. band matrices
+    diag_ind = np.diag_indices(n_nodes)
+
+    for flow, fhigh in freqs:
+        print('flow: %d, fhigh: %d' % (flow, fhigh))
+        fmin, fmax = int(flow / delta_F), int(fhigh / delta_F)
+        cau_band = np.mean(cau[:, :, fmin:fmax+1], axis=-1)
+
+        # make the diagonals zero
+        cau_band[diag_ind] = 0.
+
+        # do some sanity checks
+        assert cau_band.any(), 'cau_band has zeros only !!'
+
+        # save the final caus matrix
+        cau_con.append(cau_band)
+
+    return np.array(cau_con)
 
 
 def compute_order(X, m_max, verbose=True):
