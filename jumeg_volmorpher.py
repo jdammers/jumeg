@@ -591,22 +591,24 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
         if Unwanted_to_Zero:
             print '#### Setting all Unknown vertices values to Zero..'
-            #        vertnos_unknown = label_list_subject_to['Unknown']
-            #        vert_U_idx = np.array([], dtype=int)
-            #        for i in xrange(0, vertnos_unknown.shape[0]):
-            #          vert_U_idx = np.append(vert_U_idx,
-            #                                 np.where(vertnos_unknown[i]==temp_vol[0]['vertno'])
-            #                                 )
-            #        inter_data[vert_U_idx, :] = 0.
+
+            # vertnos_unknown = label_list_subject_to['Unknown']
+            # vert_U_idx = np.array([], dtype=int)
+            # for i in xrange(0, vertnos_unknown.shape[0]):
+            #     vert_U_idx = np.append(vert_U_idx,
+            #                            np.where(vertnos_unknown[i] == temp_vol[0]['vertno'])
+            #                            )
+            # inter_data[vert_U_idx, :] = 0.
             #
-            #        # now the original data
-            #        vertnos_unknown_from = label_list_subject_from['Unknown']
-            #        vert_U_idx = np.array([], dtype=int)
-            #        for i in xrange(0, vertnos_unknown_from.shape[0]):
-            #            vert_U_idx = np.append(vert_U_idx,
-            #                                   np.where(vertnos_unknown_from[i]==subj_vol[0]['vertno'])
-            #                                   )
-            #        stc_orig.data[vert_U_idx, :] = 0.
+            # # now the original data
+            # vertnos_unknown_from = label_list_subject_from['Unknown']
+            # vert_U_idx = np.array([], dtype=int)
+            # for i in xrange(0, vertnos_unknown_from.shape[0]):
+            #     vert_U_idx = np.append(vert_U_idx,
+            #                            np.where(vertnos_unknown_from[i] == subj_vol[0]['vertno'])
+            #                            )
+            # stc_orig.data[vert_U_idx, :] = 0.
+
             temp_LOI_idx = np.array([], dtype=int)
             for p, labels in enumerate(volume_labels):
                 lab_verts_temp = label_list_subject_to[labels]
