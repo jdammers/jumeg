@@ -6,6 +6,7 @@ Perform MFT on a surface based forward solution.
 """
 
 import numpy as np
+import os
 import mne
 from mne.datasets import sample
 from jumeg_mft_funcs import apply_mft
@@ -61,8 +62,13 @@ else:
 print "##########################"
 print "##### Calling apply_mft()"
 print "##########################"
-fwdmag, qualmft, stc_mft = apply_mft(fwdname, evoname, evocondition=evocondition,
-                                     subject=subject, meg=want_meg,
+fwd = mne.read_forward_solution(fwdname, verbose=True)
+fwdspec = mne.io.pick.pick_types_forward(fwd, meg=want_meg, ref_meg=False,
+                                            eeg=False, exclude=exclude)
+dataspec = mne.read_evokeds(evoname, condition=evocondition,
+                            baseline=(None, 0), verbose=True)
+fwdmag, qualmft, stc_mft = apply_mft(fwdspec, dataspec, evocondition=evocondition,
+                                     subject=subject, meg=want_meg, save_stc=False,
                                      calccdm='all', cdmcut=cdmcut, cdmlabels=labels,
                                      mftpar=mftpar, verbose='verbose')
 
