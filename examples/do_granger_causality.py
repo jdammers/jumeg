@@ -83,7 +83,7 @@ freqs = [(8, 13)]
 gcmethod = 'GPDC'
 n_surr = 1  # number of surrogates
 surr_thresh = 95  # percentile of surr threshold used
-njobs = 4
+n_jobs = 1
 nfft = 512
 
 # normalize the representative ts
@@ -115,7 +115,7 @@ print('computing GPDC connectivity...')
 mvar = scot.var.VAR(morder)
 # result : array, shape (`repeats`, n_channels, n_channels, nfft)
 surr = scs.surrogate_connectivity(gcmethod, label_ts, mvar, nfft=nfft,
-                                  n_jobs=njobs, repeats=n_surr)
+                                  n_jobs=n_jobs, repeats=n_surr)
 
 mvar.fit(label_ts)
 # mvar coefficients (n_channels, n_channels * model_order)
