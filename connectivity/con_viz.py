@@ -110,7 +110,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
                              fontsize_colorbar=8, padding=6.,
                              fig=None, subplot=111, interactive=True,
                              node_linewidth=2., show=True, arrow=False,
-                             arrowstyle='->,head_length=3,head_width=3'):
+                             arrowstyle='->,head_length=3,head_width=3', **kwargs):
     """Visualize connectivity as a circular graph.
 
     Note: This code is based on the circle graph example by Nicolas P. Rougier
@@ -524,7 +524,6 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                          node_colors=reordered_colors,
                                          node_edgecolor='white', fig=fig,
                                          fontsize_title=12,
-                                         fontsize_names=10, padding=2.,
                                          vmax=vmax, vmin=vmin, colorbar_size=0.2,
                                          colorbar_pos=colorbar_pos,
                                          colorbar=colorbar, show=show,

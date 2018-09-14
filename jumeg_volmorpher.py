@@ -641,7 +641,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
             inter_data = np.nan_to_num(inter_data)
 
         if unwanted_to_zero:
-            print '#### Setting all unknown vertex values to zero..'
+            print '#### Setting all Unknown vertices values to Zero..'
 
             # vertnos_unknown = label_list_subject_to['Unknown']
             # vert_U_idx = np.array([], dtype=int)
@@ -1086,6 +1086,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
 
     if threshold == 'min':
         threshold = vstcdata.min()
+
     vstc_plt = plotting.plot_stat_map(index_img(img, t), temp_t1_fname,
                                       figure=figure, axes=axes,
                                       display_mode='ortho',

@@ -17,7 +17,7 @@ import matplotlib.pylab as plt
 plt.ion()
 import numpy as np
 import mne
-from mne.preprocessing import ICA
+from jumeg.decompose.ica_replace_mean_std import ICA, ica_update_mean_std
 from keras.models import load_model
 from jumeg.jumeg_noise_reducer import noise_reducer
 from jumeg.jumeg_preprocessing import get_ics_cardiac, get_ics_ocular
@@ -101,6 +101,7 @@ bads_MLICA = []
 for idx in range(0, len(model_scores)):
     if model_scores[idx][0] > MLICA_threshold:
         bads_MLICA.append(idx)
+
 # visualisation
 # ica.exclude = bads_MLICA
 # ica.plot_sources(raw_ds_chop, block=True)
@@ -120,6 +121,7 @@ ic_eog = get_ics_ocular(raw_filtered_chop, ica, flow=flow_eog, fhigh=fhigh_eog,
 bads_corr_ctps = list(ic_ecg) + list(ic_eog)
 bads_corr_ctps = list(set(bads_corr_ctps))  # remove potential duplicates
 bads_corr_ctps.sort()
+
 # visualisation
 # ica.exclude = bads_corr_ctps
 # ica.plot_sources(raw_chop, block=True)
@@ -128,7 +130,6 @@ print 'Bad components from MLICA:', bads_MLICA
 print 'Bad components from correlation & ctps:', bads_corr_ctps
 
 # apply MLICA result to filtered and unfiltered data
-from jumeg.decompose.ica_replace_mean_std import ica_update_mean_std
 # exclude bad components identified by MLICA
 ica.exclude = bads_MLICA
 
@@ -142,7 +143,8 @@ raw_unfiltered_chop_clean = ica_unfiltered_chop.apply(raw_chop, exclude=ica.excl
 
 # create copy of original data since apply_ica_replace_mean_std changes the input data in place (raw and ica)
 raw_copy = raw.copy().crop(tmin=tmin*4./1000, tmax=tmax*4./1000)
-plot_performance_artifact_rejection(raw_copy, ica, fnout_fig,
+
+plot_performance_artifact_rejection(raw_copy, ica_unfiltered_chop, fnout_fig,
                                     meg_clean=raw_unfiltered_chop_clean,
                                     show=False, verbose=False,
                                     name_ecg=ecg_ch,
