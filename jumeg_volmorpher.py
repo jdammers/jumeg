@@ -217,7 +217,8 @@ def auto_match_labels(fname_subj_src, label_list_subject,
         s_pts = subj_p[label_list_subject[label]]
         t_pts = temp_p[label_list_template[label]]
 
-        # hlight: what's the significance of s_pts having less than 6 elements?
+        # IIRC: the error function in find min needs at least 6 points. if all points are
+        # then this point is taken as minimum -> for clarifications ask Daniel
         if s_pts.shape[0] == 0:
             raise ValueError("The label does not contain any vertices for the subject.")
 
