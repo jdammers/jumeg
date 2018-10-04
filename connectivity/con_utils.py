@@ -111,3 +111,66 @@ def make_communities(con, top_n=3):
 
     return top_nodes_list, n_communities
 
+
+def get_label_distances(subject, subjects_dir, parc='aparc'):
+    '''
+    Get the Eucliden distance between label center of mass and return the
+    distance matrix. The distance are computed between vertices in the MNI
+    coordinates in the subject source space.
+
+    Parameters
+    subject: str
+        Name of the subject.
+    subjects_dir: str
+        The subjects directory.
+    parc: str
+        Name of the parcellation. Default 'aparc'.
+
+    Return
+    rounded_com: ndarray | (N, N)
+        The distance between center of masses of different labels
+    coords_all: ndarray | (N, )
+        The MNI coordinates of the vertices in the source space.
+    coms_lh, coms_rh: list | (N, )
+        The centre of masses of labels in left and right hemispheres.
+    '''
+    import itertools
+    from scipy import linalg
+
+    # get the labels
+    aparc = mne.read_labels_from_annot(subject, subjects_dir=subjects_dir,
+                                       parc=parc)
+    # get rid of the unknown label
+    aparc = [apa for apa in aparc if apa.name.find('unknown') == -1]
+
+    N = len(aparc)  # get the number of labels
+
+    # get the center of mass of each of the labels and
+    coords_all, coms_lh, coms_rh = [], [], []
+    for mylab in aparc:
+        # now, split between hemispheres
+        if mylab.name.endswith('-lh'):
+            com_lh = mylab.center_of_mass(subject, subjects_dir=subjects_dir)
+            coords_ = mne.vertex_to_mni(com_lh, hemis=0, subject=subject,
+                                        subjects_dir=subjects_dir)[0]
+            coms_lh.append(com_lh)
+        else:
+            com_rh = mylab.center_of_mass(subject, subjects_dir=subjects_dir)
+            coords_ = mne.vertex_to_mni(com_rh, hemis=1, subject=subject,
+                                        subjects_dir=subjects_dir)[0]
+            coms_rh.append(com_rh)
+
+        coords_all.append(coords_)
+
+    # compute the distances
+    com_distances = np.zeros((N, N))
+    for (i, j) in itertools.combinations(range(N), 2):
+        com_distances[i, j] = linalg.norm(coords_all[i] - coords_all[j])
+
+    # only one half matrix is created above, make it full
+    com_distances += com_distances.T
+
+    rounded_com = np.round(com_distances, 0)
+
+    # return the distance matrix rounded to nearest integer
+    return rounded_com, np.array(coords_all), coms_lh, coms_rh
