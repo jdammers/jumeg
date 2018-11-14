@@ -11,9 +11,12 @@ Utilities module for jumeg
 import sys
 import os
 import os.path as op
+import fnmatch
+
 import numpy as np
 import scipy as sci
 from sklearn.utils import check_random_state
+import fnmatch
 
 import mne
 from mne.utils import logger
@@ -1428,3 +1431,42 @@ def loadingBar(count, total, task_part=None):
 
 
     return
+
+
+def find_files(rootdir='.', pattern='*', recursive=False):
+    '''
+    Search and get list of filenames matching pattern.
+    '''
+
+    files = []
+    for root, dirnames, filenames in os.walk(rootdir):
+        if not recursive:
+            del dirnames[:]
+        for filename in fnmatch.filter(filenames, pattern):
+            files.append(os.path.join(root, filename))
+
+    files = sorted(files)
+
+    return files
+
+
+def find_directories(rootdir='.', pattern='*'):
+    '''
+    Search and get a list of directories matching pattern.
+    '''
+
+    path = rootdir
+    if path[-1] != '/':
+        path += '/'
+
+    # search for directories in rootdir
+    dirlist=[]
+    for filename in os.listdir(rootdir):
+        if os.path.isdir(path+filename) == True:
+            dirlist.append(filename)
+    dirlist = sorted(dirlist)
+
+    # select those which match pattern
+    dirlist = fnmatch.filter(dirlist, pattern)
+
+    return dirlist
