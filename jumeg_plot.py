@@ -834,3 +834,5 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
 
     if fnout:
         pl.savefig(fnout)
+
+    return fig    

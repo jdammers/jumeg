@@ -428,3 +428,33 @@ def compute_order(X, m_max, verbose=True):
 
     o_m = np.argmin(bic) + 1
     return o_m, bic
+
+
+def compute_causal_outflow_inflow(caus):
+    '''
+    Given a causality matrix of shape (n_bands, n_nodes, n_nodes),
+    the function returns the normalized causal outflow and inflow across the
+    nodes.
+
+    Input
+    caus: ndarray | shape (n_bands, n_nodes, n_nodes)
+
+    Output
+    c_outflow: ndarray | shape (n_bands, n_nodes)
+        Normalised causal outflow.
+    c_inflow: ndarray | shape (n_bands, n_nodes)
+        Normalised causal inflow.
+    '''
+    n_bands, n_nodes, _ = caus.shape
+    c_outflow = np.zeros((n_bands, n_nodes))
+    c_inflow = np.zeros((n_bands, n_nodes))
+
+    for band in range(n_bands):
+        band_ = caus[band]
+        # causal outflow per ROI
+        c_out_sums = band_.sum(axis=1)  # sum across columns (j's)
+        c_outflow[band] = c_out_sums / np.max(c_out_sums)
+        # causal inflow per ROI
+        c_in_sums = band_.sum(axis=0)  # sum across rows (i's)
+        c_inflow[band] = c_in_sums / np.max(c_in_sums)
+    return c_outflow, c_inflow

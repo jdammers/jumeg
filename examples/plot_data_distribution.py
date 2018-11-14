@@ -32,4 +32,4 @@ epochs = mne.Epochs(raw, events, event_id, tmin, tmax, picks=picks,
 
 data = epochs.get_data()
 
-plot_histo_fit_gaussian(data, nbins=100, fnout='blah.png', show=False)
+fig = plot_histo_fit_gaussian(data, nbins=100, fnout=None, show=True)

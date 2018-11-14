@@ -17,10 +17,13 @@ from mne.externals.six import string_types
 from mne.viz.circle import (circular_layout, _plot_connectivity_circle_onpick)
 
 import yaml
+import time
 
 
 def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
-                           scale_factor=0.005, tube_radius=0.001):
+                           scale_factor=0.005, tube_radius=0.001,
+                           title='Sensor connectivity', vmin=None, vmax=None,
+                           out_fname='sensor_connectivity.png'):
     """ Function to plot sensor connectivity showing strongest
         connections(n_con) excluding sensors that are less than min_dist apart.
         https://github.com/mne-tools/mne-python/blob/master/examples/connectivity/plot_sensor_connectivity.py
@@ -50,17 +53,26 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
     except:
         from mayavi import mlab
 
-    mlab.figure(size=(600, 600), bgcolor=(0.5, 0.5, 0.5))
+    # mlab.figure(size=(600, 600), bgcolor=(0.5, 0.5, 0.5))
+    mlab.figure(size=(600, 600), bgcolor=(1, 1, 1), fgcolor=(0.5, 0.5, 0.5))
 
     # Plot the sensor location
     sens_loc = [raw.info['chs'][picks[i]]['loc'][:3] for i in idx]
     sens_loc = np.array(sens_loc)
 
     pts = mlab.points3d(sens_loc[:, 0], sens_loc[:, 1], sens_loc[:, 2],
-                        color=(1, 1, 1), opacity=1, scale_factor=scale_factor)
+                        color=(0.5, 0.5, 0.5), opacity=1, scale_factor=scale_factor)
+
+    # do the distance based thresholding first
+    import itertools
+    for (i, j) in itertools.combinations(range(247), 2):
+        # print sci.linalg.norm(sens_loc[i] - sens_loc[j])
+        if sci.linalg.norm(sens_loc[i] - sens_loc[j]) < min_dist:
+            con[i, j] = con[j, i ] = 0.
 
     # Get the strongest connections
     threshold = np.sort(con, axis=None)[-n_con]
+    assert threshold > 0.0, 'No surviving connections.'
     ii, jj = np.where(con >= threshold)
 
     # Remove close connections
@@ -72,19 +84,24 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
             con_val.append(con[i, j])
 
     con_val = np.array(con_val)
+    print con_val.shape
 
     # Show the connections as tubes between sensors
-    vmax = np.max(con_val)
-    vmin = np.min(con_val)
+    if not vmax:
+        vmax = np.max(con_val)
+    if not vmin:
+        vmin = np.min(con_val)
+    print vmin, vmax
+
     for val, nodes in zip(con_val, con_nodes):
         x1, y1, z1 = sens_loc[nodes[0]]
         x2, y2, z2 = sens_loc[nodes[1]]
         points = mlab.plot3d([x1, x2], [y1, y2], [z1, z2], [val, val],
                              vmin=vmin, vmax=vmax, tube_radius=tube_radius,
-                             colormap='RdBu')
-        points.module_manager.scalar_lut_manager.reverse_lut = True
+                             colormap='Blues')
+        points.module_manager.scalar_lut_manager.reverse_lut = False
 
-    mlab.scalarbar(title='Phase Lag Index (PLI)', nb_labels=4)
+    mlab.scalarbar(title=title, nb_labels=2)
 
     # Add the sensor names for the connections shown
     nodes_shown = list(set([n[0] for n in con_nodes] +
@@ -92,11 +109,15 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
 
     for node in nodes_shown:
         x, y, z = sens_loc[node]
-        mlab.text3d(x, y, z, raw.ch_names[picks[node]], scale=0.005,
+        mlab.text3d(x, y, z, raw.ch_names[picks[node]], scale=scale_factor,
                     color=(0, 0, 0))
 
     view = (-88.7, 40.8, 0.76, np.array([-3.9e-4, -8.5e-3, -1e-2]))
     mlab.view(*view)
+    time.sleep(1)
+    mlab.savefig(out_fname)
+    time.sleep(1)
+    mlab.close()
 
 
 def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
