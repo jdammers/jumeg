@@ -661,7 +661,7 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
 def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   labels_mode='cortex_only', title='Causal Metric',
                                   out_fname='causality_circle.png', colormap='Blues',
-                                  figsize=(10, 6), show=False, colorbar=False,
+                                  figsize=(10, 6), show=False, colorbar=False, fig=None,
                                   vmin=None, vmax=None, tight_layout=False, **kwargs):
 
     con_l = np.tril(caus, k=-1)
@@ -672,8 +672,9 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
         vmin = np.min([np.min(con_l[con_l != 0]), np.min(con_u[con_u != 0])])
         vmax = np.max([np.max(con_l[con_l != 0]), np.max(con_u[con_u != 0])])
 
-    import matplotlib.pyplot as plt
-    fig = plt.figure(num=None, figsize=figsize)
+    if not fig:
+        import matplotlib.pyplot as plt
+        fig = plt.figure(num=None, figsize=figsize)
     conds = [con_l, con_u]
 
     if colorbar:

@@ -31,7 +31,7 @@ def make_subject_dirs(subjects_list, freesurfer_home=None):
 
 
 def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
-                       freesurfer_home=None, mri_convert=False,
+                       freesurfer_home=None, mri_convert=False, recon_all=False,
                        mri_extn='mri/orig/001.mgz', nii_extn='_1x1x1mm.nii'):
     '''Function to perform complete surface reconstruction and related operations.
        The following commands are executed:
@@ -66,32 +66,33 @@ def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
                 retcode_error('mri_convert', subj)
                 continue
 
-        # Reconstruct all surfaces and basically everything else.
-        retcode = call([freesurfer_bin + 'recon-all', '-autorecon-all', '-subjid', subj])
-        if retcode != 0:
-            retcode_error('recon-all', subj)
-            continue
+        if recon_all:
+            # Reconstruct all surfaces and basically everything else.
+            retcode = call([freesurfer_bin + 'recon-all', '-autorecon-all', '-subjid', subj])
+            if retcode != 0:
+                retcode_error('recon-all', subj)
+                continue
 
-        # Set up the MRI data for forward model.
-        retcode = call([mne_bin_path + 'mne_setup_mri', '--subject', subj])
-        if retcode != 0:
-            retcode_error('mne_setup_mri', subj)
-            continue
+            # Set up the MRI data for forward model.
+            retcode = call([mne_bin_path + 'mne_setup_mri', '--subject', subj])
+            if retcode != 0:
+                retcode_error('mne_setup_mri', subj)
+                continue
 
-        # $MNE_BIN_PATH/mne_setup_mri --subject $i --overwrite (if needed)
+            # $MNE_BIN_PATH/mne_setup_mri --subject $i --overwrite (if needed)
 
-        # Set up the source space - creates source space description in fif format in /bem
-        # setting it up as ico is useful to create labels in the future. - 06.10.14
-        try:
-            setup_source_space(subj, fname=True, spacing='ico4',
-                               surface='white', overwrite=False,
-                               subjects_dir=subjects_dir, n_jobs=2)
-        except:
-            retcode_error('mne.setup_source_space', subj)
-            continue
+            # Set up the source space - creates source space description in fif format in /bem
+            # setting it up as ico is useful to create labels in the future. - 06.10.14
+            try:
+                setup_source_space(subj, fname=True, spacing='ico4',
+                                   surface='white', overwrite=False,
+                                   subjects_dir=subjects_dir, n_jobs=2)
+            except:
+                retcode_error('mne.setup_source_space', subj)
+                continue
 
         # Setting up of Triangulation files
-        retcode = call([mne_bin_path + 'mne_watershed_bem', '--subject', subj])
+        retcode = call([mne_bin_path + 'mne_watershed_bem', '--overwrite', '--subject', subj])
         if retcode != 0:
             retcode_error('mne_watershed_bem', subj)
             continue
@@ -109,9 +110,16 @@ def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
         call(['ln', '-s', watershed_dir + subj + '_outer_skin_surface', surf_dir + subj + '-outer_skin.surf'])
         call(['ln', '-s', watershed_dir + subj + '_outer_skull_surface', surf_dir + subj + '-outer_skull.surf'])
 
+        # making fine level surfaces
+        retcode = call([freesurfer_bin + 'mkheadsurf', '-s', subj])
+        if retcode != 0:
+            retcode_error('mkheadsurf', subj)
+            continue
+
         try:
             mne_make_scalp_surfaces._run(subjects_dir, subj, force=True,
-                                         overwrite=True, verbose=True)
+                                         overwrite=True, no_decimate=False,
+                                         verbose=True)
         except:
             retcode_error('mne_make_scalp_surfaces', subj)
             continue
@@ -120,7 +128,7 @@ def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
         head = os.path.join(subjects_dir, subj, 'bem/', subj + '-head.fif')
         head_bkp = os.path.join(subjects_dir, subj, 'bem/', subj + '-head.fif_orig')
         if os.path.isfile(head):
-            os.rename(head, head_orig)
+            os.rename(head, head_bkp)
         head_medium = os.path.join(subjects_dir, subj, 'bem/', subj + '-head-medium.fif')
         print 'linking %s as main head surface..' % (head_medium)
         call(['ln', '-s', head_medium, head])
@@ -157,7 +165,7 @@ def setup_forward_model(subjects_list, subjects_dir=None, mne_root=None):
             retcode_error('mne_setup_forward_model', subj)
             continue
 
-    print ('Next step is to align the MRI and MEG coordinate frames using' \
+    print ('Next step is to align the MRI and MEG coordinate frames using '
            'mne.coregistration.gui() resulting in a -trans.fif file.')
 
 

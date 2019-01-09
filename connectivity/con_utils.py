@@ -174,3 +174,80 @@ def get_label_distances(subject, subjects_dir, parc='aparc'):
 
     # return the distance matrix rounded to nearest integer
     return rounded_com, np.array(coords_all), coms_lh, coms_rh
+
+
+def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
+                        parc_fname='standard_garces_2016',
+                        n_jobs=4, make_annot=False, return_label_coords=False):
+    '''
+    For a given subject, given a csv file with set of MNI coordinates,
+    make an annotation of labels grown from these ROIs.
+    Mainly used to generate standard resting state network annotation from
+    MNI coordinates provided in literature.
+
+    lab_size: int
+        The size of the label (radius in mm) to be grown around ROI coordinates
+
+    #TODO update docs
+    '''
+    from mne import grow_labels
+    import pandas as pd
+    import matplotlib.cm as cmx
+    import matplotlib.colors as colors
+    from surfer import (Surface, utils)
+
+    surf = 'white'
+    hemi = 'both'
+
+    rsns = pd.read_csv(csv_fname, comment='#')
+
+    all_coords, all_labels = [], []
+    for netw in rsns.Network.unique():
+        print netw,
+        nodes = rsns[rsns.Network == netw]['Node'].values
+        for node in nodes:
+            mni_coords = rsns[(rsns.Network == netw) &
+                              (rsns.Node == node)].loc[:, ('x', 'y', 'z')].values[0]
+            all_coords.append(mni_coords)
+
+            hemi = rsns[(rsns.Network == netw) & (rsns.Node == node)].hemi.values[0]
+            print node, ':', mni_coords, hemi,
+
+            # but we are interested in getting the vertices and
+            # growing our own labels
+            foci_surf = Surface(subject, hemi=hemi, surf=surf,
+                                subjects_dir=subjects_dir)
+            foci_surf.load_geometry()
+            foci_vtxs = utils.find_closest_vertices(foci_surf.coords,
+                                                    mni_coords)
+            print 'Closest vertex on surface chosen:', foci_vtxs
+
+            if hemi == 'lh':
+                hemis = 0
+            else:
+                hemis = 1  # rh
+
+            lab_name = netw + '_' + node
+            mylabel = grow_labels(subject, foci_vtxs, extents=lab_size,
+                                  hemis=hemis, subjects_dir=subjects_dir,
+                                  n_jobs=n_jobs, overlap=True,
+                                  names=lab_name, surface=surf)[0]
+            all_labels.append(mylabel)
+
+    # assign colours to the labels
+    # labels within the same network get the same color
+    n_nodes = len(rsns.Node.unique())
+    # n_networks = len(rsns.Network.unique())  # total number of networks
+    color_norm = colors.Normalize(vmin=0, vmax=n_nodes-1)
+    scalar_map = cmx.ScalarMappable(norm=color_norm, cmap='hsv')
+    for n, lab in enumerate(all_labels):
+        lab.color = scalar_map.to_rgba(n)
+
+    if make_annot:
+        mne.label.write_labels_to_annot(all_labels, subject=subject,
+                                        parc=parc_fname,
+                                        subjects_dir=subjects_dir)
+
+    if return_label_coords:
+        # returns the list of labels grown and MNI coords used as seeds
+        return all_labels, all_coords
