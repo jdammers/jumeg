@@ -119,6 +119,8 @@ def auto_match_labels(fname_subj_src, label_list_subject,
         Filename of the second volume source space to match on
     volume_labels : list of volume Labels
         List of the volume labels of interest
+    subjects_dir : str
+        Path to the subject directory.
     template_spacing : int | float
         The grid distances of the second volume source space in mm
     e_func : string | None
@@ -161,16 +163,14 @@ def auto_match_labels(fname_subj_src, label_list_subject,
 
     subj_src = mne.read_source_spaces(fname_subj_src)
     x, y, z = subj_src[0]['rr'].T
-    # hlight: subj_p contains the coordinates of the vertices
+    # subj_p contains the coordinates of the vertices
     subj_p = np.c_[x, y, z]
-    # hlight: how is subject different from subject_from?
     subject = subj_src[0]['subject_his_id']
 
     temp_src = mne.read_source_spaces(fname_temp_src)
     x1, y1, z1 = temp_src[0]['rr'].T
-    # hlight: temp_p contains the coordinates of the vertices
+    # temp_p contains the coordinates of the vertices
     temp_p = np.c_[x1, y1, z1]
-    # hlight: how is template different from subject_to?
     template = temp_src[0]['subject_his_id']
 
     print """\n#### Attempting to match %d volume source space labels from
@@ -183,7 +183,6 @@ def auto_match_labels(fname_subj_src, label_list_subject,
 
     label_list_template = _remove_vert_duplicates(template, temp_src, label_list_template,
                                                   subjects_dir)
-
 
     vert_sum = 0
     vert_sum_temp = 0
@@ -373,7 +372,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     if save_trans:
         print '\n    Writing Transformation matrices to file..'
         fname_lw_trans = fname_save
-        mat_mak_trans_dict = {}
+        mat_mak_trans_dict = dict()
         mat_mak_trans_dict['ID'] = '%s -> %s' % (subject, template)
         mat_mak_trans_dict['Labeltransformation'] = label_trans_dic
         mat_mak_trans_dict['Transformation Error[mm]'] = label_trans_dic_err
@@ -414,7 +413,6 @@ def find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_tr
         rx, ry, rz = 0, 0, 0
         x0 = (tx, ty, tz, rx, ry, rz)
 
-        # hlight: possible to take this outside of find_min?
         def error(x):
             tx, ty, tz, rx, ry, rz = x
             trans0 = np.zeros([4, 4])
@@ -486,7 +484,7 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
         try:
             mat_mak_trans_dict_arr = np.load(fname_lw_trans)
 
-        except:
+        except IOError:
             print 'MatchMaking Transformations file NOT found:'
             print fname_lw_trans, '\n'
             print 'Please calculate the according transformation matrix dictionary'
@@ -532,7 +530,7 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
     idx_vertices = np.concatenate(np.asarray(idx_vertices))
     print '    [done]'
 
-    return (transformed_p, idx_vertices)
+    return transformed_p, idx_vertices
 
 
 def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
@@ -563,11 +561,12 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     n_iter : int (Not really needed)
         Number of iterations performed during MFT.
     normalize : bool
-        hlight: what to say here?
+        If True, normalize activity patterns label by label before and after
+        morphing.
     subjects_dir : string, or None
         Path to SUBJECTS_DIR if it is not set in the environment.
     unwanted_to_zero : bool
-        hlight: what to say here?
+       If True, set all non-Labels-of-interest in resulting stc to zero.
     label_trans_dic : dict
         hlight: what to say here?
     fname_save_stc : None | str
@@ -614,7 +613,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                                                       label_list_subject_from,
                                                       subjects_dir)
 
-    # Transform the whole subject source space labelwise
+    # Labelwise transform the whole subject source space
     transformed_p, idx_vertices = _transform_src_lw(subj_vol,
                                                     label_list_subject_from,
                                                     volume_labels, subject_to,
@@ -690,8 +689,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                                              )
             d2 = np.zeros(stc_orig.data.shape)
             d2[subj_LOI_idx, :] = stc_orig.data[subj_LOI_idx, :]
-            # TODO: why is in stc_orig.data.flags WRITEABLE=False ?? causes crash
             if not stc_orig.data.flags["WRITEABLE"]:
+                # stc_orig.data.flags WRITEABLE=False causes crash -> set to True
                 stc_orig.data.setflags(write=1)
 
             stc_orig.data[:, :] = d2[:, :]
@@ -1103,7 +1102,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
                                       cut_coords=(slice_x, slice_y, slice_z),
                                       cmap=cmap, symmetric_cbar=symmetric_cbar)
     if save:
-        if fname_save == None:
+        if fname_save is None:
             print 'please provide an filepath to save .png'
         else:
             plt.savefig(fname_save)
@@ -1147,7 +1146,8 @@ def _make_image(stc_data, vsrc, tstep, label_inds=None, dest='mri',
 
     if label_inds is not None:
         inuse_replace = np.zeros(vsrc[0]['inuse'].shape, dtype=int)
-        for i, idx in enumerate(label_inds): inuse_replace[idx] = 1
+        for i, idx in enumerate(label_inds):
+            inuse_replace[idx] = 1
         mask3d = inuse_replace.reshape(shape3d).astype(np.bool)
     else:
         mask3d = vsrc[0]['inuse'].reshape(shape3d).astype(np.bool)
@@ -1229,7 +1229,7 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     else:
         print '    Using Cluster No.', time_sample
         t = time_sample
-    if title == None:
+    if title is None:
         title = 'Cluster No. %i' % t
         if t == 0:
             title = 'All Cluster'  # |sig.%i'%vstc.times.shape[0]-1
@@ -1256,7 +1256,7 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
                                          cut_coords=None,
                                          cmap='black_red')
     if save:
-        if fname_save == None:
+        if fname_save is None:
             print 'please provide an filepath to save .png'
         else:
             plt.savefig(fname_save)
@@ -1305,7 +1305,7 @@ def make_indiv_spacing(subject, ave_subject, standard_spacing, subjects_dir):
     prop = (diff / diff_temp).mean()
     indiv_spacing = (prop * standard_spacing)
     print "    '%s' individual-spacing to '%s'[%.2f] is: %.4fmm" % (
-    subject, ave_subject, standard_spacing, indiv_spacing)
+        subject, ave_subject, standard_spacing, indiv_spacing)
 
     return indiv_spacing
 
@@ -1334,7 +1334,8 @@ def _remove_vert_duplicates(subject, subj_src, label_list_subject,
     inv_vox2rastkr_trans = linalg.inv(vox2rastkr_trans)
     all_volume_labels = []
     vol_lab = mne.get_volume_labels_from_aseg(fname_s_aseg)
-    for lab in vol_lab: all_volume_labels.append(lab.encode())
+    for lab in vol_lab:
+        all_volume_labels.append(lab.encode())
     all_volume_labels.remove('Unknown')
 
     print """\n#### Attempting to check for vertice duplicates in labels due to
@@ -1405,7 +1406,7 @@ def sum_up_vol_cluster(clu, p_thresh=0.05, tstep=1e-3, tmin=0,
         data_summary = np.zeros((n_vertices, len(good_cluster_inds) + 1))
         print 'Data_summary is in shape of:', data_summary.shape
         for ii, cluster_ind in enumerate(good_cluster_inds):
-            loadingBar(ii + 1, len(good_cluster_inds), task_part='Cluster Idx %i' % (cluster_ind))
+            loadingBar(ii + 1, len(good_cluster_inds), task_part='Cluster Idx %i' % cluster_ind)
             data.fill(0)
             v_inds = clusters[cluster_ind][1]
             t_inds = clusters[cluster_ind][0]
@@ -1450,12 +1451,12 @@ def plot_T_obs(T_obs, threshold, tail, save, fname_save):
         plt.plot([threshold, threshold], (0, y[bincenters >= 0.].max()), color='#CD7600',
                  linestyle=':', linewidth=2)
 
-    legend = """T-Statistics:
-      Mean:  %.2f
-      Minimum:  %.2f
-      Maximum:  %.2f
-      Threshold:  %.2f  
-      """ % (T_mean, T_min, T_max, threshold)
+    legend = ('T-Statistics:\n'
+              '      Mean:  %.2f\n'
+              '      Minimum:  %.2f\n'
+              '      Maximum:  %.2f\n'
+              '      Threshold:  %.2f  \n'
+              '      ') % (T_mean, T_min, T_max, threshold)
     plt.ylim(None, y[bincenters >= 0.].max() * 1.1)
     plt.xlabel('T-scores', fontsize=12)
     plt.ylabel('T-values count', fontsize=12)
