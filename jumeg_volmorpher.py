@@ -1111,7 +1111,8 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
 
 def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
                           display_mode=['x'], cut_coords=6,
-                          cmap='nipy_spectral', threshold='min', grid=[4, 6],
+                          cmap='nipy_spectral', threshold='min',
+                          negative_values=False, grid=[4, 6],
                           res_save=[1920, 1080], fn_image='plot.png'):
     """
 
@@ -1147,6 +1148,9 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
         values below the threshold (in absolute value) are plotted
         as transparent. If auto is given, the threshold is determined
         magically by analysis of the image.
+    negative_values : bool
+        Constrain the plots to only positive values, e.g., if there
+        are no negative values as in the case of MFT inverse solutions.
     grid : 2-tuple
         Specifies how many images per row and column are to be depicted.
     res_save : 2-tuple
@@ -1172,7 +1176,8 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
 
         axes = axes.flatten()
 
-        params_plot_img_with_bg = get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir)
+        params_plot_img_with_bg = get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir,
+                                                            negative_values=negative_values)
 
         for i, (ax, z) in enumerate(zip(axes, cut_coords)):
             cut_coords_slice = [z]
@@ -1212,7 +1217,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
         print ""
 
 
-def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, **kwargs):
+def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, negative_values=False, **kwargs):
     """
     Makes calculations that would be executed repeatedly every time a slice is
     computed and saves the results in a dictionary which is then read by
@@ -1228,6 +1233,9 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, **kwargs):
         Time step between successive samples in data.
     subjects_dir:
         Path to the subject directory.
+    negative_values : bool
+        Constrain the plots to only positive values, e.g., if there
+        are no negative values as in the case of MFT inverse solutions.
 
     Returns:
     --------
@@ -1261,9 +1269,10 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, **kwargs):
     cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(
         _safe_get_data(stat_map_img, ensure_finite=True), vmax, symmetric_cbar, kwargs)
 
-    # there are no negative values
-    cbar_vmin = 0.
-    vmin = 0.
+    if not negative_values:
+        # there are no negative values, e.g., for MFT solutions
+        cbar_vmin = 0.
+        vmin = 0.
 
     params_plot_img_with_bg = dict()
     params_plot_img_with_bg['bg_img'] = bg_img
@@ -1388,7 +1397,7 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
                              output_file=None, display_mode='ortho', colorbar=True,
                              figure=None, axes=None, title=None, threshold=1e-6,
                              annotate=True, draw_cross=True, black_bg='auto',
-                             cmap='gist_ncar', symmetric_cbar="auto",
+                             cmap='gist_ncar', symmetric_cbar="auto", negative_values=False,
                              dim='auto', vmax=None, resampling_interpolation='continuous',
                              **kwargs):
     """
@@ -1459,6 +1468,9 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
+    negative_values : bool
+        Constrain the plots to only positive values, e.g., if there
+        are no negative values as in the case of MFT inverse solutions.
     dim : float, 'auto' (by default), optional
         Dimming factor applied to background image. By default, automatic
         heuristics are applied based upon the background image intensity.
@@ -1498,9 +1510,10 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
     cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(_safe_get_data(stat_map_img, ensure_finite=True),
                                                                      vmax, symmetric_cbar, kwargs)
 
-    # there are no negative values
-    cbar_vmin = 0.
-    vmin = 0.
+    if not negative_values:
+        # there are no negative values
+        cbar_vmin = 0.
+        vmin = 0.
 
     stat_map_img_at_time_t = index_img(stat_map_img, t)
     stat_map_img_at_time_t = check_niimg_3d(stat_map_img_at_time_t, dtype='auto')
@@ -1755,7 +1768,7 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
                         output_file=None, display_mode='ortho', colorbar=True,
                         figure=None, axes=None, title=None, threshold=1e-6,
                         annotate=True, draw_cross=True, black_bg='auto',
-                        cmap='gist_ncar', symmetric_cbar="auto",
+                        cmap='gist_ncar', symmetric_cbar="auto", negative_values=False,
                         dim='auto', vmax=None, resampling_interpolation='continuous',
                         **kwargs):
     """
@@ -1827,6 +1840,9 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
+    negative_values : bool
+        Constrain the plots to only positive values, e.g., if there
+        are no negative values as in the case of MFT inverse solutions.
     dim : float, 'auto' (by default), optional
         Dimming factor applied to background image. By default, automatic
         heuristics are applied based upon the background image intensity.
@@ -1870,6 +1886,11 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
 
     cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(_safe_get_data(stat_map_img, ensure_finite=True),
                                                                      vmax, symmetric_cbar, kwargs)
+
+    if not negative_values:
+        # there are no negative values
+        cbar_vmin = 0.
+        vmin = 0.
 
     stat_map_img_at_time_t = index_img(stat_map_img, t)
     stat_map_img_at_time_t = check_niimg_3d(stat_map_img_at_time_t, dtype='auto')
