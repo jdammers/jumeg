@@ -1032,16 +1032,26 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
     print 'Labels for %d subjects have been transformed from source %s' %(len(subjects_list), srcsubject)
 
 
-def get_cmap(N):
+def get_cmap(N, cmap='hot'):
     '''Returns a function that maps each index in 0, 1, ... N-1 to a distinct
-    RGB color.'''
+    RGB color. Can be used to generate N unique colors from a colormap.
+
+    Usage:
+    my_colours = get_cmap(3)
+    for i in range(3):
+        # print the RGB value of each of the colours
+        print my_colours(i)
+
+    '''
     import matplotlib.cm as cmx
     import matplotlib.colors as colors
+
     color_norm = colors.Normalize(vmin=0, vmax=N-1)
-    scalar_map = cmx.ScalarMappable(norm=color_norm, cmap='hsv')
+    scalar_map = cmx.ScalarMappable(norm=color_norm, cmap=cmap)
 
     def map_index_to_rgb_color(index):
         return scalar_map.to_rgba(index)
+
     return map_index_to_rgb_color
 
 
@@ -1361,8 +1371,8 @@ def clip_eog2(eog, clip_to_value):
     Function to clip the EOG channel to a certain clip_to_value.
     All peaks higher than given value are pruned.
     Note: this may be used when peak detection for artefact removal fails due to
-    abnormally high peaks in the EOG channel. 
-    
+    abnormally high peaks in the EOG channel.
+
     Can be applied to a raw file using the below code:
 
     # apply the above function to one channel (here 276) of the raw object
@@ -1373,7 +1383,7 @@ def clip_eog2(eog, clip_to_value):
     raw.save(raw.info['filename'].split('-raw.fif')[0] + ',eogclip-raw.fif',
              overwrite=False)
     '''
-    if clip_to_value < 0: 
+    if clip_to_value < 0:
         eog_clipped = np.clip(eog, clip_to_value, np.max(eog))
     elif clip_to_value > 0:
         eog_clipped = np.clip(eog, np.min(eog), clip_to_value)

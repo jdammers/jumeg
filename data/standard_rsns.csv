@@ -1,0 +1,30 @@
+# MNE coordinates of the nodes forming the resting state networks
+# MNI coordinates are obtained from the functional magnetic resonance imaging
+# RSNs released by Laird et al. (2011) and Smith et al.
+# (2009). Labels are assigned with FSL atlas tools (Desikan et al., 2006;
+# Eickhoff et al., 2005; Jenkinson et al., 2012). BA, Broadmann area;
+# DMN, default mode network; FP, frontoparietal.
+
+# taken from the reference
+# [1] P. Garcés, M. C. Martín-Buro, and F. Maestú,
+# “Quantifying the Test-Retest Reliability of Magnetoencephalography
+# Resting-State Functional Connectivity,” Brain Connect., vol. 6, no. 6, pp. 448–460, 2016.
+
+Network,Node,x,y,z,BA,hemi
+Visual,Left visual cortex,-41,-77,3,19,lh
+Visual,Right visual cortex,41,-72,1,19,rh
+Sensorimotor,Left primary somatosensory cortex,-38,-27,52,1,lh
+Sensorimotor,Right primary somatosensory cortex,40,-25,50,1,rh
+Auditory,Left primary auditory cortex,-55,-21,7,41,lh
+Auditory,Right primary auditory cortex,57,-20,7,41,rh
+DMN,Precuneus,1,-57,28,31,lh
+DMN,Left inferior parietal,-45,-65,30,39,lh
+DMN,Right inferior parietal,52,-60,26,39,rh
+DMN,Anterior cingulate,2,42,7,32,lh
+Left FP,Left angular gyrus,-40,-58,56,39,lh
+Left FP,Left middle frontal gyrus,-42,28,23,9,lh
+Right FP,Right angular gyrus,53,-50,43,39,rh
+Right FP,Right middle frontal gyrus,45,28,26,9,rh
+Frontoinsular,Left insula,-38,16,2,13,lh
+Frontoinsular,Right insula,38,16,2,13,rh
+Frontoinsular,Median cingulate,-2,12,40,32,lh
