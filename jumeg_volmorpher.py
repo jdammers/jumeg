@@ -16,7 +16,8 @@ from mne.source_space import _get_lut, _get_lut_id, _get_mgz_header
 import nibabel as nib
 from scipy import linalg
 from scipy.spatial.distance import cdist
-import time
+from time import localtime, strftime
+import time as time2
 import os
 import os.path as op
 from scipy.interpolate import griddata
@@ -34,7 +35,7 @@ from nilearn.plotting.img_plotting import _MNI152Template
 MNI152TEMPLATE = _MNI152Template()
 
 # =============================================================================
-# 
+#
 # =============================================================================
 def convert_to_unicode(inlist):
     if type(inlist) != unicode:
@@ -219,7 +220,7 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
     label_trans_dic_var_dist = {}
     label_trans_dic_mean_dist = {}
     label_trans_dic_max_dist = {}
-    start_time = time.time()
+    start_time = time2.time()
     del subj_src, temp_src
 
     for label_idx, label in enumerate(volume_labels):
@@ -393,7 +394,7 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
         mat_mak_trans_dict_arr = np.array([mat_mak_trans_dict])
         np.save(fname_lw_trans, mat_mak_trans_dict_arr)
         print '    [done] -> Calculation Time: %.2f minutes.' % (
-            ((time.time() - start_time) / 60))
+            ((time2.time() - start_time) / 60))
 
         return
 
@@ -647,7 +648,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
         print '\n#### Attempting to interpolate STC Data for every time sample..'
         print '    Interpolation method: ', inter_m
-        st_time = time.time()
+        st_time = time2.time()
         xt, yt, zt = temp_vol[0]['rr'][temp_vol[0]['inuse'].astype(bool)].T
         inter_data = np.zeros([xt.shape[0], ntimes])
         for i in range(0, ntimes):
@@ -737,7 +738,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
             new_data.update({inter_m: inter_data})
 
         print '    [done] -> Calculation Time: %.2f minutes.' % (
-                (time.time() - st_time) / 60.
+                (time2.time() - st_time) / 60.
         )
 
     if save_stc:
@@ -1108,13 +1109,64 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     return vstc_plt
 
 
-def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coords,
-                          threshold, grid, res_save, fn_image):
+def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
+                          display_mode=['x'], cut_coords=6,
+                          cmap='nipy_spectral', threshold='min', grid=[4, 6],
+                          res_save=[1920, 1080], fn_image='plot.png'):
+    """
+
+    Parameters:
+    -----------
+    subjects_dir : str
+        The path to the subjects directory.
+    vstc : VolSourceEstimate
+        The volume source estimate.
+    vsrc : instance of SourceSpaces
+        The source space of the subject equivalent to the
+        subject.
+    tstep : int
+        Time step between successive samples in data.
+    time : float
+        Time point for which the image will be created.
+    display_mode : 'x', 'y', 'z'
+        Direction in which the brain is sliced.
+    cut_coords : None, a tuple of floats, or an integer
+        The MNI coordinates of the point where the cut is performed
+        If display_mode is 'ortho', this should be a 3-tuple: (x, y, z)
+        For display_mode == 'x', 'y', or 'z', then these are the
+        coordinates of each cut in the corresponding direction.
+        If None is given, the cuts is calculated automaticaly.
+        If display_mode is 'x', 'y' or 'z', cut_coords can be an integer,
+        in which case it specifies the number of cuts to perform
+    cmap : str
+        Name of the matplotlib color map to use.
+        See https://matplotlib.org/examples/color/colormaps_reference.html
+    threshold : a number, None, 'auto', or 'min'
+        If None is given, the image is not thresholded.
+        If a number is given, it is used to threshold the image:
+        values below the threshold (in absolute value) are plotted
+        as transparent. If auto is given, the threshold is determined
+        magically by analysis of the image.
+    grid : 2-tuple
+        Specifies how many images per row and column are to be depicted.
+    res_save : 2-tuple
+        Resolution of the saved image.
+    fn_image : str
+        File name for the saved image.
+
+    Returns:
+    --------
+    None
+    """
 
     if display_mode not in {'x', 'y', 'z'}:
         raise ValueError("display_mode must be one of 'x', 'y', or 'z'.")
 
     if not op.exists(fn_image):
+
+        start_time = time2.time()
+
+        print strftime('Start at %H:%M:%S on the %d.%m.%Y \n', localtime())
 
         figure, axes = plt.subplots(grid[0], grid[1])
 
@@ -1131,7 +1183,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coo
 
             vstc_plot = plot_vstc_grid_slice(vstc=vstc, params_plot_img_with_bg=params_plot_img_with_bg, time=time,
                                              cut_coords=cut_coords_slice, display_mode=display_mode,
-                                             figure=figure, axes=ax, colorbar=colorbar, cmap='gist_ncar',
+                                             figure=figure, axes=ax, colorbar=colorbar, cmap=cmap,
                                              threshold=threshold)
 
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95,
@@ -1150,6 +1202,14 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coo
         plt.savefig(fn_image, format=frmt, dpi=DPI)
 
         plt.close()
+
+        end_time = time2.time()
+
+        print strftime('End at %H:%M:%S on the %d.%m.%Y \n', localtime())
+        minutes = (end_time - start_time) / 60
+        seconds = (end_time - start_time) % 60
+        print "Calculation took %d minutes and %d seconds" % (minutes, seconds)
+        print ""
 
 
 def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, **kwargs):
@@ -1220,7 +1280,7 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, **kwargs):
 
 
 def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6, display_mode='z',
-                         figure=None, axes=None, colorbar=False, cmap='gist_ncar', threshold='min',
+                         figure=None, axes=None, colorbar=False, cmap='nipy_spectral', threshold='min',
                          **kwargs):
     """
     Plot a volume source space estimation for one slice in the grid in
