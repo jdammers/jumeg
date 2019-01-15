@@ -8,7 +8,7 @@ import os
 import sys
 from mne import setup_source_space
 from .jumeg_utils import (get_files_from_list, check_env_variables,
-                         retcode_error)
+                          retcode_error)
 
 # using subprocess to run freesurfer commands (other option os.system)
 # e.g. call(["ls", "-l"]) or call('ls -lrt', shell=True)
@@ -73,23 +73,23 @@ def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
                 retcode_error('recon-all', subj)
                 continue
 
-            # Set up the MRI data for forward model.
-            retcode = call([mne_bin_path + 'mne_setup_mri', '--subject', subj])
-            if retcode != 0:
-                retcode_error('mne_setup_mri', subj)
-                continue
+        # Set up the MRI data for forward model.
+        retcode = call([mne_bin_path + 'mne_setup_mri', '--subject', subj])
+        if retcode != 0:
+            retcode_error('mne_setup_mri', subj)
+            continue
 
-            # $MNE_BIN_PATH/mne_setup_mri --subject $i --overwrite (if needed)
+        # $MNE_BIN_PATH/mne_setup_mri --subject $i --overwrite (if needed)
 
-            # Set up the source space - creates source space description in fif format in /bem
-            # setting it up as ico is useful to create labels in the future. - 06.10.14
-            try:
-                setup_source_space(subj, fname=True, spacing='ico4',
-                                   surface='white', overwrite=False,
-                                   subjects_dir=subjects_dir, n_jobs=2)
-            except:
-                retcode_error('mne.setup_source_space', subj)
-                continue
+        # Set up the source space - creates source space description in fif format in /bem
+        # setting it up as ico is useful to create labels in the future. - 06.10.14
+        try:
+            setup_source_space(subj, fname=True, spacing='ico4',
+                               surface='white', overwrite=False,
+                               subjects_dir=subjects_dir, n_jobs=2)
+        except:
+            retcode_error('mne.setup_source_space', subj)
+            continue
 
         # Setting up of Triangulation files
         retcode = call([mne_bin_path + 'mne_watershed_bem', '--overwrite', '--subject', subj])

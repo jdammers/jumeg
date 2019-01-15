@@ -1,9 +1,10 @@
 #!/usr/bin/env python2
 
 '''
-Perform connectivity analysis on standard resting state networks.
+Grow and visualize standard resting state ROIs from literature.
 
 1. Read ROIs of standard regions involved in resting state networks from literature.
+   (the data is provided as a csv file with list of regions with seed MNI coordinates)
 2. Grow labels of 1cm radius (approx) in the surface source space.
 3. Make annotation and visualize the labels.
 

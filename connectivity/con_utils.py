@@ -185,10 +185,27 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
     Mainly used to generate standard resting state network annotation from
     MNI coordinates provided in literature.
 
+    Parameters
+
+    subject: str
+        The name of the subject.
+    subjects_dir: str
+        The SUBJECTS_DIR where the surfaces are available.
+    csv_fname: str
+        Comma separated file with seed MNI coordinates.
+        # example
+        Network,Node,x,y,z,BA,hemi
+        Visual,Left visual cortex,-41,-77,3,19,lh
     lab_size: int
         The size of the label (radius in mm) to be grown around ROI coordinates
-
-    #TODO update docs
+    parc_fname: str
+        Name used to save the parcellation as if make_annot is True.
+    n_jobs: int
+        Number of parallel jobs to run.
+    make_annot: bool
+        If True, an annotation file is created and written to disk.
+    return_label_coords: bool
+        If True, the function returns labels and MNI seed coordinates used.
     '''
     from mne import grow_labels
     import pandas as pd
