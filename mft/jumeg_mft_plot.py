@@ -5,11 +5,8 @@ Jumeg MFT Plotting.
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 import warnings
-
-# the below imports are unnecessary
-# from nilearn.plotting import plot_stat_map
-# from nilearn.image import index_img
 
 from mne import SourceEstimate, VolSourceEstimate
 from mne.transforms import invert_transform, apply_trans
@@ -22,7 +19,6 @@ def plot_global_cdv_dist(stcdata,fwdmag=None):
     stcdata: stc with ||cdv|| (point sequence as in fwdmag['source_rr'])
     fwdmag:  (opt) forward solution (to colorize srcs)
     '''
-    import matplotlib.pyplot as plt
     print "##### Plot global cdv-distribution at time of max |cdv|:"
     time_idx = np.argmax(np.max(stcdata, axis=0))
     fig = plt.figure()
@@ -59,7 +55,6 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
     stcdata: stc with ||cdv|| (point sequence as in fwdmag['source_rr'])
     tmin, tstep, subject: passed to mne.SourceEstimate()
     '''
-    import matplotlib.pyplot as plt
     print "##### Attempting to plot:"
     # cf. decoding/plot_decoding_spatio_temporal_source.py
     vertices = [s['vertno'] for s in fwdmag['src']]
@@ -120,7 +115,7 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
             mrfoci = apply_trans(invmri_head_t['trans'],cfoci, move=True)
             print "mrfoci: "
             print mrfoci
-
+    
             # Just some blops along the coordinate axis:
             # This will not yield reasonable results w an inflated brain.
             #bloblist = np.zeros((300,3))
@@ -142,7 +137,6 @@ def plot_cdv_distribution(fwdmag, stcdata):
     fwdmag:  forward solution
     stcdata: stc with ||cdv|| (point sequence as in fwdmag['source_rr'])
     '''
-    import matplotlib.pyplot as plt
     print "##### Plot cdv-distribution:"
     maxxpnt = np.max([len(s['vertno']) for s in fwdmag['src']])
     time_idx = np.argmax(np.max(stcdata, axis=0))
@@ -174,7 +168,6 @@ def plot_max_amplitude_data(fwdmag, stcdata, tmin, tstep, subject, method='mft')
     tmin, tstep, subject: passed to mne.VolSourceEstimate()
     method: used as y-axis label
     '''
-    import matplotlib.pyplot as plt
     print "##### Attempting to plot max. amplitude data:"
     fig = plt.figure()
     offsets = [0]
@@ -203,7 +196,6 @@ def plot_max_cdv_data(stc_mft, lhmrinds, rhmrinds):
     ----------
     stcdata: stc with ||cdv|| (point sequence as in fwdmag['source_rr'])
     '''
-    import matplotlib.pyplot as plt
     print "##### Attempting to plot max. cdv data:"
     fig = plt.figure()
     stcdata = stc_mft.data
@@ -220,7 +212,6 @@ def plot_max_cdv_data(stc_mft, lhmrinds, rhmrinds):
 def plot_cdvsum_data(stc_mft, lhmrinds, rhmrinds):
     '''Plot cdvsum data.
     '''
-    import matplotlib.pyplot as plt
     print "##### Attempting to cdvsum data:"
     fig = plt.figure()
     stcdata = stc_mft.data
@@ -237,7 +228,6 @@ def plot_cdvsum_data(stc_mft, lhmrinds, rhmrinds):
 def plot_quality_data(qualmft, stc_mft):
     '''Plot quality data.
     '''
-    import matplotlib.pyplot as plt
     print "##### Attempting to plot quality data:"
     fig = plt.figure()
     # relerrscal = pow(10,-int(np.log10(np.max(qualmft['relerr'][:]))))
@@ -256,11 +246,17 @@ def plot_quality_data(qualmft, stc_mft):
     plt.close()
 
 
-def plot_cdm_data(qualmft,stc_mft, cdmlabels=None, outfile=None):
+def plot_cdm_data(qualmft,stc_mft, cdmlabels=None, selmaxjlong=False, outfile=None):
     '''Plot CDM data.
     '''
-    import matplotlib.pyplot as plt
     if cdmlabels is not None and qualmft.has_key('cdmlabels'):
+        if selmaxjlong:
+            if qualmft.has_key('jlglabels'):
+                jlgmaxv = np.max(qualmft['jlglabels'],axis=1)
+            else:
+                warnings.warn('plot_cdm_data(): qualmft-arg has no jlglabels-key')
+                return
+
         print "##### Attempting to plot cdm data for labels:"
         fig = plt.figure()
         plt.ylim((0,1.05))
@@ -272,13 +268,25 @@ def plot_cdm_data(qualmft,stc_mft, cdmlabels=None, outfile=None):
         #        cdmmean[ilab] = 0.
         # Restrict to largest cdmmean-s:
         if len(cdmmean) > 10:
-            for itop in xrange(10):
-                itmp = np.argmax(cdmmean)
-                icdmtop[itmp] = 1
-                cdmmean[itmp] = 0.
+            if selmaxjlong:
+                for itop in xrange(10):
+                    itmp = np.argmax(jlgmaxv)
+                    icdmtop[itmp] = 1
+                    jlgmaxv[itmp] = 0.
+            else:
+                for itop in xrange(10):
+                    itmp = np.argmax(cdmmean)
+                    icdmtop[itmp] = 1
+                    cdmmean[itmp] = 0.
         else:
             icdmtop = np.ones(len(cdmmean), dtype=np.int32)
-        print "Labels with largest avg(cdm):"
+        if len(cdmmean) > 10:
+            if selmaxjlong:
+                print "Labels with largest max(jlong):"
+            else:
+                print "Labels with largest avg(cdm):"
+        else:
+            print "Labels with largest avg(cdm):"
         for ilab, label in enumerate(cdmlabels):
             if icdmtop[ilab] > 0:
                 print "%3d %30s %6s: avg(cdm) = %7.4f" % \
@@ -324,7 +332,6 @@ def plot_cdm_data(qualmft,stc_mft, cdmlabels=None, outfile=None):
 def plot_jlong_data(qualmft,stc_mft, outfile=None):
     '''Plot jlong label data.
     '''
-    import matplotlib.pyplot as plt
     if not qualmft.has_key('jlgall') and not qualmft.has_key('jlgright') and \
        not qualmft.has_key('jlgleft'):
         return
@@ -350,7 +357,6 @@ def plot_jlong_data(qualmft,stc_mft, outfile=None):
 def plot_jlong_labeldata(qualmft,stc_mft, cdmlabels, outfile=None):
     '''Plot jlong label data.
     '''
-    import matplotlib.pyplot as plt
     if cdmlabels is None or not qualmft.has_key('jlglabels') \
                          or not qualmft.has_key('cdmlabels'):
         return
@@ -396,7 +402,6 @@ def plot_jlong_labeldata(qualmft,stc_mft, cdmlabels, outfile=None):
 def plot_jtotal_labeldata(qualmft,stc_mft, cdmlabels, outfile=None):
     '''Plot jtotal label data.
     '''
-    import matplotlib.pyplot as plt
     if cdmlabels is None or not qualmft.has_key('jtotlabels') \
                          or not qualmft.has_key('cdmlabels'):
         return
