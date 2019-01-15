@@ -1108,7 +1108,8 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     return vstc_plt
 
 
-def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coords, threshold, grid, res_save, fn_image):
+def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coords,
+                          threshold, grid, res_save, fn_image):
 
     if display_mode not in {'x', 'y', 'z'}:
         raise ValueError("display_mode must be one of 'x', 'y', or 'z'.")
@@ -1119,7 +1120,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coo
 
         axes = axes.flatten()
 
-        img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
+        params_plot_img_with_bg = get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir)
 
         for i, (ax, z) in enumerate(zip(axes, cut_coords)):
             cut_coords_slice = [z]
@@ -1128,10 +1129,10 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coo
             if grid[1] - 1 == i:
                 colorbar = True
 
-            vstc_plot = plot_vstc_grid_slice(vstc=vstc, vsrc=vsrc, img=img, tstep=tstep, subjects_dir=subjects_dir,
-                                         time=time, cut_coords=cut_coords_slice, display_mode=display_mode,
-                                         figure=figure, colorbar=colorbar, cmap='gist_ncar', symmetric_cbar=False,
-                                         threshold=threshold, axes=ax, save=False)
+            vstc_plot = plot_vstc_grid_slice(vstc=vstc, params_plot_img_with_bg=params_plot_img_with_bg, time=time,
+                                             cut_coords=cut_coords_slice, display_mode=display_mode,
+                                             figure=figure, axes=ax, colorbar=colorbar, cmap='gist_ncar',
+                                             threshold=threshold)
 
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95,
                             wspace=0, hspace=0)
@@ -1151,9 +1152,55 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coo
         plt.close()
 
 
-def plot_vstc_grid_slice(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_coords=6,
-                         display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
-                         symmetric_cbar=False, threshold='min', save=False, fname_save=None, **kwargs):
+def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, **kwargs):
+
+    img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
+    if vstc == 0:
+        if tstep is not None:
+            img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
+        else:
+            print '    Please provide the tstep value !'
+
+    subject = vsrc[0]['subject_his_id']
+    temp_t1_fname = op.join(subjects_dir, subject, 'mri', 'T1.mgz')
+    bg_img = temp_t1_fname
+    dim = 'auto'
+    black_bg = 'auto'
+    vmax = None
+    symmetric_cbar = False
+
+    from nilearn.plotting.img_plotting import _load_anat, _get_colorbar_and_data_ranges
+    from nilearn._utils import check_niimg_4d
+    from nilearn._utils.niimg_conversions import _safe_get_data
+
+    bg_img, black_bg, bg_vmin, bg_vmax = _load_anat(bg_img, dim=dim, black_bg=black_bg)
+
+    stat_map_img = check_niimg_4d(img, dtype='auto')
+
+    cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(
+        _safe_get_data(stat_map_img, ensure_finite=True), vmax, symmetric_cbar, kwargs)
+
+    # there are no negative values
+    cbar_vmin = 0.
+    vmin = 0.
+
+    plot_img_with_bg_params = dict()
+    plot_img_with_bg_params['bg_img'] = bg_img
+    plot_img_with_bg_params['black_bg'] = black_bg
+    plot_img_with_bg_params['bg_vmin'] = bg_vmin
+    plot_img_with_bg_params['bg_vmax'] = bg_vmax
+    plot_img_with_bg_params['stat_map_img'] = stat_map_img
+    plot_img_with_bg_params['cbar_vmin'] = cbar_vmin
+    plot_img_with_bg_params['cbar_vmax'] = cbar_vmax
+    plot_img_with_bg_params['vmin'] = vmin
+    plot_img_with_bg_params['vmax'] = vmax
+
+    return plot_img_with_bg_params
+
+
+def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6, display_mode='z',
+                         figure=None, axes=None, colorbar=False, cmap='gist_ncar', threshold='min',
+                         **kwargs):
     """
     Plot a volume source space estimation for one slice in the grid in
     plot_vstc_sliced_grid.
@@ -1217,15 +1264,8 @@ def plot_vstc_grid_slice(vstc, vsrc, tstep, subjects_dir, img=None, time=None, c
           VolSourceEstimation plotted for given or 'auto' coordinates at given
           or 'auto' timepoint.
     """
+
     vstcdata = vstc.data
-    if img is None:
-        img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
-    subject = vsrc[0]['subject_his_id']
-    if vstc == 0:
-        if tstep is not None:
-            img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
-        else:
-            print '    Please provide the tstep value !'
 
     if time is None:
         # global maximum amp in time
@@ -1235,50 +1275,33 @@ def plot_vstc_grid_slice(vstc, vsrc, tstep, subjects_dir, img=None, time=None, c
     else:
         t = np.argmin(np.fabs(vstc.times - time))
         t_in_ms = vstc.times[t] * 1e3
-    print '    Found time slice: ', t_in_ms, 'ms'
 
-    temp_t1_fname = op.join(subjects_dir, subject, 'mri', 'T1.mgz')
+    print '    Found time slice: ', t_in_ms, 'ms'
 
     if threshold == 'min':
         threshold = vstcdata.min()
 
-    stat_map_img = img
-    t = t
-    bg_img = temp_t1_fname
-    cut_coords = cut_coords
+    # jumeg_plot_stat_map starts here
     output_file = None
-    display_mode = display_mode
-    colorbar = colorbar
-    figure = figure
-    axes = axes
     title = None
-    threshold = threshold
     annotate = True
     draw_cross = True
-    black_bg = 'auto'
-    cmap = cmap
-    symmetric_cbar = symmetric_cbar
-    dim = 'auto'
-    vmax = None
     resampling_interpolation = 'continuous'
+
+    bg_img = params_plot_img_with_bg['bg_img']
+    black_bg = params_plot_img_with_bg['black_bg']
+    bg_vmin = params_plot_img_with_bg['bg_vmin']
+    bg_vmax = params_plot_img_with_bg['bg_vmax']
+    stat_map_img = params_plot_img_with_bg['stat_map_img']
+    cbar_vmin = params_plot_img_with_bg['cbar_vmin']
+    cbar_vmax = params_plot_img_with_bg['cbar_vmax']
+    vmin = params_plot_img_with_bg['vmin']
+    vmax = params_plot_img_with_bg['vmax']
 
     # noqa: E501
     # dim the background
-    from nilearn.plotting.img_plotting import _load_anat, _plot_img_with_bg, _get_colorbar_and_data_ranges
-    from nilearn._utils import check_niimg_3d, check_niimg_4d
-    from nilearn._utils.niimg_conversions import _safe_get_data
-
-    bg_img, black_bg, bg_vmin, bg_vmax = _load_anat(bg_img, dim=dim,
-                                                    black_bg=black_bg)
-
-    stat_map_img = check_niimg_4d(stat_map_img, dtype='auto')
-
-    cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(_safe_get_data(stat_map_img, ensure_finite=True),
-                                                                     vmax, symmetric_cbar, kwargs)
-
-    # there are no negative values
-    cbar_vmin = 0.
-    vmin = 0.
+    from nilearn.plotting.img_plotting import _plot_img_with_bg
+    from nilearn._utils import check_niimg_3d
 
     stat_map_img_at_time_t = index_img(stat_map_img, t)
     stat_map_img_at_time_t = check_niimg_3d(stat_map_img_at_time_t, dtype='auto')
@@ -1293,13 +1316,6 @@ def plot_vstc_grid_slice(vstc, vsrc, tstep, subjects_dir, img=None, time=None, c
         resampling_interpolation=resampling_interpolation, **kwargs)
 
     vstc_plt = display
-
-    if save:
-        if fname_save is None:
-            print 'please provide an filepath to save .png'
-        else:
-            plt.savefig(fname_save)
-            plt.close()
 
     return vstc_plt
 
@@ -1622,12 +1638,12 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
     vstcdata = vstc.data
     if img is None:
         img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
+        if vstc == 0:
+            if tstep is not None:
+                img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
+            else:
+                print '    Please provide the tstep value !'
     subject = vsrc[0]['subject_his_id']
-    if vstc == 0:
-        if tstep is not None:
-            img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
-        else:
-            print '    Please provide the tstep value !'
 
     if time is None:
         # global maximum amp in time
