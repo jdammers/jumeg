@@ -55,19 +55,19 @@ def read_vert_labelwise(fname_src, subject, subjects_dir):
     
     Returns
     -------
-    label_list : list
-        A list containing all labels available for the subject's source space
-        with the according vertice indices
+    label_dict : dict
+        A dict containing all labels available for the subject's source space
+        and their respective vertex indices
     
     """
     fname_labels = fname_src[:-4] + '_vertno_labelwise.npy'
-    label_list = np.load(fname_labels).item()
+    label_dict = np.load(fname_labels).item()
     subj_vert_src = mne.read_source_spaces(fname_src)
-    label_list = _remove_vert_duplicates(subject, subj_vert_src, label_list,
+    label_dict = _remove_vert_duplicates(subject, subj_vert_src, label_dict,
                                          subjects_dir)
     del subj_vert_src
 
-    return label_list
+    return label_dict
 
 
 def _point_cloud_error_balltree(subj_p, temp_tree):
@@ -103,8 +103,8 @@ def _trans_from_est(params):
     return trans
 
 
-def auto_match_labels(fname_subj_src, label_list_subject,
-                      fname_temp_src, label_list_template,
+def auto_match_labels(fname_subj_src, label_dict_subject,
+                      fname_temp_src, label_dict_template,
                       subjects_dir, volume_labels, template_spacing,
                       e_func, fname_save, save_trans=False):
     """
@@ -114,9 +114,15 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     Parameters
     ----------
     fname_subj_src : string
-        Filename of the first volume source space
+        Filename of the first volume source space.
+    label_dict_subject : dict
+        Dictionary containing all labels and the numbers of the
+        vertices belonging to these labels for the subject.
     fname_temp_src : string
-        Filename of the second volume source space to match on
+        Filename of the second volume source space to match on.
+    label_dict_template : dict
+        Dictionary containing all labels and the numbers of the
+        vertices belonging to these labels for the template.
     volume_labels : list of volume Labels
         List of the volume labels of interest
     subjects_dir : str
@@ -177,24 +183,24 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     Subject: '%s' to Template: '%s' with
     %s...""" % (len(volume_labels), subject, template, err_function)
 
-    # remove duplicate vertices before starting to morph
-    label_list_subject = _remove_vert_duplicates(subject, subj_src, label_list_subject,
+    # make sure to remove duplicate vertices before matching
+    label_dict_subject = _remove_vert_duplicates(subject, subj_src, label_dict_subject,
                                                  subjects_dir)
 
-    label_list_template = _remove_vert_duplicates(template, temp_src, label_list_template,
+    label_dict_template = _remove_vert_duplicates(template, temp_src, label_dict_template,
                                                   subjects_dir)
 
     vert_sum = 0
     vert_sum_temp = 0
 
     for label_i in volume_labels:
-        vert_sum = vert_sum + label_list_subject[label_i].shape[0]
-        vert_sum_temp = vert_sum_temp + label_list_template[label_i].shape[0]
+        vert_sum = vert_sum + label_dict_subject[label_i].shape[0]
+        vert_sum_temp = vert_sum_temp + label_dict_template[label_i].shape[0]
 
         # check for overlapping labels
         for label_j in volume_labels:
             if label_i != label_j:
-                h = np.intersect1d(label_list_subject[label_i], label_list_subject[label_j])
+                h = np.intersect1d(label_dict_subject[label_i], label_dict_subject[label_j])
                 if h.shape[0] > 0:
                     print 'Label %s contains %d vertices from label %s' % (label_i,
                                                                            h.shape[0],
@@ -218,8 +224,8 @@ def auto_match_labels(fname_subj_src, label_list_subject,
         print ''
 
         # Select coords for label and check if they exceed the label size limit
-        s_pts = subj_p[label_list_subject[label]]
-        t_pts = temp_p[label_list_template[label]]
+        s_pts = subj_p[label_dict_subject[label]]
+        t_pts = temp_p[label_dict_template[label]]
 
         # IIRC: the error function in find min needs at least 6 points. if all points are
         # then this point is taken as minimum -> for clarifications ask Daniel
@@ -441,7 +447,7 @@ def find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_tr
     return poss_trans
 
 
-def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
+def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
                       volume_labels, subject_to,
                       subjects_dir, label_trans_dic=None):
     """Transformes given Labels of interest from one subjects' to another.
@@ -469,7 +475,7 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
     subject = subj_vol[0]['subject_his_id']
     x, y, z = subj_vol[0]['rr'].T
     subj_p = np.c_[x, y, z]
-    label_list = label_list_subject_from
+    label_dict = label_dict_subject_from
     print """\n#### Attempting to transform %s source space labelwise to 
     %s source space..""" % (subject, subject_to)
 
@@ -501,25 +507,25 @@ def _transform_src_lw(vsrc_subject_from, label_list_subject_from,
         label_trans_dic = label_trans_dic
 
     vert_sum = []
-    for i in volume_labels:
-        vert_sum.append(label_list[i].shape[0])
-        for j in volume_labels:
-            if i != j:
-                h = np.intersect1d(label_list[i], label_list[j])
+    for label_i in volume_labels:
+        vert_sum.append(label_dict[label_i].shape[0])
+        for label_j in volume_labels:
+            if label_i != label_j:
+                h = np.intersect1d(label_dict[label_i], label_dict[label_j])
                 if h.shape[0] > 0:
-                    print "In Label:", i, """ are vertices from
-            Label:""", j, "(", h.shape[0], ")"
+                    print "In Label:", label_i, """ are vertices from
+                           Label:""", label_j, "(", h.shape[0], ")"
                     break
 
     transformed_p = np.array([[0, 0, 0]])
     vert_sum = []
     idx_vertices = []
     # TODO: p stands for points?
-    for p, label in enumerate(volume_labels):
-        loadingBar(p, len(volume_labels), task_part=label)
-        vert_sum.append(label_list[label].shape[0])
-        idx_vertices.append(label_list[label])
-        trans_p = subj_p[label_list[label]]
+    for idx, label in enumerate(volume_labels):
+        loadingBar(idx, len(volume_labels), task_part=label)
+        vert_sum.append(label_dict[label].shape[0])
+        idx_vertices.append(label_dict[label])
+        trans_p = subj_p[label_dict[label]]
         trans = label_trans_dic[label]
         # apply trans
         trans_p = apply_trans(trans, trans_p)
@@ -568,7 +574,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     unwanted_to_zero : bool
        If True, set all non-Labels-of-interest in resulting stc to zero.
     label_trans_dic : dict
-        hlight: what to say here?
+        Dictionary containing transformation matrices for all labels (acquired
+        by auto_match_labels function).
     fname_save_stc : None | str
         File name for the morphed volume stc file to be saved under.
         If fname_save_stc is None, use the standard file name convention.
@@ -601,21 +608,24 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     # Source Spaces
     subj_vol = mne.read_source_spaces(fname_vsrc_subject_from)
     temp_vol = mne.read_source_spaces(fname_vsrc_subject_to)
-    fname_label_list_subject_from = (fname_vsrc_subject_from[:-4] +
+
+    # get dictionaries with labels and their respective vertices
+    fname_label_dict_subject_from = (fname_vsrc_subject_from[:-4] +
                                      '_vertno_labelwise.npy')
-    label_list_subject_from = np.load(fname_label_list_subject_from).item()
-    fname_label_list_subject_to = (fname_vsrc_subject_to[:-4] +
+    label_dict_subject_from = np.load(fname_label_dict_subject_from).item()
+
+    fname_label_dict_subject_to = (fname_vsrc_subject_to[:-4] +
                                    '_vertno_labelwise.npy')
-    label_list_subject_to = np.load(fname_label_list_subject_to).item()
+    label_dict_subject_to = np.load(fname_label_dict_subject_to).item()
 
     # Check for vertex duplicates
-    label_list_subject_from = _remove_vert_duplicates(subject_from, subj_vol,
-                                                      label_list_subject_from,
+    label_dict_subject_from = _remove_vert_duplicates(subject_from, subj_vol,
+                                                      label_dict_subject_from,
                                                       subjects_dir)
 
     # Labelwise transform the whole subject source space
     transformed_p, idx_vertices = _transform_src_lw(subj_vol,
-                                                    label_list_subject_from,
+                                                    label_dict_subject_from,
                                                     volume_labels, subject_to,
                                                     subjects_dir,
                                                     label_trans_dic)
@@ -648,7 +658,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         if unwanted_to_zero:
             print '#### Setting all Unknown vertices values to Zero..'
 
-            # vertnos_unknown = label_list_subject_to['Unknown']
+            # vertnos_unknown = label_dict_subject_to['Unknown']
             # vert_U_idx = np.array([], dtype=int)
             # for i in xrange(0, vertnos_unknown.shape[0]):
             #     vert_U_idx = np.append(vert_U_idx,
@@ -657,7 +667,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
             # inter_data[vert_U_idx, :] = 0.
             #
             # # now the original data
-            # vertnos_unknown_from = label_list_subject_from['Unknown']
+            # vertnos_unknown_from = label_dict_subject_from['Unknown']
             # vert_U_idx = np.array([], dtype=int)
             # for i in xrange(0, vertnos_unknown_from.shape[0]):
             #     vert_U_idx = np.append(vert_U_idx,
@@ -667,7 +677,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
             temp_LOI_idx = np.array([], dtype=int)
             for p, labels in enumerate(volume_labels):
-                lab_verts_temp = label_list_subject_to[labels]
+                lab_verts_temp = label_dict_subject_to[labels]
                 for i in xrange(0, lab_verts_temp.shape[0]):
                     temp_LOI_idx = np.append(temp_LOI_idx,
                                              np.where(lab_verts_temp[i]
@@ -680,7 +690,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
             subj_LOI_idx = np.array([], dtype=int)
             for p, labels in enumerate(volume_labels):
-                lab_verts_temp = label_list_subject_from[labels]
+                lab_verts_temp = label_dict_subject_from[labels]
                 for i in xrange(0, lab_verts_temp.shape[0]):
                     subj_LOI_idx = np.append(subj_LOI_idx,
                                              np.where(lab_verts_temp[i]
@@ -699,8 +709,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
             print '\n#### Attempting to normalize the vol-morphed stc..'
             normalized_new_data = inter_data.copy()
             for p, labels in enumerate(volume_labels):
-                lab_verts = label_list_subject_from[labels]
-                lab_verts_temp = label_list_subject_to[labels]
+                lab_verts = label_dict_subject_from[labels]
+                lab_verts_temp = label_dict_subject_to[labels]
                 subj_vert_idx = np.array([], dtype=int)
                 for i in xrange(0, lab_verts.shape[0]):
                     subj_vert_idx = np.append(subj_vert_idx,
@@ -748,8 +758,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                 if plot:
                     _volumemorphing_plot_results(stc_orig, stc_morphed,
                                                  interpolation_method,
-                                                 subj_vol, label_list_subject_from,
-                                                 temp_vol, label_list_subject_to,
+                                                 subj_vol, label_dict_subject_from,
+                                                 temp_vol, label_dict_subject_to,
                                                  volume_labels, subject_from,
                                                  subject_to, cond=cond, n_iter=n_iter,
                                                  subjects_dir=subjects_dir, save=True)
@@ -1310,20 +1320,29 @@ def make_indiv_spacing(subject, ave_subject, standard_spacing, subjects_dir):
     return indiv_spacing
 
 
-def _remove_vert_duplicates(subject, subj_src, label_list_subject,
+def _remove_vert_duplicates(subject, subj_src, label_dict_subject,
                             subjects_dir):
-    """ Removes all vertice duplicates from the vertice label list.
-        (Those appear because of an unsuitable process of creating labelwise
-        volume source spaces in mne-python)
+    """
+    Removes all vertice duplicates from the vertice label dict.
+    (Those appear because of an unsuitable process of creating labelwise
+    volume source spaces in mne-python)
     
-    Parameters
-    ----------
-    stc_data : Data of VolSourceEstimate
-        The source estimate data
-
-    Returns
-    -------
-    
+    Parameters:
+    -----------
+    subject : str
+        Subject ID.
+    subj_src : mne.SourceSpaces
+        Volume source space for the subject brain.
+    label_dict_subject : dict
+        Dictionary with the labels and their respective vertices
+        for the subject.
+    subjects_dir : str
+        Path to the subjects directory.
+    Returns:
+    --------
+    label_dict_subject : dict
+        Dictionary with the labels and their respective vertices
+        for the subject where duplicate vertices have been removed.
     """
     fname_s_aseg = subjects_dir + subject + '/mri/aseg.mgz'
     mgz = nib.load(fname_s_aseg)
@@ -1343,7 +1362,7 @@ def _remove_vert_duplicates(subject, subj_src, label_list_subject,
     del_count = 0
     for p, label in enumerate(all_volume_labels):
         loadingBar(p, len(all_volume_labels), task_part=None)
-        lab_arr = label_list_subject[label]
+        lab_arr = label_dict_subject[label]
         lab_id = _get_lut_id(lut, label, True)[0]
         del_ver_idx_list = []
         for arr_id, i in enumerate(lab_arr, 0):
@@ -1356,10 +1375,10 @@ def _remove_vert_duplicates(subject, subj_src, label_list_subject,
                 del_ver_idx_list.append(arr_id)
                 del_count += 1
         del_ver_idx = np.asarray(del_ver_idx_list)
-        label_list_subject[label] = np.delete(label_list_subject[label], del_ver_idx)
+        label_dict_subject[label] = np.delete(label_dict_subject[label], del_ver_idx)
     print '    Deleted', del_count, 'vertice duplicates.\n'
 
-    return label_list_subject
+    return label_dict_subject
 
 
 # %% ===========================================================================
