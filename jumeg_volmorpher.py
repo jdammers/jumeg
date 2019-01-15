@@ -186,25 +186,25 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     label_list_template = _remove_vert_duplicates(template, temp_src, label_list_template,
                                                   subjects_dir)
 
-    # hlight: wouldn't it be easier to just sum up the shape of the label list instead of making a list?
-    vert_sum = []
-    vert_sum_temp = []
+
+    vert_sum = 0
+    vert_sum_temp = 0
 
     for label_i in volume_labels:
-        vert_sum.append(label_list_subject[label_i].shape[0])
-        vert_sum_temp.append(label_list_template[label_i].shape[0])
+        vert_sum = vert_sum + label_list_subject[label_i].shape[0]
+        vert_sum_temp = vert_sum_temp + label_list_template[label_i].shape[0]
 
         # check for overlapping labels
         for label_j in volume_labels:
             if label_i != label_j:
                 h = np.intersect1d(label_list_subject[label_i], label_list_subject[label_j])
                 if h.shape[0] > 0:
-                    print 'Label %s contains %d vertices from label %s' % (label_i, h.shape[0], label_i)
-                    # hlight: why break here? Couldn't there be overlap with other labels as well?
-                    break
+                    print 'Label %s contains %d vertices from label %s' % (label_i,
+                                                                           h.shape[0],
+                                                                           label_i)
 
-    print '    # N subject vertices:', np.sum(np.asarray(vert_sum))
-    print '    # N template vertices:', np.sum(np.asarray(vert_sum_temp))
+    print '    # N subject vertices:', vert_sum
+    print '    # N template vertices:', vert_sum_temp
 
     # Prepare empty containers to store the possible transformation results
     label_trans_dic = {}
