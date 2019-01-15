@@ -105,7 +105,7 @@ def _trans_from_est(params):
 
 def auto_match_labels(fname_subj_src, label_list_subject,
                       fname_temp_src, label_list_template,
-                      volume_labels, template_spacing,
+                      subjects_dir, volume_labels, template_spacing,
                       e_func, fname_save, save_trans=False):
     """
     Matches a subject's volume source space labelwise to another volume
@@ -178,6 +178,13 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     print """\n#### Attempting to match %d volume source space labels from
     Subject: '%s' to Template: '%s' with
     %s...""" % (len(volume_labels), subject, template, err_function)
+
+    # remove duplicate vertices before starting to morph
+    label_list_subject = _remove_vert_duplicates(subject, subj_src, label_list_subject,
+                                                 subjects_dir)
+
+    label_list_template = _remove_vert_duplicates(template, temp_src, label_list_template,
+                                                  subjects_dir)
 
     # hlight: wouldn't it be easier to just sum up the shape of the label list instead of making a list?
     vert_sum = []
