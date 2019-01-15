@@ -1224,7 +1224,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
     return vstc_plt
 
 
-def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=6,
+def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_coords=6,
                      display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
                      symmetric_cbar=False, threshold='min', save=False, fname_save=None):
     """ Plot a volume source space estimation.
@@ -1240,6 +1240,8 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=6,
         Time step between successive samples in data.
     subjects_dir : str
         The path to the subjects directory.
+    img : Nifti1Image | None
+        Pre-computed vstc.as_volume(vsrc, dest='mri', mri_resolution=False).
     time : int, float | None
         None is default for finding the time sample with the voxel with global
         maximal amplitude. If int, float the given time point is selected and
@@ -1289,7 +1291,8 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=6,
           or 'auto' timepoint.
     """
     vstcdata = vstc.data
-    img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
+    if img is None:
+        img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
     subject = vsrc[0]['subject_his_id']
     if vstc == 0:
         if tstep is not None:
