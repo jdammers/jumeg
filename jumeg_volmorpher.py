@@ -792,11 +792,10 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
 
 def _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                 interpolation_method,
-                                 volume_orig, label_list_from,
-                                 volume_temp, label_list_to,
-                                 volume_labels, subject, subject_to,
-                                 cond, n_iter, subjects_dir, save=False):
+                                 volume_orig, label_dict_from,
+                                 volume_temp, label_dict_to,
+                                 volume_labels, cond, n_iter,
+                                 subjects_dir, save=False):
     """Gathering information and plot before and after morphing results.
     
     Parameters
@@ -805,17 +804,15 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         Volume source estimate for the original subject.
     stc_morphed : VolSourceEstimate
         Volume source estimate for the destination subject.
-    interpolation_method : str | None
-        Interpolationmethod as a string to give the plot more intel
     volume_orig : instance of SourceSpaces
         The original source space that were morphed to the current
         subject.
-    label_list_from : list
-        Equivalent label vertice list to the original source space
+    label_dict_from : list
+        Equivalent label vertex dict to the original source space
     volume_temp : instance of SourceSpaces
         The template source space that is  morphed on.
-    label_list_to : list
-        Equivalent label vertice list to the template source space
+    label_dict_to : list
+        Equivalent label vertex dict to the template source space
     volume_labels : list of volume Labels
         List of the volume labels of interest
     cond : str | None
@@ -832,10 +829,6 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     if save == False : returns matplotlib.figure
     
     """
-    if subject_to is None:
-        subject_to = ''
-    else:
-        subject_to = subject_to
     if cond is None:
         cond = ''
     else:
@@ -851,8 +844,8 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     temp_spacing = (abs(temp_vol[0]['rr'][0, 0]
                         - temp_vol[0]['rr'][1, 0]) * 1000).round()
     subject_to = volume_temp[0]['subject_his_id']
-    label_list = label_list_from
-    label_list_template = label_list_to
+    label_dict = label_dict_from
+    label_dict_template = label_dict_to
     new_data = stc_morphed.data
     indiv_spacing = make_indiv_spacing(subject_from, subject_to,
                                        temp_spacing, subjects_dir)
@@ -902,9 +895,9 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         activity in template for all labels.."""
     subj_lab_act = {}
     temp_lab_act = {}
-    for p, label in enumerate(volume_labels):
-        lab_arr = label_list[str(label)]
-        lab_arr_temp = label_list_template[str(label)]
+    for label in volume_labels:
+        lab_arr = label_dict[str(label)]
+        lab_arr_temp = label_dict_template[str(label)]
         subj_vert_idx = np.array([], dtype=int)
         temp_vert_idx = np.array([], dtype=int)
         for i in xrange(0, lab_arr.shape[0]):
