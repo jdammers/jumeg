@@ -160,7 +160,6 @@ def auto_match_labels(fname_subj_src, label_list_subject,
         errfunc = _point_cloud_error_balltree
 
     subj_src = mne.read_source_spaces(fname_subj_src)
-    subject_from = subj_src[0]['subject_his_id']
     x, y, z = subj_src[0]['rr'].T
     # hlight: subj_p contains the coordinates of the vertices
     subj_p = np.c_[x, y, z]
@@ -168,7 +167,6 @@ def auto_match_labels(fname_subj_src, label_list_subject,
     subject = subj_src[0]['subject_his_id']
 
     temp_src = mne.read_source_spaces(fname_temp_src)
-    subject_to = temp_src[0]['subject_his_id']
     x1, y1, z1 = temp_src[0]['rr'].T
     # hlight: temp_p contains the coordinates of the vertices
     temp_p = np.c_[x1, y1, z1]
@@ -376,7 +374,7 @@ def auto_match_labels(fname_subj_src, label_list_subject,
         print '\n    Writing Transformation matrices to file..'
         fname_lw_trans = fname_save
         mat_mak_trans_dict = {}
-        mat_mak_trans_dict['ID'] = '%s -> %s' % (subject_from, subject_to)
+        mat_mak_trans_dict['ID'] = '%s -> %s' % (subject, template)
         mat_mak_trans_dict['Labeltransformation'] = label_trans_dic
         mat_mak_trans_dict['Transformation Error[mm]'] = label_trans_dic_err
         mat_mak_trans_dict['Mean Distance Error [mm]'] = label_trans_dic_mean_dist
