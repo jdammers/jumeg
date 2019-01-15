@@ -1276,20 +1276,26 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     return VSTCPT_plot
 
 
-def make_indiv_spacing(subject, ave_subject, standard_spacing, subjects_dir):
-    """ Identifies the suiting grid space difference of a subject's volume
-        source space to a template's volume source space, before a planned
-        morphing takes place.
+def make_indiv_spacing(subject, ave_subject, template_spacing, subjects_dir):
+    """
+    Identifies the suiting grid space difference of a subject's volume
+    source space to a template's volume source space, before a planned
+    morphing takes place.
     
-    Parameters
-    ----------
-    s_pts : String
+    Parameters:
+    -----------
+    subject : str
           Filename
-    t_pts : list of Labels
-          Filename
-  
-    Returns
-    -------
+        Subject ID.
+    ave_subject : str
+        Name or ID of the template brain, e.g., fsaverage.
+    template_spacing : float
+        Grid spacing used for the template brain.
+    subjects_dir : str
+        Path to the subjects directory.
+
+    Returns:
+    --------
     trans : SourceEstimate
           The generated source time courses.
     """
@@ -1314,9 +1320,9 @@ def make_indiv_spacing(subject, ave_subject, standard_spacing, subjects_dir):
     #      logger.info('    %s = %6.1f ... %6.1f mm --> Difference:  %6.1f mm'
     #                  % (c, mi, ma, md))
     prop = (diff / diff_temp).mean()
-    indiv_spacing = (prop * standard_spacing)
+    indiv_spacing = (prop * template_spacing)
     print "    '%s' individual-spacing to '%s'[%.2f] is: %.4fmm" % (
-        subject, ave_subject, standard_spacing, indiv_spacing)
+        subject, ave_subject, template_spacing, indiv_spacing)
 
     return indiv_spacing
 
