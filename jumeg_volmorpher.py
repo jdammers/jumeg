@@ -1153,6 +1153,27 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, display_mode, cut_coo
 
 
 def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, **kwargs):
+    """
+    Makes calculations that would be executed repeatedly every time a slice is
+    computed and saves the results in a dictionary which is then read by
+    plot_vstc_grid_slice().
+
+    Parameters:
+    -----------
+    vstc : mne.VolSourceEstimate
+        The volume source estimate.
+    vsrc : mne.SourceSpaces
+        The source space of the subject equivalent to the
+    tstep : int
+        Time step between successive samples in data.
+    subjects_dir:
+        Path to the subject directory.
+
+    Returns:
+    --------
+    params_plot_img_with_bg : dict
+        Dictionary containing the parameters for plotting.
+    """
 
     img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
     if vstc == 0:
@@ -1184,18 +1205,18 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, **kwargs):
     cbar_vmin = 0.
     vmin = 0.
 
-    plot_img_with_bg_params = dict()
-    plot_img_with_bg_params['bg_img'] = bg_img
-    plot_img_with_bg_params['black_bg'] = black_bg
-    plot_img_with_bg_params['bg_vmin'] = bg_vmin
-    plot_img_with_bg_params['bg_vmax'] = bg_vmax
-    plot_img_with_bg_params['stat_map_img'] = stat_map_img
-    plot_img_with_bg_params['cbar_vmin'] = cbar_vmin
-    plot_img_with_bg_params['cbar_vmax'] = cbar_vmax
-    plot_img_with_bg_params['vmin'] = vmin
-    plot_img_with_bg_params['vmax'] = vmax
+    params_plot_img_with_bg = dict()
+    params_plot_img_with_bg['bg_img'] = bg_img
+    params_plot_img_with_bg['black_bg'] = black_bg
+    params_plot_img_with_bg['bg_vmin'] = bg_vmin
+    params_plot_img_with_bg['bg_vmax'] = bg_vmax
+    params_plot_img_with_bg['stat_map_img'] = stat_map_img
+    params_plot_img_with_bg['cbar_vmin'] = cbar_vmin
+    params_plot_img_with_bg['cbar_vmax'] = cbar_vmax
+    params_plot_img_with_bg['vmin'] = vmin
+    params_plot_img_with_bg['vmax'] = vmax
 
-    return plot_img_with_bg_params
+    return params_plot_img_with_bg
 
 
 def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6, display_mode='z',
@@ -1204,25 +1225,15 @@ def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6,
     """
     Plot a volume source space estimation for one slice in the grid in
     plot_vstc_sliced_grid.
-    Parameters
-    ----------
+
+    Parameters:
+    -----------
     vstc : VolSourceEstimate
         The volume source estimate.
-    vsrc : instance of SourceSpaces
-        The source space of the subject equivalent to the
-        subject.
-    tstep : scalar
-        Time step between successive samples in data.
-    subjects_dir : str
-        The path to the subjects directory.
-    img : Nifti1Image | None
-        Pre-computed vstc.as_volume(vsrc, dest='mri', mri_resolution=False).
     time : int, float | None
         None is default for finding the time sample with the voxel with global
         maximal amplitude. If int, float the given time point is selected and
         plotted.
-    display_mode : 'x', 'y', 'z'
-        Direction in which the brain is sliced.
     cut_coords : None, a tuple of floats, or an integer
         The MNI coordinates of the point where the cut is performed
         If display_mode is 'ortho', this should be a 3-tuple: (x, y, z)
@@ -1231,35 +1242,28 @@ def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6,
         If None is given, the cuts is calculated automaticaly.
         If display_mode is 'x', 'y' or 'z', cut_coords can be an integer,
         in which case it specifies the number of cuts to perform
+    display_mode : 'x', 'y', 'z'
+        Direction in which the brain is sliced.
     figure : matplotlib.figure | None
         Specify the figure container to plot in. If None, a new
         matplotlib.figure is created
     axes : matplotlib.figure.axes | None
         Specify the axes of the given figure to plot in. Only necessary if
         a figure is passed.
+    colorbar : bool
+        Show the colorbar.
+    cmap : matplotlib colormap, optional
+        The colormap for specified image. The colormap *must* be
+        symmetrical.
     threshold : a number, None, 'auto', or 'min'
         If None is given, the image is not thresholded.
         If a number is given, it is used to threshold the image:
         values below the threshold (in absolute value) are plotted
         as transparent. If auto is given, the threshold is determined
         magically by analysis of the image.
-    colorbar : bool
-        Show the colorbar.
-    cmap : matplotlib colormap, optional
-        The colormap for specified image. The colormap *must* be
-        symmetrical.
-    symmetric_cbar : boolean or 'auto', optional, default 'auto'
-        Specifies whether the colorbar should range from -vmax to vmax
-        or from vmin to vmax. Setting to 'auto' will select the latter if
-        the range of the whole image is either positive or negative.
-        Note: The colormap will always be set to range from -vmax to vmax.
-    save : bool | None
-        Default is False. If True the plot is forced to close and written to disk
-        at fname_save location
-    fname : string
-        The path where to save the plot.
-    Returns
-    -------
+
+    Returns:
+    --------
     Figure : matplotlib.figure
           VolSourceEstimation plotted for given or 'auto' coordinates at given
           or 'auto' timepoint.
