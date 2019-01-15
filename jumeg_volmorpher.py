@@ -1109,8 +1109,8 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
 
 def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time_sample=None,
                      cut_coords=6, display_mode='z', figure=None, axes=None,
-                     cmap='hot', symmetric_cbar=False, threshold='min',
-                     save=False, fname_save=None):
+                     colorbar=False, cmap='hot', symmetric_cbar=False,
+                     threshold='min', save=False, fname_save=None):
     """ Plot a volume source space estimation.
     Parameters
     ----------
@@ -1143,6 +1143,8 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time_sample=None,
     axes : matplotlib.figure.axes | None
         Specify the axes of the given figure to plot in. Only necessary if
         a figure is passed.
+    colorbar : bool
+        Show the colorbar.
     threshold : a number, None, 'auto', or 'min'
         If None is given, the image is not thresholded.
         If a number is given, it is used to threshold the image:
@@ -1199,7 +1201,7 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time_sample=None,
                                       threshold=threshold,
                                       annotate=True, title=None,
                                       cut_coords=cut_coords,
-                                      cmap=cmap, colorbar=False,
+                                      cmap=cmap, colorbar=colorbar,
                                       symmetric_cbar=symmetric_cbar)
     if save:
         if fname_save is None:
@@ -1307,9 +1309,7 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     new-data : dictionary of one or more new stc
           The generated source time courses.
     """
-    from nilearn import plotting
-    from nilearn.image import index_img
-    from nibabel.affines import apply_affine
+
     from jumeg.jumeg_volmorpher import _make_image
     print '\n#### Attempting to plot volume stc from file..'
     print '    Creating 3D image from stc..'
