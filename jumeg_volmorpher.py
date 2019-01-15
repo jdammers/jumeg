@@ -287,6 +287,7 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             # Perform the transformation of the initial transformation matrix
             init_trans = np.zeros([4, 4])
             # hlight: what happens if the label is neither left nor right? -> init_trans is filled with zeros
+            # hlight: follow up why L and R is basically the same
             if label[0] == 'L':
                 init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
             elif label[0] == 'R':
@@ -521,7 +522,6 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
     transformed_p = np.array([[0, 0, 0]])
     vert_sum = []
     idx_vertices = []
-    # TODO: p stands for points?
     for idx, label in enumerate(volume_labels):
         loadingBar(idx, len(volume_labels), task_part=label)
         vert_sum.append(label_dict[label].shape[0])
@@ -818,10 +818,6 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         Equivalent label vertice list to the template source space
     volume_labels : list of volume Labels
         List of the volume labels of interest
-    subject : string
-        Name of the subject from which to morph as named in the SUBJECTS_DIR
-    subject_to : string
-        Name of the subject on which to morph as named in the SUBJECTS_DIR
     cond : str | None
         Evoked contition as a string to give the plot more intel
     n_iter : int
@@ -831,9 +827,9 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
 
     Returns
     -------
-    if save=True : None
+    if save == True : None
         Automatically creates matplotlib.figure and writes it to disk.
-    if save=Fales : returns matplotlib.figure
+    if save == False : returns matplotlib.figure
     
     """
     if subject_to is None:
@@ -862,12 +858,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
                                        temp_spacing, subjects_dir)
 
     print '\n#### Attempting to save the volume morphing results ..'
-    directory = subjects_dir + '%s/plots/VolumeMorphing/' % (subject)
+    directory = subjects_dir + '%s/plots/VolumeMorphing/' % subject_from
     if not op.exists(directory):
         os.makedirs(directory)
 
         # Create new figure and two subplots, sharing both axes
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharey=True, sharex=True,
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, sharey=True,
                                    num=999, figsize=(16, 9))
     fig.text(0.985, 0.75, 'Amplitude [T]', color='white', size='large',
              horizontalalignment='right', verticalalignment='center',
@@ -885,16 +881,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     t = int(np.where(np.sum(stc_orig.data, axis=0)
                      == np.max(np.sum(stc_orig.data, axis=0)))[0])
     plot_vstc(vstc=stc_orig, vsrc=volume_orig, tstep=stc_orig.tstep,
-              subjects_dir=subjects_dir,
-              time_sample=t, coords=None,
-              figure=999, axes=ax1,
-              save=False)
+              subjects_dir=subjects_dir, time_sample=t, coords=None,
+              figure=999, axes=ax1, save=False)
 
     plot_vstc(vstc=stc_morphed, vsrc=volume_temp, tstep=stc_orig.tstep,
-              subjects_dir=subjects_dir,
-              time_sample=t, coords=None,
-              figure=999, axes=ax2,
-              save=False)
+              subjects_dir=subjects_dir, time_sample=t, coords=None,
+              figure=999, axes=ax2, save=False)
     if save:
         fname_save_fig = (directory +
                           '/%s_%s_vol-%.2f_%s_%s_volmorphing-result.png'
@@ -943,19 +935,19 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
                         bottom=0.089, top=.9,
                         left=0.03, right=0.985)
     axs = axs.ravel()
-    for p, label in enumerate(volume_labels):
-        axs[p].plot(stc_orig.times, subj_lab_act[label], '#00868B',
+    for idx, label in enumerate(volume_labels):
+        axs[idx].plot(stc_orig.times, subj_lab_act[label], '#00868B',
                     linewidth=0.9, label=('%s vol-%.2f'
                                           % (subject_from, indiv_spacing)))
-        axs[p].plot(stc_orig.times, temp_lab_act[label], '#CD7600', ls=':',
+        axs[idx].plot(stc_orig.times, temp_lab_act[label], '#CD7600', ls=':',
                     linewidth=0.9, label=('%s volume morphed vol-%.2f'
                                           % (subject_from, temp_spacing)))
-        axs[p].set_title(label, fontsize='medium', loc='right')
-        axs[p].ticklabel_format(style='sci', axis='both')
-        axs[p].set_xlabel('Time [s]')
-        axs[p].set_ylabel('Amplitude [T]')
-        axs[p].set_xlim(stc_orig.times[0], stc_orig.times[-1])
-        axs[p].get_xaxis().grid(True)
+        axs[idx].set_title(label, fontsize='medium', loc='right')
+        axs[idx].ticklabel_format(style='sci', axis='both')
+        axs[idx].set_xlabel('Time [s]')
+        axs[idx].set_ylabel('Amplitude [T]')
+        axs[idx].set_xlim(stc_orig.times[0], stc_orig.times[-1])
+        axs[idx].get_xaxis().grid(True)
 
     fig.suptitle('Summed activity in volume labels - %s[%.2f]' % (subject_from, indiv_spacing)
                  + ' -> %s [%.2f] | Cond.: %s, Iter.: %d'
@@ -1457,7 +1449,7 @@ def plot_T_obs(T_obs, threshold, tail, save, fname_save):
 
     # T_obs plot code
     T_obs_flat = T_obs.flatten()
-    plt.figure('T-Statistics', figsize=((8, 8)))
+    plt.figure('T-Statistics', figsize=(8, 8))
     T_max = T_obs.max()
     T_min = T_obs.min()
     T_mean = T_obs.mean()
@@ -1469,12 +1461,12 @@ def plot_T_obs(T_obs, threshold, tail, save, fname_save):
         plt.xlim([-20, 0])
     else:
         plt.xlim([0, T_obs_flat.max() * 1.05])
-    y, binEdges = np.histogram(T_obs_flat,
+    y, bin_edges = np.histogram(T_obs_flat,
                                range=(0, T_obs_flat.max()),
                                bins=500)
-    bincenters = 0.5 * (binEdges[1:] + binEdges[:-1])
+    bin_centers = 0.5 * (bin_edges[1:] + bin_edges[:-1])
     if threshold is not None:
-        plt.plot([threshold, threshold], (0, y[bincenters >= 0.].max()), color='#CD7600',
+        plt.plot([threshold, threshold], (0, y[bin_centers >= 0.].max()), color='#CD7600',
                  linestyle=':', linewidth=2)
 
     legend = ('T-Statistics:\n'
@@ -1483,11 +1475,11 @@ def plot_T_obs(T_obs, threshold, tail, save, fname_save):
               '      Maximum:  %.2f\n'
               '      Threshold:  %.2f  \n'
               '      ') % (T_mean, T_min, T_max, threshold)
-    plt.ylim(None, y[bincenters >= 0.].max() * 1.1)
+    plt.ylim(None, y[bin_centers >= 0.].max() * 1.1)
     plt.xlabel('T-scores', fontsize=12)
     plt.ylabel('T-values count', fontsize=12)
     plt.title('T statistics distribution of t-test - %s' % str_tail, fontsize=15)
-    plt.plot(bincenters, y, label=legend, color='#00868B')
+    plt.plot(bin_centers, y, label=legend, color='#00868B')
     #    plt.xlim([])
     plt.tight_layout()
     legend = plt.legend(loc='upper right', shadow=True, fontsize='large', frameon=True)
