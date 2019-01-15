@@ -1107,7 +1107,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     return vstc_plt
 
 
-def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time_sample=None,
+def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time=None,
                      cut_coords=6, display_mode='z', figure=None, axes=None,
                      colorbar=False, cmap='hot', symmetric_cbar=False,
                      threshold='min', save=False, fname_save=None):
@@ -1123,9 +1123,9 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time_sample=None,
         Time step between successive samples in data.
     subjects_dir : str
         The path to the subjects directory.
-    time_sample : int, float | None
+    time : int, float | None
         None is default for finding the time sample with the voxel with global
-        maximal amplitude. If int, float the given time sample is selected and
+        maximal amplitude. If int, float the given time point is selected and
         plotted.
     display_mode : 'x', 'y', 'z'
         Direction in which the brain is sliced.
@@ -1179,12 +1179,12 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time_sample=None,
         else:
             print '    Please provide the tstep value !'
 
-    if time_sample is None:
+    if time is None:
         # global maximum amp in time
         t = int(np.where(np.sum(vstcdata, axis=0) == np.max(np.sum(vstcdata, axis=0)))[0])
     else:
-        print '    Time slice', time_sample
-        t = time_sample
+        t = np.argmin(np.fabs(vstc.times - time))
+
     t_in_ms = vstc.times[t] * 1e3
     print '    Found time slice: ', t_in_ms, 'ms'
 
