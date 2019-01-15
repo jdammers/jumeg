@@ -26,9 +26,12 @@ from nilearn.image import index_img
 from nibabel.affines import apply_affine
 import matplotlib.pyplot as plt
 from mne.source_estimate import VolSourceEstimate
-from matplotlib import cm
+# from matplotlib import cm
 from matplotlib.ticker import LinearLocator
 
+from nilearn.plotting.img_plotting import _MNI152Template
+from nilearn.plotting import cm as cm_nilearn
+MNI152TEMPLATE = _MNI152Template()
 
 # =============================================================================
 # 
@@ -1188,21 +1191,28 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time=None,
     t_in_ms = vstc.times[t] * 1e3
     print '    Found time slice: ', t_in_ms, 'ms'
 
+    # img_data = img.get_data()
+    # aff = img.affine
+    # if cut_coords is None:
+    #     cut_coords = np.where(img_data == img_data[:, :, :, t].max())
+    #     max_try = np.concatenate((np.array([cut_coords[0][0]]),
+    #                               np.array([cut_coords[1][0]]),
+    #                               np.array([cut_coords[2][0]])))
+    #     cut_coords = apply_affine(aff, max_try)
+
     temp_t1_fname = op.join(subjects_dir, subject, 'mri', 'T1.mgz')
 
     if threshold == 'min':
         threshold = vstcdata.min()
 
-    # TODO: maybe add something like percentile of baseline for threshold?
-
-    vstc_plt = plotting.plot_stat_map(index_img(img, t), temp_t1_fname,
-                                      figure=figure, axes=axes,
-                                      display_mode=display_mode,
-                                      threshold=threshold,
-                                      annotate=True, title=None,
-                                      cut_coords=cut_coords,
-                                      cmap=cmap, colorbar=colorbar,
-                                      symmetric_cbar=symmetric_cbar)
+    vstc_plt = jumeg_plot_stat_map(index_img(img, t), temp_t1_fname,
+                                   figure=figure, axes=axes,
+                                   display_mode=display_mode,
+                                   threshold=threshold,
+                                   annotate=True, title=None,
+                                   cut_coords=cut_coords,
+                                   cmap=cmap, colorbar=colorbar,
+                                   symmetric_cbar=symmetric_cbar)
     if save:
         if fname_save is None:
             print 'please provide an filepath to save .png'
@@ -1211,6 +1221,127 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time=None,
             plt.close()
 
     return vstc_plt
+
+
+def jumeg_plot_stat_map(stat_map_img, bg_img=MNI152TEMPLATE, cut_coords=None,
+                        output_file=None, display_mode='ortho', colorbar=True,
+                        figure=None, axes=None, title=None, threshold=1e-6,
+                        annotate=True, draw_cross=True, black_bg='auto',
+                        cmap=cm_nilearn.cold_hot, symmetric_cbar="auto",
+                        dim='auto', vmax=None, resampling_interpolation='continuous',
+                        **kwargs):
+    """ Plot cuts of an ROI/mask image (by default 3 cuts: Frontal, Axial, and
+        Lateral)
+        Parameters
+        ----------
+        stat_map_img : Niimg-like object
+            See http://nilearn.github.io/manipulating_images/input_output.html
+            The statistical map image
+        bg_img : Niimg-like object
+            See http://nilearn.github.io/manipulating_images/input_output.html
+            The background image that the ROI/mask will be plotted on top of.
+            If nothing is specified, the MNI152 template will be used.
+            To turn off background image, just pass "bg_img=False".
+        cut_coords : None, a tuple of floats, or an integer
+            The MNI coordinates of the point where the cut is performed
+            If display_mode is 'ortho', this should be a 3-tuple: (x, y, z)
+            For display_mode == 'x', 'y', or 'z', then these are the
+            coordinates of each cut in the corresponding direction.
+            If None is given, the cuts is calculated automaticaly.
+            If display_mode is 'x', 'y' or 'z', cut_coords can be an integer,
+            in which case it specifies the number of cuts to perform
+        output_file : string, or None, optional
+            The name of an image file to export the plot to. Valid extensions
+            are .png, .pdf, .svg. If output_file is not None, the plot
+            is saved to a file, and the display is closed.
+        display_mode : {'ortho', 'x', 'y', 'z', 'yx', 'xz', 'yz'}
+            Choose the direction of the cuts: 'x' - sagittal, 'y' - coronal,
+            'z' - axial, 'ortho' - three cuts are performed in orthogonal
+            directions.
+        colorbar : boolean, optional
+            If True, display a colorbar on the right of the plots.
+        figure : integer or matplotlib figure, optional
+            Matplotlib figure used or its number. If None is given, a
+            new figure is created.
+        axes : matplotlib axes or 4 tuple of float: (xmin, ymin, width, height), optional
+            The axes, or the coordinates, in matplotlib figure space,
+            of the axes used to display the plot. If None, the complete
+            figure is used.
+        title : string, optional
+            The title displayed on the figure.
+        threshold : a number, None, or 'auto'
+            If None is given, the image is not thresholded.
+            If a number is given, it is used to threshold the image:
+            values below the threshold (in absolute value) are plotted
+            as transparent. If auto is given, the threshold is determined
+            magically by analysis of the image.
+        annotate : boolean, optional
+            If annotate is True, positions and left/right annotation
+            are added to the plot.
+        draw_cross : boolean, optional
+            If draw_cross is True, a cross is drawn on the plot to
+            indicate the cut plosition.
+        black_bg : boolean, optional
+            If True, the background of the image is set to be black. If
+            you wish to save figures with a black background, you
+            will need to pass "facecolor='k', edgecolor='k'"
+            to matplotlib.pyplot.savefig.
+        cmap : matplotlib colormap, optional
+            The colormap for specified image. The ccolormap *must* be
+            symmetrical.
+        symmetric_cbar : boolean or 'auto', optional, default 'auto'
+            Specifies whether the colorbar should range from -vmax to vmax
+            or from vmin to vmax. Setting to 'auto' will select the latter if
+            the range of the whole image is either positive or negative.
+            Note: The colormap will always be set to range from -vmax to vmax.
+        dim : float, 'auto' (by default), optional
+            Dimming factor applied to background image. By default, automatic
+            heuristics are applied based upon the background image intensity.
+            Accepted float values, where a typical scan is between -2 and 2
+            (-2 = increase constrast; 2 = decrease contrast), but larger values
+            can be used for a more pronounced effect. 0 means no dimming.
+        vmax : float
+            Upper bound for plotting, passed to matplotlib.pyplot.imshow
+        resampling_interpolation : str
+            Interpolation to use when resampling the image to the destination
+            space. Can be "continuous" (default) to use 3rd-order spline
+            interpolation, or "nearest" to use nearest-neighbor mapping.
+            "nearest" is faster but can be noisier in some cases.
+        Notes
+        -----
+        Arrays should be passed in numpy convention: (x, y, z)
+        ordered.
+        For visualization, non-finite values found in passed 'stat_map_img' or
+        'bg_img' are set to zero.
+        See Also
+        --------
+        nilearn.plotting.plot_anat : To simply plot anatomical images
+        nilearn.plotting.plot_epi : To simply plot raw EPI images
+        nilearn.plotting.plot_glass_brain : To plot maps in a glass brain
+    """  # noqa: E501
+    # dim the background
+    from nilearn.plotting.img_plotting import _load_anat, _plot_img_with_bg, _get_colorbar_and_data_ranges
+    from nilearn._utils import check_niimg_3d
+    from nilearn._utils.niimg_conversions import _safe_get_data
+
+    bg_img, black_bg, bg_vmin, bg_vmax = _load_anat(bg_img, dim=dim,
+                                                    black_bg=black_bg)
+
+    stat_map_img = check_niimg_3d(stat_map_img, dtype='auto')
+
+    cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(_safe_get_data(stat_map_img, ensure_finite=True),
+                                                                     vmax, symmetric_cbar, kwargs)
+
+    display = _plot_img_with_bg(
+        img=stat_map_img, bg_img=bg_img, cut_coords=cut_coords,
+        output_file=output_file, display_mode=display_mode,
+        figure=figure, axes=axes, title=title, annotate=annotate,
+        draw_cross=draw_cross, black_bg=black_bg, threshold=threshold,
+        bg_vmin=bg_vmin, bg_vmax=bg_vmax, cmap=cmap, vmin=vmin, vmax=vmax,
+        colorbar=colorbar, cbar_vmin=cbar_vmin, cbar_vmax=cbar_vmax,
+        resampling_interpolation=resampling_interpolation, **kwargs)
+
+    return display
 
 
 def _make_image(stc_data, vsrc, tstep, label_inds=None, dest='mri',
@@ -1590,12 +1721,13 @@ def plot_T_obs(T_obs, threshold, tail, save, fname_save):
 
 def plot_T_obs_3D(T_obs, save, fname_save):
     """ Visualize the Volume Source Estimate as an Nifti1 file """
-    fig = plt.figure(facecolor='w', figsize=((8, 8)))
+    from matplotlib import cm as cm_mpl
+    fig = plt.figure(facecolor='w', figsize=(8, 8))
     ax = fig.gca(projection='3d')
     vertc, timez = np.mgrid[0:T_obs.shape[0], 0:T_obs.shape[1]]
     Ts = T_obs
     title = 'T Obs'
-    t_obs_stats = ax.plot_surface(vertc, timez, Ts, cmap=cm.hot)  # , **kwargs)
+    t_obs_stats = ax.plot_surface(vertc, timez, Ts, cmap=cm_mpl.hot)  # , **kwargs)
     # plt.set_xticks([])
     # plt.set_yticks([])
     ax.set_xlabel('times [ms]')
