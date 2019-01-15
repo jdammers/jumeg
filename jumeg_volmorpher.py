@@ -17,7 +17,8 @@ import nibabel as nib
 from scipy import linalg
 from scipy.spatial.distance import cdist
 import time
-import os.path
+import os
+import os.path as op
 from scipy.interpolate import griddata
 from mne.source_estimate import _write_stc
 from nilearn import plotting
@@ -862,7 +863,7 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
 
     print '\n#### Attempting to save the volume morphing results ..'
     directory = subjects_dir + '%s/plots/VolumeMorphing/' % (subject)
-    if not os.path.exists(directory):
+    if not op.exists(directory):
         os.makedirs(directory)
 
         # Create new figure and two subplots, sharing both axes
@@ -961,7 +962,7 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
                  % (subject_to, temp_spacing, cond, n_iter),
                  fontsize=16)
     if save:
-        fname_save_fig = os.path.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_labelwise-stc.png')
+        fname_save_fig = op.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_labelwise-stc.png')
         fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond, n_iter)
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
@@ -1000,7 +1001,7 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     ax1.get_xaxis().grid(True)
     plt.tight_layout()
     if save:
-        fname_save_fig = os.path.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_stc.png')
+        fname_save_fig = op.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_stc.png')
         fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond, n_iter)
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
@@ -1097,7 +1098,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     slice_z = int(cut_coords[2])
     print ('    Coords [mri-space]:'
            + 'X: ', slice_x, 'Y: ', slice_y, 'Z: ', slice_z)
-    temp_t1_fname = os.path.join(subjects_dir, subject, 'mri', 'T1.mgz')
+    temp_t1_fname = op.join(subjects_dir, subject, 'mri', 'T1.mgz')
 
     if threshold == 'min':
         threshold = vstcdata.min()
