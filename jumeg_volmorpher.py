@@ -1107,6 +1107,110 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     return vstc_plt
 
 
+def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, time_sample=None,
+                     cut_coords=6, display_mode='z', figure=None, axes=None,
+                     cmap='hot', symmetric_cbar=False, threshold='min',
+                     save=False, fname_save=None):
+    """ Plot a volume source space estimation.
+    Parameters
+    ----------
+    vstc : VolSourceEstimate
+        The volume source estimate.
+    vsrc : instance of SourceSpaces
+        The source space of the subject equivalent to the
+        subject.
+    tstep : scalar
+        Time step between successive samples in data.
+    subjects_dir : str
+        The path to the subjects directory.
+    time_sample : int, float | None
+        None is default for finding the time sample with the voxel with global
+        maximal amplitude. If int, float the given time sample is selected and
+        plotted.
+    display_mode : 'x', 'y', 'z'
+        Direction in which the brain is sliced.
+    cut_coords : None, a tuple of floats, or an integer
+        The MNI coordinates of the point where the cut is performed
+        If display_mode is 'ortho', this should be a 3-tuple: (x, y, z)
+        For display_mode == 'x', 'y', or 'z', then these are the
+        coordinates of each cut in the corresponding direction.
+        If None is given, the cuts is calculated automaticaly.
+        If display_mode is 'x', 'y' or 'z', cut_coords can be an integer,
+        in which case it specifies the number of cuts to perform
+    figure : matplotlib.figure | None
+        Specify the figure container to plot in. If None, a new
+        matplotlib.figure is created
+    axes : matplotlib.figure.axes | None
+        Specify the axes of the given figure to plot in. Only necessary if
+        a figure is passed.
+    threshold : a number, None, 'auto', or 'min'
+        If None is given, the image is not thresholded.
+        If a number is given, it is used to threshold the image:
+        values below the threshold (in absolute value) are plotted
+        as transparent. If auto is given, the threshold is determined
+        magically by analysis of the image.
+    cmap : matplotlib colormap, optional
+        The colormap for specified image. The colormap *must* be
+        symmetrical.
+    symmetric_cbar : boolean or 'auto', optional, default 'auto'
+        Specifies whether the colorbar should range from -vmax to vmax
+        or from vmin to vmax. Setting to 'auto' will select the latter if
+        the range of the whole image is either positive or negative.
+        Note: The colormap will always be set to range from -vmax to vmax.
+    save : bool | None
+        Default is False. If True the plot is forced to close and written to disk
+        at fname_save location
+    fname : string
+        The path where to save the plot.
+    Returns
+    -------
+    Figure : matplotlib.figure
+          VolSourceEstimation plotted for given or 'auto' coordinates at given
+          or 'auto' timepoint.
+    """
+    vstcdata = vstc.data
+    img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
+    subject = vsrc[0]['subject_his_id']
+    if vstc == 0:
+        if tstep is not None:
+            img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
+        else:
+            print '    Please provide the tstep value !'
+
+    if time_sample is None:
+        # global maximum amp in time
+        t = int(np.where(np.sum(vstcdata, axis=0) == np.max(np.sum(vstcdata, axis=0)))[0])
+    else:
+        print '    Time slice', time_sample
+        t = time_sample
+    t_in_ms = vstc.times[t] * 1e3
+    print '    Found time slice: ', t_in_ms, 'ms'
+
+    temp_t1_fname = op.join(subjects_dir, subject, 'mri', 'T1.mgz')
+
+    if threshold == 'min':
+        threshold = vstcdata.min()
+
+    # TODO: maybe add something like percentile of baseline for threshold?
+
+    vstc_plt = plotting.plot_stat_map(index_img(img, t), temp_t1_fname,
+                                      figure=figure, axes=axes,
+                                      display_mode=display_mode,
+                                      threshold=threshold,
+                                      annotate=True, title=None,
+                                      cut_coords=cut_coords,
+                                      cmap=cmap, colorbar=False,
+                                      symmetric_cbar=symmetric_cbar)
+    if save:
+        if fname_save is None:
+            print 'please provide an filepath to save .png'
+        else:
+            plt.savefig(fname_save)
+            plt.close()
+
+    return vstc_plt
+
+
 def _make_image(stc_data, vsrc, tstep, label_inds=None, dest='mri',
                 mri_resolution=False):
     """Make a volume source estimation in a NIfTI file.
