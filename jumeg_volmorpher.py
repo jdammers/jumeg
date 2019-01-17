@@ -1110,7 +1110,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     return vstc_plt
 
 
-def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
+def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, title, time=None,
                           display_mode=['x'], cut_coords=6,
                           cmap='nipy_spectral', threshold='min',
                           only_positive_values=False, grid=[4, 6],
@@ -1197,8 +1197,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95,
                             wspace=0, hspace=0)
 
-        suptitle = '%.3f s' % time
-        plt.suptitle(suptitle)
+        plt.suptitle(title)
 
         DPI = figure.get_dpi()
         figure.set_size_inches(res_save[0] / float(DPI), res_save[1] / float(DPI))
