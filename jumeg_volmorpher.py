@@ -268,18 +268,19 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             # Calculate a scaling factor for the subject to match template size
             # and avoid 'Nan' by zero division
 
-            # hlight: fix comparison of float with zero
-            if t_x_diff == 0 or s_x_diff == 0:
+            # instead of comparing float with zero, check size up to a given precision
+            precision = 1e-18
+            if np.fabs(t_x_diff) < precision or np.fabs(s_x_diff) < precision:
                 x_scale = 0.
             else:
                 x_scale = t_x_diff / s_x_diff
 
-            if t_y_diff == 0 or s_y_diff == 0:
+            if np.fabs(t_y_diff) < precision or np.fabs(s_y_diff) < precision:
                 y_scale = 0.
             else:
                 y_scale = t_y_diff / s_y_diff
 
-            if t_z_diff == 0 or s_z_diff == 0:
+            if np.fabs(t_z_diff) < precision or np.fabs(s_z_diff) < precision:
                 z_scale = 0.
             else:
                 z_scale = t_z_diff / s_z_diff
