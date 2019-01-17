@@ -348,17 +348,20 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     mftparm.setdefault('solver', 'lu')
     mftparm.setdefault('svrelcut', 5.e-4)
 
-    if mftparm['solver'].lower() == 'svd':
+    mftparm['solver'] = mftparm['solver'].lower()
+    mftparm['prbfct'] = mftparm['prbfct'].lower()
+
+    if mftparm['solver'] == 'svd':
         use_svd = True
         use_lud = False
         svrelcut = mftparm['svrelcut']
-    elif mftparm['solver'].lower() == 'lu' or mftparm['solver'].lower() == 'ludecomp':
+    elif mftparm['solver'] == 'lu' or mftparm['solver'] == 'ludecomp':
         use_lud = True
         use_svd = False
     else:
         raise ValueError(">>>>> mftpar['solver'] must be either 'svd' or 'lu[decomp]'")
 
-    if mftparm['prbfct'].lower() == 'gauss':
+    if mftparm['prbfct'] == 'gauss':
         if not isinstance(mftparm['prbcnt'], np.ndarray) or mftparm['prbcnt'].shape[-1] != 3 or \
                 not isinstance(mftparm['prbhw'], np.ndarray) or mftparm['prbhw'].shape[-1] != 3 or \
                 not mftparm['prbhw'].all():
@@ -369,9 +372,9 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
             prbxfm = mftparm['prbxfm']
         else:
             raise ValueError(">>>>> 'prbxfm' must specify a xfm (or None)")
-    elif mftparm['prbfct'].lower() != 'uniform' and \
-            mftparm['prbfct'].lower() != 'flat' and \
-            mftparm['prbfct'].lower() != 'random':
+    elif mftparm['prbfct'] != 'uniform' and \
+            mftparm['prbfct'] != 'flat' and \
+            mftparm['prbfct'] != 'random':
         raise ValueError(">>>>> unrecognized keyword for 'prbfct'")
     if mftparm['prbcnt'] is None and mftparm['prbhw'] is None:
         prbcnt = np.array([0.0, 0.0, 0.0], ndmin=2)
@@ -650,7 +653,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         print "########## Calculate initial prob-dist:"
     tw0 = time.time()
     tc0 = time.clock()
-    if mftparm['prbfct'].lower() == 'gauss':
+    if mftparm['prbfct'] == 'gauss':
         wtmp = np.zeros(n_loc / 3)
         for icnt in xrange(prbcnt.shape[0]):
             testdiff = fwdmag['source_rr'] - prbcnt[icnt, :]
