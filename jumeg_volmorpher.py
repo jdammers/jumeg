@@ -1113,7 +1113,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
 def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
                           display_mode=['x'], cut_coords=6,
                           cmap='nipy_spectral', threshold='min',
-                          negative_values=False, grid=[4, 6],
+                          only_positive_values=False, grid=[4, 6],
                           res_save=[1920, 1080], fn_image='plot.png'):
     """
 
@@ -1128,6 +1128,8 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
         subject.
     tstep : int
         Time step between successive samples in data.
+    title : str
+        Title for the plot.
     time : float
         Time point for which the image will be created.
     display_mode : 'x', 'y', 'z'
@@ -1149,7 +1151,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
         values below the threshold (in absolute value) are plotted
         as transparent. If auto is given, the threshold is determined
         magically by analysis of the image.
-    negative_values : bool
+    only_positive_values : bool
         Constrain the plots to only positive values, e.g., if there
         are no negative values as in the case of MFT inverse solutions.
     grid : 2-tuple
@@ -1178,7 +1180,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
         axes = axes.flatten()
 
         params_plot_img_with_bg = get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir,
-                                                            negative_values=negative_values)
+                                                            only_positive_values=only_positive_values)
 
         for i, (ax, z) in enumerate(zip(axes, cut_coords)):
             cut_coords_slice = [z]
@@ -1218,7 +1220,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, time=None,
         print ""
 
 
-def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, negative_values=False, **kwargs):
+def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, only_positive_values=False, **kwargs):
     """
     Makes calculations that would be executed repeatedly every time a slice is
     computed and saves the results in a dictionary which is then read by
@@ -1234,7 +1236,7 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, negative_values=F
         Time step between successive samples in data.
     subjects_dir:
         Path to the subject directory.
-    negative_values : bool
+    only_positive_values : bool
         Constrain the plots to only positive values, e.g., if there
         are no negative values as in the case of MFT inverse solutions.
 
@@ -1270,7 +1272,7 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, negative_values=F
     cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(
         _safe_get_data(stat_map_img, ensure_finite=True), vmax, symmetric_cbar, kwargs)
 
-    if not negative_values:
+    if only_positive_values:
         # there are no negative values, e.g., for MFT solutions
         cbar_vmin = 0.
         vmin = 0.
@@ -1398,7 +1400,7 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
                              output_file=None, display_mode='ortho', colorbar=True,
                              figure=None, axes=None, title=None, threshold=1e-6,
                              annotate=True, draw_cross=True, black_bg='auto',
-                             cmap='gist_ncar', symmetric_cbar="auto", negative_values=False,
+                             cmap='gist_ncar', symmetric_cbar="auto", only_positive_values=False,
                              dim='auto', vmax=None, resampling_interpolation='continuous',
                              **kwargs):
     """
@@ -1469,7 +1471,7 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
-    negative_values : bool
+    only_positive_values : bool
         Constrain the plots to only positive values, e.g., if there
         are no negative values as in the case of MFT inverse solutions.
     dim : float, 'auto' (by default), optional
@@ -1511,7 +1513,7 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
     cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(_safe_get_data(stat_map_img, ensure_finite=True),
                                                                      vmax, symmetric_cbar, kwargs)
 
-    if not negative_values:
+    if only_positive_values:
         # there are no negative values
         cbar_vmin = 0.
         vmin = 0.
@@ -1534,7 +1536,8 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
 def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=6,
                          display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
                          symmetric_cbar=False, threshold='min', save=False, fname_save=None):
-    """ Plot a volume source space estimation.
+    """
+    Plot a volume source space estimation.
 
     Parameters
     ----------
@@ -1649,7 +1652,8 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
 
 def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_coords=6,
                      display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
-                     symmetric_cbar=False, threshold='min', save=False, fname_save=None):
+                     symmetric_cbar=False, only_positive_values=False, threshold='min', save=False,
+                     fname_save=None):
     """ Plot a volume source space estimation.
 
     Parameters
@@ -1701,6 +1705,9 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
+    only_positive_values : bool
+        Constrain the plots to only positive values, e.g., if there
+        are no negative values as in the case of MFT inverse solutions.
     save : bool | None
         Default is False. If True the plot is forced to close and written to disk
         at fname_save location
@@ -1754,7 +1761,8 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
                                    annotate=True, title=None,
                                    cut_coords=cut_coords,
                                    cmap=cmap, colorbar=colorbar,
-                                   symmetric_cbar=symmetric_cbar)
+                                   symmetric_cbar=symmetric_cbar,
+                                   only_positive_values=only_positive_values)
     if save:
         if fname_save is None:
             print 'please provide an filepath to save .png'
@@ -1769,7 +1777,7 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
                         output_file=None, display_mode='ortho', colorbar=True,
                         figure=None, axes=None, title=None, threshold=1e-6,
                         annotate=True, draw_cross=True, black_bg='auto',
-                        cmap='gist_ncar', symmetric_cbar="auto", negative_values=False,
+                        cmap='gist_ncar', symmetric_cbar="auto", only_positive_values=False,
                         dim='auto', vmax=None, resampling_interpolation='continuous',
                         **kwargs):
     """
@@ -1841,7 +1849,7 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
-    negative_values : bool
+    only_positive_values : bool
         Constrain the plots to only positive values, e.g., if there
         are no negative values as in the case of MFT inverse solutions.
     dim : float, 'auto' (by default), optional
@@ -1888,7 +1896,7 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
     cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(_safe_get_data(stat_map_img, ensure_finite=True),
                                                                      vmax, symmetric_cbar, kwargs)
 
-    if not negative_values:
+    if only_positive_values:
         # there are no negative values
         cbar_vmin = 0.
         vmin = 0.
