@@ -5,7 +5,7 @@ Jumeg MFT Functions.
 """
 
 # Author: Eberhard Eich
-# Version: 181114
+# Version: 190118
 # License: BSD (3-clause)
 
 import os
@@ -19,6 +19,7 @@ import mne
 from mne.io.constants import FIFF
 
 TINY = 1.e-38
+LOG_ITERWDIST = False
 
 
 ########################################################################
@@ -336,6 +337,10 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     mftparm = {}
     if mftpar:
         mftparm.update(mftpar)
+        mftparm['solver'] = mftparm['solver'].lower()
+        mftparm['prbfct'] = mftparm['prbfct'].lower()
+        mftparm['regtype'] = mftparm['regtype'].lower()
+
     mftparm.setdefault('iter', 8)
     mftparm.setdefault('currexp', 1)
     mftparm.setdefault('prbfct', 'uniform')
@@ -347,9 +352,6 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     mftparm.setdefault('zetareg', 1.00)
     mftparm.setdefault('solver', 'lu')
     mftparm.setdefault('svrelcut', 5.e-4)
-
-    mftparm['solver'] = mftparm['solver'].lower()
-    mftparm['prbfct'] = mftparm['prbfct'].lower()
 
     if mftparm['solver'] == 'svd':
         use_svd = True
@@ -422,6 +424,8 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
             print "calccdm = '%s' with rel. cut = %5.2f" % (calccdm, cdmcut)
     if calccdm and (cdmcut < 0. or cdmcut >= 1.):
         raise ValueError(">>>>> cdmcut must be in [0,1)")
+    if LOG_ITERWDIST:
+        print ">>> Usg w_{n+1} ~ |J_n|^p * w_n"
 
     if isinstance(iterlist, list) and len(iterlist) > 0:
         if max(iterlist) != mftparm['iter']:
@@ -540,7 +544,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         elif dataspec.rfind('-raw.fif') > 0 or dataspec.rfind('-raw.fif.gz') > 0:
             if verbosity >= 0:
                 print "Reading raw data from %s" % dataspec
-            if not evocondition == None:
+            if evocondition is not None:
                 raise ValueError(">>>>> evocondition must not be specified with raw data. Aborting-")
             indathndl = mne.io.Raw(dataspec, preload=True, verbose=verbose)
             picks = mne.io.pick.pick_types(indathndl.info, meg=meg, ref_meg=False,
@@ -549,7 +553,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         elif dataspec.rfind('-epo.fif') > 0 or dataspec.rfind('-epo.fif.gz') > 0:
             if verbosity >= 0:
                 print "Reading epoched data from %s" % dataspec
-            if not evocondition == None:
+            if evocondition is not None:
                 raise ValueError(">>>>> evocondition must not be specified with epoch data. Aborting-")
             indathndl = mne.read_epochs(dataspec, preload=True, verbose=verbose)
             picks = mne.io.pick.pick_types(indathndl.info, meg=meg, ref_meg=False,
@@ -566,7 +570,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         indathndl = dataspec
         if save_stc:
             raise ValueError(">>>>> saving stc to file only possible with named imput datafile. Aborting-")
-    elif type(dataspec) == mne.evoked.Evoked:
+    elif type(dataspec) == mne.evoked.Evoked or type(dataspec) == mne.evoked.EvokedArray:
         if isinstance(dataspec.info, dict):
             if isinstance(evocondition, basestring) and not dataspec.comment == evocondition:
                 raise ValueError(">>>>> apply_mft() mismatch of dataspec and specified condition")
@@ -590,7 +594,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         data = indathndl._data[0, picks, :]
         if save_stc:
             raise ValueError(">>>>> saving stc to file only possible with named imput datafile. Aborting-")
-        if not evocondition == None:
+        if evocondition is not None:
             raise ValueError(">>>>> evocondition must not be specified with epoch data. Aborting-")
     elif type(dataspec) == list and type(dataspec[0]) == mne.evoked.Evoked:
         if len(dataspec) > 1:
@@ -617,7 +621,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         picks = mne.io.pick.pick_types(indathndl.info, meg=meg, ref_meg=False,
                                        eeg=False, stim=False, exclude=exclude)
         data = indathndl._data[picks, :]
-        if not evocondition == None:
+        if evocondition is not None:
             raise ValueError(">>>>> evocondition must not be specified with raw data. Aborting-")
         if save_stc:
             raise ValueError(">>>>> saving stc to file only possible with named imput datafile. Aborting-")
@@ -748,12 +752,12 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         print "pmax(fin.) = ", np.amax([np.abs(np.amax(pmat0)), np.abs(np.amin(pmat0))])
 
     # Regularize P:
-    if mftparm['regtype'] == 'PzetaE':
+    if mftparm['regtype'] == 'pzetae':
         zetatrp = mftparm['zetareg'] * np.trace(pmat0) / float(pmat0.shape[0])
         if verbosity >= 3:
             print "Use PzetaE-regularization with zeta*tr(P)/ncol(P) = %12.5e" % zetatrp
         ptilde0 = pmat0 + zetatrp * np.identity(pmat0.shape[0])
-    elif mftparm['regtype'] == 'classic' or mftparm['regtype'] == 'PPzetaP':
+    elif mftparm['regtype'] == 'classic' or mftparm['regtype'] == 'ppzetap':
         zetatrp = mftparm['zetareg'] * np.trace(pmat0) / float(pmat0.shape[0])
         if verbosity >= 3:
             print "Use PPzetaP-regularization with zeta*tr(P)/ncol(P) = %12.5e" % zetatrp
@@ -860,7 +864,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
             P = np.copy(P0)
 
         slice = pscalefct * data[:, islice]
-        if mftparm['regtype'] == 'PzetaE':
+        if mftparm['regtype'] == 'pzetae':
             mtilde = np.copy(slice)
         else:
             mtilde = np.dot(pmat, slice)
@@ -892,7 +896,10 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
             cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
             cdvnorms = np.sqrt(np.sum(cdvecs ** 2, axis=1))
 
-            wdist = np.power(cdvnorms, mftparm['currexp']) * wdist0
+            if LOG_ITERWDIST:
+                wdist = np.power(cdvnorms, mftparm['currexp']) * wdist
+            else:
+                wdist = np.power(cdvnorms, mftparm['currexp']) * wdist0
             wdistsum = np.sum(wdist)
             wdist = wdist / wdistsum
             wdist3 = np.repeat(wdist, 3)
@@ -917,7 +924,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
             nptotcall += 1
 
             # Regularize P:
-            if mftparm['regtype'] == 'PzetaE':
+            if mftparm['regtype'] == 'pzetae':
                 ptilde = pmat + zetatrp * np.identity(pmat.shape[0])
             else:
                 ptilde = np.dot(pmat, pmat) + zetatrp * pmat

@@ -6,6 +6,7 @@ Perform MFT on a surface based forward solution.
 """
 
 import numpy as np
+import os
 import mne
 from mne.datasets import sample
 from jumeg_mft_funcs import apply_mft
@@ -34,8 +35,8 @@ print "########## MFT parameters:"
 #           'prbcnt':np.array([[-1.039, 0.013,0.062],[-0.039, 0.013,0.062]]),
 #           'prbhw':np.array([[0.040,0.040,0.040],[0.040,0.040,0.040]]) }
 mftpar = {'prbfct': 'uniform',
-           'prbcnt': None,
-           'prbhw': None}
+          'prbcnt': None,
+          'prbhw': None}
 mftpar.update({'iter': 2, 'currexp': 1.0})
 mftpar.update({'regtype': 'PzetaE', 'zetareg': 1.00})
 # mftpar.update({ 'regtype':'classic', 'zetareg':1.0})
@@ -61,14 +62,19 @@ else:
 print "##########################"
 print "##### Calling apply_mft()"
 print "##########################"
-fwdmag, qualmft, stc_mft = apply_mft(fwdname, evoname, evocondition=evocondition,
-                                     subject=subject, meg=want_meg,
+fwd = mne.read_forward_solution(fwdname, verbose=True)
+fwdspec = mne.io.pick.pick_types_forward(fwd, meg=want_meg, ref_meg=False,
+                                         eeg=False, exclude=exclude)
+dataspec = mne.read_evokeds(evoname, condition=evocondition,
+                            baseline=(None, 0), verbose=True)
+fwdmag, qualmft, stc_mft = apply_mft(fwdspec, dataspec, evocondition=evocondition,
+                                     subject=subject, meg=want_meg, save_stc=False,
                                      calccdm='all', cdmcut=cdmcut, cdmlabels=labels,
                                      mftpar=mftpar, verbose='verbose')
 
 evo = mne.read_evokeds(evoname, condition=evocondition, baseline=(None, 0))
 tmin = -0.2
-tstep = 1./evo.info['sfreq']
+tstep = 1. / evo.info['sfreq']
 
 stcdata = stc_mft.data
 
