@@ -507,6 +507,17 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
 
     #  marks are all channels of interest, including premarked bad channels
     # and zero channels (channel indices)
+
+    jumps = list(set([item for sublist in afp_suspects for item in sublist]))
+    jumps_ch_names = [raw.ch_names[i] for i in jumps]
+    unusual = list(set([item for sublist in psd_suspects for item in sublist]))
+    unusual_ch_names = [raw.ch_names[i] for i in unusual]
+    dead_ch_names = [raw.ch_names[i] for i in zero_suspects]
+
+    print "Suggested bads [jumps]:", jumps_ch_names
+    print "Suggested bads [unusual]:", unusual_ch_names
+    print "Suggested bads [dead]:", dead_ch_names
+
     marks = list(set(picks_autodetect) | set(picks_bad) | set(zero_suspects))
 
     # show summary plot for enhanced manual inspection
@@ -528,5 +539,7 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
 
     if show_raw:
         raw.plot(block=True)
+        marked = raw.info['bads']
+        marked.sort()
 
     return marked, raw
