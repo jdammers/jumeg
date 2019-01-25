@@ -747,30 +747,10 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         #                            )
         # stc_orig.data[vert_U_idx, :] = 0.
 
-        temp_LOI_idx = np.array([], dtype=int)
-        for p, labels in enumerate(volume_labels):
-            lab_verts_temp = label_dict_subject_to[labels]
-            for i in xrange(0, lab_verts_temp.shape[0]):
-                temp_LOI_idx = np.append(temp_LOI_idx,
-                                         np.where(lab_verts_temp[i]
-                                                  ==
-                                                  temp_vol[0]['vertno'])
-                                         )
-        d2 = np.zeros(inter_data.shape)
-        d2[temp_LOI_idx, :] = inter_data[temp_LOI_idx, :]
-        inter_data = d2
+        inter_data = set_unwanted_to_zero(temp_vol, inter_data, volume_labels, label_dict_subject_to)
 
-        subj_LOI_idx = np.array([], dtype=int)
-        for p, labels in enumerate(volume_labels):
-            lab_verts_subj = label_dict_subject_from[labels]
-            for i in xrange(0, lab_verts_subj.shape[0]):
-                subj_LOI_idx = np.append(subj_LOI_idx,
-                                         np.where(lab_verts_subj[i]
-                                                  ==
-                                                  subj_vol[0]['vertno'])
-                                         )
-        d2 = np.zeros(stc_orig.data.shape)
-        d2[subj_LOI_idx, :] = stc_orig.data[subj_LOI_idx, :]
+        d2 = set_unwanted_to_zero(subj_vol, stc_orig.data, volume_labels, label_dict_subject_from)
+
         if not stc_orig.data.flags["WRITEABLE"]:
             # stc_orig.data.flags WRITEABLE=False causes crash -> set to True
             stc_orig.data.setflags(write=1)
