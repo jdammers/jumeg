@@ -762,10 +762,10 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
         subj_LOI_idx = np.array([], dtype=int)
         for p, labels in enumerate(volume_labels):
-            lab_verts_temp = label_dict_subject_from[labels]
-            for i in xrange(0, lab_verts_temp.shape[0]):
+            lab_verts_subj = label_dict_subject_from[labels]
+            for i in xrange(0, lab_verts_subj.shape[0]):
                 subj_LOI_idx = np.append(subj_LOI_idx,
-                                         np.where(lab_verts_temp[i]
+                                         np.where(lab_verts_subj[i]
                                                   ==
                                                   subj_vol[0]['vertno'])
                                          )
