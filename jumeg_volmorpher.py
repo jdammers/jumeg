@@ -463,12 +463,18 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
     ----------
     vsrc_subject_from : instance of SourceSpaces
         The source spaces that will be transformed.
+    label_dict_subject_from : dict
+
     volume_labels : list
         List of the volume labels of interest
     subject_to : str | None
         The template subject.
     subjects_dir : string, or None
         Path to SUBJECTS_DIR if it is not set in the environment.
+    label_trans_dic : dict | None
+        Dictionary containing transformation matrices for all labels (acquired
+        by auto_match_labels function). If label_trans_dic is None the method
+        will attempt to read the file from disc.
     
     Returns
     -------
@@ -546,10 +552,11 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
 
 def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                      volume_labels, subject_to, fname_vsrc_subject_to,
-                     cond, n_iter, interpolation_method, normalize,
-                     subjects_dir, unwanted_to_zero=True, label_trans_dic=None,
-                     fname_save_stc=None, save_stc=False, plot=False):
-    """ Perform a volume morphing from one subject to a template.
+                     cond, interpolation_method, normalize, subjects_dir,
+                     unwanted_to_zero=True, label_trans_dic=None, run=None,
+                     n_iter=None, fname_save_stc=None, save_stc=False, plot=False):
+    """
+    Perform volume morphing from one subject to a template.
     
     Parameters
     ----------
@@ -565,23 +572,29 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         Name of the subject on which to morph as named in the SUBJECTS_DIR
     fname_vsrc_subject_to : string
         Filepath of the template subjects volume source space
-    interpolation_method : string | None
-        Either 'balltree' or 'euclidean'. Default is 'balltree'
+    interpolation_method : str
+        Only 'linear' seeems to be working for 3D data. 'balltree' and
+        'euclidean' only work for 2D?.
     cond : str (Not really needed)
         Experimental condition under which the data was recorded.
-    n_iter : int (Not really needed)
-        Number of iterations performed during MFT.
     normalize : bool
         If True, normalize activity patterns label by label before and after
         morphing.
-    subjects_dir : string, or None
+    subjects_dir : str | None
         Path to SUBJECTS_DIR if it is not set in the environment.
     unwanted_to_zero : bool
        If True, set all non-Labels-of-interest in resulting stc to zero.
-    label_trans_dic : dict
+    label_trans_dic : dict | None
         Dictionary containing transformation matrices for all labels (acquired
-        by auto_match_labels function).
-    fname_save_stc : None | str
+        by auto_match_labels function). If label_trans_dic is None the method
+        will attempt to read the file from disc.
+    run : int | None
+        Specifies the run if multiple measurements for the same condition
+        were performed.
+    n_iter : int | None
+        If MFT was used for the inverse solution, n_iter is the
+        number of iterations.
+    fname_save_stc : str | None
         File name for the morphed volume stc file to be saved under.
         If fname_save_stc is None, use the standard file name convention.
     save_stc : bool
@@ -601,9 +614,24 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     """
     print '####                  START                ####'
     print '####             Volume Morphing           ####'
-    print '    Subject: %s  | Cond.: %s  | Iter.: %s' % (subject_from,
-                                                         cond, n_iter)
-    print '\n#### Attempting to read essential data files..'
+
+    if cond is None:
+        str_cond = ''
+    else:
+        str_cond = ' | Cond.: %s' % cond
+    if run is None:
+        str_run = ''
+    else:
+        str_run = ' | Run: %d' % run
+    if n_iter is None:
+        str_niter = ''
+    else:
+        str_niter = ' | Iter. :%d' % n_iter
+
+    string = '    Subject: %s' % subject_from + str_run + str_cond + str_niter
+
+    print string
+    print '\n#### Reading essential data files..'
     # STC 
     stc_orig = mne.read_source_estimate(fname_stc_orig)
     stcdata = stc_orig.data
@@ -645,141 +673,140 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     # =========================================================================
     #        Interpolate the data   
     new_data = {}
-    for inter_m in interpolation_method:
 
-        print '\n#### Attempting to interpolate STC Data for every time sample..'
-        print '    Interpolation method: ', inter_m
-        st_time = time2.time()
-        xt, yt, zt = temp_vol[0]['rr'][temp_vol[0]['inuse'].astype(bool)].T
-        inter_data = np.zeros([xt.shape[0], ntimes])
-        for i in range(0, ntimes):
-            loadingBar(i, ntimes, task_part='Time slice: %i' % (i + 1))
-            inter_data[:, i] = griddata((xn, yn, zn),
-                                        stcdata_ch[:, i], (xt, yt, zt),
-                                        method=inter_m, rescale=True)
-        if inter_m == 'linear':
-            inter_data = np.nan_to_num(inter_data)
+    print '\n#### Attempting to interpolate STC Data for every time sample..'
+    print '    Interpolation method: ', interpolation_method
+    st_time = time2.time()
+    xt, yt, zt = temp_vol[0]['rr'][temp_vol[0]['inuse'].astype(bool)].T
+    inter_data = np.zeros([xt.shape[0], ntimes])
+    for i in range(0, ntimes):
+        loadingBar(i, ntimes, task_part='Time slice: %i' % (i + 1))
+        inter_data[:, i] = griddata((xn, yn, zn),
+                                    stcdata_ch[:, i], (xt, yt, zt),
+                                    method=interpolation_method, rescale=True)
+    if interpolation_method == 'linear':
+        inter_data = np.nan_to_num(inter_data)
 
-        if unwanted_to_zero:
-            print '#### Setting all unknown vertex values to zero..'
+    if unwanted_to_zero:
+        print '#### Setting all unknown vertex values to zero..'
 
-            # vertnos_unknown = label_dict_subject_to['Unknown']
-            # vert_U_idx = np.array([], dtype=int)
-            # for i in xrange(0, vertnos_unknown.shape[0]):
-            #     vert_U_idx = np.append(vert_U_idx,
-            #                            np.where(vertnos_unknown[i] == temp_vol[0]['vertno'])
-            #                            )
-            # inter_data[vert_U_idx, :] = 0.
-            #
-            # # now the original data
-            # vertnos_unknown_from = label_dict_subject_from['Unknown']
-            # vert_U_idx = np.array([], dtype=int)
-            # for i in xrange(0, vertnos_unknown_from.shape[0]):
-            #     vert_U_idx = np.append(vert_U_idx,
-            #                            np.where(vertnos_unknown_from[i] == subj_vol[0]['vertno'])
-            #                            )
-            # stc_orig.data[vert_U_idx, :] = 0.
+        # vertnos_unknown = label_dict_subject_to['Unknown']
+        # vert_U_idx = np.array([], dtype=int)
+        # for i in xrange(0, vertnos_unknown.shape[0]):
+        #     vert_U_idx = np.append(vert_U_idx,
+        #                            np.where(vertnos_unknown[i] == temp_vol[0]['vertno'])
+        #                            )
+        # inter_data[vert_U_idx, :] = 0.
+        #
+        # # now the original data
+        # vertnos_unknown_from = label_dict_subject_from['Unknown']
+        # vert_U_idx = np.array([], dtype=int)
+        # for i in xrange(0, vertnos_unknown_from.shape[0]):
+        #     vert_U_idx = np.append(vert_U_idx,
+        #                            np.where(vertnos_unknown_from[i] == subj_vol[0]['vertno'])
+        #                            )
+        # stc_orig.data[vert_U_idx, :] = 0.
 
-            temp_LOI_idx = np.array([], dtype=int)
-            for p, labels in enumerate(volume_labels):
-                lab_verts_temp = label_dict_subject_to[labels]
-                for i in xrange(0, lab_verts_temp.shape[0]):
-                    temp_LOI_idx = np.append(temp_LOI_idx,
-                                             np.where(lab_verts_temp[i]
-                                                      ==
-                                                      temp_vol[0]['vertno'])
-                                             )
-            d2 = np.zeros(inter_data.shape)
-            d2[temp_LOI_idx, :] = inter_data[temp_LOI_idx, :]
-            inter_data = d2
+        temp_LOI_idx = np.array([], dtype=int)
+        for p, labels in enumerate(volume_labels):
+            lab_verts_temp = label_dict_subject_to[labels]
+            for i in xrange(0, lab_verts_temp.shape[0]):
+                temp_LOI_idx = np.append(temp_LOI_idx,
+                                         np.where(lab_verts_temp[i]
+                                                  ==
+                                                  temp_vol[0]['vertno'])
+                                         )
+        d2 = np.zeros(inter_data.shape)
+        d2[temp_LOI_idx, :] = inter_data[temp_LOI_idx, :]
+        inter_data = d2
 
-            subj_LOI_idx = np.array([], dtype=int)
-            for p, labels in enumerate(volume_labels):
-                lab_verts_temp = label_dict_subject_from[labels]
-                for i in xrange(0, lab_verts_temp.shape[0]):
-                    subj_LOI_idx = np.append(subj_LOI_idx,
-                                             np.where(lab_verts_temp[i]
-                                                      ==
-                                                      subj_vol[0]['vertno'])
-                                             )
-            d2 = np.zeros(stc_orig.data.shape)
-            d2[subj_LOI_idx, :] = stc_orig.data[subj_LOI_idx, :]
-            if not stc_orig.data.flags["WRITEABLE"]:
-                # stc_orig.data.flags WRITEABLE=False causes crash -> set to True
-                stc_orig.data.setflags(write=1)
+        subj_LOI_idx = np.array([], dtype=int)
+        for p, labels in enumerate(volume_labels):
+            lab_verts_temp = label_dict_subject_from[labels]
+            for i in xrange(0, lab_verts_temp.shape[0]):
+                subj_LOI_idx = np.append(subj_LOI_idx,
+                                         np.where(lab_verts_temp[i]
+                                                  ==
+                                                  subj_vol[0]['vertno'])
+                                         )
+        d2 = np.zeros(stc_orig.data.shape)
+        d2[subj_LOI_idx, :] = stc_orig.data[subj_LOI_idx, :]
+        if not stc_orig.data.flags["WRITEABLE"]:
+            # stc_orig.data.flags WRITEABLE=False causes crash -> set to True
+            stc_orig.data.setflags(write=1)
 
-            stc_orig.data[:, :] = d2[:, :]
+        stc_orig.data[:, :] = d2[:, :]
 
-        if normalize:
-            print '\n#### Attempting to normalize the vol-morphed stc..'
-            normalized_new_data = inter_data.copy()
-            for p, labels in enumerate(volume_labels):
-                lab_verts = label_dict_subject_from[labels]
-                lab_verts_temp = label_dict_subject_to[labels]
-                subj_vert_idx = np.array([], dtype=int)
-                for i in xrange(0, lab_verts.shape[0]):
-                    subj_vert_idx = np.append(subj_vert_idx,
-                                              np.where(lab_verts[i]
-                                                       ==
-                                                       subj_vol[0]['vertno'])
-                                              )
-                temp_vert_idx = np.array([], dtype=int)
-                for i in xrange(0, lab_verts_temp.shape[0]):
-                    temp_vert_idx = np.append(temp_vert_idx,
-                                              np.where(lab_verts_temp[i]
-                                                       ==
-                                                       temp_vol[0]['vertno'])
-                                              )
-                a = np.sum(stc_orig.data[subj_vert_idx], axis=0)
-                b = np.sum(inter_data[temp_vert_idx], axis=0)
-                norm_m_score = a / b
-                normalized_new_data[temp_vert_idx] *= norm_m_score
-            new_data.update({inter_m + '_norm': normalized_new_data})
-        else:
-            new_data.update({inter_m: inter_data})
+    if normalize:
+        print '\n#### Attempting to normalize the vol-morphed stc..'
+        normalized_new_data = inter_data.copy()
+        for p, labels in enumerate(volume_labels):
+            lab_verts = label_dict_subject_from[labels]
+            lab_verts_temp = label_dict_subject_to[labels]
+            subj_vert_idx = np.array([], dtype=int)
+            for i in xrange(0, lab_verts.shape[0]):
+                subj_vert_idx = np.append(subj_vert_idx,
+                                          np.where(lab_verts[i]
+                                                   ==
+                                                   subj_vol[0]['vertno'])
+                                          )
+            temp_vert_idx = np.array([], dtype=int)
+            for i in xrange(0, lab_verts_temp.shape[0]):
+                temp_vert_idx = np.append(temp_vert_idx,
+                                          np.where(lab_verts_temp[i]
+                                                   ==
+                                                   temp_vol[0]['vertno'])
+                                          )
+            a = np.sum(stc_orig.data[subj_vert_idx], axis=0)
+            b = np.sum(inter_data[temp_vert_idx], axis=0)
+            norm_m_score = a / b
+            normalized_new_data[temp_vert_idx] *= norm_m_score
+        new_data.update({interpolation_method + '_norm': normalized_new_data})
+    else:
+        new_data.update({interpolation_method: inter_data})
 
-        print '    [done] -> Calculation Time: %.2f minutes.' % (
-                (time2.time() - st_time) / 60.
-        )
+    print '    [done] -> Calculation Time: %.2f minutes.' % (
+            (time2.time() - st_time) / 60.
+    )
 
     if save_stc:
         print '\n#### Attempting to write interpolated STC Data to file..'
-        for inter_m in interpolation_method:
 
-            if fname_save_stc is None:
-                fname_stc_orig_morphed = (fname_stc_orig[:-7] +
-                                          '_morphed_to_%s_%s-vl.stc' % (subject_to,
-                                                                        inter_m))
-            else:
-                fname_stc_orig_morphed = fname_save_stc
+        if fname_save_stc is None:
+            fname_stc_orig_morphed = (fname_stc_orig[:-7] +
+                                      '_morphed_to_%s_%s-vl.stc' % (subject_to,
+                                                                    interpolation_method))
+        else:
+            fname_stc_orig_morphed = fname_save_stc
 
-            print '    Destination:', fname_stc_orig_morphed
-            if normalize:
-                _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
-                           vertices=temp_vol[0]['vertno'],
-                           data=new_data[inter_m + '_norm'])
-                stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
+        print '    Destination:', fname_stc_orig_morphed
+        if normalize:
+            _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
+                       vertices=temp_vol[0]['vertno'],
+                       data=new_data[interpolation_method + '_norm'])
+            stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
 
-                if plot:
-                    _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                                 interpolation_method,
-                                                 subj_vol, label_dict_subject_from,
-                                                 temp_vol, label_dict_subject_to,
-                                                 volume_labels, cond=cond, n_iter=n_iter,
-                                                 subjects_dir=subjects_dir, save=True)
-            else:
-                _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
-                           vertices=temp_vol[0]['vertno'], data=new_data[inter_m])
-                stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
+            if plot:
+                # TODO: add interpolation method?
+                _volumemorphing_plot_results(stc_orig, stc_morphed,
+                                             subj_vol, label_dict_subject_from,
+                                             temp_vol, label_dict_subject_to,
+                                             volume_labels, subjects_dir=subjects_dir,
+                                             cond=cond, run=run, n_iter=n_iter, save=True)
+        else:
+            _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
+                       vertices=temp_vol[0]['vertno'], data=new_data[interpolation_method])
+            stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
 
-                if plot:
-                    _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                                 interpolation_method,
-                                                 subj_vol, temp_vol,
-                                                 volume_labels, cond=cond,
-                                                 n_iter=n_iter,
-                                                 subjects_dir=subjects_dir,
-                                                 save=True)
+            if plot:
+                # TODO: add interpolation method?
+                _volumemorphing_plot_results(stc_orig, stc_morphed,
+                                             subj_vol, label_dict_subject_from,
+                                             temp_vol, label_dict_subject_to,
+                                             volume_labels, subjects_dir=subjects_dir,
+                                             cond=cond, run=run, n_iter=n_iter,
+                                             save=True)
+
         print '[done]'
         print '####             Volume Morphing           ####'
         print '####                  DONE                 ####'
