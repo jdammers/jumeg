@@ -550,6 +550,46 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
     return transformed_p, idx_vertices
 
 
+def set_unwanted_to_zero(vsrc, stc_data, volume_labels, label_dict):
+    """
+
+    Parameters:
+    -----------
+    vsrc : mne.VolSourceSpace
+    stc_data : np.array
+        data from source time courses.
+    volume_labels : list of str
+        List with volume labels of interest
+    label_dict : dict
+        Dictionary containing for each label the indices of the
+        vertices which are part of the label.
+
+    Returns:
+    --------
+    stc_data_mod : np.array()
+        The modified stc_data array with data set to zero for
+        vertices which are not part of the labels of interest.
+    """
+
+    # label of interest
+    LOI_idx = list()
+
+    for p, labels in enumerate(volume_labels):
+
+        label_verts = label_dict[labels]
+
+        for i in xrange(0, label_verts.shape[0]):
+
+            LOI_idx.append(np.where(label_verts[i] == vsrc[0]['vertno']))
+
+    LOI_idx = np.asarray(LOI_idx)
+
+    stc_data_mod = np.zeros(stc_data.shape)
+    stc_data_mod[LOI_idx, :] = stc_data[LOI_idx, :]
+
+    return stc_data_mod
+
+
 def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                      volume_labels, subject_to, fname_vsrc_subject_to,
                      cond, interpolation_method, normalize, subjects_dir,
