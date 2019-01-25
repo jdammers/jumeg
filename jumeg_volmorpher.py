@@ -823,9 +823,11 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 def _volumemorphing_plot_results(stc_orig, stc_morphed,
                                  volume_orig, label_dict_from,
                                  volume_temp, label_dict_to,
-                                 volume_labels, cond, n_iter,
-                                 subjects_dir, save=False):
-    """Gathering information and plot before and after morphing results.
+                                 volume_labels, subjects_dir,
+                                 cond, run=None, n_iter=None,
+                                 save=False):
+    """
+    Plot before and after morphing results.
     
     Parameters
     ----------
@@ -844,12 +846,16 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         Equivalent label vertex dict to the template source space
     volume_labels : list of volume Labels
         List of the volume labels of interest
-    cond : str | None
-        Evoked contition as a string to give the plot more intel
-    n_iter : int
-        Number of iterations performed during MFT.
     subjects_dir : string, or None
         Path to SUBJECTS_DIR if it is not set in the environment.
+    cond : str
+        Evoked condition as a string to give the plot more intel.
+    run : int | None
+        Specifies the run if multiple measurements for the same condition
+        were performed.
+    n_iter : int | None
+        If MFT was used for the inverse solution, n_iter is the
+        number of iterations.
 
     Returns
     -------
@@ -858,14 +864,19 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     if save == False : returns matplotlib.figure
     
     """
-    if cond is None:
-        cond = ''
+    if run is None:
+        run_title = ''
+        run_fname = ''
     else:
-        cond = cond
+        run_title = ' | Run: %d' % run
+        run_fname = ',run%d' % run
+
     if n_iter is None:
-        n_iter = ''
+        n_iter_title = ''
+        n_iter_fname = ''
     else:
-        n_iter = n_iter
+        n_iter_title = ' | Iter.: %d' % n_iter
+        n_iter_fname = ',iter-%d' % n_iter
 
     subj_vol = volume_orig
     subject_from = volume_orig[0]['subject_his_id']
@@ -893,9 +904,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     fig.text(0.985, 0.25, 'Amplitude [T]', color='white', size='large',
              horizontalalignment='right', verticalalignment='center',
              rotation=-90, transform=ax2.transAxes)
-    plt.suptitle('VolumeMorphing from %s to %s | Cond.: %s, Iter.: %d'
-                 % (subject_from, subject_to, cond, n_iter),
-                 fontsize=16, color='white')
+
+    suptitle = 'VolumeMorphing from %s to %s' % (subject_from, subject_to)
+    suptitle = suptitle + ' | Cond.: %s' % cond
+    suptitle = suptitle + run_title + n_iter_title
+
+    plt.suptitle(suptitle, fontsize=16, color='white')
     fig.set_facecolor('black')
     plt.tight_layout()
     fig.subplots_adjust(bottom=0.04, top=0.94,
@@ -912,10 +926,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
               figure=999, axes=ax2, save=False)
 
     if save:
-        fname_save_fig = (directory +
-                          '/%s_%s_vol-%.2f_%s_%s_volmorphing-result.png'
-                          % (subject_from, subject_to,
-                             indiv_spacing, cond, n_iter))
+        fname_save_fig = '%s_to_%s' + run_fname
+        fname_save_fig = fname_save_fig + ',vol-%.2f,%s'
+        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond)
+        fname_save_fig = fname_save_fig + n_iter_fname
+        fname_save_fig = op.join(directory, fname_save_fig + ',volmorphing-result.png')
+
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
         plt.close()
@@ -973,13 +989,19 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         axs[idx].set_xlim(stc_orig.times[0], stc_orig.times[-1])
         axs[idx].get_xaxis().grid(True)
 
-    fig.suptitle('Summed activity in volume labels - %s[%.2f]' % (subject_from, indiv_spacing)
-                 + ' -> %s [%.2f] | Cond.: %s, Iter.: %d'
-                 % (subject_to, temp_spacing, cond, n_iter),
-                 fontsize=16)
+    suptitle = 'Summed activity in volume labels - %s[%.2f]' % (subject_from, indiv_spacing)
+    suptitle = suptitle + ' -> %s [%.2f] | Cond.: %s' % (subject_to, temp_spacing, cond)
+    suptitle = suptitle + run_title + n_iter_title
+
+    fig.suptitle(suptitle, fontsize=16)
+
     if save:
-        fname_save_fig = op.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_labelwise-stc.png')
-        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond, n_iter)
+        fname_save_fig = '%s_to_%s' + run_fname
+        fname_save_fig = fname_save_fig + ',vol-%.2f,%s'
+        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond)
+        fname_save_fig = fname_save_fig + n_iter_fname
+        fname_save_fig = op.join(directory, fname_save_fig + ',labelwise-stc.png')
+
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
         plt.close()
@@ -998,9 +1020,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
              label='%s' % subject_from)
     ax1.plot(stc_orig.times, new_data.sum(axis=0), '#CD7600', linewidth=1,
              label='%s morphed' % subject_from)
-    ax1.set_title('Summed Source Amplitude - %s[%.2f] ' % (subject_from, indiv_spacing)
-                  + '-> %s [%.2f] | Cond.: %s, Iter.: %d'
-                  % (subject_to, temp_spacing, cond, n_iter))
+
+    title = 'Summed Source Amplitude - %s[%.2f] ' % (subject_from, indiv_spacing)
+    title = title + '-> %s [%.2f] | Cond.: %s' % (subject_to, temp_spacing, cond)
+    title = title + run_title + n_iter_title
+
+    ax1.set_title(title)
     ax1.text(stc_orig.times[0],
              np.maximum(stc_orig.data.sum(axis=0), new_data.sum(axis=0)).max(),
              """Total Amplitude Difference: %+.2f %%
@@ -1012,13 +1037,18 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
                        fc="white",
                        )
              )
+
     ax1.set_ylabel('Summed Source Amplitude')
     ax1.legend(fontsize='large', facecolor="white", edgecolor="grey")
     ax1.get_xaxis().grid(True)
     plt.tight_layout()
     if save:
-        fname_save_fig = op.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_stc.png')
-        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond, n_iter)
+        fname_save_fig = '%s_to_%s' + run_fname
+        fname_save_fig = fname_save_fig + ',vol-%.2f,%s'
+        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond)
+        fname_save_fig = fname_save_fig + n_iter_fname
+        fname_save_fig = op.join(directory, fname_save_fig + ',stc.png')
+
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
         plt.close()
