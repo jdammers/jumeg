@@ -2218,14 +2218,21 @@ def _remove_vert_duplicates(subject, subj_src, label_dict_subject,
     for p, label in enumerate(all_volume_labels):
         loadingBar(p, len(all_volume_labels), task_part=None)
         lab_arr = label_dict_subject[label]
+
+        # get freesurfer LUT ID for the label
         lab_id = _get_lut_id(lut, label, True)[0]
         del_ver_idx_list = []
         for arr_id, i in enumerate(lab_arr, 0):
+            # get the coordinates of the vertex in subject source space
             lab_vert_coord = subj_src[0]['rr'][i]
+            # transform to mgz indices
             lab_vert_mgz_idx = mne.transforms.apply_trans(inv_vox2rastkr_trans, lab_vert_coord)
+            # get ID from the mgt indices
             orig_idx = mgz_data[int(round(lab_vert_mgz_idx[0])),
                                 int(round(lab_vert_mgz_idx[1])),
                                 int(round(lab_vert_mgz_idx[2]))]
+
+            # if ID and LUT ID do not match the vertex is removed
             if orig_idx != lab_id:
                 del_ver_idx_list.append(arr_id)
                 del_count += 1
