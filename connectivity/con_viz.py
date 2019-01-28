@@ -276,7 +276,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     # Use a polar axes
     if not isinstance(subplot, tuple):
         subplot = (subplot,)
-    axes = plt.subplot(*subplot, polar=True, axisbg=facecolor)
+    axes = plt.subplot(*subplot, polar=True, facecolor=facecolor)
 
     # No ticks, we'll put our own
     plt.xticks([])
