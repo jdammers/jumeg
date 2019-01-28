@@ -506,8 +506,8 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
         except IOError:
             print 'MatchMaking Transformations file NOT found:'
             print fname_lw_trans, '\n'
-            print 'Please calculate the according transformation matrix dictionary'
-            print 'by using the jumeg.jumeg_volmorpher.auto_match_labels function.'
+            print 'Please calculate the transformation matrix dictionary by using'
+            print 'the jumeg.jumeg_volmorpher.auto_match_labels function.'
 
             import sys
             sys.exit(-1)
@@ -530,11 +530,9 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
                     break
 
     transformed_p = np.array([[0, 0, 0]])
-    vert_sum = []
     idx_vertices = []
     for idx, label in enumerate(volume_labels):
         loadingBar(idx, len(volume_labels), task_part=label)
-        vert_sum.append(label_dict[label].shape[0])
         idx_vertices.append(label_dict[label])
         trans_p = subj_p[label_dict[label]]
         trans = label_trans_dic[label]
@@ -763,20 +761,19 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         for p, labels in enumerate(volume_labels):
             lab_verts = label_dict_subject_from[labels]
             lab_verts_temp = label_dict_subject_to[labels]
-            subj_vert_idx = np.array([], dtype=int)
+
+            # get for the subject brain the indices of all vertices for the given label
+            subj_vert_idx = []
             for i in xrange(0, lab_verts.shape[0]):
-                subj_vert_idx = np.append(subj_vert_idx,
-                                          np.where(lab_verts[i]
-                                                   ==
-                                                   subj_vol[0]['vertno'])
-                                          )
-            temp_vert_idx = np.array([], dtype=int)
+                subj_vert_idx.append(np.where(lab_verts[i] == subj_vol[0]['vertno']))
+            subj_vert_idx = np.asarray(subj_vert_idx)
+
+            # get for the template brain the indices of all vertices for the given label
+            temp_vert_idx = []
             for i in xrange(0, lab_verts_temp.shape[0]):
-                temp_vert_idx = np.append(temp_vert_idx,
-                                          np.where(lab_verts_temp[i]
-                                                   ==
-                                                   temp_vol[0]['vertno'])
-                                          )
+                temp_vert_idx.append(np.where(lab_verts_temp[i] == temp_vol[0]['vertno']))
+            temp_vert_idx = np.asarray(temp_vert_idx)
+
             a = np.sum(stc_orig.data[subj_vert_idx], axis=0)
             b = np.sum(inter_data[temp_vert_idx], axis=0)
             norm_m_score = a / b
