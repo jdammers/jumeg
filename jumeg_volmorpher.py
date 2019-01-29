@@ -807,15 +807,15 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
             fname_stc_morphed = fname_save_stc
 
         print '    Destination:', fname_stc_morphed
+
         if normalize:
-
-            _write_stc(fname_stc_morphed, tmin=tmin, tstep=tstep,
-                       vertices=temp_vol[0]['vertno'],
-                       data=new_data[interpolation_method + '_norm'])
+            im_to_save = interpolation_method + '_norm'
         else:
+            im_to_save = interpolation_method
 
-            _write_stc(fname_stc_morphed, tmin=tmin, tstep=tstep,
-                       vertices=temp_vol[0]['vertno'], data=new_data[interpolation_method])
+        _write_stc(fname_stc_morphed, tmin=tmin, tstep=tstep,
+                   vertices=temp_vol[0]['vertno'],
+                   data=new_data[im_to_save])
 
         stc_morphed = mne.read_source_estimate(fname_stc_morphed)
 
