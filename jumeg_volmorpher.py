@@ -305,10 +305,10 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             # Find calculate the least squares error for variation of the initial transformation
             poss_trans = find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
                                                       e_func, temp_tree, errfunc)
-            all_dist_max_l = []
-            all_dist_mean_l = []
-            all_dist_var_l = []
-            all_dist_err_l = []
+            dist_max_list = []
+            dist_mean_list = []
+            dist_var_list = []
+            dist_err_list = []
             for tra in poss_trans:
                 points_to_match = s_pts
                 points_to_match = apply_trans(tra, points_to_match)
@@ -318,38 +318,38 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
                 elif e_func == 'euclidean':
                     template_pts = t_pts
 
-                all_dist_mean_l.append(np.mean(errfunc(points_to_match[:, :3], template_pts)))
-                all_dist_var_l.append(np.var(errfunc(points_to_match[:, :3], template_pts)))
-                all_dist_max_l.append(np.max(errfunc(points_to_match[:, :3], template_pts)))
-                all_dist_err_l.append(errfunc(points_to_match[:, :3], template_pts))
+                dist_mean_list.append(np.mean(errfunc(points_to_match[:, :3], template_pts)))
+                dist_var_list.append(np.var(errfunc(points_to_match[:, :3], template_pts)))
+                dist_max_list.append(np.max(errfunc(points_to_match[:, :3], template_pts)))
+                dist_err_list.append(errfunc(points_to_match[:, :3], template_pts))
 
                 del points_to_match
 
-            all_dist_mean = np.asarray(all_dist_mean_l)
+            dist_mean_arr = np.asarray(dist_mean_list)
 
             # Select the best fitting Transformation-Matrix
-            idx1 = np.argmin(all_dist_mean)
+            idx1 = np.argmin(dist_mean_arr)
 
             # Collect all values belonging to the optimum solution
             trans = poss_trans[idx1]
-
-            all_dist_max = all_dist_max_l[idx1]
-            all_dist_mean = all_dist_mean_l[idx1]
-            all_dist_var = all_dist_var_l[idx1]
-            all_dist_err = all_dist_err_l[idx1]
+            dist_max = dist_max_list[idx1]
+            dist_mean = dist_mean_list[idx1]
+            dist_var = dist_var_list[idx1]
+            dist_err = dist_err_list[idx1]
 
             del poss_trans
-            del all_dist_max_l
-            del all_dist_mean_l
-            del all_dist_var_l
-            del all_dist_err_l
+            del dist_mean_arr
+            del dist_mean_list
+            del dist_max_list
+            del dist_var_list
+            del dist_err_list
 
             # Append the Dictionaries with the result and error values
             label_trans_dic.update({label: trans})
-            label_trans_dic_mean_dist.update({label: all_dist_mean})
-            label_trans_dic_max_dist.update({label: all_dist_max})
-            label_trans_dic_var_dist.update({label: all_dist_var})
-            label_trans_dic_err.update({label: all_dist_err})
+            label_trans_dic_mean_dist.update({label: dist_mean})
+            label_trans_dic_max_dist.update({label: dist_max})
+            label_trans_dic_var_dist.update({label: dist_var})
+            label_trans_dic_err.update({label: dist_err})
 
     if save_trans:
         print '\n    Writing Transformation matrices to file..'
