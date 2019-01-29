@@ -721,13 +721,16 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
     print '\n#### Attempting to interpolate STC Data for every time sample..'
     print '    Interpolation method: ', interpolation_method
+
     st_time = time2.time()
+
     xt, yt, zt = temp_vol[0]['rr'][temp_vol[0]['inuse'].astype(bool)].T
     inter_data = np.zeros([xt.shape[0], ntimes])
+
     for i in range(0, ntimes):
+
         loadingBar(i, ntimes, task_part='Time slice: %i' % (i + 1))
-        inter_data[:, i] = griddata((xn, yn, zn),
-                                    stcdata_ch[:, i], (xt, yt, zt),
+        inter_data[:, i] = griddata((xn, yn, zn), stcdata_ch[:, i], (xt, yt, zt),
                                     method=interpolation_method, rescale=True)
     if interpolation_method == 'linear':
         inter_data = np.nan_to_num(inter_data)
@@ -797,39 +800,31 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         print '\n#### Attempting to write interpolated STC Data to file..'
 
         if fname_save_stc is None:
-            fname_stc_orig_morphed = (fname_stc_orig[:-7] +
-                                      '_morphed_to_%s_%s-vl.stc' % (subject_to,
-                                                                    interpolation_method))
-        else:
-            fname_stc_orig_morphed = fname_save_stc
+            fname_stc_morphed = fname_stc_orig[:-7] + '_morphed_to_%s_%s-vl.stc'
+            fname_stc_morphed = fname_stc_morphed % (subject_to, interpolation_method)
 
-        print '    Destination:', fname_stc_orig_morphed
+        else:
+            fname_stc_morphed = fname_save_stc
+
+        print '    Destination:', fname_stc_morphed
         if normalize:
-            _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
+
+            _write_stc(fname_stc_morphed, tmin=tmin, tstep=tstep,
                        vertices=temp_vol[0]['vertno'],
                        data=new_data[interpolation_method + '_norm'])
-            stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
-
-            if plot:
-                # TODO: add interpolation method?
-                _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                             subj_vol, label_dict_subject_from,
-                                             temp_vol, label_dict_subject_to,
-                                             volume_labels, subjects_dir=subjects_dir,
-                                             cond=cond, run=run, n_iter=n_iter, save=True)
         else:
-            _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
-                       vertices=temp_vol[0]['vertno'], data=new_data[interpolation_method])
-            stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
 
-            if plot:
-                # TODO: add interpolation method?
-                _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                             subj_vol, label_dict_subject_from,
-                                             temp_vol, label_dict_subject_to,
-                                             volume_labels, subjects_dir=subjects_dir,
-                                             cond=cond, run=run, n_iter=n_iter,
-                                             save=True)
+            _write_stc(fname_stc_morphed, tmin=tmin, tstep=tstep,
+                       vertices=temp_vol[0]['vertno'], data=new_data[interpolation_method])
+
+        stc_morphed = mne.read_source_estimate(fname_stc_morphed)
+
+        if plot:
+            _volumemorphing_plot_results(stc_orig, stc_morphed,
+                                         subj_vol, label_dict_subject_from,
+                                         temp_vol, label_dict_subject_to,
+                                         volume_labels, subjects_dir=subjects_dir,
+                                         cond=cond, run=run, n_iter=n_iter, save=True)
 
         print '[done]'
         print '####             Volume Morphing           ####'
