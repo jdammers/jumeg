@@ -291,12 +291,8 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             initial_transl = (cm_t - cm_s)
             # Perform the transformation of the initial transformation matrix
             init_trans = np.zeros([4, 4])
-            # hlight: what happens if the label is neither left nor right? -> init_trans is filled with zeros
-            # hlight: follow up why L and R is basically the same
-            if label[0] == 'L':
-                init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
-            elif label[0] == 'R':
-                init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
+
+            init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
 
             # =============================================================================
             #         ENDING CHANGES
@@ -307,7 +303,8 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             init_trans[3, 3] = 1.
 
             # Find the min summed distance for initial transformation
-            poss_trans = find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_trans)
+            poss_trans = find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
+                                                      e_func, temp_tree, errfunc)
             all_dist_max_l = []
             all_dist_mean_l = []
             all_dist_var_l = []
@@ -403,25 +400,58 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
                 label_trans_dic_max_dist, label_trans_dic_var_dist)
 
 
-def find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_trans):
+def find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
+                                 e_func, temp_tree, errfunc):
     """
-    Aux. function for auto_match_labels.
+    Vary the initial transformation by a translation of up to three times the
+    grid spacing and compute the transformation with the smallest least square
+    error.
+
+    Parameters:
+    -----------
+    init_trans : 4-D transformation matrix
+        Initial guess of the transformation matrix from the subject brain to
+        the template brain.
+    s_pts :
+        Vertex coordinates in the subject brain.
+    t_pts :
+        Vertex coordinates in the template brain.
+    template_spacing : float
+        Grid spacing of the vertices in the template brain.
+    e_func : str
+        Error function to use. Either 'balltree' or 'euclidian'.
+    temp_tree :
+        BallTree(t_pts) if e_func is 'balltree'.
+    errfunc :
+        The error function for the computation of the least squares error.
+
+    Returns:
+    --------
+    poss_trans : list of 4-D transformation matrices
+        List of one transformation matrix for each variation of the intial
+        transformation with the smallest least squares error.
+
     """
 
-    sourr = template_spacing / 1e3
+    # template spacing in meters
+    tsm = template_spacing / 1e3
+
+    # Try different initial translations in space to avoid local minima
+    # No label should require a translation by more than 3 times the grid spacing (tsm)
     auto_match_iters = np.array([[0., 0., 0.],
-                                 [0., 0., sourr], [0., 0., sourr * 2], [0., 0., sourr * 3],
-                                 [sourr, 0., 0.], [sourr * 2, 0., 0.], [sourr * 3, 0., 0.],
-                                 [0., sourr, 0.], [0., sourr * 2, 0.], [0., sourr * 3, 0.],
-                                 [0., 0., -sourr], [0., 0., -sourr * 2], [0., 0., -sourr * 3],
-                                 [-sourr, 0., 0.], [-sourr * 2, 0., 0.], [-sourr * 3, 0., 0.],
-                                 [0., -sourr, 0.], [0., -sourr * 2, 0.], [0., -sourr * 3, 0.]])
+                                 [0., 0., tsm], [0., 0., tsm * 2], [0., 0., tsm * 3],
+                                 [tsm, 0., 0.], [tsm * 2, 0., 0.], [tsm * 3, 0., 0.],
+                                 [0., tsm, 0.], [0., tsm * 2, 0.], [0., tsm * 3, 0.],
+                                 [0., 0., -tsm], [0., 0., -tsm * 2], [0., 0., -tsm * 3],
+                                 [-tsm, 0., 0.], [-tsm * 2, 0., 0.], [-tsm * 3, 0., 0.],
+                                 [0., -tsm, 0.], [0., -tsm * 2, 0.], [0., -tsm * 3, 0.]])
 
     # possible translation matrices
     poss_trans = []
-    for p, i in enumerate(auto_match_iters):
-        # initial translation value
-        tx, ty, tz = init_trans[0, 3] + i[0], init_trans[1, 3] + i[1], init_trans[2, 3] + i[2]
+    for p, ami in enumerate(auto_match_iters):
+
+        # vary the initial translation value by adding ami
+        tx, ty, tz = init_trans[0, 3] + ami[0], init_trans[1, 3] + ami[1], init_trans[2, 3] + ami[2]
         sx, sy, sz = init_trans[0, 0], init_trans[1, 1], init_trans[2, 2]
         rx, ry, rz = 0, 0, 0
 
