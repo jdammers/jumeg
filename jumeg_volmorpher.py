@@ -232,8 +232,10 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
         s_pts = subj_p[label_dict_subject[label]]
         t_pts = temp_p[label_dict_template[label]]
 
-        # IIRC: the error function in find min needs at least 6 points. if all points are
-        # then this point is taken as minimum -> for clarifications ask Daniel
+        # IIRC: the error function in find_optimum_transformations needs at least
+        # 6 points. if all points are the same then this point is taken as
+        # minimum -> for clarifications ask Daniel
+
         if s_pts.shape[0] == 0:
             raise ValueError("The label does not contain any vertices for the subject.")
 
@@ -265,10 +267,11 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             t_x_diff = np.max(t_x) - np.min(t_x)
             t_y_diff = np.max(t_y) - np.min(t_y)
             t_z_diff = np.max(t_z) - np.min(t_z)
+
             # Calculate a scaling factor for the subject to match template size
             # and avoid 'Nan' by zero division
 
-            # instead of comparing float with zero, check size up to a given precision
+            # instead of comparing float with zero, check absolute value up to a given precision
             precision = 1e-18
             if np.fabs(t_x_diff) < precision or np.fabs(s_x_diff) < precision:
                 x_scale = 0.
@@ -289,20 +292,17 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             cm_s = np.mean(s_pts, axis=0)
             cm_t = np.mean(t_pts, axis=0)
             initial_transl = (cm_t - cm_s)
-            # Perform the transformation of the initial transformation matrix
-            init_trans = np.zeros([4, 4])
 
+            # Create the the initial transformation matrix
+            init_trans = np.zeros([4, 4])
             init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
 
-            # =============================================================================
-            #         ENDING CHANGES
-            # =============================================================================
             init_trans[0, 3] = initial_transl[0]
             init_trans[1, 3] = initial_transl[1]
             init_trans[2, 3] = initial_transl[2]
             init_trans[3, 3] = 1.
 
-            # Find the min summed distance for initial transformation
+            # Find calculate the least squares error for variation of the initial transformation
             poss_trans = find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
                                                       e_func, temp_tree, errfunc)
             all_dist_max_l = []
@@ -310,72 +310,45 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             all_dist_var_l = []
             all_dist_err_l = []
             for tra in poss_trans:
-                to_match_points = s_pts
-                to_match_points = apply_trans(tra, to_match_points)
+                points_to_match = s_pts
+                points_to_match = apply_trans(tra, points_to_match)
 
                 if e_func == 'balltree':
-                    all_dist_max_l.append(np.array(
-                        np.max(errfunc(to_match_points[:, :3], temp_tree))
-                    ))
-                    all_dist_mean_l.append(np.array(
-                        np.mean(errfunc(to_match_points[:, :3], temp_tree))
-                    ))
-                    all_dist_var_l.append(np.array(np.var(
-                        errfunc(to_match_points[:, :3], temp_tree)
-                    )))
-                    all_dist_err_l.append(np.array(
-                        errfunc(to_match_points[:, :3], temp_tree))
-                    )
+                    template_pts = temp_tree
+                elif e_func == 'euclidean':
+                    template_pts = t_pts
 
-                if e_func == 'euclidean':
-                    all_dist_max_l.append(np.array(
-                        np.max(errfunc(to_match_points[:, :3], t_pts))
-                    ))
-                    all_dist_mean_l.append(np.array(
-                        np.mean(errfunc(to_match_points[:, :3], t_pts))
-                    ))
-                    all_dist_var_l.append(np.array(np.var(
-                        errfunc(to_match_points[:, :3], t_pts)
-                    )))
-                    all_dist_err_l.append(np.array(
-                        errfunc(to_match_points[:, :3], t_pts))
-                    )
-                del to_match_points
+                all_dist_mean_l.append(np.mean(errfunc(points_to_match[:, :3], template_pts)))
+                all_dist_var_l.append(np.var(errfunc(points_to_match[:, :3], template_pts)))
+                all_dist_max_l.append(np.max(errfunc(points_to_match[:, :3], template_pts)))
+                all_dist_err_l.append(errfunc(points_to_match[:, :3], template_pts))
 
-            all_dist_max = np.asarray(all_dist_max_l)
+                del points_to_match
+
             all_dist_mean = np.asarray(all_dist_mean_l)
-            all_dist_var = np.asarray(all_dist_var_l)
-            # Decide for the bestg fitting Transformation-Matrix
-            idx1 = np.where(all_dist_mean == np.min(all_dist_mean))[0][0]
-            # Collect all the possible inidcator values
-            trans = poss_trans[idx1]
-            del poss_trans
 
-            to_match_points = s_pts
-            to_match_points = apply_trans(trans, to_match_points)
-            if e_func == 'balltree':
-                all_dist_max = np.array(
-                    (np.max(errfunc(to_match_points[:, :3], temp_tree))))
-                all_dist_mean = np.array(
-                    (np.mean(errfunc(to_match_points[:, :3], temp_tree))))
-                all_dist_var = np.array(
-                    (np.var(errfunc(to_match_points[:, :3], temp_tree))))
-                all_dist_err = (errfunc(to_match_points[:, :3], temp_tree))
-            if e_func == 'euclidean':
-                all_dist_max = np.array(
-                    (np.max(errfunc(to_match_points[:, :3], t_pts))))
-                all_dist_mean = np.array(
-                    (np.mean(errfunc(to_match_points[:, :3], t_pts))))
-                all_dist_var = np.array(
-                    (np.var(errfunc(to_match_points[:, :3], t_pts))))
-                all_dist_err = (errfunc(to_match_points[:, :3], t_pts))
-            del to_match_points
+            # Select the best fitting Transformation-Matrix
+            idx1 = np.argmin(all_dist_mean)
+
+            # Collect all values belonging to the optimum solution
+            trans = poss_trans[idx1]
+
+            all_dist_max = all_dist_max_l[idx1]
+            all_dist_mean = all_dist_mean_l[idx1]
+            all_dist_var = all_dist_var_l[idx1]
+            all_dist_err = all_dist_err_l[idx1]
+
+            del poss_trans
+            del all_dist_max_l
+            del all_dist_mean_l
+            del all_dist_var_l
+            del all_dist_err_l
 
             # Append the Dictionaries with the result and error values
             label_trans_dic.update({label: trans})
-            label_trans_dic_mean_dist.update({label: np.min(all_dist_mean)})
-            label_trans_dic_max_dist.update({label: np.min(all_dist_max)})
-            label_trans_dic_var_dist.update({label: np.min(all_dist_var)})
+            label_trans_dic_mean_dist.update({label: all_dist_mean})
+            label_trans_dic_max_dist.update({label: all_dist_max})
+            label_trans_dic_var_dist.update({label: all_dist_var})
             label_trans_dic_err.update({label: all_dist_err})
 
     if save_trans:
