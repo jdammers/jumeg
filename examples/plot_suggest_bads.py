@@ -3,9 +3,16 @@
 Example code to use the jumeg suggest bads functionality.
 '''
 
+import mne
+from mne.datasets import sample
 from jumeg import suggest_bads
 
 # provide the path of the filename:
-raw_fname = '/Users/psripad/fzj_sciebo/noisy_channel_detection_2016/jul017/jul017_BadChTst-2_16-12-06@11:50_1_c,rfDC-raw.fif'
+data_path = sample.data_path()
+subjects_dir = data_path + '/subjects'
 
-mybads, raw = suggest_bads(raw_fname, show_raw=False, summary_plot=False)
+raw_fname = str(data_path + '/MEG/sample/sample_audvis_raw.fif')
+
+raw = mne.io.Raw(raw_fname, preload=True)
+
+mybads, raw = suggest_bads(raw, show_raw=False, summary_plot=False)
