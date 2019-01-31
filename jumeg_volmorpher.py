@@ -232,8 +232,10 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
         s_pts = subj_p[label_dict_subject[label]]
         t_pts = temp_p[label_dict_template[label]]
 
-        # IIRC: the error function in find min needs at least 6 points. if all points are
-        # then this point is taken as minimum -> for clarifications ask Daniel
+        # IIRC: the error function in find_optimum_transformations needs at least
+        # 6 points. if all points are the same then this point is taken as
+        # minimum -> for clarifications ask Daniel
+
         if s_pts.shape[0] == 0:
             raise ValueError("The label does not contain any vertices for the subject.")
 
@@ -265,10 +267,11 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             t_x_diff = np.max(t_x) - np.min(t_x)
             t_y_diff = np.max(t_y) - np.min(t_y)
             t_z_diff = np.max(t_z) - np.min(t_z)
+
             # Calculate a scaling factor for the subject to match template size
             # and avoid 'Nan' by zero division
 
-            # instead of comparing float with zero, check size up to a given precision
+            # instead of comparing float with zero, check absolute value up to a given precision
             precision = 1e-18
             if np.fabs(t_x_diff) < precision or np.fabs(s_x_diff) < precision:
                 x_scale = 0.
@@ -289,98 +292,64 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             cm_s = np.mean(s_pts, axis=0)
             cm_t = np.mean(t_pts, axis=0)
             initial_transl = (cm_t - cm_s)
-            # Perform the transformation of the initial transformation matrix
-            init_trans = np.zeros([4, 4])
-            # hlight: what happens if the label is neither left nor right? -> init_trans is filled with zeros
-            # hlight: follow up why L and R is basically the same
-            if label[0] == 'L':
-                init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
-            elif label[0] == 'R':
-                init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
 
-            # =============================================================================
-            #         ENDING CHANGES
-            # =============================================================================
+            # Create the the initial transformation matrix
+            init_trans = np.zeros([4, 4])
+            init_trans[:3, :3] = rotation3d(0., 0., 0.) * [x_scale, y_scale, z_scale]
+
             init_trans[0, 3] = initial_transl[0]
             init_trans[1, 3] = initial_transl[1]
             init_trans[2, 3] = initial_transl[2]
             init_trans[3, 3] = 1.
 
-        # hlight: if t_pts.shape[0] == 0: errfunc, temp_tree, and init_trans are not defined or rather the previous ones are used
-        # Find the min summed distance for initial transformation
-        poss_trans = find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_trans)
-        all_dist_max_l = []
-        all_dist_mean_l = []
-        all_dist_var_l = []
-        all_dist_err_l = []
-        for tra in poss_trans:
-            to_match_points = s_pts
-            to_match_points = apply_trans(tra, to_match_points)
+            # Find calculate the least squares error for variation of the initial transformation
+            poss_trans = find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
+                                                      e_func, temp_tree, errfunc)
+            dist_max_list = []
+            dist_mean_list = []
+            dist_var_list = []
+            dist_err_list = []
+            for tra in poss_trans:
+                points_to_match = s_pts
+                points_to_match = apply_trans(tra, points_to_match)
 
-            if e_func == 'balltree':
-                all_dist_max_l.append(np.array(
-                    np.max(errfunc(to_match_points[:, :3], temp_tree))
-                ))
-                all_dist_mean_l.append(np.array(
-                    np.mean(errfunc(to_match_points[:, :3], temp_tree))
-                ))
-                all_dist_var_l.append(np.array(np.var(
-                    errfunc(to_match_points[:, :3], temp_tree)
-                )))
-                all_dist_err_l.append(np.array(
-                    errfunc(to_match_points[:, :3], temp_tree))
-                )
+                if e_func == 'balltree':
+                    template_pts = temp_tree
+                elif e_func == 'euclidean':
+                    template_pts = t_pts
 
-            if e_func == 'euclidean':
-                all_dist_max_l.append(np.array(
-                    np.max(errfunc(to_match_points[:, :3], t_pts))
-                ))
-                all_dist_mean_l.append(np.array(
-                    np.mean(errfunc(to_match_points[:, :3], t_pts))
-                ))
-                all_dist_var_l.append(np.array(np.var(
-                    errfunc(to_match_points[:, :3], t_pts)
-                )))
-                all_dist_err_l.append(np.array(
-                    errfunc(to_match_points[:, :3], t_pts))
-                )
-            del to_match_points
+                dist_mean_list.append(np.mean(errfunc(points_to_match[:, :3], template_pts)))
+                dist_var_list.append(np.var(errfunc(points_to_match[:, :3], template_pts)))
+                dist_max_list.append(np.max(errfunc(points_to_match[:, :3], template_pts)))
+                dist_err_list.append(errfunc(points_to_match[:, :3], template_pts))
 
-        all_dist_max = np.asarray(all_dist_max_l)
-        all_dist_mean = np.asarray(all_dist_mean_l)
-        all_dist_var = np.asarray(all_dist_var_l)
-        # Decide for the bestg fitting Transformation-Matrix
-        idx1 = np.where(all_dist_mean == np.min(all_dist_mean))[0][0]
-        # Collect all the possible inidcator values
-        trans = poss_trans[idx1]
-        del poss_trans
+                del points_to_match
 
-        to_match_points = s_pts
-        to_match_points = apply_trans(trans, to_match_points)
-        if e_func == 'balltree':
-            all_dist_max = np.array(
-                (np.max(errfunc(to_match_points[:, :3], temp_tree))))
-            all_dist_mean = np.array(
-                (np.mean(errfunc(to_match_points[:, :3], temp_tree))))
-            all_dist_var = np.array(
-                (np.var(errfunc(to_match_points[:, :3], temp_tree))))
-            all_dist_err = (errfunc(to_match_points[:, :3], temp_tree))
-        if e_func == 'euclidean':
-            all_dist_max = np.array(
-                (np.max(errfunc(to_match_points[:, :3], t_pts))))
-            all_dist_mean = np.array(
-                (np.mean(errfunc(to_match_points[:, :3], t_pts))))
-            all_dist_var = np.array(
-                (np.var(errfunc(to_match_points[:, :3], t_pts))))
-            all_dist_err = (errfunc(to_match_points[:, :3], t_pts))
-        del to_match_points
+            dist_mean_arr = np.asarray(dist_mean_list)
 
-        # Append the Dictionaries with the result and error values
-        label_trans_dic.update({label: trans})
-        label_trans_dic_mean_dist.update({label: np.min(all_dist_mean)})
-        label_trans_dic_max_dist.update({label: np.min(all_dist_max)})
-        label_trans_dic_var_dist.update({label: np.min(all_dist_var)})
-        label_trans_dic_err.update({label: all_dist_err})
+            # Select the best fitting Transformation-Matrix
+            idx1 = np.argmin(dist_mean_arr)
+
+            # Collect all values belonging to the optimum solution
+            trans = poss_trans[idx1]
+            dist_max = dist_max_list[idx1]
+            dist_mean = dist_mean_list[idx1]
+            dist_var = dist_var_list[idx1]
+            dist_err = dist_err_list[idx1]
+
+            del poss_trans
+            del dist_mean_arr
+            del dist_mean_list
+            del dist_max_list
+            del dist_var_list
+            del dist_err_list
+
+            # Append the Dictionaries with the result and error values
+            label_trans_dic.update({label: trans})
+            label_trans_dic_mean_dist.update({label: dist_mean})
+            label_trans_dic_max_dist.update({label: dist_max})
+            label_trans_dic_var_dist.update({label: dist_var})
+            label_trans_dic_err.update({label: dist_err})
 
     if save_trans:
         print '\n    Writing Transformation matrices to file..'
@@ -404,26 +373,63 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
                 label_trans_dic_max_dist, label_trans_dic_var_dist)
 
 
-def find_min(template_spacing, e_func, errfunc, temp_tree, t_pts, s_pts, init_trans):
+def find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
+                                 e_func, temp_tree, errfunc):
     """
-    Aux. function for auto_match_labels.
+    Vary the initial transformation by a translation of up to three times the
+    grid spacing and compute the transformation with the smallest least square
+    error.
+
+    Parameters:
+    -----------
+    init_trans : 4-D transformation matrix
+        Initial guess of the transformation matrix from the subject brain to
+        the template brain.
+    s_pts :
+        Vertex coordinates in the subject brain.
+    t_pts :
+        Vertex coordinates in the template brain.
+    template_spacing : float
+        Grid spacing of the vertices in the template brain.
+    e_func : str
+        Error function to use. Either 'balltree' or 'euclidian'.
+    temp_tree :
+        BallTree(t_pts) if e_func is 'balltree'.
+    errfunc :
+        The error function for the computation of the least squares error.
+
+    Returns:
+    --------
+    poss_trans : list of 4-D transformation matrices
+        List of one transformation matrix for each variation of the intial
+        transformation with the smallest least squares error.
+
     """
 
-    sourr = template_spacing / 1e3
+    # template spacing in meters
+    tsm = template_spacing / 1e3
+
+    # Try different initial translations in space to avoid local minima
+    # No label should require a translation by more than 3 times the grid spacing (tsm)
     auto_match_iters = np.array([[0., 0., 0.],
-                                 [0., 0., sourr], [0., 0., sourr * 2], [0., 0., sourr * 3],
-                                 [sourr, 0., 0.], [sourr * 2, 0., 0.], [sourr * 3, 0., 0.],
-                                 [0., sourr, 0.], [0., sourr * 2, 0.], [0., sourr * 3, 0.],
-                                 [0., 0., -sourr], [0., 0., -sourr * 2], [0., 0., -sourr * 3],
-                                 [-sourr, 0., 0.], [-sourr * 2, 0., 0.], [-sourr * 3, 0., 0.],
-                                 [0., -sourr, 0.], [0., -sourr * 2, 0.], [0., -sourr * 3, 0.]])
+                                 [0., 0., tsm], [0., 0., tsm * 2], [0., 0., tsm * 3],
+                                 [tsm, 0., 0.], [tsm * 2, 0., 0.], [tsm * 3, 0., 0.],
+                                 [0., tsm, 0.], [0., tsm * 2, 0.], [0., tsm * 3, 0.],
+                                 [0., 0., -tsm], [0., 0., -tsm * 2], [0., 0., -tsm * 3],
+                                 [-tsm, 0., 0.], [-tsm * 2, 0., 0.], [-tsm * 3, 0., 0.],
+                                 [0., -tsm, 0.], [0., -tsm * 2, 0.], [0., -tsm * 3, 0.]])
 
+    # possible translation matrices
     poss_trans = []
-    for p, i in enumerate(auto_match_iters):
-        # initial translation value
-        tx, ty, tz = init_trans[0, 3] + i[0], init_trans[1, 3] + i[1], init_trans[2, 3] + i[2]
+    for p, ami in enumerate(auto_match_iters):
+
+        # vary the initial translation value by adding ami
+        tx, ty, tz = init_trans[0, 3] + ami[0], init_trans[1, 3] + ami[1], init_trans[2, 3] + ami[2]
         sx, sy, sz = init_trans[0, 0], init_trans[1, 1], init_trans[2, 2]
         rx, ry, rz = 0, 0, 0
+
+        # starting point for finding the transformation matrix trans which
+        # minimizes the error between np.dot(s_pts, trans) and t_pts
         x0 = (tx, ty, tz, rx, ry, rz)
 
         def error(x):
@@ -463,12 +469,18 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
     ----------
     vsrc_subject_from : instance of SourceSpaces
         The source spaces that will be transformed.
+    label_dict_subject_from : dict
+
     volume_labels : list
         List of the volume labels of interest
     subject_to : str | None
         The template subject.
     subjects_dir : string, or None
         Path to SUBJECTS_DIR if it is not set in the environment.
+    label_trans_dic : dict | None
+        Dictionary containing transformation matrices for all labels (acquired
+        by auto_match_labels function). If label_trans_dic is None the method
+        will attempt to read the file from disc.
     
     Returns
     -------
@@ -500,8 +512,8 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
         except IOError:
             print 'MatchMaking Transformations file NOT found:'
             print fname_lw_trans, '\n'
-            print 'Please calculate the according transformation matrix dictionary'
-            print 'by using the jumeg.jumeg_volmorpher.auto_match_labels function.'
+            print 'Please calculate the transformation matrix dictionary by using'
+            print 'the jumeg.jumeg_volmorpher.auto_match_labels function.'
 
             import sys
             sys.exit(-1)
@@ -524,11 +536,10 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
                     break
 
     transformed_p = np.array([[0, 0, 0]])
-    vert_sum = []
     idx_vertices = []
+
     for idx, label in enumerate(volume_labels):
         loadingBar(idx, len(volume_labels), task_part=label)
-        vert_sum.append(label_dict[label].shape[0])
         idx_vertices.append(label_dict[label])
         trans_p = subj_p[label_dict[label]]
         trans = label_trans_dic[label]
@@ -544,12 +555,53 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
     return transformed_p, idx_vertices
 
 
+def set_unwanted_to_zero(vsrc, stc_data, volume_labels, label_dict):
+    """
+
+    Parameters:
+    -----------
+    vsrc : mne.VolSourceSpace
+    stc_data : np.array
+        data from source time courses.
+    volume_labels : list of str
+        List with volume labels of interest
+    label_dict : dict
+        Dictionary containing for each label the indices of the
+        vertices which are part of the label.
+
+    Returns:
+    --------
+    stc_data_mod : np.array()
+        The modified stc_data array with data set to zero for
+        vertices which are not part of the labels of interest.
+    """
+
+    # label of interest
+    LOI_idx = list()
+
+    for p, labels in enumerate(volume_labels):
+
+        label_verts = label_dict[labels]
+
+        for i in xrange(0, label_verts.shape[0]):
+
+            LOI_idx.append(np.where(label_verts[i] == vsrc[0]['vertno']))
+
+    LOI_idx = np.asarray(LOI_idx)
+
+    stc_data_mod = np.zeros(stc_data.shape)
+    stc_data_mod[LOI_idx, :] = stc_data[LOI_idx, :]
+
+    return stc_data_mod
+
+
 def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                      volume_labels, subject_to, fname_vsrc_subject_to,
-                     cond, n_iter, interpolation_method, normalize,
-                     subjects_dir, unwanted_to_zero=True, label_trans_dic=None,
-                     fname_save_stc=None, save_stc=False, plot=False):
-    """ Perform a volume morphing from one subject to a template.
+                     cond, interpolation_method, normalize, subjects_dir,
+                     unwanted_to_zero=True, label_trans_dic=None, run=None,
+                     n_iter=None, fname_save_stc=None, save_stc=False, plot=False):
+    """
+    Perform volume morphing from one subject to a template.
     
     Parameters
     ----------
@@ -565,23 +617,29 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         Name of the subject on which to morph as named in the SUBJECTS_DIR
     fname_vsrc_subject_to : string
         Filepath of the template subjects volume source space
-    interpolation_method : string | None
-        Either 'balltree' or 'euclidean'. Default is 'balltree'
+    interpolation_method : str
+        Only 'linear' seeems to be working for 3D data. 'balltree' and
+        'euclidean' only work for 2D?.
     cond : str (Not really needed)
         Experimental condition under which the data was recorded.
-    n_iter : int (Not really needed)
-        Number of iterations performed during MFT.
     normalize : bool
         If True, normalize activity patterns label by label before and after
         morphing.
-    subjects_dir : string, or None
+    subjects_dir : str | None
         Path to SUBJECTS_DIR if it is not set in the environment.
     unwanted_to_zero : bool
        If True, set all non-Labels-of-interest in resulting stc to zero.
-    label_trans_dic : dict
+    label_trans_dic : dict | None
         Dictionary containing transformation matrices for all labels (acquired
-        by auto_match_labels function).
-    fname_save_stc : None | str
+        by auto_match_labels function). If label_trans_dic is None the method
+        will attempt to read the file from disc.
+    run : int | None
+        Specifies the run if multiple measurements for the same condition
+        were performed.
+    n_iter : int | None
+        If MFT was used for the inverse solution, n_iter is the
+        number of iterations.
+    fname_save_stc : str | None
         File name for the morphed volume stc file to be saved under.
         If fname_save_stc is None, use the standard file name convention.
     save_stc : bool
@@ -599,11 +657,27 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
       new_data : dict
           One or more new stc data array
     """
+
     print '####                  START                ####'
     print '####             Volume Morphing           ####'
-    print '    Subject: %s  | Cond.: %s  | Iter.: %s' % (subject_from,
-                                                         cond, n_iter)
-    print '\n#### Attempting to read essential data files..'
+
+    if cond is None:
+        str_cond = ''
+    else:
+        str_cond = ' | Cond.: %s' % cond
+    if run is None:
+        str_run = ''
+    else:
+        str_run = ' | Run: %d' % run
+    if n_iter is None:
+        str_niter = ''
+    else:
+        str_niter = ' | Iter. :%d' % n_iter
+
+    string = '    Subject: %s' % subject_from + str_run + str_cond + str_niter
+
+    print string
+    print '\n#### Reading essential data files..'
     # STC 
     stc_orig = mne.read_source_estimate(fname_stc_orig)
     stcdata = stc_orig.data
@@ -643,143 +717,131 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     stcdata_ch = stcdata[stcdata_sel]
 
     # =========================================================================
-    #        Interpolate the data   
-    new_data = {}
-    for inter_m in interpolation_method:
+    #        Interpolate the data
 
-        print '\n#### Attempting to interpolate STC Data for every time sample..'
-        print '    Interpolation method: ', inter_m
-        st_time = time2.time()
-        xt, yt, zt = temp_vol[0]['rr'][temp_vol[0]['inuse'].astype(bool)].T
-        inter_data = np.zeros([xt.shape[0], ntimes])
-        for i in range(0, ntimes):
-            loadingBar(i, ntimes, task_part='Time slice: %i' % (i + 1))
-            inter_data[:, i] = griddata((xn, yn, zn),
-                                        stcdata_ch[:, i], (xt, yt, zt),
-                                        method=inter_m, rescale=True)
-        if inter_m == 'linear':
-            inter_data = np.nan_to_num(inter_data)
+    print '\n#### Attempting to interpolate STC Data for every time sample..'
+    print '    Interpolation method: ', interpolation_method
 
-        if unwanted_to_zero:
-            print '#### Setting all unknown vertex values to zero..'
+    st_time = time2.time()
 
-            # vertnos_unknown = label_dict_subject_to['Unknown']
-            # vert_U_idx = np.array([], dtype=int)
-            # for i in xrange(0, vertnos_unknown.shape[0]):
-            #     vert_U_idx = np.append(vert_U_idx,
-            #                            np.where(vertnos_unknown[i] == temp_vol[0]['vertno'])
-            #                            )
-            # inter_data[vert_U_idx, :] = 0.
-            #
-            # # now the original data
-            # vertnos_unknown_from = label_dict_subject_from['Unknown']
-            # vert_U_idx = np.array([], dtype=int)
-            # for i in xrange(0, vertnos_unknown_from.shape[0]):
-            #     vert_U_idx = np.append(vert_U_idx,
-            #                            np.where(vertnos_unknown_from[i] == subj_vol[0]['vertno'])
-            #                            )
-            # stc_orig.data[vert_U_idx, :] = 0.
+    xt, yt, zt = temp_vol[0]['rr'][temp_vol[0]['inuse'].astype(bool)].T
+    inter_data = np.zeros([xt.shape[0], ntimes])
 
-            temp_LOI_idx = np.array([], dtype=int)
-            for p, labels in enumerate(volume_labels):
-                lab_verts_temp = label_dict_subject_to[labels]
-                for i in xrange(0, lab_verts_temp.shape[0]):
-                    temp_LOI_idx = np.append(temp_LOI_idx,
-                                             np.where(lab_verts_temp[i]
-                                                      ==
-                                                      temp_vol[0]['vertno'])
-                                             )
-            d2 = np.zeros(inter_data.shape)
-            d2[temp_LOI_idx, :] = inter_data[temp_LOI_idx, :]
-            inter_data = d2
+    for i in range(0, ntimes):
 
-            subj_LOI_idx = np.array([], dtype=int)
-            for p, labels in enumerate(volume_labels):
-                lab_verts_temp = label_dict_subject_from[labels]
-                for i in xrange(0, lab_verts_temp.shape[0]):
-                    subj_LOI_idx = np.append(subj_LOI_idx,
-                                             np.where(lab_verts_temp[i]
-                                                      ==
-                                                      subj_vol[0]['vertno'])
-                                             )
-            d2 = np.zeros(stc_orig.data.shape)
-            d2[subj_LOI_idx, :] = stc_orig.data[subj_LOI_idx, :]
-            if not stc_orig.data.flags["WRITEABLE"]:
-                # stc_orig.data.flags WRITEABLE=False causes crash -> set to True
-                stc_orig.data.setflags(write=1)
+        loadingBar(i, ntimes, task_part='Time slice: %i' % (i + 1))
+        inter_data[:, i] = griddata((xn, yn, zn), stcdata_ch[:, i], (xt, yt, zt),
+                                    method=interpolation_method, rescale=True)
 
-            stc_orig.data[:, :] = d2[:, :]
+    if interpolation_method == 'linear':
+        inter_data = np.nan_to_num(inter_data)
 
-        if normalize:
-            print '\n#### Attempting to normalize the vol-morphed stc..'
-            normalized_new_data = inter_data.copy()
-            for p, labels in enumerate(volume_labels):
-                lab_verts = label_dict_subject_from[labels]
-                lab_verts_temp = label_dict_subject_to[labels]
-                subj_vert_idx = np.array([], dtype=int)
-                for i in xrange(0, lab_verts.shape[0]):
-                    subj_vert_idx = np.append(subj_vert_idx,
-                                              np.where(lab_verts[i]
-                                                       ==
-                                                       subj_vol[0]['vertno'])
-                                              )
-                temp_vert_idx = np.array([], dtype=int)
-                for i in xrange(0, lab_verts_temp.shape[0]):
-                    temp_vert_idx = np.append(temp_vert_idx,
-                                              np.where(lab_verts_temp[i]
-                                                       ==
-                                                       temp_vol[0]['vertno'])
-                                              )
-                a = np.sum(stc_orig.data[subj_vert_idx], axis=0)
-                b = np.sum(inter_data[temp_vert_idx], axis=0)
-                norm_m_score = a / b
-                normalized_new_data[temp_vert_idx] *= norm_m_score
-            new_data.update({inter_m + '_norm': normalized_new_data})
-        else:
-            new_data.update({inter_m: inter_data})
+    if unwanted_to_zero:
+        print '#### Setting all unknown vertex values to zero..'
 
-        print '    [done] -> Calculation Time: %.2f minutes.' % (
-                (time2.time() - st_time) / 60.
-        )
+        # vertnos_unknown = label_dict_subject_to['Unknown']
+        # vert_U_idx = np.array([], dtype=int)
+        # for i in xrange(0, vertnos_unknown.shape[0]):
+        #     vert_U_idx = np.append(vert_U_idx,
+        #                            np.where(vertnos_unknown[i] == temp_vol[0]['vertno'])
+        #                            )
+        # inter_data[vert_U_idx, :] = 0.
+        #
+        # # now the original data
+        # vertnos_unknown_from = label_dict_subject_from['Unknown']
+        # vert_U_idx = np.array([], dtype=int)
+        # for i in xrange(0, vertnos_unknown_from.shape[0]):
+        #     vert_U_idx = np.append(vert_U_idx,
+        #                            np.where(vertnos_unknown_from[i] == subj_vol[0]['vertno'])
+        #                            )
+        # stc_orig.data[vert_U_idx, :] = 0.
+
+        inter_data = set_unwanted_to_zero(temp_vol, inter_data, volume_labels, label_dict_subject_to)
+
+        d2 = set_unwanted_to_zero(subj_vol, stc_orig.data, volume_labels, label_dict_subject_from)
+
+        if not stc_orig.data.flags["WRITEABLE"]:
+            # stc_orig.data.flags WRITEABLE=False causes crash -> set to True
+            stc_orig.data.setflags(write=1)
+
+        stc_orig.data[:, :] = d2[:, :]
+
+    if normalize:
+
+        print '\n#### Attempting to normalize the vol-morphed stc..'
+        normalized_new_data = inter_data.copy()
+
+        for p, labels in enumerate(volume_labels):
+
+            lab_verts = label_dict_subject_from[labels]
+            lab_verts_temp = label_dict_subject_to[labels]
+
+            # get for the subject brain the indices of all vertices for the given label
+            subj_vert_idx = []
+            for i in xrange(0, lab_verts.shape[0]):
+                subj_vert_idx.append(np.where(lab_verts[i] == subj_vol[0]['vertno']))
+            subj_vert_idx = np.asarray(subj_vert_idx)
+
+            # get for the template brain the indices of all vertices for the given label
+            temp_vert_idx = []
+            for i in xrange(0, lab_verts_temp.shape[0]):
+                temp_vert_idx.append(np.where(lab_verts_temp[i] == temp_vol[0]['vertno']))
+            temp_vert_idx = np.asarray(temp_vert_idx)
+
+            # The original implementation by Daniel did not use the absolute
+            # value for normalization. This is probably because he used MFT
+            # for the inverse solution which only provides positive activity
+            # values.
+
+            # a = np.sum(stc_orig.data[subj_vert_idx], axis=0)
+            # b = np.sum(inter_data[temp_vert_idx], axis=0)
+            # norm_m_score = a / b
+
+            # The LCMV beamformer can result in positive as well as negative
+            # values which can cancel each other out, e.g., after morphing
+            # there are more vertices in a "negative value area" than before
+            # resulting in a smaller sum 'b' -> norm_m_score becomes large.
+
+            afabs = np.sum(np.fabs(stc_orig.data[subj_vert_idx]), axis=0)
+            bfabs = np.sum(np.fabs(inter_data[temp_vert_idx]), axis=0)
+            norm_m_score = afabs / bfabs
+
+            normalized_new_data[temp_vert_idx] *= norm_m_score
+
+        new_data = normalized_new_data
+
+    else:
+
+        new_data = inter_data
+
+    print '    [done] -> Calculation Time: %.2f minutes.' % (
+            (time2.time() - st_time) / 60.
+    )
 
     if save_stc:
         print '\n#### Attempting to write interpolated STC Data to file..'
-        for inter_m in interpolation_method:
 
-            if fname_save_stc is None:
-                fname_stc_orig_morphed = (fname_stc_orig[:-7] +
-                                          '_morphed_to_%s_%s-vl.stc' % (subject_to,
-                                                                        inter_m))
-            else:
-                fname_stc_orig_morphed = fname_save_stc
+        if fname_save_stc is None:
+            fname_stc_morphed = fname_stc_orig[:-7] + '_morphed_to_%s_%s-vl.stc'
+            fname_stc_morphed = fname_stc_morphed % (subject_to, interpolation_method)
 
-            print '    Destination:', fname_stc_orig_morphed
-            if normalize:
-                _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
-                           vertices=temp_vol[0]['vertno'],
-                           data=new_data[inter_m + '_norm'])
-                stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
+        else:
+            fname_stc_morphed = fname_save_stc
 
-                if plot:
-                    _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                                 interpolation_method,
-                                                 subj_vol, label_dict_subject_from,
-                                                 temp_vol, label_dict_subject_to,
-                                                 volume_labels, cond=cond, n_iter=n_iter,
-                                                 subjects_dir=subjects_dir, save=True)
-            else:
-                _write_stc(fname_stc_orig_morphed, tmin=tmin, tstep=tstep,
-                           vertices=temp_vol[0]['vertno'], data=new_data[inter_m])
-                stc_morphed = mne.read_source_estimate(fname_stc_orig_morphed)
+        print '    Destination:', fname_stc_morphed
 
-                if plot:
-                    _volumemorphing_plot_results(stc_orig, stc_morphed,
-                                                 interpolation_method,
-                                                 subj_vol, temp_vol,
-                                                 volume_labels, cond=cond,
-                                                 n_iter=n_iter,
-                                                 subjects_dir=subjects_dir,
-                                                 save=True)
+        _write_stc(fname_stc_morphed, tmin=tmin, tstep=tstep,
+                   vertices=temp_vol[0]['vertno'], data=new_data)
+
+        stc_morphed = mne.read_source_estimate(fname_stc_morphed)
+
+        if plot:
+            _volumemorphing_plot_results(stc_orig, stc_morphed,
+                                         subj_vol, label_dict_subject_from,
+                                         temp_vol, label_dict_subject_to,
+                                         volume_labels, subjects_dir=subjects_dir,
+                                         cond=cond, run=run, n_iter=n_iter, save=True)
+
         print '[done]'
         print '####             Volume Morphing           ####'
         print '####                  DONE                 ####'
@@ -796,9 +858,11 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 def _volumemorphing_plot_results(stc_orig, stc_morphed,
                                  volume_orig, label_dict_from,
                                  volume_temp, label_dict_to,
-                                 volume_labels, cond, n_iter,
-                                 subjects_dir, save=False):
-    """Gathering information and plot before and after morphing results.
+                                 volume_labels, subjects_dir,
+                                 cond, run=None, n_iter=None,
+                                 save=False):
+    """
+    Plot before and after morphing results.
     
     Parameters
     ----------
@@ -817,12 +881,16 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         Equivalent label vertex dict to the template source space
     volume_labels : list of volume Labels
         List of the volume labels of interest
-    cond : str | None
-        Evoked contition as a string to give the plot more intel
-    n_iter : int
-        Number of iterations performed during MFT.
     subjects_dir : string, or None
         Path to SUBJECTS_DIR if it is not set in the environment.
+    cond : str
+        Evoked condition as a string to give the plot more intel.
+    run : int | None
+        Specifies the run if multiple measurements for the same condition
+        were performed.
+    n_iter : int | None
+        If MFT was used for the inverse solution, n_iter is the
+        number of iterations.
 
     Returns
     -------
@@ -831,14 +899,19 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     if save == False : returns matplotlib.figure
     
     """
-    if cond is None:
-        cond = ''
+    if run is None:
+        run_title = ''
+        run_fname = ''
     else:
-        cond = cond
+        run_title = ' | Run: %d' % run
+        run_fname = ',run%d' % run
+
     if n_iter is None:
-        n_iter = ''
+        n_iter_title = ''
+        n_iter_fname = ''
     else:
-        n_iter = n_iter
+        n_iter_title = ' | Iter.: %d' % n_iter
+        n_iter_fname = ',iter-%d' % n_iter
 
     subj_vol = volume_orig
     subject_from = volume_orig[0]['subject_his_id']
@@ -866,9 +939,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     fig.text(0.985, 0.25, 'Amplitude [T]', color='white', size='large',
              horizontalalignment='right', verticalalignment='center',
              rotation=-90, transform=ax2.transAxes)
-    plt.suptitle('VolumeMorphing from %s to %s | Cond.: %s, Iter.: %d'
-                 % (subject_from, subject_to, cond, n_iter),
-                 fontsize=16, color='white')
+
+    suptitle = 'VolumeMorphing from %s to %s' % (subject_from, subject_to)
+    suptitle = suptitle + ' | Cond.: %s' % cond
+    suptitle = suptitle + run_title + n_iter_title
+
+    plt.suptitle(suptitle, fontsize=16, color='white')
     fig.set_facecolor('black')
     plt.tight_layout()
     fig.subplots_adjust(bottom=0.04, top=0.94,
@@ -885,10 +961,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
               figure=999, axes=ax2, save=False)
 
     if save:
-        fname_save_fig = (directory +
-                          '/%s_%s_vol-%.2f_%s_%s_volmorphing-result.png'
-                          % (subject_from, subject_to,
-                             indiv_spacing, cond, n_iter))
+        fname_save_fig = '%s_to_%s' + run_fname
+        fname_save_fig = fname_save_fig + ',vol-%.2f,%s'
+        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond)
+        fname_save_fig = fname_save_fig + n_iter_fname
+        fname_save_fig = op.join(directory, fname_save_fig + ',volmorphing-result.png')
+
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
         plt.close()
@@ -946,13 +1024,19 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         axs[idx].set_xlim(stc_orig.times[0], stc_orig.times[-1])
         axs[idx].get_xaxis().grid(True)
 
-    fig.suptitle('Summed activity in volume labels - %s[%.2f]' % (subject_from, indiv_spacing)
-                 + ' -> %s [%.2f] | Cond.: %s, Iter.: %d'
-                 % (subject_to, temp_spacing, cond, n_iter),
-                 fontsize=16)
+    suptitle = 'Summed activity in volume labels - %s[%.2f]' % (subject_from, indiv_spacing)
+    suptitle = suptitle + ' -> %s [%.2f] | Cond.: %s' % (subject_to, temp_spacing, cond)
+    suptitle = suptitle + run_title + n_iter_title
+
+    fig.suptitle(suptitle, fontsize=16)
+
     if save:
-        fname_save_fig = op.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_labelwise-stc.png')
-        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond, n_iter)
+        fname_save_fig = '%s_to_%s' + run_fname
+        fname_save_fig = fname_save_fig + ',vol-%.2f,%s'
+        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond)
+        fname_save_fig = fname_save_fig + n_iter_fname
+        fname_save_fig = op.join(directory, fname_save_fig + ',labelwise-stc.png')
+
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
         plt.close()
@@ -971,9 +1055,12 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
              label='%s' % subject_from)
     ax1.plot(stc_orig.times, new_data.sum(axis=0), '#CD7600', linewidth=1,
              label='%s morphed' % subject_from)
-    ax1.set_title('Summed Source Amplitude - %s[%.2f] ' % (subject_from, indiv_spacing)
-                  + '-> %s [%.2f] | Cond.: %s, Iter.: %d'
-                  % (subject_to, temp_spacing, cond, n_iter))
+
+    title = 'Summed Source Amplitude - %s[%.2f] ' % (subject_from, indiv_spacing)
+    title = title + '-> %s [%.2f] | Cond.: %s' % (subject_to, temp_spacing, cond)
+    title = title + run_title + n_iter_title
+
+    ax1.set_title(title)
     ax1.text(stc_orig.times[0],
              np.maximum(stc_orig.data.sum(axis=0), new_data.sum(axis=0)).max(),
              """Total Amplitude Difference: %+.2f %%
@@ -985,13 +1072,18 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
                        fc="white",
                        )
              )
+
     ax1.set_ylabel('Summed Source Amplitude')
     ax1.legend(fontsize='large', facecolor="white", edgecolor="grey")
     ax1.get_xaxis().grid(True)
     plt.tight_layout()
     if save:
-        fname_save_fig = op.join(directory, '%s_%s_vol-%.2f_%s_iter-%d_stc.png')
-        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond, n_iter)
+        fname_save_fig = '%s_to_%s' + run_fname
+        fname_save_fig = fname_save_fig + ',vol-%.2f,%s'
+        fname_save_fig = fname_save_fig % (subject_from, subject_to, indiv_spacing, cond)
+        fname_save_fig = fname_save_fig + n_iter_fname
+        fname_save_fig = op.join(directory, fname_save_fig + ',stc.png')
+
         plt.savefig(fname_save_fig, facecolor=fig.get_facecolor(),
                     format='png', edgecolor='none')
         plt.close()
@@ -2161,14 +2253,21 @@ def _remove_vert_duplicates(subject, subj_src, label_dict_subject,
     for p, label in enumerate(all_volume_labels):
         loadingBar(p, len(all_volume_labels), task_part=None)
         lab_arr = label_dict_subject[label]
+
+        # get freesurfer LUT ID for the label
         lab_id = _get_lut_id(lut, label, True)[0]
         del_ver_idx_list = []
         for arr_id, i in enumerate(lab_arr, 0):
+            # get the coordinates of the vertex in subject source space
             lab_vert_coord = subj_src[0]['rr'][i]
+            # transform to mgz indices
             lab_vert_mgz_idx = mne.transforms.apply_trans(inv_vox2rastkr_trans, lab_vert_coord)
+            # get ID from the mgt indices
             orig_idx = mgz_data[int(round(lab_vert_mgz_idx[0])),
                                 int(round(lab_vert_mgz_idx[1])),
                                 int(round(lab_vert_mgz_idx[2]))]
+
+            # if ID and LUT ID do not match the vertex is removed
             if orig_idx != lab_id:
                 del_ver_idx_list.append(arr_id)
                 del_count += 1
