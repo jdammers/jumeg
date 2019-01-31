@@ -657,6 +657,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
       new_data : dict
           One or more new stc data array
     """
+
     print '####                  START                ####'
     print '####             Volume Morphing           ####'
 
@@ -716,8 +717,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     stcdata_ch = stcdata[stcdata_sel]
 
     # =========================================================================
-    #        Interpolate the data   
-    new_data = {}
+    #        Interpolate the data
 
     print '\n#### Attempting to interpolate STC Data for every time sample..'
     print '    Interpolation method: ', interpolation_method
@@ -732,6 +732,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         loadingBar(i, ntimes, task_part='Time slice: %i' % (i + 1))
         inter_data[:, i] = griddata((xn, yn, zn), stcdata_ch[:, i], (xt, yt, zt),
                                     method=interpolation_method, rescale=True)
+
     if interpolation_method == 'linear':
         inter_data = np.nan_to_num(inter_data)
 
@@ -766,9 +767,12 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         stc_orig.data[:, :] = d2[:, :]
 
     if normalize:
+
         print '\n#### Attempting to normalize the vol-morphed stc..'
         normalized_new_data = inter_data.copy()
+
         for p, labels in enumerate(volume_labels):
+
             lab_verts = label_dict_subject_from[labels]
             lab_verts_temp = label_dict_subject_to[labels]
 
@@ -784,13 +788,31 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                 temp_vert_idx.append(np.where(lab_verts_temp[i] == temp_vol[0]['vertno']))
             temp_vert_idx = np.asarray(temp_vert_idx)
 
-            a = np.sum(stc_orig.data[subj_vert_idx], axis=0)
-            b = np.sum(inter_data[temp_vert_idx], axis=0)
-            norm_m_score = a / b
+            # The original implementation by Daniel did not use the absolute
+            # value for normalization. This is probably because he used MFT
+            # for the inverse solution which only provides positive activity
+            # values.
+
+            # a = np.sum(stc_orig.data[subj_vert_idx], axis=0)
+            # b = np.sum(inter_data[temp_vert_idx], axis=0)
+            # norm_m_score = a / b
+
+            # The LCMV beamformer can result in positive as well as negative
+            # values which can cancel each other out, e.g., after morphing
+            # there are more vertices in a "negative value area" than before
+            # resulting in a smaller sum 'b' -> norm_m_score becomes large.
+
+            afabs = np.sum(np.fabs(stc_orig.data[subj_vert_idx]), axis=0)
+            bfabs = np.sum(np.fabs(inter_data[temp_vert_idx]), axis=0)
+            norm_m_score = afabs / bfabs
+
             normalized_new_data[temp_vert_idx] *= norm_m_score
-        new_data.update({interpolation_method + '_norm': normalized_new_data})
+
+        new_data = normalized_new_data
+
     else:
-        new_data.update({interpolation_method: inter_data})
+
+        new_data = inter_data
 
     print '    [done] -> Calculation Time: %.2f minutes.' % (
             (time2.time() - st_time) / 60.
@@ -808,14 +830,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
         print '    Destination:', fname_stc_morphed
 
-        if normalize:
-            im_to_save = interpolation_method + '_norm'
-        else:
-            im_to_save = interpolation_method
-
         _write_stc(fname_stc_morphed, tmin=tmin, tstep=tstep,
-                   vertices=temp_vol[0]['vertno'],
-                   data=new_data[im_to_save])
+                   vertices=temp_vol[0]['vertno'], data=new_data)
 
         stc_morphed = mne.read_source_estimate(fname_stc_morphed)
 
