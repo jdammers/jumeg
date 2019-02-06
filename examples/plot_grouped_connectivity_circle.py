@@ -10,8 +10,8 @@ from jumeg import get_jumeg_path
 from jumeg.connectivity import plot_grouped_connectivity_circle
 import pickle
 
-labels_fname = get_jumeg_path() + '/examples/label_names.list'
-yaml_fname = get_jumeg_path() + '/examples/aparc_cortex_based_grouping.yaml'
+labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
+yaml_fname = get_jumeg_path() + '/data/desikan_aparc_cortex_based_grouping.yaml'
 
 with open('label_names.list', 'r') as f:
         label_names = pickle.load(f)
@@ -23,7 +23,7 @@ con = np.random.random((68, 68))
 con[con < 0.5] = 0.
 
 indices = (np.array((1, 2, 3)), np.array((5, 6, 7)))
-plot_grouped_connectivity_circle(yaml_fname, con, label_names, 
+plot_grouped_connectivity_circle(yaml_fname, con, label_names,
                                  labels_mode='cortex_only',
                                  colorbar_pos=(0.1, 0.1),
                                  n_lines=10, colorbar=True)

@@ -30,8 +30,8 @@ t_start = time.time()
 
 print('Scot version -', scot.__version__)
 
-yaml_fname = get_jumeg_path() + '/examples/aparc_cortex_based_grouping.yaml'
-labels_fname = get_jumeg_path() + '/examples/label_names.list'
+yaml_fname = get_jumeg_path() + '/data/desikan_aparc_cortex_based_grouping.yaml'
+labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
 
 data_path = sample.data_path()
 subjects_dir = data_path + '/subjects'
@@ -130,10 +130,7 @@ caus, max_cons, max_surrs = prepare_causality_matrix(
 
 print('Shape of causality matrix: ', caus.shape)
 
-# get label names used for plotting
-labels_fname = get_jumeg_path() + '/examples/label_names.list'
-yaml_fname = get_jumeg_path() + '/examples/aparc_cortex_based_grouping.yaml'
-
+# read the label names used for plotting
 with open(labels_fname, 'r') as f:
     label_names = pickle.load(f)
 

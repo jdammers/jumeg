@@ -11,7 +11,8 @@ resting state network.
 Uses the standard RSNs provided by [1]
 [1] P. Garcés, M. C. Martín-Buro, and F. Maestú,
 “Quantifying the Test-Retest Reliability of Magnetoencephalography
-Resting-State Functional Connectivity,” Brain Connect., vol. 6, no. 6, pp. 448–460, 2016.
+Resting-State Functional Connectivity,” Brain Connect., vol. 6, no. 6,
+pp. 448–460, 2016.
 '''
 
 import os.path as op
@@ -47,12 +48,12 @@ for i, rst_label in enumerate(labels):
     if rst_label.hemi == 'lh':  # vertex hemi is stored in the rst_label
         for mylab in lh_aparc:
             if myfoci in mylab.vertices:
-                print 'Left: ', rst_label.name, myfoci, mylab
+                print 'Left: ', rst_label.name, myfoci, mylab, aparc.index(mylab)
                 rst_aparc.append(mylab)
     elif rst_label.hemi == 'rh':
         for mylab in rh_aparc:
             if myfoci in mylab.vertices:
-                print 'Right: ', rst_label.name, myfoci, mylab
+                print 'Right: ', rst_label.name, myfoci, mylab, aparc.index(mylab)
                 rst_aparc.append(mylab)
     else:
         print 'ERROR: ', rst_label
@@ -76,25 +77,25 @@ con = np.zeros((n_nodes, n_nodes))
 
 rst_combindices = [[16, 31], [50, 14], [50, 15], [50, 28], [14, 15],
                    [14, 28], [15, 28], [22, 23], [14, 60], [62, 63],
-                   [15, 61]]
-
-# automatic assignment may also be done
-# for comb in rst_combindices:
-#     con[comb[0], comb[1]] = 1.
+                   [15, 61],
+                   [16, 17]]
 
 # assign different values to different networks manually
-con[16, 31] = 0.3
-con[50, 14] = con[50, 15] = con[50, 28] = con[14, 15] = con[14, 28] = con[15, 28] = 0.9  # DMN
-con[22, 23] = 0.4
-con[14, 60] = 0.5
-con[62, 63] = 0.6
-con[15, 61] = 0.8
+con[16, 31] = 0.4  # Auditory
+con[50, 14] = con[50, 15] = con[50, 28] = con[14, 15] = con[14, 28] = con[15, 28] = 0.5  # DMN
+con[22, 23] = 0.6  # Visual
+con[14, 60] = 0.7  # Left FP
+con[62, 63] = 0.8  # Sensorimotor
+con[15, 61] = 0.9  # Right FP
+con[16, 17] = 1  # Frontoinsular
 
 con += con.T  # since we only add the combinations
 
 # plot the connectivity circle showing standard RSNs
-yaml_fname = get_jumeg_path() + '/examples/aparc_cortex_based_grouping.yaml'
-plot_grouped_connectivity_circle(yaml_fname, con, aparc_names, n_lines=11,
+from matplotlib.colors import ListedColormap
+cmap = ListedColormap(['m', 'k', 'b', 'y', 'r', 'c', 'g'])
+yaml_fname = get_jumeg_path() + '/data/desikan_aparc_cortex_based_grouping.yaml'
+plot_grouped_connectivity_circle(yaml_fname, con, aparc_names, n_lines=12,
                                  labels_mode=None, node_order_size=68,
-                                 colormap='tab20',
+                                 colormap=cmap, colorbar=True,
                                  indices=None, out_fname='rsn_circle_plot.png')

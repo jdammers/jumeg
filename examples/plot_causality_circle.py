@@ -5,17 +5,14 @@ import numpy as np
 from jumeg import get_jumeg_path
 from jumeg.connectivity import (plot_grouped_connectivity_circle,
                                 plot_grouped_causality_circle)
-import pickle
+import yaml
 
 # load the yaml grouping of Freesurfer labels
-yaml_fname = get_jumeg_path() + '/examples/example.yaml'
-labels_fname = get_jumeg_path() + '/examples/fruits.list'
+yaml_fname = get_jumeg_path() + '/data/desikan_aparc_cortex_based_grouping.yaml'
+labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
 
-yaml_fname = get_jumeg_path() + '/examples/aparc_cortex_based_grouping.yaml'
-labels_fname = get_jumeg_path() + '/examples/label_names.list'
-
-with open(labels_fname, 'r') as f:
-    label_names = pickle.load(f)
+with open(label_names_yaml_fname, 'r') as f:
+    label_names = yaml.load(f)['label_names']
 
 # make a random causality matrix
 n_nodes = 68  # currently needs to be always this number
