@@ -219,6 +219,7 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
     rsns = pd.read_csv(csv_fname, comment='#')
 
     all_coords, all_labels = [], []
+    all_foci = []
     for netw in rsns.Network.unique():
         print netw,
         nodes = rsns[rsns.Network == netw]['Node'].values
@@ -238,6 +239,7 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
             foci_vtxs = utils.find_closest_vertices(foci_surf.coords,
                                                     mni_coords)
             print 'Closest vertex on surface chosen:', foci_vtxs
+            all_foci.append(foci_vtxs)
 
             if hemi == 'lh':
                 hemis = 0
@@ -267,4 +269,4 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
 
     if return_label_coords:
         # returns the list of labels grown and MNI coords used as seeds
-        return all_labels, all_coords
+        return all_labels, all_coords, all_foci

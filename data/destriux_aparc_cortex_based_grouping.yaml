@@ -1,0 +1,85 @@
+- occipital:
+    - Pole_occipital
+    - G_occipital_sup
+    - S_oc_middle_and_Lunatus
+    - G_cuneus
+    - G_occipital_middle
+    - G_and_S_occipital_inf
+    - S_oc_sup_and_transversal
+    - S_collat_transv_post
+    - G_oc-temp_med-Lingual
+    - S_occipital_ant
+    - S_parieto_occipital
+    - S_calcarine
+
+- parietal:
+    - G_pariet_inf-Angular
+    - G_parietal_sup
+    - G_precuneus
+    - S_intrapariet_and_P_trans
+    - S_subparietal
+    - G_pariet_inf-Supramar
+    - S_postcentral
+    - Lat_Fis-post
+    - G_and_S_paracentral
+    - G_postcentral
+    - S_collat_transv_ant
+    - S_central
+    - G_and_S_subcentral
+    - G_precentral
+    - S_precentral-sup-part
+    - S_precentral-inf-part
+
+- temporal:
+    - G_oc-temp_lat-fusifor
+    - S_interm_prim-Jensen
+    - S_oc-temp_lat
+    - S_oc-temp_med_and_Lingual
+    - S_temporal_sup
+    - S_temporal_inf
+    - G_temp_sup-Plan_tempo
+    - G_temporal_inf
+    - G_temporal_middle
+    - S_temporal_transverse
+    - G_temp_sup-G_T_transv
+    - G_oc-temp_med-Parahip
+    - G_temp_sup-Lateral
+    - G_temp_sup-Plan_polar
+    - Pole_temporal
+
+- cingulate:
+    - G_cingul-Post-ventral
+    - G_cingul-Post-dorsal
+    - S_cingul-Marginalis
+    - G_and_S_cingul-Mid-Post
+    - G_and_S_cingul-Mid-Ant
+    - G_and_S_cingul-Ant
+
+- insula:
+    - S_circular_insula_inf
+    - S_pericallosal
+    - G_Ins_lg_and_S_cent_ins
+    - S_circular_insula_sup
+    - G_insular_short
+    - S_circular_insula_ant
+
+- frontal:
+    - G_front_inf-Opercular
+    - G_subcallosal
+    - S_front_sup
+    - G_front_sup
+    - Lat_Fis-ant-Vertical
+    - S_front_inf
+    - S_orbital_med-olfact
+    - G_front_inf-Triangul
+    - G_front_middle
+    - G_front_inf-Orbital
+    - Lat_Fis-ant-Horizont
+    - G_orbital
+    - S_orbital-H_Shaped
+    - G_rectus
+    - S_suborbital
+    - S_orbital_lateral
+    - S_front_middle
+    - G_and_S_frontomargin
+    - G_and_S_transv_frontopol

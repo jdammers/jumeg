@@ -8,6 +8,7 @@ http://martinos.org/mne/stable/generated/mne.viz.plot_connectivity_circle.html.
 
 '''
 
+import sys
 import numpy as np
 import os.path as op
 import yaml
@@ -192,7 +193,7 @@ def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     # Use a polar axes
     if not isinstance(subplot, tuple):
         subplot = (subplot,)
-    axes = plt.subplot(*subplot, polar=True, axisbg=facecolor)
+    axes = plt.subplot(*subplot, polar=True, facecolor=facecolor)
 
     # No ticks, we'll put our own
     plt.xticks([])
@@ -362,7 +363,8 @@ def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     return fig, axes
 
 
-def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
+def plot_labelled_group_connectivity_circle(yaml_fname, con, orig_labels,
+                                            node_order_size=68,
                                             out_fname='circle.png', title=None,
                                             facecolor='white', fontsize_names=6,
                                             subplot=111, include_legend=False,
@@ -373,11 +375,6 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
     '''
 
     import matplotlib.pyplot as plt
-
-    # load the label names in the original order (aparc)
-    labels_fname = get_jumeg_path() + '/examples/label_names.list'
-    with open(labels_fname, 'r') as f:
-        orig_labels = pickle.load(f)
 
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
@@ -416,7 +413,7 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
 
     from mne.viz.circle import circular_layout
     group_node_angles = circular_layout(group_node_order, group_node_order,
-                                        start_pos=75.)
+                                        start_pos=90.)
 
     # the respective no. of regions in each cortex
     group_bound = [len(labels[key]) for key in labels.keys()]
@@ -467,7 +464,7 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, node_order_size=68,
         plt.savefig(out_fname, facecolor='white', dpi=300)
 
 
-def plot_fica_grouped_circle(yaml_fname, con, node_order_size,
+def plot_fica_grouped_circle(yaml_fname, con, orig_labels, node_order_size,
                              out_fname='grouped_circle.png', title=None,
                              facecolor='white', fontsize_names=6,
                              subplot=111, include_legend=False,
@@ -484,12 +481,6 @@ def plot_fica_grouped_circle(yaml_fname, con, node_order_size,
     '''
 
     import matplotlib.pyplot as plt
-    # load the label names in the original order
-    # TODO remove empty lines / strings if any
-    # TODO remove below code from here
-    labels_fname = get_jumeg_path() + '/examples/fica_names.txt'
-    with open(labels_fname, 'r') as f:
-        orig_labels = [line.rstrip('\n') for line in f]
 
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
