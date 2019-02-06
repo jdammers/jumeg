@@ -4,8 +4,10 @@
 Perform Granger based causality analysis using Generalized Parital Directed
 Coherence on example dataset.
 
-Uses the data and examples from mne-python.
-The Scot package is used to perform the Granger Causality analysis.
+Uses the data and example from mne-python combined with the Scot package
+to perform the Granger Causality analysis.
+
+Author: Praveen Sripad <pravsripad@gmail.com>
 '''
 
 import numpy as np
@@ -23,7 +25,7 @@ from jumeg.connectivity import (plot_grouped_connectivity_circle,
 import scot
 import scot.connectivity_statistics as scs
 from scot.connectivity import connectivity
-import pickle
+import yaml
 
 import time
 t_start = time.time()
@@ -131,8 +133,11 @@ caus, max_cons, max_surrs = prepare_causality_matrix(
 print('Shape of causality matrix: ', caus.shape)
 
 # read the label names used for plotting
+# with open(labels_fname, 'r') as f:
+#     label_names = pickle.load(f)
+
 with open(labels_fname, 'r') as f:
-    label_names = pickle.load(f)
+    label_names = yaml.load(f)['label_names']
 
 plot_grouped_causality_circle(caus[0], yaml_fname, label_names, n_lines=10,
                               labels_mode='cortex_only',

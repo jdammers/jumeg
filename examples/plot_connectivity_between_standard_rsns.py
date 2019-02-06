@@ -7,6 +7,7 @@ resting state network labels obtained from [1].
 Resting-State Functional Connectivity,” Brain Connect., vol. 6, no. 6, pp.
 448–460, 2016.
 
+Author: Praveen sripad <pravsripad@gmail.com>
 '''
 
 import numpy as np

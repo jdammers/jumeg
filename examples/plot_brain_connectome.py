@@ -4,7 +4,7 @@
 Plot connectivity on a glass brain using 'plot_connectome' function from
 Nilearn (https://nilearn.github.io/).
 
-author: Praveen sripad <pravsripad@gmail.com>
+Author: Praveen Sripad <pravsripad@gmail.com>
 '''
 
 import numpy as np

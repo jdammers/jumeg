@@ -8,6 +8,7 @@ http://martinos.org/mne/stable/generated/mne.viz.plot_connectivity_circle.html.
 
 '''
 
+import sys
 import numpy as np
 import os.path as op
 import yaml
@@ -192,7 +193,7 @@ def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     # Use a polar axes
     if not isinstance(subplot, tuple):
         subplot = (subplot,)
-    axes = plt.subplot(*subplot, polar=True, axisbg=facecolor)
+    axes = plt.subplot(*subplot, polar=True, facecolor=facecolor)
 
     # No ticks, we'll put our own
     plt.xticks([])
@@ -412,7 +413,7 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, orig_labels,
 
     from mne.viz.circle import circular_layout
     group_node_angles = circular_layout(group_node_order, group_node_order,
-                                        start_pos=75.)
+                                        start_pos=90.)
 
     # the respective no. of regions in each cortex
     group_bound = [len(labels[key]) for key in labels.keys()]

@@ -13,6 +13,8 @@ Uses the standard RSNs provided by [1]
 “Quantifying the Test-Retest Reliability of Magnetoencephalography
 Resting-State Functional Connectivity,” Brain Connect., vol. 6, no. 6,
 pp. 448–460, 2016.
+
+Author: Praveen Sripad <pravsripad@gmail.com>
 '''
 
 import os.path as op

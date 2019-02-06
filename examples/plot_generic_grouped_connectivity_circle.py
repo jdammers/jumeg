@@ -1,11 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+
+'''
+Script exposing circle plots with outer ring.
+
+Author: Praveen Sripad <pravsripad@gmail.com>
+'''
 
 import numpy as np
-from jumeg.connectivity import plot_generic_grouped_circle, plot_fica_grouped_circle
+from jumeg.connectivity import (plot_generic_grouped_circle,
+                                plot_fica_grouped_circle)
 from jumeg import get_jumeg_path
 
 # load the yaml grouping of Freesurfer labels
-yaml_fname = get_jumeg_path() + '/data/rsn_aparc_cortex_grouping.yaml'
+yaml_fname = get_jumeg_path() + '/data/rsn_desikan_aparc_cortex_grouping.yaml'
 
 # make a random matrix with 68 nodes
 # use simple seed for reproducibility

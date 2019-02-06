@@ -3,7 +3,7 @@
 '''
 Plot Networkx Communities on a connectome plot.
 
-author: Praveen sripad <pravsripad@gmail.com>
+Author: Praveen Sripad <pravsripad@gmail.com>
 '''
 
 import numpy as np

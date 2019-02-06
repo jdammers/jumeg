@@ -11,7 +11,7 @@ import yaml
 yaml_fname = get_jumeg_path() + '/data/desikan_aparc_cortex_based_grouping.yaml'
 labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
 
-with open(label_names_yaml_fname, 'r') as f:
+with open(labels_fname, 'r') as f:
     label_names = yaml.load(f)['label_names']
 
 # make a random causality matrix
@@ -24,4 +24,5 @@ plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=10,
                               labels_mode='cortex_only',
                               out_fname='causality_circle.png',
                               colormap='Blues', colorbar=True,
-                              figsize=(10, 6), show=False)
+                              figsize=(6, 6), show=False,
+                              arrowstyle='->,head_length=1,head_width=1')
