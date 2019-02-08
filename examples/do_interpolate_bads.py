@@ -7,7 +7,7 @@ sensors for bad channel correction.
 import mne
 from mne.datasets import sample
 from jumeg import suggest_bads
-from jumeg_interpolate_bads import interpolate_bads
+from jumeg.jumeg_interpolate_bads import interpolate_bads
 
 data_path = sample.data_path()
 subjects_dir = data_path + '/subjects'

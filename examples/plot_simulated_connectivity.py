@@ -28,7 +28,7 @@ assert shift < sfreq * duration, 'Choose a smaller shift.'
 # coherence using mlab function
 cohxy, freqs = mlab.cohere(x, y, Fs=sfreq, NFFT=nfft)
 
-n_freqs = nfft/2 + 1
+n_freqs = int(nfft/2 + 1)
 
 def compute_mean_psd_csd(x, y, n_epochs, nfft, sfreq):
     '''Computes mean of PSD and CSD for signals.'''
