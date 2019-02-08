@@ -66,13 +66,13 @@ pca_pre_whitener_replaced_unfilt_jumeg = ica_jumeg._pre_whitener
 
 # compare methods for filtered and unfiltered data
 for idx in range(0, len(pca_mean_filt_mne)):
-    print '%10.6f\t%10.6f\t%10.6f' % (pca_mean_filt_mne[idx], pca_mean_filt_jumeg[idx],
-                                      pca_mean_replaced_unfilt_jumeg[idx])
+    print('%10.6f\t%10.6f\t%10.6f' % (pca_mean_filt_mne[idx], pca_mean_filt_jumeg[idx],
+                                      pca_mean_replaced_unfilt_jumeg[idx]))
     if idx >= 9:
         break
 
 for idx in range(0, len(pca_pre_whitener_filt_mne)):
-    print pca_pre_whitener_filt_mne[idx], pca_pre_whitener_filt_jumeg[idx],\
-        pca_pre_whitener_replaced_unfilt_jumeg[idx]
+    print(pca_pre_whitener_filt_mne[idx], pca_pre_whitener_filt_jumeg[idx],\
+        pca_pre_whitener_replaced_unfilt_jumeg[idx])
     if idx >= 9:
         break

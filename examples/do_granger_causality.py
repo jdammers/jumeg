@@ -30,7 +30,7 @@ import yaml
 import time
 t_start = time.time()
 
-print('Scot version -', scot.__version__)
+print(('Scot version -', scot.__version__))
 
 yaml_fname = get_jumeg_path() + '/data/desikan_aparc_cortex_based_grouping.yaml'
 labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
@@ -100,16 +100,16 @@ morder = 15  # set fixed model order
 # print('the model order based on BIC is..', morder)
 
 # evaluate the chosen model order
-print('\nShape of label_ts -', label_ts.shape)
+print(('\nShape of label_ts -', label_ts.shape))
 # mvar needs (trials, channels, samples)
-print('\nRunning for model order - ', morder)
+print(('\nRunning for model order - ', morder))
 
 thr_cons, whit_min, whit_max = 0.8, 1., 3.
 is_white, consistency, is_stable = do_mvar_evaluation(label_ts, morder,
                                                       whit_max, whit_min,
                                                       thr_cons)
-print('model_order, whiteness, consistency, stability: %d, %s, %f, %s\n'
-      % (morder, str(is_white), consistency, str(is_stable)))
+print(('model_order, whiteness, consistency, stability: %d, %s, %f, %s\n'
+      % (morder, str(is_white), consistency, str(is_stable))))
 
 # compute the Granger Partial Directed Coherence values
 print('computing GPDC connectivity...')
@@ -130,7 +130,7 @@ caus, max_cons, max_surrs = prepare_causality_matrix(
     cau, surr, freqs, nfft=nfft,
     sfreq=epochs.info['sfreq'], surr_thresh=surr_thresh)
 
-print('Shape of causality matrix: ', caus.shape)
+print(('Shape of causality matrix: ', caus.shape))
 
 # read the label names used for plotting
 # with open(labels_fname, 'r') as f:
@@ -147,4 +147,4 @@ plot_grouped_causality_circle(caus[0], yaml_fname, label_names, n_lines=10,
 
 t_end = time.time()
 total_time_taken = t_end - t_start
-print('Total time taken in minutes: %f' % (total_time_taken / 60.))
+print(('Total time taken in minutes: %f' % (total_time_taken / 60.)))

@@ -40,7 +40,7 @@ reject = {'mag': 5e-12}
 refnotch = [50., 100., 150., 200., 250., 300., 350., 400.]
 
 data_path = op.join(get_jumeg_path(), 'data')
-print data_path
+print(data_path)
 
 # example filname
 raw_fname = "/Volumes/megraid21/sripad/cau_fif_data/jumeg_test_data/" \
@@ -109,7 +109,7 @@ for idx in range(0, len(model_scores)):
 # compare MLICA to results from correlation and ctps analysis
 ica.exclude = []
 
-print 'Identifying components..'
+print('Identifying components..')
 # get ECG/EOG related components using JuMEG
 ic_ecg = get_ics_cardiac(raw_filtered_chop, ica, flow=flow_ecg, fhigh=fhigh_ecg,
                          thresh=ecg_thresh, tmin=-0.5, tmax=0.5,
@@ -126,8 +126,8 @@ bads_corr_ctps.sort()
 # ica.exclude = bads_corr_ctps
 # ica.plot_sources(raw_chop, block=True)
 
-print 'Bad components from MLICA:', bads_MLICA
-print 'Bad components from correlation & ctps:', bads_corr_ctps
+print('Bad components from MLICA:', bads_MLICA)
+print('Bad components from correlation & ctps:', bads_corr_ctps)
 
 # apply MLICA result to filtered and unfiltered data
 # exclude bad components identified by MLICA

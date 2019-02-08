@@ -15,7 +15,7 @@ rounded_coms, coords, coms_lh, coms_rh = get_label_distances(subject, subjects_d
 # np.save('%s_distances.npy' % subject, rounded_com)
 
 # get maximum distance between ROIs
-print 'Max distance between ROIs', rounded_coms.ravel().max()
+print('Max distance between ROIs', rounded_coms.ravel().max())
 
 # do plotting using PySurfer
 from surfer import Brain

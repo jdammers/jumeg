@@ -45,7 +45,7 @@ mysurr = surr_epochs.compute_surrogates(n_surr=n_surr,
 
 # get one epochs for plotting
 # for epochs, a generator is always returned
-first_surr_epoch = mysurr.next()
+first_surr_epoch = next(mysurr)
 
 # visualize surrogates
 fig, (ax1, ax2) = pl.subplots(2, 1)

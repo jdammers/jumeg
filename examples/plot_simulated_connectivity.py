@@ -156,10 +156,10 @@ def my_con(x, y, n_epochs, nfft, sfreq, con_name='coh'):
         return wpli, wpli_surro, freqs, freqs_surro
 
     if con_name == '':
-        print 'Please provide the connectivity method to use.'
+        print('Please provide the connectivity method to use.')
         sys.exit()
     else:
-        print 'Connectivity method unrecognized.'
+        print('Connectivity method unrecognized.')
         sys.exit()
 
 con_name = 'wpli'

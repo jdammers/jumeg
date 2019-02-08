@@ -39,7 +39,7 @@ brain.add_foci(vertno_max, coords_as_verts=True, hemi='lh', color='blue',
 
 mni_coords = mne.vertex_to_mni(vertno_max, hemis=0, subject=subject,
                                subjects_dir=subjects_dir)
-print 'The MNI coords are ', mni_coords
+print('The MNI coords are ', mni_coords)
 
 #my_trans = mne.read_trans(?)
 #src_pts = apply_trans(trans, some_tgt_pts)
