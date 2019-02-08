@@ -13,7 +13,6 @@ import scipy as sci
 
 import mne
 from mne.viz.utils import plt_show
-from mne.externals.six import string_types
 from mne.viz.circle import (circular_layout, _plot_connectivity_circle_onpick)
 
 import yaml
@@ -65,7 +64,7 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
 
     # do the distance based thresholding first
     import itertools
-    for (i, j) in itertools.combinations(range(247), 2):
+    for (i, j) in itertools.combinations(list(range(247)), 2):
         # print sci.linalg.norm(sens_loc[i] - sens_loc[j])
         if sci.linalg.norm(sens_loc[i] - sens_loc[j]) < min_dist:
             con[i, j] = con[j, i ] = 0.
@@ -84,14 +83,14 @@ def sensor_connectivity_3d(raw, picks, con, idx, n_con=20, min_dist=0.05,
             con_val.append(con[i, j])
 
     con_val = np.array(con_val)
-    print con_val.shape
+    print(con_val.shape)
 
     # Show the connections as tubes between sensors
     if not vmax:
         vmax = np.max(con_val)
     if not vmin:
         vmin = np.min(con_val)
-    print vmin, vmax
+    print(vmin, vmax)
 
     for val, nodes in zip(con_val, con_nodes):
         x1, y1, z1 = sens_loc[nodes[0]]
@@ -266,7 +265,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         raise ValueError('con has to be 1D or a square matrix')
 
     # get the colormap
-    if isinstance(colormap, string_types):
+    if isinstance(colormap, str):
         colormap = plt.get_cmap(colormap)
 
     # Make figure background the same colors as axes
@@ -466,7 +465,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         with open(yaml_fname, 'r') as f:
             labels = yaml.load(f)
     else:
-        print '%s - File not found.' % yaml_fname
+        print('%s - File not found.' % yaml_fname)
         sys.exit()
 
     cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
@@ -476,7 +475,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     label_names = list()
     for lab in labels:
         # label_names.extend(labels[lab])
-        label_names += lab.values()[0]  # yaml order fix
+        label_names += list(lab.values())[0]  # yaml order fix
 
     lh_labels = [name + '-lh' for name in label_names]
     rh_labels = [name + '-rh' for name in label_names]
@@ -490,7 +489,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
 
     # the respective no. of regions in each cortex
     # group_bound = [len(labels[key]) for key in labels.keys()]
-    group_bound = [len(key.values()[0]) for key in labels]  # yaml order fix
+    group_bound = [len(list(key.values())[0]) for key in labels]  # yaml order fix
     group_bound = [0] + group_bound[::-1] + group_bound
     group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
 
@@ -526,9 +525,9 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
 
         replaced_labels = []
         for myl in orig_labels:
-            if myl.split('-lh')[0] in replacer.keys():
+            if myl.split('-lh')[0] in list(replacer.keys()):
                 replaced_labels.append(replacer[myl.split('-lh')[0]] + '-lh')
-            elif myl.split('-rh')[0] in replacer.keys():
+            elif myl.split('-rh')[0] in list(replacer.keys()):
                 replaced_labels.append(replacer[myl.split('-rh')[0]] + '-rh')
             else:
                 replaced_labels.append('')
@@ -554,7 +553,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     if include_legend:
         import matplotlib.patches as mpatches
         # yaml order fix
-        legend_patches = [mpatches.Patch(color=col, label=llab.keys()[0])
+        legend_patches = [mpatches.Patch(color=col, label=list(llab.keys())[0])
                           for col, llab in zip(['g', 'r', 'c', 'y', 'b', 'm'],
                                                labels)]
         # legend_patches = [mpatches.Patch(color=col, label=key)
@@ -596,7 +595,7 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
         with open(yaml_fname, 'r') as f:
             labels = yaml.load(f)
     else:
-        print '%s - File not found.' % yaml_fname
+        print('%s - File not found.' % yaml_fname)
         sys.exit()
 
     cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g']
@@ -611,7 +610,7 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
     assert len(node_order) == node_order_size, 'Node order length is correct.'
 
     # the respective no. of regions in each cortex
-    group_bound = [len(labels[key]) for key in labels.keys()]
+    group_bound = [len(labels[key]) for key in list(labels.keys())]
     group_bound = [0] + group_bound
     group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
 
@@ -651,7 +650,7 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
         import matplotlib.patches as mpatches
         legend_patches = [mpatches.Patch(color=col, label=key)
                           for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
-                                              labels.keys())]
+                                              list(labels.keys()))]
         pl.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
                   mode=None, fontsize='small')
     if out_fname:
@@ -668,7 +667,7 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
     con_u = np.triu(caus, k=1).T
 
     if vmin is None or vmax is None:
-        print 'Setting vmin and vmax'
+        print('Setting vmin and vmax')
         vmin = np.min([np.min(con_l[con_l != 0]), np.min(con_u[con_u != 0])])
         vmax = np.max([np.max(con_l[con_l != 0]), np.max(con_u[con_u != 0])])
 

@@ -445,18 +445,18 @@ class ICA(ICA_ORIG):
 
         # check if version of mne is at least 0.16.1 or newer
         if check_version('mne', '0.16.1'):
-            print ""
-            print ""
-            print "jumeg.ica_replace_mean_std.ICA has only been tested with"
-            print "mne-python up to version 0.16.1. Your Version of mne-python"
-            print "is more recent."
-            print "Please check if any arguments for initializing the ICA"
-            print "object changed and implement these changes for the call"
-            print "to the super class below. Furthermore, check if substan-"
-            print "tial changes have been made to ICA._pre_whiten() and"
-            print "implement these changes while making sure that the stan-"
-            print "dard deviation is being calculated on a per-channel basis."
-            print ""
+            print("")
+            print("")
+            print("jumeg.ica_replace_mean_std.ICA has only been tested with")
+            print("mne-python up to version 0.16.1. Your Version of mne-python")
+            print("is more recent.")
+            print("Please check if any arguments for initializing the ICA")
+            print("object changed and implement these changes for the call")
+            print("to the super class below. Furthermore, check if substan-")
+            print("tial changes have been made to ICA._pre_whiten() and")
+            print("implement these changes while making sure that the stan-")
+            print("dard deviation is being calculated on a per-channel basis.")
+            print("")
 
             raise EnvironmentError("ICA has not been tested with your version of mne-python.")
 
@@ -602,7 +602,7 @@ def read_ica(fname):
     def f(x):
         return x.astype(np.float64)
 
-    ica_init = dict((k, v) for k, v in ica_init.items()
+    ica_init = dict((k, v) for k, v in list(ica_init.items())
                     if k in _get_args(ICA.__init__))
     ica = ICA(**ica_init)
     ica.current_fit = current_fit

@@ -22,7 +22,7 @@ def make_subject_dirs(subjects_list, freesurfer_home=None):
     freesurfer_bin = os.path.join(freesurfer_home, 'bin', '')
 
     for subj in subjects_list:
-        print 'Making freeesurfer directories %s' % (subj)
+        print('Making freeesurfer directories %s' % (subj))
         # Makes subject directories and dir structures
         retcode = call([freesurfer_bin + 'mksubjdirs', subj])
         if retcode != 0:
@@ -47,20 +47,20 @@ def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
     freesurfer_home = check_env_variables(freesurfer_home, key='FREESURFER_HOME')
     mne_bin_path = os.path.join(mne_root, 'bin', '')
     freesurfer_bin = os.path.join(freesurfer_home, 'bin', '')
-    print subjects_dir, freesurfer_home, mne_bin_path, freesurfer_bin
+    print(subjects_dir, freesurfer_home, mne_bin_path, freesurfer_bin)
 
     # some commands requires it, setting it here for safety
     os.environ['DISPLAY'] = ':0'
 
     for subj in subjects_list:
 
-        print 'Setting up freesurfer surfaces and source spaces for %s' % (subj)
+        print('Setting up freesurfer surfaces and source spaces for %s' % (subj))
 
         if mri_convert:
             # Convert NIFTI files to mgz format that is read by freesurfer
             nii_file = os.path.join(subjects_dir, subj, subj + nii_extn)
             mri_file = os.path.join(subjects_dir, subj, mri_extn)
-            print nii_file, mri_file
+            print(nii_file, mri_file)
             retcode = call([freesurfer_bin + 'mri_convert', nii_file, mri_file])
             if retcode != 0:
                 retcode_error('mri_convert', subj)
@@ -103,7 +103,7 @@ def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
         watershed_dir = os.path.join(subjects_dir, subj, 'bem/watershed', '')
         surf_dir = os.path.join(subjects_dir, subj, 'bem', '')
         if not os.path.isdir(watershed_dir) or not os.path.isdir(surf_dir):
-            print 'BEM directories /bem/watershed or /bem/ not found.'
+            print('BEM directories /bem/watershed or /bem/ not found.')
 
         call(['ln', '-s', watershed_dir + subj + '_brain_surface', surf_dir + subj + '-brain.surf'])
         call(['ln', '-s', watershed_dir + subj + '_inner_skull_surface', surf_dir + subj + '-inner_skull.surf'])
@@ -130,10 +130,10 @@ def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
         if os.path.isfile(head):
             os.rename(head, head_bkp)
         head_medium = os.path.join(subjects_dir, subj, 'bem/', subj + '-head-medium.fif')
-        print 'linking %s as main head surface..' % (head_medium)
+        print('linking %s as main head surface..' % (head_medium))
         call(['ln', '-s', head_medium, head])
 
-        print 'Surface reconstruction routines completed for subject %s' % (subj)
+        print('Surface reconstruction routines completed for subject %s' % (subj))
 
 
 def setup_forward_model(subjects_list, subjects_dir=None, mne_root=None):
@@ -156,7 +156,7 @@ def setup_forward_model(subjects_list, subjects_dir=None, mne_root=None):
 
     for subj in subjects_list:
 
-        print 'Setting up BEM boundary model for %s' % (subj)
+        print('Setting up BEM boundary model for %s' % (subj))
 
         # call([mne_bin_path + 'mne_setup_forward_model', '--subject', subj, '--ico', '4',
         #      '--surf', '--outershift', '10', '--scalpshift', '10'])
@@ -192,7 +192,7 @@ def compute_forward_solution(fname_raw, subjects_dir=None, spacing='ico4',
     subjects_dir = check_env_variables(subjects_dir, key='SUBJECTS_DIR')
 
     for fname in fnames:
-        print 'Computing fwd solution for %s' % (fname)
+        print('Computing fwd solution for %s' % (fname))
 
         basename = os.path.basename(fname).split('-raw.fif')[0]
         subject = basename.split('_')[0]
@@ -210,4 +210,4 @@ def compute_forward_solution(fname_raw, subjects_dir=None, spacing='ico4',
         # to read forward solutions
         # fwd = mne.read_forward_solution(fwd_fname)
 
-        print 'Forward operator saved in file %s' % (fwd_fname)
+        print('Forward operator saved in file %s' % (fwd_fname))

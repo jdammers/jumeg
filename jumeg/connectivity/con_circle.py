@@ -17,7 +17,6 @@ import pickle
 from mne.viz import circular_layout
 from mne.viz.utils import plt_show
 from mne.viz.circle import _plot_connectivity_circle_onpick
-from mne.externals.six import string_types
 
 from ..jumeg_utils import get_jumeg_path
 
@@ -183,7 +182,7 @@ def _plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         raise ValueError('con has to be 1D or a square matrix')
 
     # get the colormap
-    if isinstance(colormap, string_types):
+    if isinstance(colormap, str):
         colormap = plt.get_cmap(colormap)
 
     # Make figure background the same colors as axes
@@ -381,7 +380,7 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, orig_labels,
         with open(yaml_fname, 'r') as f:
             labels = yaml.load(f)
     else:
-        print '%s - File not found.' % yaml_fname
+        print('%s - File not found.' % yaml_fname)
         sys.exit()
 
     cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
@@ -395,7 +394,7 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, orig_labels,
     lh_labels = [name + '-lh' for name in label_names]
     rh_labels = [name + '-rh' for name in label_names]
 
-    group_labels = labels.keys()
+    group_labels = list(labels.keys())
     grp_lh_labels = [name + '-lh' for name in group_labels]
     grp_rh_labels = [name + '-rh' for name in group_labels]
 
@@ -416,7 +415,7 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, orig_labels,
                                         start_pos=90.)
 
     # the respective no. of regions in each cortex
-    group_bound = [len(labels[key]) for key in labels.keys()]
+    group_bound = [len(labels[key]) for key in list(labels.keys())]
     group_bound = [0] + group_bound[::-1] + group_bound
 
     group_boundaries = [sum(group_bound[:i+1])
@@ -457,7 +456,7 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, orig_labels,
         import matplotlib.patches as mpatches
         legend_patches = [mpatches.Patch(color=col, label=key)
                           for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
-                                              labels.keys())]
+                                              list(labels.keys()))]
         plt.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
                    mode=None, fontsize='small')
     if out_fname:
@@ -487,7 +486,7 @@ def plot_fica_grouped_circle(yaml_fname, con, orig_labels, node_order_size,
         with open(yaml_fname, 'r') as f:
             labels = yaml.load(f)
     else:
-        print '%s - File not found.' % yaml_fname
+        print('%s - File not found.' % yaml_fname)
         sys.exit()
 
     cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g']
@@ -497,7 +496,7 @@ def plot_fica_grouped_circle(yaml_fname, con, orig_labels, node_order_size,
     for lab in labels:
         label_names.extend(labels[lab])
 
-    group_labels = labels.keys()
+    group_labels = list(labels.keys())
 
     # Save the plot order and create a circular layout
     node_order = label_names
@@ -512,7 +511,7 @@ def plot_fica_grouped_circle(yaml_fname, con, orig_labels, node_order_size,
                                         start_pos=75.)
 
     # the respective no. of regions in each cortex
-    group_bound = [len(labels[key]) for key in labels.keys()]
+    group_bound = [len(labels[key]) for key in list(labels.keys())]
     group_bound = [0] + group_bound
     # group_bound = [0] + group_bound[::-1] + group_bound
 
@@ -554,7 +553,7 @@ def plot_fica_grouped_circle(yaml_fname, con, orig_labels, node_order_size,
         import matplotlib.patches as mpatches
         legend_patches = [mpatches.Patch(color=col, label=key)
                           for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
-                                              labels.keys())]
+                                              list(labels.keys()))]
         plt.legend(handles=legend_patches, loc=(0.02, 0.02), ncol=1,
                    mode=None, fontsize='small')
     if out_fname:

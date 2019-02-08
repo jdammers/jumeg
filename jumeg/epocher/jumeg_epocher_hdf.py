@@ -150,7 +150,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         self.HDFobj= pd.HDFStore( fhdf )
 
         if self.verbose:
-           print"Open HDF file: "+ self.HDFobj.filename
+           print("Open HDF file: "+ self.HDFobj.filename)
        
         return self.HDFobj
 
@@ -170,7 +170,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
          return self.hdf_obj_init(fhdf=fhdf,fname=fname,raw=raw,overwrite=False)
 
     def hdf_obj_reset_key(self,k):
-        if k in self.HDFobj.keys():
+        if k in list(self.HDFobj.keys()):
            self.HDFobj.remove(k)
         return k
 
@@ -178,7 +178,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         if self.HDFobj.is_open:
            return True
         else:
-           print "\n\n!!! ERROR HDFobj is not open !!!\n"
+           print("\n\n!!! ERROR HDFobj is not open !!!\n")
            return None
 
     def hdf_obj_list_keys_from_node(self,node):
@@ -198,7 +198,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         self.hdf_obj_list_keys_from_node("/epocher")
             [condition1,condition2 ... conditionN ]
         """
-        return self.HDFobj.get_node(node)._v_groups.keys()
+        return list(self.HDFobj.get_node(node)._v_groups.keys())
 
     def hdf_obj_get_dataframe(self,key):
         """ get pandas dataframe from HDFobj
@@ -261,11 +261,11 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
                if HStorer.is_exists:
                   return HStorer.get_storer(key).attrs[attr]
            except:
-               print "\nERROR in hdf_obj_get_attributes => can not store key attributes no such Storer-Obj"
-               print "HDF : " + self.HDFobj.filename
-               print "key : " + key
-               print "Attr: " + attr
-               print "\n"
+               print("\nERROR in hdf_obj_get_attributes => can not store key attributes no such Storer-Obj")
+               print("HDF : " + self.HDFobj.filename)
+               print("key : " + key)
+               print("Attr: " + attr)
+               print("\n")
                return
 
         elif self.hdf_obj_is_open():
@@ -315,12 +315,12 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         self.HDFobj.flush()
 
         if self.verbose :
-           print "\n---> HDFobj store attributes to HDF5 : " + key
-           print self.HDFobj.filename
+           print("\n---> HDFobj store attributes to HDF5 : " + key)
+           print(self.HDFobj.filename)
            for atr in storer_attrs :
-               print"---> PARAMETER "+  atr +":"
-               print HStorer.attrs[atr]
-               print"\n"
+               print("---> PARAMETER "+  atr +":")
+               print(HStorer.attrs[atr])
+               print("\n")
 
         return HStorer
 
@@ -389,10 +389,10 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
           node_list = self.hdf_obj_list_keys_from_node(node)          
           
           if self.verbose:
-             print"\n---> HDF get keys from node: " + node          
-             print"---> node list: "
-             print node_list
-             print"\n"
+             print("\n---> HDF get keys from node: " + node)          
+             print("---> node list: ")
+             print(node_list)
+             print("\n")
              
           if key_list :
              for k in key_list :
@@ -415,13 +415,13 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         HDFobj key  e.g.: /epocher/< condition name >
         """
         
-        print " ---> START EPOCHER extract condition : " + condi
+        print(" ---> START EPOCHER extract condition : " + condi)
         if condi.startswith('epocher'):
            ep_key = '/'+condi
         else:
            ep_key = '/epocher/'+condi
         
-        if ( ep_key in self.HDFobj.keys() ): return ep_key
+        if ( ep_key in list(self.HDFobj.keys()) ): return ep_key
         return 
                  
 

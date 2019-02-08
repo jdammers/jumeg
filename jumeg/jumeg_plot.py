@@ -61,7 +61,7 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
     for fnavg in fname:
         name = fnavg[0:len(fnavg) - 4]
         basename = os.path.splitext(os.path.basename(name))[0]
-        print fnavg
+        print(fnavg)
         # mne.read_evokeds provides a list or a single evoked based on condition.
         # here we assume only one evoked is returned (requires further handling)
         avg = mne.read_evokeds(fnavg)[0]
@@ -525,7 +525,7 @@ def plot_intersection_matrix(mylabels):
 
     length = len(mylabels)
     intersection_matrix = np.zeros((length, length))
-    for i, j in itertools.product(range(length), range(length)):
+    for i, j in itertools.product(list(range(length)), list(range(length))):
         if mylabels[i].hemi == mylabels[j].hemi:
             intersection_matrix[i][j] = np.intersect1d(mylabels[i].vertices,
                                                        mylabels[j].vertices).size
@@ -813,7 +813,7 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     data = orig_data.copy()
     data -= data.mean()
     data /= data.std()
-    print 'Data of shape %s will be flattened.' % (data.shape,)
+    print('Data of shape %s will be flattened.' % (data.shape,))
 
     # data will be flattened
     mu, sigma = stats.norm.fit(data.flatten())  # get mu and sigma from the data

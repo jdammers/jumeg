@@ -117,7 +117,7 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
        if self.verbose :
           import time
           t0 = time.time()
-          print"===> Start apply mne filter"
+          print("===> Start apply mne filter")
           
     #--- apply notches
        if (self.filter_notch.size) or (self.filter_type == 'notch'):
@@ -165,7 +165,7 @@ class JuMEG_Filter_MNE(JuMEG_Filter_Base):
                   data[picks, :] += dmean[:, np.newaxis]
              
        if self.verbose :
-           print"===> Done apply mne filter %d" %( time.time() -t0 )
+           print("===> Done apply mne filter %d" %( time.time() -t0 ))
   
        return data
 

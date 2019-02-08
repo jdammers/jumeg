@@ -222,7 +222,7 @@ def stft_source_localization(data, fn_inv, method="dSPM",
     nfreq, nepochs, nchan = data.shape
     nvoxel = noise_norm.shape[0]
 
-    if isinstance(data[0, 0, 0], types.ComplexType):
+    if isinstance(data[0, 0, 0], complex):
         src_loc_data = np.zeros((nfreq, nepochs, nvoxel), dtype=np.complex)
     else:
         src_loc_data = np.zeros((nfreq, nepochs, nvoxel))
@@ -242,7 +242,7 @@ def stft_source_localization(data, fn_inv, method="dSPM",
                                          subjects_dir=subjects_dir)
         nvoxel_morph = 2 * len(vertices_to[0])
 
-        if isinstance(data[0, 0, 0], types.ComplexType):
+        if isinstance(data[0, 0, 0], complex):
             morphed_src_loc_data = np.zeros((nfreq, nepochs, nvoxel_morph), dtype=np.complex)
         else:
             morphed_src_loc_data = np.zeros((nfreq, nepochs, nvoxel_morph), dtype=np.complex)
@@ -287,7 +287,7 @@ def stft_source_localization(data, fn_inv, method="dSPM",
             morphed_src_loc_data[:, iepoch, :] = SrcEst_morphed.data.T
 
     if verbose:
-         print ""
+         print("")
 
     if morph2fsaverage:
         src_loc_data = morphed_src_loc_data
@@ -466,7 +466,7 @@ def apply_ICASSO_fourierICA(fn_raw, fn_inv=None, src_loc_method='dSPM',
         # ------------------------------------------
         # import FourierICA module
         # ------------------------------------------
-        from fourier_ica_plot import plot_results
+        from .fourier_ica_plot import plot_results
         from mne import pick_types
         from mne.io import Raw
         from os import makedirs
@@ -589,7 +589,7 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
     from scipy import fftpack
 
     if verbose:
-        print "... Generate sampling windows and STFT"
+        print("... Generate sampling windows and STFT")
 
     # determine number of channels and time points in original data
     nchan = origdata.shape[0]
@@ -609,7 +609,7 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
         if len(events):
             nwindows = len(events)
         else:
-            print "Events not in the index range of the data!"
+            print("Events not in the index range of the data!")
 
     else:
         nwindows = int(np.floor((ntsl-win_size)/win_inter+1))
@@ -617,14 +617,14 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
     # compute frequency indices (for the STFT)
     startfftind = int(np.floor(flow*win_length_sec))
     if startfftind < 0:
-        print "Minimal frequency must be positive!"
+        print("Minimal frequency must be positive!")
         import pdb
         pdb.set_trace()
 
     endfftind = int(np.floor(fhigh*win_length_sec+1))
     nyquistf = np.floor(win_size/2.0)
     if endfftind > nyquistf:
-        print "Maximal frequency must be less than the Nyquist frequency!"
+        print("Maximal frequency must be less than the Nyquist frequency!")
         import pdb
         pdb.set_trace()
 
@@ -722,8 +722,8 @@ def apply_stft(origdata, events=[], tpre=0.0, sfreq=1017.25,
 
         # print out some information if required
         if verbose:
-            print "... Outliers removal: "
-            print ">>> removed %u windows" % len(outlier_indices[0])
+            print("... Outliers removal: ")
+            print(">>> removed %u windows" % len(outlier_indices[0]))
 
     return X, events
 
@@ -1340,17 +1340,17 @@ class JuMEG_fourier_ica(object):
 
         # print out some information
         if verbose:
-            print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
-            print ">>>            Launching Fourier ICA           <<<"
-            print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
-            print ">>>"
-            print ">>> Sampling frequency set to: %d" % self.sfreq
-            print ">>> Start of frequency band set to: %d" % self.flow
-            print ">>> End of frequency band set to: %d" % self.fhigh
-            print ">>> Using hamming window: %s" % str_hamming_window
-            print ">>> Assume complex mixing: %s" % str_complex_mixing
-            print ">>>"
-            print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
+            print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
+            print(">>>            Launching Fourier ICA           <<<")
+            print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
+            print(">>>")
+            print(">>> Sampling frequency set to: %d" % self.sfreq)
+            print(">>> Start of frequency band set to: %d" % self.flow)
+            print(">>> End of frequency band set to: %d" % self.fhigh)
+            print(">>> Using hamming window: %s" % str_hamming_window)
+            print(">>> Assume complex mixing: %s" % str_complex_mixing)
+            print(">>>")
+            print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
 
 
 

@@ -44,18 +44,18 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 
     # loop across all filenames
     for fname in fnraw:
-        print ">>> filter raw data: %0.1f - %0.1f..." % (flow, fhigh)
+        print(">>> filter raw data: %0.1f - %0.1f..." % (flow, fhigh))
         # load raw data
         raw = mne.io.Raw(fname, preload=True)
         # filter raw data
         raw.filter(flow, fhigh, n_jobs=njobs, method=filt_method)
         # raw.filter(l_freq=flow_raw, h_freq=fhigh_raw, n_jobs=njobs, method='iir',
         #     iir_params={'ftype': filter_type, 'order': order})
-        print ">>>> writing filtered data to disk..."
+        print(">>>> writing filtered data to disk...")
         name_raw = fname[:fname.rfind('-')]  # fname.split('-')[0]
         fnfilt = name_raw + prefix_filt + "%d-%d" % (flow, fhigh)
         fnfilt = fnfilt + fname[fname.rfind('-'):]  # fname.split('-')[1]
-        print 'saving: ' + fnfilt
+        print('saving: ' + fnfilt)
         raw.save(fnfilt, overwrite=True)
 
 
@@ -85,8 +85,8 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
     fnavg = []    # collect output filenames
     for fname in fnlist:
         name = os.path.split(fname)[1]
-        print '>>> average raw data'
-        print name
+        print('>>> average raw data')
+        print(name)
         # load raw data
         raw = mne.io.Raw(fname, preload=True)
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False,
@@ -122,7 +122,7 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
                 fnout = fname[0:len(fname) - nchar] + ',' + trig_name + ext_ave
 
             avg.save(fnout)
-            print 'saved:' + fnout
+            print('saved:' + fnout)
             fnavg.append(fnout)
 
             if (save_plot):
@@ -130,7 +130,7 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
 
         else:
             event_id = None
-            print '>>> Warning: Event not found in file: ' + fname
+            print('>>> Warning: Event not found in file: ' + fname)
 
 
 #######################################################
@@ -151,7 +151,7 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
     # loop across all filenames
     for fname in fnfilt:
         name = os.path.split(fname)[1]
-        print ">>>> perform ICA signal decomposition on :  " + name
+        print(">>>> perform ICA signal decomposition on :  " + name)
         # load filtered data
         raw = mne.io.Raw(fname, preload=True)
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
@@ -173,8 +173,8 @@ def apply_ica(fname_filtered, n_components=0.99, decim=None,
                 filter_info = "     --> filter parameter: filter type=band pass %d-%dHz" % (flow, fhigh)
 
             if verbose:
-                print ">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!"
-                print filter_info
+                print(">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!")
+                print(filter_info)
 
             fi_mne_notch = jumeg_filter(fcut1=flow, fcut2=fhigh, filter_type=filter_type,
                                         remove_dcoffset=False,
@@ -217,8 +217,8 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         fnfilt = basename + ext_raw
         fnclean = basename + ext_clean
         fnica_ar = basename + ext_icap
-        print ">>>> perform artifact rejection on :"
-        print '   ' + name
+        print(">>>> perform artifact rejection on :")
+        print('   ' + name)
 
         # load filtered data
         meg_raw = mne.io.Raw(fnfilt, preload=True)
@@ -290,7 +290,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
         meg_clean.save(fnclean, overwrite=True)
 
         # plot ECG, EOG averages before and after ICA
-        print ">>>> create performance image..."
+        print(">>>> create performance image...")
         plot_performance_artifact_rejection(meg_raw, ica, fnica_ar,
                                             show=False, verbose=False,
                                             name_ecg=name_ecg,
@@ -341,7 +341,7 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
         if not ic_eog_ver.any():
             ic_eog_ver = np.array([0])
     else:
-        print ">>>> NOTE: No vertical EOG channel found!"
+        print(">>>> NOTE: No vertical EOG channel found!")
         ic_eog_ver = np.array([0])
 
     # horizontal EOG
@@ -357,7 +357,7 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
         if not ic_eog_hor.any():
             ic_eog_hor = np.array([0])
     else:
-        print ">>>> NOTE: No horizontal EOG channel found!"
+        print(">>>> NOTE: No horizontal EOG channel found!")
         ic_eog_hor = np.array([0])
 
     # combine both
@@ -426,7 +426,7 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
             idx_ecg = np.where(np.abs(ecg_scores) >= thresh)[0]
 
     else:
-        print ">>>> NOTE: No ECG channel found!"
+        print(">>>> NOTE: No ECG channel found!")
         idx_ecg = np.array([0])
 
     return idx_ecg, ecg_scores
@@ -497,7 +497,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
     fiws.filter_attenuation_factor = 1
 
     nfreq = len(freqs)
-    print '>>> CTPS calculation on: ', freqs
+    print('>>> CTPS calculation on: ', freqs)
 
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
@@ -522,7 +522,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
         picks = mne.pick_types(raw.info, meg=True, ref_meg=False, exclude='bads')
 
         # read (second) ICA
-        print ">>>> working on: " + basename
+        print(">>>> working on: " + basename)
         ica = mne.preprocessing.read_ica(fnica)
         ica_picks = np.arange(ica.n_components_)
         ncomp = len(ica_picks)
@@ -639,7 +639,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
 
     '''
     import os, time
-    from jumeg_utils import make_surrogates_ctps, get_stats_surrogates_ctps
+    from .jumeg_utils import make_surrogates_ctps, get_stats_surrogates_ctps
 
     fnlist = get_files_from_list(fname_ctps)
 
@@ -651,7 +651,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
         path = os.path.dirname(fnctps)
         basename = os.path.basename(fnctps)
         name = os.path.splitext(basename)[0]
-        print '>>> calc. surrogates based on: ' + basename
+        print('>>> calc. surrogates based on: ' + basename)
         # load CTPS data
         dctps = np.load(fnctps).item()
         phase_trials = dctps['pt']  # [nfreq, ntrials, nsources, nsamples]
@@ -753,7 +753,7 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
     for fnctps in fnlist:
         name = os.path.splitext(fnctps)[0]
         basename = os.path.splitext(os.path.basename(fnctps))[0]
-        print '>>> working on: ' + basename
+        print('>>> working on: ' + basename)
         # load CTPS data
         dctps = np.load(fnctps).item()
         freqs = dctps['freqs']
@@ -917,12 +917,12 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
     # loop across all filenames
     for ifile in range(nfiles):
         fn_in = fner[ifile]
-        print ">>> create noise covariance using file: "
+        print(">>> create noise covariance using file: ")
         path_in, name = os.path.split(fn_in)
-        print name
+        print(name)
 
         if require_filter:
-            print "Filtering with preset settings..."
+            print("Filtering with preset settings...")
             # filter empty room raw data
             apply_filter(fn_in, flow=1, fhigh=45, order=4, njobs=4)
             # reconstruct empty room file name accordingly
@@ -971,7 +971,7 @@ def apply_empty_room_projections(raw, raw_empty_room):
     '''
     # Add checks to make sure its empty room.
     # Check for events in ECG, EOG, STI.
-    print 'Empty room projections calculated for %s.'%(raw_empty_room)
+    print('Empty room projections calculated for %s.'%(raw_empty_room))
     empty_room_proj = mne.compute_proj_raw(raw_empty_room)
     raw.add_proj(empty_room_proj).apply_proj()
     return raw, empty_room_proj

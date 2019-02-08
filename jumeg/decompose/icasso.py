@@ -221,10 +221,10 @@ class JuMEG_icasso(object):
         if ica_method in possible_methods:
             self._ica_method = ica_method
         else:
-            print 'WARNING: chosen ICA method does not exist!'
-            print 'Must be one of the following methods: ', possible_methods
-            print 'But your choice was: ', ica_method
-            print 'Programm stops!'
+            print('WARNING: chosen ICA method does not exist!')
+            print('Must be one of the following methods: ', possible_methods)
+            print('But your choice was: ', ica_method)
+            print('Programm stops!')
             import pdb
             pdb.set_trace()
 
@@ -348,7 +348,7 @@ class JuMEG_icasso(object):
         # in Z must be yet transformed so that they are similar to the
         # output of the LINKAGE function
         Zs = Z.copy()
-        current_cluster = np.array(range(dlen))
+        current_cluster = np.array(list(range(dlen)))
         iter_stop = len(Z[:, 0])
         for idx in range(iter_stop):
             Zs[idx, 0] = current_cluster[int(Z[idx, 0])]
@@ -412,7 +412,7 @@ class JuMEG_icasso(object):
 
             C[ic, :] = newidx
 
-        idx = range(nz-1, -1, -1)
+        idx = list(range(nz-1, -1, -1))
         partition = C[idx, :]
 
         return partition
@@ -447,7 +447,7 @@ class JuMEG_icasso(object):
             for i in range(nthisPartition):
                 S_[i, :] = S[thisPartition[i], thisPartition]
 
-            S_[range(nthisPartition), range(nthisPartition)] = np.NaN
+            S_[list(range(nthisPartition)), list(range(nthisPartition))] = np.NaN
             S_ = S_[np.isfinite(S_)]
 
             if len(S_) > 0:
@@ -504,7 +504,7 @@ class JuMEG_icasso(object):
         ri = np.zeros(nPart)
 
         if verbose:
-            print ">>> Computing R-index..."
+            print(">>> Computing R-index...")
 
         for k in range(nPart):
             hist, bin_edges = np.histogram(partitions[k, :], bins=np.arange(1, Ncluster[k]+2))
@@ -518,7 +518,7 @@ class JuMEG_icasso(object):
                 # compute cluster statistics
                 stat = self._clusterstat(dissimilarities, partitions[k, :])
                 between = stat['between_avg']
-                between[range(len(between)), range(len(between))] = np.Inf
+                between[list(range(len(between))), list(range(len(between)))] = np.Inf
                 internal = stat['internal_avg'].transpose()
                 ri[k] = np.mean(internal/np.min(between, axis=0))
 
@@ -630,7 +630,7 @@ class JuMEG_icasso(object):
             Mdist = np.repeat(1, noc)
 
         if nMdist != noc:
-            print ">>> ERROR: Mutual distance matrix size and data set size do not match!"
+            print(">>> ERROR: Mutual distance matrix size and data set size do not match!")
             import pdb
             pdb.set_trace()
 
@@ -686,7 +686,7 @@ class JuMEG_icasso(object):
         nD = D.shape[0]
 
         if verbose:
-            print ">>> Perform projection to plane..."
+            print(">>> Perform projection to plane...")
 
         # start from MMDS (linear Metric Multi-Dimensional Scaling)
         init_proj = self._mmds(D)
@@ -722,7 +722,7 @@ class JuMEG_icasso(object):
                 centro_idx[i] = self._idx2centrotypes(idx, similarities, mode='index')
 
         else:
-            print ">>> ERROR: Unknown operation mode!"
+            print(">>> ERROR: Unknown operation mode!")
             import pdb
             pdb.set_trace()
 
@@ -742,7 +742,7 @@ class JuMEG_icasso(object):
         npc = int(npc)
         nchan = int(nchan)
 
-        if isinstance(self.W_est[0][0, 0], types.ComplexType):
+        if isinstance(self.W_est[0][0, 0], complex):
             allW = np.zeros((nW * npc, nchan), dtype=np.complex)
         else:
             allW = np.zeros((nW * npc, nchan))
@@ -771,7 +771,7 @@ class JuMEG_icasso(object):
             internal = stat['internal_avg']
             external = stat['external_avg']
         else:
-            print ">>> ERROR: Unrecognized score function!"
+            print(">>> ERROR: Unrecognized score function!")
             import pdb
             pdb.set_trace()
 
@@ -793,7 +793,7 @@ class JuMEG_icasso(object):
         npc = int(self.W_est[0].shape[0])
         if L == None: L = npc-1
 
-        Ncluster = range(L)
+        Ncluster = list(range(L))
         NofEstimates = np.zeros(L, dtype=np.int)
         partition = partitions[L, :]
 
@@ -818,8 +818,8 @@ class JuMEG_icasso(object):
         if L == None: L = npc-1
 
         if L < 0 or L > npc:
-            print ">>> WARNING: Number of requested estimate clusters out of range!"
-            print ">>> Setting number of clusters to %d" % npc
+            print(">>> WARNING: Number of requested estimate clusters out of range!")
+            print(">>> Setting number of clusters to %d" % npc)
             L = npc
 
         # get indices of ICs in the cluster centers
@@ -964,7 +964,7 @@ class JuMEG_icasso(object):
         # ------------------------------------------
         # import necessary module
         # ------------------------------------------
-        from fourier_ica import apply_stft, stft_source_localization
+        from .fourier_ica import apply_stft, stft_source_localization
         from mne import find_events, pick_types
         from mne.io import Raw
 
@@ -994,7 +994,7 @@ class JuMEG_icasso(object):
 
             # check if only correct events should be chosen
             if corr_event_picking:
-                if isinstance(corr_event_picking, basestring):
+                if isinstance(corr_event_picking, str):
                     import importlib
                     mod_name, func_name = corr_event_picking.rsplit('.', 1)
                     mod = importlib.import_module(mod_name)
@@ -1008,8 +1008,8 @@ class JuMEG_icasso(object):
                         events_all, _ = func(events_all, response, sfreq, event_id)
 
                 else:
-                    print ">>> ERROR: 'corr_event_picking' should be a string containing the complete python"
-                    print ">>>          path and name of the function used to identify only the correct events!"
+                    print(">>> ERROR: 'corr_event_picking' should be a string containing the complete python")
+                    print(">>>          path and name of the function used to identify only the correct events!")
                     import pdb
                     pdb.set_trace()
 
@@ -1034,8 +1034,8 @@ class JuMEG_icasso(object):
 
 
         if self.tICA and not fn_inv:
-            print ">>> ERROR: For applying temporal ICA in source space the file name "
-            print "           of the inverse operator is required!"
+            print(">>> ERROR: For applying temporal ICA in source space the file name ")
+            print("           of the inverse operator is required!")
             import pdb
             pdb.set_trace()
 
@@ -1058,7 +1058,7 @@ class JuMEG_icasso(object):
                 # check if all necessary parameters are set
                 # -------------------------------------------
                 if not stim_name:
-                    print ">>> ERROR: For applying temporal ICA in source space a stimulus name is required!"
+                    print(">>> ERROR: For applying temporal ICA in source space a stimulus name is required!")
                     import pdb
                     pdb.set_trace()
 
@@ -1089,7 +1089,7 @@ class JuMEG_icasso(object):
                 # -------------------------------------------
                 # print out some information
                 if verbose:
-                     print ">>> transform data to Fourier space..."
+                     print(">>> transform data to Fourier space...")
 
                 win_length_sec = tmax_stim - tmin_stim
                 X, _ = apply_stft(meg_data, events=events, tpre=tmin_stim,
@@ -1119,7 +1119,7 @@ class JuMEG_icasso(object):
             # -------------------------------------------
             # print out some information
             if verbose:
-                 print ">>> estimate inverse solution..."
+                 print(">>> estimate inverse solution...")
 
             src_loc_data, vertno = stft_source_localization(X, fn_inv,
                                                             method=self.src_loc_method,
@@ -1165,7 +1165,7 @@ class JuMEG_icasso(object):
         # ------------------------------------------
         # import necessary module
         # ------------------------------------------
-        from ica import ica_array
+        from .ica import ica_array
         from scipy.linalg import pinv
 
 
@@ -1173,9 +1173,9 @@ class JuMEG_icasso(object):
         # print out some information
         # ------------------------------------------
         if verbose:
-            print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
-            print ">>>      Performing %s estimation" % self.ica_method
-            print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
+            print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
+            print(">>>      Performing %s estimation" % self.ica_method)
+            print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
 
 
         # ------------------------------------------
@@ -1213,16 +1213,16 @@ class JuMEG_icasso(object):
 
             # print out some information
             if verbose and self.nrep > 1:
-                print ">>> Running %s number %d of %d done" % (self.ica_method, irep+1, self.nrep)
+                print(">>> Running %s number %d of %d done" % (self.ica_method, irep+1, self.nrep))
 
                 if irep == 0:
-                    print "..... %s parameter:" % self.ica_method
-                    print "....."
-                    print "..... Stopping threshold: %d" % self.conv_eps
-                    print "..... Maximal number of iterations: %d" % self.max_iter
-                    print "..... Learning rate: %d" % self.lrate
-                    print "..... Number of independent components: %d" % self.pca_dim
-                    print "....."
+                    print("..... %s parameter:" % self.ica_method)
+                    print(".....")
+                    print("..... Stopping threshold: %d" % self.conv_eps)
+                    print("..... Maximal number of iterations: %d" % self.max_iter)
+                    print("..... Learning rate: %d" % self.lrate)
+                    print("..... Number of independent components: %d" % self.pca_dim)
+                    print(".....")
 
 
 
@@ -1241,16 +1241,16 @@ class JuMEG_icasso(object):
         # ------------------------------------------
         # import necessary module
         # ------------------------------------------
-        from fourier_ica import JuMEG_fourier_ica
+        from .fourier_ica import JuMEG_fourier_ica
 
 
         # ------------------------------------------
         # generate FourierICA object
         # ------------------------------------------
         if verbose:
-            print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
-            print ">>>      Performing FourierICA estimation"
-            print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
+            print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
+            print(">>>      Performing FourierICA estimation")
+            print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
 
         win_length_sec = self.tmax_win - self.tmin_win
         fourier_ica_obj = JuMEG_fourier_ica(events=events, tpre=self.tmin_win,
@@ -1308,20 +1308,20 @@ class JuMEG_icasso(object):
 
             # print out some information
             if verbose and self.nrep > 1:
-                print ">>> Running FourierICA number %d of %d done" % (irep+1, self.nrep)
+                print(">>> Running FourierICA number %d of %d done" % (irep+1, self.nrep))
 
                 if irep == 0:
                     str_hamming_window = "True" if fourier_ica_obj.hamming_data else "False"
                     str_complex_mixing = "True" if fourier_ica_obj.complex_mixing else "False"
-                    print "..... Fourier ICA parameter:"
-                    print "....."
-                    print "..... Sampling frequency set to: %d" % fourier_ica_obj.sfreq
-                    print "..... Start of frequency band set to: %d" % fourier_ica_obj.flow
-                    print "..... End of frequency band set to: %d" % fourier_ica_obj.fhigh
-                    print "..... Using hamming window: %s" % str_hamming_window
-                    print "..... Assume complex mixing: %s" % str_complex_mixing
-                    print "..... Number of independent components: %d" % fourier_ica_obj.ica_dim
-                    print "....."
+                    print("..... Fourier ICA parameter:")
+                    print(".....")
+                    print("..... Sampling frequency set to: %d" % fourier_ica_obj.sfreq)
+                    print("..... Start of frequency band set to: %d" % fourier_ica_obj.flow)
+                    print("..... End of frequency band set to: %d" % fourier_ica_obj.fhigh)
+                    print("..... Using hamming window: %s" % str_hamming_window)
+                    print("..... Assume complex mixing: %s" % str_complex_mixing)
+                    print("..... Number of independent components: %d" % fourier_ica_obj.ica_dim)
+                    print(".....")
 
         return fourier_ica_obj
 
@@ -1531,8 +1531,8 @@ class JuMEG_icasso(object):
         elif self.ica_method == 'fourierica':
             self.tICA = False
         else:
-            print 'WARNING: chosen ICA method does not exist!'
-            print 'Programm stops!'
+            print('WARNING: chosen ICA method does not exist!')
+            print('Programm stops!')
             import pdb
             pdb.set_trace()
 
@@ -1547,9 +1547,9 @@ class JuMEG_icasso(object):
 
             # test if FourierICA should be applied
             if self.ica_method != 'fourierica':
-                print ">>> NOTE: When using temporal group ICA it is recommended " \
-                      "to use ICA based on averaged datasets"
-                print ">>> Parameters are set for group ICA!"
+                print(">>> NOTE: When using temporal group ICA it is recommended " \
+                      "to use ICA based on averaged datasets")
+                print(">>> Parameters are set for group ICA!")
                 average_epochs = True
                 self.average = False
             else:
@@ -1669,12 +1669,12 @@ class JuMEG_icasso(object):
 
 
             if pca_dim > 60:
-                print "WARNING: You have %d PCA components!" % (pca_dim)
-                print "Using now explained variance..."
+                print("WARNING: You have %d PCA components!" % (pca_dim))
+                print("Using now explained variance...")
                 explVar = np.abs(Dc.copy())
                 explVar /= explVar.sum()
                 pca_dim = np.sum(explVar.cumsum() <= 0.9) + 1
-                print "Dimension is now: %d components!" % (pca_dim)
+                print("Dimension is now: %d components!" % (pca_dim))
 
             self.pca_dim = pca_dim
             del Xmat_c, covmat, Ec, idx_sort, Dc, ntsl, _
@@ -1708,8 +1708,8 @@ class JuMEG_icasso(object):
                                                    data_already_stft=data_already_stft,
                                                    verbose=verbose)
         else:
-            print 'WARNING: chosen ICA method does not exist!'
-            print 'Programm stops!'
+            print('WARNING: chosen ICA method does not exist!')
+            print('Programm stops!')
             import pdb
             pdb.set_trace()
 
@@ -1719,18 +1719,18 @@ class JuMEG_icasso(object):
         # ------------------------------------------
         if self.nrep == 1:
             if verbose:
-                print ">>>"
-                print ">>> No clustering required as only one ICASSO repetition was performed..."
+                print(">>>")
+                print(">>> No clustering required as only one ICASSO repetition was performed...")
 
             W = self.W_est[0]
             A = self.A_est[0]
             Iq = np.zeros(W.shape[0])
         else:
             if verbose:
-                print ">>>"
-                print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
-                print ">>>        Performing cluster analysis         <<<"
-                print ">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<"
+                print(">>>")
+                print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
+                print(">>>        Performing cluster analysis         <<<")
+                print(">>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<")
 
             Z, order, partitions, indexR, dis, sim = self._cluster()
             proj = self._projection(dis)

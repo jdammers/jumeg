@@ -396,7 +396,7 @@ class JuMEG_Filter_Base(object):
 
          if self.filter_notch.size :
             self.__filter_info_string += ",apply notch"
-            print self.filter_notch
+            print(self.filter_notch)
          
          if ( self.remove_dcoffset ):
           self.__filter_info_string +=",remove DC offset"
@@ -546,7 +546,7 @@ class JuMEG_Filter_Base(object):
          self.init_filter_data_plane()
          
          if self.verbose :
-            print "---> DONE init filter %s ---> calculating filter function/kernel and adjusting data plane" % (self.filter_type)
+            print("---> DONE init filter %s ---> calculating filter function/kernel and adjusting data plane" % (self.filter_type))
             
          return (self.filter_kernel_isinit and self.data_plane_isinit)
 
@@ -557,12 +557,12 @@ class JuMEG_Filter_Base(object):
          """check if filter parameter and data plane is initialize"""
         
          if self.verbose :
-             print"====== Check filter is init ================================="                 
-             print"---> filter     is init: %r" % (self.filter_kernel_isinit)
-             print"---> data plane is init: %r" % (self.data_plane_isinit) 
+             print("====== Check filter is init =================================")                 
+             print("---> filter     is init: %r" % (self.filter_kernel_isinit))
+             print("---> data plane is init: %r" % (self.data_plane_isinit)) 
              res = ( self.filter_kernel_isinit and self.data_plane_isinit and ( self.data_length == self.data_plane_data_in_length )) 
-             print"result is init         : %r" % (res) 
-             print"---> size   data: %d  plane %d " % ( self.data_length, self.data_plane_data_in_length ) 
+             print("result is init         : %r" % (res)) 
+             print("---> size   data: %d  plane %d " % ( self.data_length, self.data_plane_data_in_length )) 
                         
          return ( self.filter_kernel_isinit and self.data_plane_isinit and (self.data_length == self.data_plane_data_in_length )) 
 
@@ -578,7 +578,7 @@ class JuMEG_Filter_Base(object):
 
        if self.verbose :
            t0 = time.time()
-           print"===> Start apply filter"
+           print("===> Start apply filter")
        
        if not( self.filter_isinit() ): 
             self.init_filter()
@@ -589,13 +589,13 @@ class JuMEG_Filter_Base(object):
            for ichan in picks:
                self.do_apply_filter( self.data[ichan,:] )
                if self.verbose :
-                  print"===> ch %d" %(ichan)
+                  print("===> ch %d" %(ichan))
 
        else:
             self.do_apply_filter( data )  
        
        if self.verbose :
-            print"===> Done apply filter %d" %( time.time() -t0 )
+            print("===> Done apply filter %d" %( time.time() -t0 ))
 
 #---------------------------------------------------------# 
 #--- reset                       -------------------------#

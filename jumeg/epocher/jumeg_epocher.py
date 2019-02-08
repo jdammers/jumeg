@@ -82,7 +82,7 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
         """
         raw,fname = self.events_store_to_hdf(fname=fname,raw=raw,**kwargs)
 
-        print "===> DONE  apply events to HDF: " + self.hdf_filename +"\n"
+        print("===> DONE  apply events to HDF: " + self.hdf_filename +"\n")
         self.line()
         return (raw,fname)
     
@@ -109,7 +109,7 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
 
         raw,fname = self.apply_hdf_to_epochs(fname=fname,raw=raw,**kwargs)
 
-        print "===> DONE apply epocher: " + self.hdf_filename +"\n"
+        print("===> DONE apply epocher: " + self.hdf_filename +"\n")
         self.line()
         return (raw,fname)
      

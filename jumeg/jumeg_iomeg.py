@@ -21,15 +21,15 @@ def wrapper_brain_vision2fiff(header_fname):
     import os
 
     if not os.environ['MNE_BIN_PATH']:
-        print "MNE_BIN_PATH not correctly set."
+        print("MNE_BIN_PATH not correctly set.")
         return
 
     if header_fname is "" or not header_fname.endswith('vhdr'):
-        print "Usage: .py <header_file>"
-        print "Please use the original binary to pass other arguments."
+        print("Usage: .py <header_file>")
+        print("Please use the original binary to pass other arguments.")
         return
     else:
-        print "The header file name provided is %s" % (header_fname)
+        print("The header file name provided is %s" % (header_fname))
 
     mne_brain_vision2fiff_path = os.environ['MNE_BIN_PATH'] + \
                                  '/mne_brain_vision2fiff'
@@ -39,8 +39,8 @@ def wrapper_brain_vision2fiff(header_fname):
     # to its files, so it has to be renamed to -eeg.fif.
     os.system('mv %s %s' % (header_fname.split('.')[0] +
                             '-eeg_raw.fif', header_fname.split('.')[0] + '-eeg.fif'))
-    print "Output in FIF format can be found at %s" \
-          % (header_fname.split('.')[0] + '-eeg.fif')
+    print("Output in FIF format can be found at %s" \
+          % (header_fname.split('.')[0] + '-eeg.fif'))
 
 
 def jumeg_resample(l_sfreq, h_sfreq, samp_length,
@@ -67,7 +67,7 @@ def jumeg_resample(l_sfreq, h_sfreq, samp_length,
     eps_limit = round((0.90 / h_sfreq), 3)
     resamp_list = []
     j = 0
-    for i in xrange(0, samp_length):
+    for i in range(0, samp_length):
         l_tp = round((i / l_sfreq), 3)
         while l_tp - round((j / h_sfreq), 3) > eps_limit:
             j += 1

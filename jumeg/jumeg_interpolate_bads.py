@@ -103,18 +103,18 @@ def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
         ndir = norsum / anorm
         # push the position slightly (4cm) away from the helmet:
         altpos = cogpos - 0.04 * ndir
-        print ">_interpolate_bads_meg\\DBG> cog(sens) = [%8.5f  %8.5f  %8.5f]" % \
-              (cogpos[0], cogpos[1], cogpos[2])
-        print ">_interpolate_bads_meg\\DBG> alt(sens) = [%8.5f  %8.5f  %8.5f]" % \
-              (altpos[0], altpos[1], altpos[2])
+        print(">_interpolate_bads_meg\\DBG> cog(sens) = [%8.5f  %8.5f  %8.5f]" % \
+              (cogpos[0], cogpos[1], cogpos[2]))
+        print(">_interpolate_bads_meg\\DBG> alt(sens) = [%8.5f  %8.5f  %8.5f]" % \
+              (altpos[0], altpos[1], altpos[2]))
         cogposhd = apply_trans(inst.info['dev_head_t']['trans'], cogpos, move=True)
         altposhd = apply_trans(inst.info['dev_head_t']['trans'], altpos, move=True)
-        print ">_interpolate_bads_meg\\DBG> cog(hdcs) = [%8.5f  %8.5f  %8.5f]" % \
-              (cogposhd[0], cogposhd[1], cogposhd[2])
-        print ">_interpolate_bads_meg\\DBG> alt(hdcs) = [%8.5f  %8.5f  %8.5f]" % \
-              (altposhd[0], altposhd[1], altposhd[2])
-        print ">_interpolate_bads_meg\\DBG> calling _map_meg_channels(..., origin=(%8.5f  %8.5f  %8.5f))" % \
-              (altposhd[0], altposhd[1], altposhd[2])
+        print(">_interpolate_bads_meg\\DBG> cog(hdcs) = [%8.5f  %8.5f  %8.5f]" % \
+              (cogposhd[0], cogposhd[1], cogposhd[2]))
+        print(">_interpolate_bads_meg\\DBG> alt(hdcs) = [%8.5f  %8.5f  %8.5f]" % \
+              (altposhd[0], altposhd[1], altposhd[2]))
+        print(">_interpolate_bads_meg\\DBG> calling _map_meg_channels(..., origin=(%8.5f  %8.5f  %8.5f))" % \
+              (altposhd[0], altposhd[1], altposhd[2]))
 
         origin = (altposhd[0], altposhd[1], altposhd[2])
 

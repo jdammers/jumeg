@@ -349,7 +349,7 @@ def group_fourierICA_src_space(fname_raw,
             fn_base = "group_FourierICA_combined"
             for id in np.sort(stim_id)[::-1]:
                 fn_base += "_%ddB" % id
-        elif isinstance(stim_id, (int, long)):
+        elif isinstance(stim_id, int):
             fn_base = "group_FourierICA_%ddB" % stim_id
         else:
             fn_base = "group_ICA_resting_state.obj"
@@ -694,9 +694,9 @@ def plot_group_fourierICA(fn_groupICA_obj,
     # ------------------------------------------
     # check if classification already exists
     # ------------------------------------------
-    if groupICA_obj.has_key('classification') and\
-            groupICA_obj.has_key('mni_coords') and\
-            groupICA_obj.has_key('labels'):
+    if 'classification' in groupICA_obj and\
+            'mni_coords' in groupICA_obj and\
+            'labels' in groupICA_obj:
         classification = groupICA_obj['classification']
         mni_coords = groupICA_obj['mni_coords']
         labels = groupICA_obj['labels']
@@ -734,9 +734,9 @@ def plot_group_fourierICA(fn_groupICA_obj,
     # adjust groupICA_obj with the new
     # parameters if they didn't exist before
     # ------------------------------------------
-    if not groupICA_obj.has_key('classification') and\
-            not groupICA_obj.has_key('mni_coords') and\
-            not groupICA_obj.has_key('labels'):
+    if 'classification' not in groupICA_obj and\
+            'mni_coords' not in groupICA_obj and\
+            'labels' not in groupICA_obj:
         groupICA_obj['classification'] = classification
         groupICA_obj['mni_coords'] = mni_coords
         groupICA_obj['labels'] = labels

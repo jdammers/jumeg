@@ -142,9 +142,9 @@ class JuMEG_MergeMEEG_HiLoRate(object):
 
   #---   
       def check_path(self):
-          print" --> check path & file: " + self.system + " file name: " + str(self.filename)
+          print(" --> check path & file: " + self.system + " file name: " + str(self.filename))
           assert( os.path.isfile( self.filename ) ),"---> ERROR " + self.system +" file: no such file: " + str(self.filename)
-          print"  -> OK"
+          print("  -> OK")
           return True
 
       def __get_time_onset(self):
@@ -179,18 +179,18 @@ class JuMEG_MergeMEEG_HiLoRate(object):
 
           # self.meg.tsl_end = self.meg.tsl_onset + self.eeg.tsl_resamples.shape[0]
       def time_info(self,channel_info=False):
-          print"\n " + "-" * 50
-          print" --> " + self.system
-          print"  -> Time start: %12.3f end: %12.3f delta: %12.3f" % (self.time_onset,self.time_end,self.time_duration)
-          print"  -> TSL  start: %12.3f end: %12.3f" % (self.tsl_onset,self.raw.last_samp)
-          print" " + "-" * 50
+          print("\n " + "-" * 50)
+          print(" --> " + self.system)
+          print("  -> Time start: %12.3f end: %12.3f delta: %12.3f" % (self.time_onset,self.time_end,self.time_duration))
+          print("  -> TSL  start: %12.3f end: %12.3f" % (self.tsl_onset,self.raw.last_samp))
+          print(" " + "-" * 50)
 
           if ( channel_info ):
-             print"  -> channel info: "
-             print"  ->  names      : " + ",".join([self.raw.ch_names[i] for i in self.picks])
-             print"  ->  index      : " + str(self.picks)
-             print" -->  resamples  : %d" % (self.tsl_resamples.shape[0])
-             print" " + "-" * 50
+             print("  -> channel info: ")
+             print("  ->  names      : " + ",".join([self.raw.ch_names[i] for i in self.picks]))
+             print("  ->  index      : " + str(self.picks))
+             print(" -->  resamples  : %d" % (self.tsl_resamples.shape[0]))
+             print(" " + "-" * 50)
 
       def adjust_data_size(self):
           self.raw._data = self.raw._data[:, self.tsl_onset:self.tsl_end]  #+1
@@ -200,7 +200,7 @@ class JuMEG_MergeMEEG_HiLoRate(object):
      #--- get_onset_and_events
      #----------------------------------------------------------------------------
       def get_onset_and_events(self):
-          print " --> call mne find events"
+          print(" --> call mne find events")
           ev_start_code_onset_idx = None
           
           # print self.events
@@ -232,20 +232,20 @@ class JuMEG_MergeMEEG_HiLoRate(object):
                 ev_onsets = np.array([ev_onsets])
                 ev_id_idx = 0 
           else:
-             print"---> ERROR no startcode found %d " % (self.startcode)
-             print"---> Events: "
-             print np.unique(ev[:, 2])
-             print"\n"
+             print("---> ERROR no startcode found %d " % (self.startcode))
+             print("---> Events: ")
+             print(np.unique(ev[:, 2]))
+             print("\n")
              assert"ERROR no startcode found in events"              
           
           if self.verbose:
-             print "-"*50
-             print" --> Onset & Events Info : " + self.system 
-             print"  -> Onset index         : %d"%( ev_start_code_onset_idx)
+             print("-"*50)
+             print(" --> Onset & Events Info : " + self.system) 
+             print("  -> Onset index         : %d"%( ev_start_code_onset_idx))
              if self.debug:
-                print"  -> Onsets              :"
-                print ev_onsets
-             print "-"*50
+                print("  -> Onsets              :")
+                print(ev_onsets)
+             print("-"*50)
             
           return ev_start_code_onset_idx,ev_onsets
 
@@ -377,19 +377,19 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         """
       # --- meg
         if self.do_filter_meg:
-           print "---> Start filter meg data"
+           print("---> Start filter meg data")
            self.filter.sampling_frequency = self.meg.raw.info['sfreq']
            self.filter.fcut1 = self.check_filter_parameter()
-           print " --> filter info: " + self.filter.filter_info
+           print(" --> filter info: " + self.filter.filter_info)
            self.filter.apply_filter(self.meg.raw._data, picks=self.meg.picks)
-           print " --> Done filter meg"
+           print(" --> Done filter meg")
       # ---  bv eeg
         if self.do_filter_eeg:
-           print "---> Start filter bv eeg data"
+           print("---> Start filter bv eeg data")
            self.filter.sampling_frequency = self.eeg.raw.info['sfreq']
-           print " --> filter info: " + self.filter.filter_info
+           print(" --> filter info: " + self.filter.filter_info)
            self.filter.apply_filter(self.eeg.raw._data, picks=self.eeg.picks)
-           print " --> Done filter eeg"
+           print(" --> Done filter eeg")
 
 
 #---------------------------------------------------------------------------
@@ -464,18 +464,18 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         
         if self.verbose:
            
-           print"\n --> check data drift:"  
+           print("\n --> check data drift:")  
           
            if self.debug:
-              print" " + "-" * 50
-              print"\n  -> MEG codes:"
-              print meg_code
+              print(" " + "-" * 50)
+              print("\n  -> MEG codes:")
+              print(meg_code)
               #print self.meg.ev_onsets[:,-1]
-              print"\n  -> EEG codes [ exclude RESPONSE codes ]:"
-              print eeg_code
+              print("\n  -> EEG codes [ exclude RESPONSE codes ]:")
+              print(eeg_code)
               
-              print"  -> Info MEG/EEG onsets:  code  t[s]"   
-              print" " + "-" * 50 
+              print("  -> Info MEG/EEG onsets:  code  t[s]")   
+              print(" " + "-" * 50) 
               i=0
               dmeeg    =  np.zeros(meg_counts) 
             
@@ -485,37 +485,37 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
                   eegcode  = eeg_code[i]
                   eegonset = self.eeg.raw.times[ self.eeg.ev_onsets[eeg_code_idx[i],0] - self.eeg.tsl_onset]
                   dmeeg[i] = megonset - eegonset
-                  print "->% 5d MEG code:% 7.1f t:% 10.4f  EEG code:% 7.1f t:% 10.4f div: % 7.5f" % (i,megcode,megonset,eegcode,eegonset,dmeeg[i])
+                  print("->% 5d MEG code:% 7.1f t:% 10.4f  EEG code:% 7.1f t:% 10.4f div: % 7.5f" % (i,megcode,megonset,eegcode,eegonset,dmeeg[i]))
                   
                   i+=1
     
            dmeeg_abs= abs(dmeeg)
         
-           print" " + "-" * 50 
-           print"     MEG event counts: %8d" % (meg_counts)
-           print"     EEG event counts: %8d" % (eeg_counts)
-           print" " + "-" * 50 
-           print"  -> Last Common Event Code:"
-           print"     MEG last event onset        [s] : %0.6f" % (meg_dt_last)
-           print"     EEG last event onset        [s] : %0.6f" % (eeg_dt_last)
-           print"     dt  last event              [ms]: %0.6f" % (dif_dt_last)
-           print" " + "-" * 50 
-           print"     MEG onset tsl            : %8d" % (self.meg.tsl_onset)
-           print"     EEG onset tsl            : %8d" % (self.eeg.tsl_onset)
-           print"     startcode                : %6d" % (self.startcode)
-           print"     meg sampling periode [ms]: %0.6f" % (meg_samp_periode)
-           print" " + "-" * 50
+           print(" " + "-" * 50) 
+           print("     MEG event counts: %8d" % (meg_counts))
+           print("     EEG event counts: %8d" % (eeg_counts))
+           print(" " + "-" * 50) 
+           print("  -> Last Common Event Code:")
+           print("     MEG last event onset        [s] : %0.6f" % (meg_dt_last))
+           print("     EEG last event onset        [s] : %0.6f" % (eeg_dt_last))
+           print("     dt  last event              [ms]: %0.6f" % (dif_dt_last))
+           print(" " + "-" * 50) 
+           print("     MEG onset tsl            : %8d" % (self.meg.tsl_onset))
+           print("     EEG onset tsl            : %8d" % (self.eeg.tsl_onset))
+           print("     startcode                : %6d" % (self.startcode))
+           print("     meg sampling periode [ms]: %0.6f" % (meg_samp_periode))
+           print(" " + "-" * 50)
            if self.debug:
-              print"     Diverence  abs(MEEG)"
-              print"      AVG [ms]: % 3.5f" % ( dmeeg_abs.mean() )
-              print"      STD [ms]: % 3.5f" % ( dmeeg_abs.std()  )
-              print"      MIN [ms]: % 3.5f" % ( dmeeg_abs.min()  )
-              print"      MAX [ms]: % 3.5f" % ( dmeeg_abs.max()  )
-              print" " + "-" * 50
+              print("     Diverence  abs(MEEG)")
+              print("      AVG [ms]: % 3.5f" % ( dmeeg_abs.mean() ))
+              print("      STD [ms]: % 3.5f" % ( dmeeg_abs.std()  ))
+              print("      MIN [ms]: % 3.5f" % ( dmeeg_abs.min()  ))
+              print("      MAX [ms]: % 3.5f" % ( dmeeg_abs.max()  ))
+              print(" " + "-" * 50)
 
         if ( dif_dt_last > meg_samp_periode ):
            ws="\n -->ERROR Data Drift ->last common meg/eeg event-code-onset is not in time resolution uncertainty\n -->MEG: %s\n -->EEG: %s" %( self.meg.filename,self.eeg.filename)
-           print ws +"\n\n"
+           print(ws +"\n\n")
              
         return dif_dt_last
   
@@ -556,8 +556,8 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         self.eeg.debug   = self.debug
       
         
-        print"\n---> Start JuMEG MEEG Merger"  
-        print"-" * 50
+        print("\n---> Start JuMEG MEEG Merger")  
+        print("-" * 50)
              
         self.meg.check_path()
         self.eeg.check_path()
@@ -565,8 +565,8 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
 
        
        #--- load BV eeg
-        print"-" * 50
-        print " --> load EEG BrainVision data: " + self.eeg.filename
+        print("-" * 50)
+        print(" --> load EEG BrainVision data: " + self.eeg.filename)
         self.eeg.reset()
         self.eeg.raw,_ = self.get_raw_obj(self.eeg.filename,raw=self.eeg.raw)
        #--- get start code onset
@@ -575,8 +575,8 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         self.eeg.picks = self.picks.eeg(self.eeg.raw)
 
        # --- load meg
-        print"-" * 50
-        print " --> load MEG data:             " + self.meg.filename
+        print("-" * 50)
+        print(" --> load MEG data:             " + self.meg.filename)
         self.meg.reset()
         self.meg.raw, _   = self.get_raw_obj(self.meg.filename,raw=self.meg.raw)
        # --- start code onset
@@ -622,7 +622,7 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
             eeg_idx+=1
        
         if self.copy_eeg_events_to_trigger:
-           print"\n --> Do copy EEG events to Trigger channel: STI 014" 
+           print("\n --> Do copy EEG events to Trigger channel: STI 014") 
            eeg_idx = self.eeg.raw.ch_names.index('STI 014')
            # meg_idx = self.meg.raw.ch_names.index('STI 014')
            chname  = 'STI 014'
@@ -637,27 +637,27 @@ class JuMEG_MergeMEEG(JuMEG_Base_IO):
         if self.do_adjust_data_size:
            self.meg.adjust_data_size()
            chname  = 'STI 014'
-           print"Eventcode adjusted: " +chname
-           print self.meg.raw._data[self.meg.raw.ch_names.index(chname)]
+           print("Eventcode adjusted: " +chname)
+           print(self.meg.raw._data[self.meg.raw.ch_names.index(chname)])
       
       #--- upate bads 
         if self.bads_list:
            self.update_bad_channels(None,raw=self.meg.raw,bads=self.bads_list)
            
        #--- save meeg
-        print"\n*" + "-" * 50
+        print("\n*" + "-" * 50)
         self.meeg_fname = self.get_fif_name(raw=self.meg.raw,extention=self.meeg_extention,update_raw_fname=True)
-        print "---> start saving MEEG data: "+ self.meeg_fname
+        print("---> start saving MEEG data: "+ self.meeg_fname)
         if self.do_save:
            self.apply_save_mne_data(self.meg.raw,fname=self.meeg_fname,overwrite=True)
         else:
-           print" -->set Bads; bad-channels in meeg-raw file:"
-           print self.picks.bads(self.meg.raw)
-           print
+           print(" -->set Bads; bad-channels in meeg-raw file:")
+           print(self.picks.bads(self.meg.raw))
+           print()
         
-        print "---> DONE merge BrainVision EEG data to MEG"
-        print"*" + "-" * 50
-        print"\n\n"
+        print("---> DONE merge BrainVision EEG data to MEG")
+        print("*" + "-" * 50)
+        print("\n\n")
 
         return self.meeg_fname,self.meg.raw
 
@@ -739,31 +739,31 @@ def main(argv):
     df=40
     
     if opt.verbose :
-       print"\n---> ARGV parameter:"
-       print" --> fmeg        : " + str(opt.meg_fname)
-       print" --> feeg        : " + str(opt.eeg_fname)
-       print"-"*df
-       print" --> stage meg   : " + str(opt.stage_meg)
-       print" --> stage eeg   : " + str(opt.stage_eeg)
-       print"-"*df
-       print" --> path  list  : " + str(opt.path_list)
-       print" --> fname list  : " + str(opt.fname_list)
-       print"-"*df
-       print" --> start code         : " + str(opt.startcode)
-       print" --> meg_stim_channel   : " + str(opt.meg_stim_channel)
-       print" --> eeg_stim_channel   : " + str(opt.eeg_stim_channel)
-       print" --> eeg_stim_type      : " + str(opt.eeg_stim_type)
-       print" --> eeg_response_shift : " + str(opt.eeg_response_shift)
-       print" --> eeg_and_mask       : " + str(opt.eeg_and_mask) 
-       print"-"*df
-       print" --> bads list   : " + str(opt.bads_list)
-       print" --> set bads [uses channels from bads list] : " + str(opt.set_bads)
-       print"-"*df    
-       print" --> verbose     : " + str(opt.verbose)
-       print" --> debug       : " + str(opt.debug)
-       print" --> run         : " + str(opt.run)
-       print"-"*df
-       print"\n\n"  
+       print("\n---> ARGV parameter:")
+       print(" --> fmeg        : " + str(opt.meg_fname))
+       print(" --> feeg        : " + str(opt.eeg_fname))
+       print("-"*df)
+       print(" --> stage meg   : " + str(opt.stage_meg))
+       print(" --> stage eeg   : " + str(opt.stage_eeg))
+       print("-"*df)
+       print(" --> path  list  : " + str(opt.path_list))
+       print(" --> fname list  : " + str(opt.fname_list))
+       print("-"*df)
+       print(" --> start code         : " + str(opt.startcode))
+       print(" --> meg_stim_channel   : " + str(opt.meg_stim_channel))
+       print(" --> eeg_stim_channel   : " + str(opt.eeg_stim_channel))
+       print(" --> eeg_stim_type      : " + str(opt.eeg_stim_type))
+       print(" --> eeg_response_shift : " + str(opt.eeg_response_shift))
+       print(" --> eeg_and_mask       : " + str(opt.eeg_and_mask)) 
+       print("-"*df)
+       print(" --> bads list   : " + str(opt.bads_list))
+       print(" --> set bads [uses channels from bads list] : " + str(opt.set_bads))
+       print("-"*df)    
+       print(" --> verbose     : " + str(opt.verbose))
+       print(" --> debug       : " + str(opt.debug))
+       print(" --> run         : " + str(opt.run))
+       print("-"*df)
+       print("\n\n")  
        
 
     if opt.run:
@@ -814,10 +814,10 @@ def main(argv):
            if opt.set_bads:
               JuMEEG.bads_list = opt.bads_list.split(',')
          #--- ck add individual bads  
-           if opt_dict[fif_file].has_key("bads"):
+           if "bads" in opt_dict[fif_file]:
               JuMEEG.bads_list.append( opt_dict[fif_file]['bads'].split(',') )
          #--- individual startcode     
-           if opt_dict[fif_file].has_key("startcode"):
+           if "startcode" in opt_dict[fif_file]:
               JuMEEG.startcode = int( opt_dict[fif_file]["startcode"] )
            else:   
               JuMEEG.startcode = int(opt.startcode)

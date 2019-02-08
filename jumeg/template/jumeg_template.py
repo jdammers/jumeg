@@ -44,7 +44,7 @@ __version__ = 0.003141
 def _decode_list(data):
     rv = []
     for item in data:
-        if isinstance(item, unicode):
+        if isinstance(item, str):
             item = item.encode('utf-8')
         elif isinstance(item, list):
             item = _decode_list(item)
@@ -60,10 +60,10 @@ def _decode_list(data):
 """
 def _decode_dict(data):
     rv = {}
-    for key, value in data.iteritems():
-        if isinstance(key, unicode):
+    for key, value in data.items():
+        if isinstance(key, str):
            key = key.encode('utf-8')
-        if isinstance(value, unicode):
+        if isinstance(value, str):
            value = value.encode('utf-8')
         elif isinstance(value, list):
              value = _decode_list(value)
@@ -99,7 +99,7 @@ class dict2obj(dict):
 
     def __getattr__(self, key):
         # Enhanced to handle key not found.
-        if self.has_key(key):
+        if key in self:
             return self[key]
         else:
             return None
@@ -217,8 +217,8 @@ class JuMEG_Template(JuMEG_Base_Basic):
               f.close()
               self._template_isUpdate = True
           except ValueError as e:
-              print "\n---> ERROR loading Template File: " +self.template_full_filename 
-              print(' --> invalid json: %s' % e)
+              print("\n---> ERROR loading Template File: " +self.template_full_filename) 
+              print((' --> invalid json: %s' % e))
          
           assert self.template_data,"---> ERROR in template file format [json]\n"  
           return 
@@ -251,7 +251,7 @@ class JuMEG_Template(JuMEG_Base_Basic):
         return dict
         """
         import collections
-        for k, v in u.iteritems():
+        for k, v in u.items():
             if isinstance(v, collections.Mapping) and not depth == 0:
                r = self.template_update_and_merge_dict(d.get(k, {}), v, depth=max(depth - 1, -1))
                d[k] = r
@@ -290,8 +290,8 @@ class JuMEG_Template(JuMEG_Base_Basic):
                 d = _decode_dict(d)
             except:
                 d = dict()
-                print"\n\n!!! ERROR NO JSON File Format:\n  ---> " + fjson
-                print"\n\n"
+                print("\n\n!!! ERROR NO JSON File Format:\n  ---> " + fjson)
+                print("\n\n")
             FID.close()
         return d
         

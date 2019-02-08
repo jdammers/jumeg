@@ -77,7 +77,7 @@ def cov(m, y=None, rowvar=1, bias=0, ddof=None):
     else:
         tmp = m[0]
 
-    if isinstance(tmp, types.ComplexType):
+    if isinstance(tmp, complex):
         dtype = complex
     else:
         dtype = float
@@ -215,11 +215,11 @@ def complex_ica(data, complex_mixing=True,
             dmean = np.mean(data, axis=0).reshape((1, nchan))
             dstddev = np.std(data, axis=0).reshape((1, nchan))
 
-        if isinstance(data[0, 0], types.ComplexType):
+        if isinstance(data[0, 0], complex):
             data = np.abs(data)
         else:
-            print ">>> WARNING: Input data are not complex, i.e., ICA on data envelope cannot be performed."
-            print ">>>          Instead standard ICA is performed."
+            print(">>> WARNING: Input data are not complex, i.e., ICA on data envelope cannot be performed.")
+            print(">>>          Instead standard ICA is performed.")
 
         dmean_abs = np.mean(data, axis=0).reshape((1, nchan))
         dstddev_abs = np.std(data, axis=0).reshape((1, nchan))
@@ -247,7 +247,7 @@ def complex_ica(data, complex_mixing=True,
 
     else:
         if nchan > 1000:
-            print ">>> Launching PCA...due to data size this might take a while..."
+            print(">>> Launching PCA...due to data size this might take a while...")
 
         covmat = cov(data, rowvar=0)
 
@@ -283,7 +283,7 @@ def complex_ica(data, complex_mixing=True,
 
         # checks for negativ eigenvalues
         if any(Dc[0:pca_dim] < 0):
-            print ">>> WARNING: Negative eigenvalues! Reducing PCA and ICA dimension..."
+            print(">>> WARNING: Negative eigenvalues! Reducing PCA and ICA dimension...")
 
         # check for eigenvalues near zero (relative to the maximum eigenvalue)
         zero_eigval = np.sum((Dc[0:pca_dim]/Dc[0]) < zero_tolerance)
@@ -294,7 +294,7 @@ def complex_ica(data, complex_mixing=True,
             ica_dim = pca_dim
 
         if verbose:
-            print ">>> PCA dimension is %d and ICA dimension is %d" % (pca_dim, ica_dim)
+            print(">>> PCA dimension is %d and ICA dimension is %d" % (pca_dim, ica_dim))
 
 
         # construct whitening and dewhitening matrices
@@ -321,9 +321,9 @@ def complex_ica(data, complex_mixing=True,
     # COMPLEX-VALUED FAST_ICA ESTIMATION
     # ----------------------------------------------------------------
     if verbose and complex_mixing:
-        print "... Launching complex-valued FastICA:"
+        print("... Launching complex-valued FastICA:")
     elif verbose:
-        print "... Launching FastICA:"
+        print("... Launching FastICA:")
 
     # initial point, make it imaginary and unitary
     if complex_mixing:
@@ -395,17 +395,17 @@ def complex_ica(data, complex_mixing=True,
 
     # tell if convergence problems
     if conv_criterion > conv_eps:
-        print "\nWARNING: Failed to converge, results may be wrong!"
+        print("\nWARNING: Failed to converge, results may be wrong!")
     else:
         if verbose:
-            print "\n>>> Converged!"
+            print("\n>>> Converged!")
 
 
     # ----------------------------------------------------------------
     # SORT COMPONENTS AND TRANSFORMS TO ORIGINAL SPACE
     # ----------------------------------------------------------------
     if verbose:
-        print "... Sorting components and reformatting results."
+        print("... Sorting components and reformatting results.")
 
     # compute objective function for each component
     objective = -np.mean(np.log(lrate + np.abs(S * S.conj())), axis=1)
@@ -426,7 +426,7 @@ def complex_ica(data, complex_mixing=True,
 
 
     if verbose:
-        print "... Done!"
+        print("... Done!")
 
     if not overwrite:
         data = origdata

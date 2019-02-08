@@ -50,10 +50,10 @@ condition_list= imo_list  + fv_list + me_list + se_list +["SACBc","FIXBc"]
 
 #--- Epocher
 if DO_EVENTS:
-   print"-"*50 
-   print "---> EPOCHER Events"
-   print "  -> FIF File: "+ fname
-   print "  -> Template: "+ template_name+"\n"
+   print("-"*50) 
+   print("---> EPOCHER Events")
+   print("  -> FIF File: "+ fname)
+   print("  -> Template: "+ template_name+"\n")
     
    evt_param = { "condition_list":condition_list,
                  "template_path": template_path, 
@@ -86,9 +86,9 @@ if DO_EPOCHER:
       jf.apply_filter(raw._data,picks=jb.picks.exclude_trigger(raw) ) # inplace
 
 #--- 
-   print "---> EPOCHER Epochs"
-   print "  -> File            : "+ fname
-   print "  -> Epocher Template: "+ template_name+"\n"   
+   print("---> EPOCHER Epochs")
+   print("  -> File            : "+ fname)
+   print("  -> Epocher Template: "+ template_name+"\n")   
    raw,fname = jumeg_epocher.apply_epochs(fname=fname,raw=raw,**ep_param)
 
 #---

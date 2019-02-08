@@ -35,8 +35,8 @@ def get_files_from_list(fin):
 
 
 def retcode_error(command, subj):
-    print '%s did not run successfully for subject %s.' % (command, subj)
-    print 'Please check the arguments, and rerun for subject.'
+    print('%s did not run successfully for subject %s.' % (command, subj))
+    print('Please check the arguments, and rerun for subject.')
 
 
 def get_jumeg_path():
@@ -59,33 +59,33 @@ def check_jumeg_standards(fnames):
         else:
             fname_list = list(fnames)
 
-    print fname_list
+    print(fname_list)
     # loop across all filenames
     for fname in fname_list:
-        print fname
+        print(fname)
         if fname == '' or not fname.endswith('.fif'):
-            print 'Empty string or not a FIF format filename.'
+            print('Empty string or not a FIF format filename.')
         elif fname.endswith('-meg.fif') or fname.endswith('-eeg.fif'):
-            print 'Raw FIF file with only MEG or only EEG data.'
+            print('Raw FIF file with only MEG or only EEG data.')
         elif fname.split('-')[-1] == 'raw.fif':
-            print 'Raw FIF file - Subject %s, Experiment %s, Data %s, Time %s, \
+            print('Raw FIF file - Subject %s, Experiment %s, Data %s, Time %s, \
                    Trial number %s.' \
                   % (fname.split('_')[0], fname.split('_')[1], fname.split('_')[2],
-                     fname.split('_')[3], fname.split('_')[4])
-            print 'Processing identifier in the file %s.' \
-                  % (fname.strip('-raw.fif').split('_')[-1])
+                     fname.split('_')[3], fname.split('_')[4]))
+            print('Processing identifier in the file %s.' \
+                  % (fname.strip('-raw.fif').split('_')[-1]))
         elif fname.split('-')[-1] == 'ica.fif':
-            print 'FIF file storing ICA session.'
+            print('FIF file storing ICA session.')
         elif fname.split('-')[-1] == 'evoked.fif':
-            print 'FIF file with averages.'
+            print('FIF file with averages.')
         elif fname.split('-')[-1] == 'epochs.fif':
-            print 'FIF file with epochs.'
+            print('FIF file with epochs.')
         elif fname.split('-')[-1] == 'empty.fif':
-            print 'Empty room FIF file.'
+            print('Empty room FIF file.')
         else:
-            print 'No known file info available. Filename does not follow conventions.'
+            print('No known file info available. Filename does not follow conventions.')
 
-        print 'Please verify if the information is correct and make the appropriate changes!'
+        print('Please verify if the information is correct and make the appropriate changes!')
     return
 
 
@@ -118,7 +118,7 @@ def get_sytem_type(info):
         system_type = 'ElektaNeuromagTriux'
     else:
         # ToDo: Expand method to also cope with other systems!
-        print "System type not known!"
+        print("System type not known!")
         system_type = None
 
     return system_type
@@ -141,17 +141,17 @@ def mark_bads_batch(subject_list, subjects_dir=None):
     added to the file name.
     '''
     for subj in subject_list:
-        print "For subject %s" % (subj)
+        print("For subject %s" % (subj))
         if not subjects_dir: subjects_dir = os.environ['SUBJECTS_DIR']
         dirname = subjects_dir + '/' + subj
         sub_file_list = os.listdir(dirname)
         for raw_fname in sub_file_list:
             if raw_fname.endswith('_bcc-raw.fif'): continue
             if raw_fname.endswith('-raw.fif'):
-                print "Raw calculations for file %s" % (dirname + '/' + raw_fname)
+                print("Raw calculations for file %s" % (dirname + '/' + raw_fname))
                 raw = mne.io.Raw(dirname + '/' + raw_fname, preload=True)
                 raw.plot(block=True)
-                print 'The bad channels marked are %s ' % (raw.info['bads'])
+                print('The bad channels marked are %s ' % (raw.info['bads']))
                 save_fname = dirname + '/' + raw.filenames[0].split('/')[-1].split('-raw.fif')[0] + '_bcc-raw.fif'
                 raw.save(save_fname)
     return
@@ -215,7 +215,7 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True, return_chop=
 
     '''
     if isinstance(raw, str):
-        print 'Raw file name provided, loading raw object...'
+        print('Raw file name provided, loading raw object...')
         raw = mne.io.Raw(raw, preload=True)
     # Check if data is longer than required chop duration.
     if (raw.n_times / (raw.info['sfreq'])) < (stop_time + start_time):
@@ -425,7 +425,7 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
     for ifreq in range(nfreq):
         for isource in range(nsources):
             # print ">>> working on frequency: ",bp[ifreq,:],"   source: ",isource+1
-            print ">>> working on frequency range: ",ifreq + 1,"   source: ",isource + 1
+            print(">>> working on frequency range: ",ifreq + 1,"   source: ",isource + 1)
             pt = phase_array[ifreq, :, isource, :]  # extract [ntrials, nsamp]
 
             if(mode=='shuffle'):
@@ -515,16 +515,16 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
 
     # mean and std dev
     if (verbose):
-        print '>>> Stats from CTPS surrogates <<<'
+        print('>>> Stats from CTPS surrogates <<<')
         for i in range(nfreq):
             #print ">>> filter raw data: %0.1f - %0.1f..." % (flow, fhigh)
-            print 'freq: ',i + 1, 'max/mean/std: ', pks_max[i], pks_mean[i], pks_std[i]
-        print
-        print 'overall stats:'
-        print 'max/mean/std: ', pks_global_max, pks_global_mean, pks_global_std
-        print '99th percentile: ', pks_global_pct99
-        print '99.90th percentile: ', pks_global_pct999
-        print '99.99th percentile: ', pks_global_pct9999
+            print('freq: ',i + 1, 'max/mean/std: ', pks_max[i], pks_mean[i], pks_std[i])
+        print()
+        print('overall stats:')
+        print('max/mean/std: ', pks_global_max, pks_global_mean, pks_global_std)
+        print('99th percentile: ', pks_global_pct99)
+        print('99.90th percentile: ', pks_global_pct999)
+        print('99.99th percentile: ', pks_global_pct9999)
 
     return stats
 
@@ -898,7 +898,7 @@ def crop_images(regexp, crop_dims=(150, 150, 1450, 700), extension='crop'):
         out_fname = op.splitext(fname)[0] + ',' + extension +\
                     op.splitext(fname)[1]
         cropim = orig.crop((150, 150, 1450, 700))
-        print 'Saving cropped image at %s' % out_fname
+        print('Saving cropped image at %s' % out_fname)
         cropim.save(out_fname, fname.split('.')[1])
 
 
@@ -924,11 +924,11 @@ def check_env_variables(env_variable=None, key=None):
     elif env_variable is None and key in os.environ:
         env_variable = os.environ[key]
     else:
-        print 'Please set the %s' % (key)
+        print('Please set the %s' % (key))
         sys.exit()
 
     if not os.path.isdir(env_variable):
-        print 'Path %s is not a valid directory. Please check.' % (env_variable)
+        print('Path %s is not a valid directory. Please check.' % (env_variable))
         sys.exit()
 
     return env_variable
@@ -962,7 +962,7 @@ def convert_annot2labels(annot_fname, subject='fsaverage', subjects_dir=None,
     freesurfer_home = check_env_variables(freesurfer_home, key='FREESURFER_HOME')
     freesurfer_bin = os.path.join(freesurfer_home, 'bin', '')
     outdir = os.path.join(subjects_dir, subject, 'label')
-    print 'Convert annotation %s to labels' % (annot_fname)
+    print('Convert annotation %s to labels' % (annot_fname))
     for hemi in ['lh', 'rh']:
         retcode = call([freesurfer_bin + '/mri_annotation2label', '--subject', subject, '--hemi', hemi,
                         '--annotation', annot_fname, '--outdir', outdir])
@@ -1012,13 +1012,13 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
     from mne.label import read_labels_from_annot
     labels = read_labels_from_annot(srcsubject, parc=annot_fname)
     lnames = [l.name.rsplit('-')[0] if l.hemi is 'lh' else '' for l in labels]
-    lnames = filter(None, lnames)  # remove empty strings
+    lnames = [_f for _f in lnames if _f]  # remove empty strings
 
     # convert the labels from source subject to target subject
     from subprocess import call
     for subj in subjects_list:
         # the target subject is subj provided
-        print 'Converting labels from %s to %s' % (srcsubject, subj)
+        print('Converting labels from %s to %s' % (srcsubject, subj))
         for label in lnames:
             for hemi in ['lh', 'rh']:
                 srclabel = os.path.join(subjects_dir, srcsubject, 'label', hemi + '.' + label + '.label')
@@ -1029,7 +1029,7 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
                     retcode_error('mri_label2label')
                     continue
 
-    print 'Labels for %d subjects have been transformed from source %s' %(len(subjects_list), srcsubject)
+    print('Labels for %d subjects have been transformed from source %s' %(len(subjects_list), srcsubject))
 
 
 def get_cmap(N, cmap='hot'):
@@ -1074,7 +1074,7 @@ def subtract_overlapping_vertices(label, labels):
     if label.vertices.size > 0:
         return label
     else:
-        print 'Label has no vertices left '
+        print('Label has no vertices left ')
         return None
 
 
@@ -1100,18 +1100,18 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
     chnpick: array with indices
     """
     chnpick = []
-    for ir in xrange(len(findlist)):
+    for ir in range(len(findlist)):
         if findlist[ir].translate(None, ' ').isalnum():
             try:
                 chnpicktmp = ([fulllist.index(findlist[ir])])
                 chnpick = np.array(np.concatenate((chnpick, chnpicktmp), axis=0),
                                    dtype=int)
             except:
-                print ">>>>> Channel '%s' not found." % findlist[ir]
+                print(">>>>> Channel '%s' not found." % findlist[ir])
         else:
             chnpicktmp = (mne.pick_channels_regexp(fulllist, findlist[ir]))
             if len(chnpicktmp) == 0:
-                print ">>>>> '%s' does not match any channel name." % findlist[ir]
+                print(">>>>> '%s' does not match any channel name." % findlist[ir])
             else:
                 chnpick = np.array(np.concatenate((chnpick, chnpicktmp), axis=0),
                                    dtype=int)
@@ -1120,7 +1120,7 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
         chnpick = np.sort(np.array(list(set(np.sort(chnpick)))))
 
     if excllist is not None and len(excllist) > 0:
-        exclinds = [fulllist.index(excllist[ie]) for ie in xrange(len(excllist))]
+        exclinds = [fulllist.index(excllist[ie]) for ie in range(len(excllist))]
         chnpick = list(np.setdiff1d(chnpick, exclinds))
     return chnpick
 
@@ -1167,7 +1167,7 @@ def time_shuffle_slices(fname_raw, shufflechans=None, tmin=None, tmax=None):
     # loop across all filenames
     for fname in fnraw:
         if not op.isfile(fname):
-            print 'Exiting. File not present ', fname
+            print('Exiting. File not present ', fname)
             sys.exit()
         raw = mne.io.Raw(fname, preload=True)
         # time window selection
@@ -1180,7 +1180,7 @@ def time_shuffle_slices(fname_raw, shufflechans=None, tmin=None, tmax=None):
         itmax = int(ceil(tmax * raw.info['sfreq']))
         if itmax-itmin < 1:
             raise ValueError("Time-window for slice shuffling empty/too short")
-        print ">>> Set time-range to [%7.3f, %7.3f]" % (tmin, tmax)
+        print(">>> Set time-range to [%7.3f, %7.3f]" % (tmin, tmax))
 
         if shufflechans is None or len(shufflechans) == 0:
             shflpick = mne.pick_types(raw.info, meg=True, ref_meg=True,
@@ -1196,7 +1196,7 @@ def time_shuffle_slices(fname_raw, shufflechans=None, tmin=None, tmax=None):
         totbytype = ''
         shflbytype = ''
         channel_indices_by_type = mne.io.pick.channel_indices_by_type(raw.info)
-        for k in channel_indices_by_type.keys():
+        for k in list(channel_indices_by_type.keys()):
             tot4key = len(channel_indices_by_type[k][:])
             if tot4key>0:
                 totbytype = totbytype + "%s:" % k + \
@@ -1204,27 +1204,27 @@ def time_shuffle_slices(fname_raw, shufflechans=None, tmin=None, tmax=None):
                 shflbytype = shflbytype + "%s:" % k + \
                     "%c%dd " % ('%', int(ceil(np.log10(tot4key+1)))) % \
                     len(np.intersect1d(shflpick, channel_indices_by_type[k][:]))
-        print ">>> %3d channels in file:  %s" % (len(raw.info['chs']), totbytype)
-        print ">>> %3d channels shuffled: %s" % (len(shflpick), shflbytype)
+        print(">>> %3d channels in file:  %s" % (len(raw.info['chs']), totbytype))
+        print(">>> %3d channels shuffled: %s" % (len(shflpick), shflbytype))
 
-        print "Calc shuffle-array..."
+        print("Calc shuffle-array...")
         numslice = raw._data.shape[1]
         lselbuf = np.arange(numslice)
         lselbuf[itmin:itmax] = itmin + np.random.permutation(itmax-itmin)
 
-        print "Shuffling slices for selected channels:"
+        print("Shuffling slices for selected channels:")
         data, times = raw[:, 0:numslice]
         # work on entire data stream
-        for isl in xrange(raw._data.shape[1]):
+        for isl in range(raw._data.shape[1]):
             slice = np.take(raw._data, [lselbuf[isl]], axis=1)
             data[shflpick, isl] = slice[shflpick].flatten()
         # copy data to raw._data
-        for isl in xrange(raw._data.shape[1]):
+        for isl in range(raw._data.shape[1]):
             raw._data[:, isl] = data[:, isl]
 
         shflname = os.path.join(os.path.dirname(fname),
                                 os.path.basename(fname).split('-')[0]) + ',tperm-raw.fif'
-        print "Saving '%s'..." % shflname
+        print("Saving '%s'..." % shflname)
         raw.save(shflname, overwrite=True)
     return
 
@@ -1388,7 +1388,7 @@ def clip_eog2(eog, clip_to_value):
     elif clip_to_value > 0:
         eog_clipped = np.clip(eog, np.min(eog), clip_to_value)
     else:
-        print 'Zero clip_to_value is ambigious !! Please check again.'
+        print('Zero clip_to_value is ambigious !! Please check again.')
     return eog_clipped
 
 

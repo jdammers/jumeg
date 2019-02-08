@@ -31,15 +31,15 @@ def _tsdata_to_var(X, p):
     q1n = p1 * n
     I = np.eye(n)
     XX = np.zeros((n, p1, m + p, N))
-    for k in xrange(p1):
+    for k in range(p1):
         XX[:, k, k:k + m, :] = X
     AF = np.zeros((n, q1n))
     AB = np.zeros((n, q1n))
     k = 1
     kn = k * n
     M = N * (m - k)
-    kf = range(0, kn)
-    kb = range(q1n - kn, q1n)
+    kf = list(range(0, kn))
+    kb = list(range(q1n - kn, q1n))
     XF = np.reshape(XX[:, 0:k, k:m, :], (kn, M), order='F')
     XB = np.reshape(XX[:, 0:k, k - 1:m - 1, :], (kn, M), order='F')
     CXF = np.linalg.cholesky(XF.dot(XF.T)).T
@@ -62,7 +62,7 @@ def _tsdata_to_var(X, p):
         kn = k * n
         M = N * (m - k)
         kf = np.arange(kn)
-        kb = range(q1n - kn, q1n)
+        kb = list(range(q1n - kn, q1n))
         AFPREV = AF[:, kf]
         ABPREV = AB[:, kb]
         AF[:, kf] = np.linalg.solve(RF.T, AFPREV - R.dot(ABPREV))
@@ -137,7 +137,7 @@ def _whiteness(X, E):
     n, m, N = X.shape
     dw = np.zeros(n)
     pval = np.zeros(n)
-    for i in xrange(n):
+    for i in range(n):
         Ei = np.squeeze(E[i, :, :])
         e_a, e_b = Ei.shape
         tempX = np.reshape(X, (n, m * N), order='F')
@@ -281,7 +281,7 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
     mvar.fit(X)
     is_st = mvar.is_stable()
     if cons < thr_cons or is_st is False or whi is False:
-        print 'ERROR: Model order not ideal - check parameters !!'
+        print('ERROR: Model order not ideal - check parameters !!')
 
     return str(whi), cons, str(is_st)
 
@@ -316,7 +316,7 @@ def prepare_causality_matrix(cau, surr, freqs, nfft, sfreq, surr_thresh=95):
     diag_ind = np.diag_indices(n_nodes)
 
     for flow, fhigh in freqs:
-        print('flow: %d, fhigh: %d' % (flow, fhigh))
+        print(('flow: %d, fhigh: %d' % (flow, fhigh)))
         fmin, fmax = int(flow / delta_F), int(fhigh / delta_F)
         cau_band = np.mean(cau[:, :, fmin:fmax+1], axis=-1)
         surr_band = np.mean(surr[:, :, :, fmin:fmax+1], axis=-1)
@@ -328,11 +328,11 @@ def prepare_causality_matrix(cau, surr, freqs, nfft, sfreq, surr_thresh=95):
 
         max_surrs.append(np.max(surr_band))
         max_cons.append(np.max(cau_band))
-        print max_cons
+        print(max_cons)
 
         # get the threshold from the surrogates
         if surr_thresh:
-            print('applying %dth percentile threshold from surrogate' % surr_thresh)
+            print(('applying %dth percentile threshold from surrogate' % surr_thresh))
             con_thresh = np.percentile(surr_band[surr_band != 0], surr_thresh)
             # apply threshold on the caus matrix
             cau_band[cau_band < con_thresh] = 0.
@@ -368,7 +368,7 @@ def make_frequency_bands(cau, freqs, sfreq):
     diag_ind = np.diag_indices(n_nodes)
 
     for flow, fhigh in freqs:
-        print('flow: %d, fhigh: %d' % (flow, fhigh))
+        print(('flow: %d, fhigh: %d' % (flow, fhigh)))
         fmin, fmax = int(flow / delta_F), int(fhigh / delta_F)
         cau_band = np.mean(cau[:, :, fmin:fmax+1], axis=-1)
 
@@ -424,7 +424,7 @@ def compute_order(X, m_max, verbose=True):
         m_bic += (p ** 2) * m * np.log(N*n) / (N*n)
         bic.append(m_bic)
         if verbose:
-            print ('model order: %d, BIC value: %.2f' %(m+1, bic[m]))
+            print(('model order: %d, BIC value: %.2f' %(m+1, bic[m])))
 
     o_m = np.argmin(bic) + 1
     return o_m, bic

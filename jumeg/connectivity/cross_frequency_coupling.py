@@ -212,7 +212,7 @@ def event_related_average(gamma, data, win=100, show=True):
 
     average = np.mean(avg, axis=0)
     import matplotlib.pyplot as pl
-    pl.plot(range(-win, win), average)
+    pl.plot(list(range(-win, win)), average)
     return average
 
 

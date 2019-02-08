@@ -36,7 +36,7 @@ def check_power_spectrum(orig, surr):
     surr_ps = np.round(np.abs(np.fft.fft(surr, axis=1))[:, 1:check_length],
                        decimals=3)
     assert np.array_equal(orig_ps, surr_ps), 'Power spectrum not conserved.'
-    print 'Surrogates OK.'
+    print('Surrogates OK.')
 
 
 class Surrogates(object):
@@ -104,7 +104,7 @@ class Surrogates(object):
         #  Create time series
         ts = np.zeros((6, 200))
 
-        for i in xrange(6):
+        for i in range(6):
             ts[i, :] = np.sin(np.arange(200)*np.pi/15. + i*np.pi/2.) + \
                 np.sin(np.arange(200) * np.pi / 30.)
 
@@ -130,7 +130,7 @@ class Surrogates(object):
 
         shuffled_data = original_data.copy()
 
-        for i in xrange(shuffled_data.shape[0]):
+        for i in range(shuffled_data.shape[0]):
             rng.shuffle(shuffled_data[i, :])
 
         return shuffled_data
@@ -165,7 +165,7 @@ class Surrogates(object):
             'min_shift is not less than max_shift'
         shift = rng.permutation(np.arange(min_shift, max_shift))
 
-        for itrial in xrange(shifted_data.shape[0]):
+        for itrial in range(shifted_data.shape[0]):
             # random shift is picked from the range of min max values
             shifted_data[itrial, :] = np.roll(shifted_data[itrial, :],
                                               rng.choice(shift))
@@ -244,8 +244,8 @@ class Surrogates(object):
         Private function to compute surrogates and return a generator.
         '''
         # do this n_surr times
-        for i in xrange(n_surr):
-            print 'computing surrogate %d ' % i
+        for i in range(n_surr):
+            print('computing surrogate %d ' % i)
 
             if mode == 'shuffle':
                 surrogate_data = self.shuffle_time_points(self.original_data,
@@ -301,8 +301,8 @@ class Surrogates(object):
                                                  max_shift=max_shift)
 
         if isinstance(self.instance, BaseEpochs):
-            print RuntimeWarning('WARNING: Currently surrogates on Epochs '
-                                 'only returns a generator.')
+            print(RuntimeWarning('WARNING: Currently surrogates on Epochs '
+                                 'only returns a generator.'))
             return_generator = True
 
         if return_generator:  # simply return the generator

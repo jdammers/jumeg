@@ -38,7 +38,7 @@ def adjust_spines(ax, spines, labelsize=10):
             Font size for the x- and y-axis labels
     """
 
-    for loc, spine in ax.spines.items():
+    for loc, spine in list(ax.spines.items()):
         if loc in spines:
             spine.set_position(('outward', 4))  # outward by 4 points
             # spine.set_smart_bounds(True)
@@ -152,7 +152,7 @@ def get_combined_labels(subject='fsaverage', subjects_dir=None,
         'wernicke': ['G_pariet_inf-Supramar', 'G_temp_sup-Plan_tempo',
                      'S_interm_prim-Jensen']
     }
-    label_keys = label_combinations.keys()
+    label_keys = list(label_combinations.keys())
     labels = []
 
 
@@ -373,7 +373,7 @@ def get_mni_coordinates(A_orig,
     # generate spatial profiles
     # (using magnitude and phase)
     # -------------------------------------------
-    if isinstance(A_orig[0, 0], types.ComplexType):
+    if isinstance(A_orig[0, 0], complex):
         A_orig_mag = np.abs(A_orig)
     else:
         A_orig_mag = A_orig
@@ -592,10 +592,10 @@ def _check_classification(classification, ncomp):
 
         # initialize empty lists
         idx_sort = []
-        keys_hemi = classification.keys()
+        keys_hemi = list(classification.keys())
 
         # sort keys
-        keys = classification[keys_hemi[0]].keys()
+        keys = list(classification[keys_hemi[0]].keys())
         keys.sort(key=lambda v: v.upper())
 
         # set 'unknown' variables to the end
@@ -746,8 +746,8 @@ def _get_temporal_envelopes(fourier_ica_obj, W_orig, temporal_envelope=[],
         # if not throw an error
         # -------------------------------------------
         if src_loc_data == []:
-            print ">>> ERROR: You have to provide either the 'temporal_envelope' or"
-            print ">>> 'src_loc_data'. Otherwise no temporal information can be plotted!"
+            print(">>> ERROR: You have to provide either the 'temporal_envelope' or")
+            print(">>> 'src_loc_data'. Otherwise no temporal information can be plotted!")
             import pdb
             pdb.set_trace()
 
@@ -952,7 +952,7 @@ def _get_spatial_profiles(A_orig, keys, idx_text, vertno=[],
     if not subjects_dir:
         subjects_dir = environ.get('SUBJECTS_DIR')
 
-    if isinstance(A_orig[0, 0], types.ComplexType):
+    if isinstance(A_orig[0, 0], complex):
         A_orig_mag = np.abs(A_orig)
     else:
         A_orig_mag = A_orig
@@ -1017,7 +1017,7 @@ def _get_spatial_profiles(A_orig, keys, idx_text, vertno=[],
                 # if 'mni_string' is not empty (it might be empty if activity
                 # can only be found in one hemisphere) plot a foci
                 if mni_string != "":
-                    mni_float = map(float, re.findall("[-+]?\d*\.\d+|\d+", mni_string))
+                    mni_float = list(map(float, re.findall("[-+]?\d*\.\d+|\d+", mni_string)))
                     brain.add_foci(mni_float, coords_as_verts=False, hemi=i_hemi, color='chartreuse',
                                    scale_factor=1.5, map_surface='white')
 
@@ -1463,8 +1463,8 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
     # check if either 'src_loc_data' or
     # 'temporal_envelope' is given, otherwise stop
     if src_loc_data == [] and temporal_envelope == []:
-        print ">>> ERROR: you have either to provide the variable"
-        print ">>>        'src_loc_data' or 'temporal_envelope'."
+        print(">>> ERROR: you have either to provide the variable")
+        print(">>>        'src_loc_data' or 'temporal_envelope'.")
         import pdb
         pdb.set_trace()
 
@@ -1553,7 +1553,7 @@ def plot_results_src_space(fourier_ica_obj, W_orig, A_orig,
     plt.ioff()
     nimg = int(np.ceil(ncomp/(1.0*ncomp_per_plot)))
     idx_key = 0
-    nplot = range(ncomp_per_plot, nimg*ncomp_per_plot, ncomp_per_plot)
+    nplot = list(range(ncomp_per_plot, nimg*ncomp_per_plot, ncomp_per_plot))
     nplot.append(ncomp)
 
 

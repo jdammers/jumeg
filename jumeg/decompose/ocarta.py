@@ -283,7 +283,7 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
         else:
             random.seed(None)
 
-        permute = range(ntsl)
+        permute = list(range(ntsl))
         random.shuffle(permute)
 
 
@@ -291,7 +291,7 @@ def ocarta_constrained_ICA(data, initial_weights=None, lrate=None, block=None, w
         # ICA training block
         # loop across block samples
         # ..................................
-        for t in xrange(0, lastt, block):
+        for t in range(0, lastt, block):
             u_ = fast_dot(data[permute[t:t + block], :], weights) + fast_dot(bias, onesrow).T
 
             # ..................................
@@ -706,9 +706,9 @@ class JuMEG_ocarta(object):
         if dim_reduction in ['', 'AIC', 'BIC', 'GAP', 'MDL', 'MIBS', 'explVar']:
             self._dim_reduction = dim_reduction
         else:
-            print "Dimension reduction method must be one of the following:"
-            print "AIC, BIC, GAP, MDL, MIBS or explVar"
-            print "Programm stops"
+            print("Dimension reduction method must be one of the following:")
+            print("AIC, BIC, GAP, MDL, MIBS or explVar")
+            print("Programm stops")
             import pdb
             pdb.set_trace()
 
@@ -726,7 +726,7 @@ class JuMEG_ocarta(object):
         if len(ecg_freq) == 2:
             self._ecg_freq = ecg_freq
         else:
-            print 'NOTE: Two elementary array expected!'
+            print('NOTE: Two elementary array expected!')
 
     def _get_ecg_freq(self):
         return self._ecg_freq
@@ -741,7 +741,7 @@ class JuMEG_ocarta(object):
         if abs(thresh_ecg) < 1.0:
             self._thresh_ca = abs(thresh_ecg)
         else:
-            print 'NOTE: Threshold to identify cardiac activity must be between 0 and 1!'
+            print('NOTE: Threshold to identify cardiac activity must be between 0 and 1!')
 
     def _get_thresh_ecg(self):
         return self._thresh_ca
@@ -781,7 +781,7 @@ class JuMEG_ocarta(object):
         if len(eog_freq) == 2:
             self._eog_freq = eog_freq
         else:
-            print 'NOTE: Two elementary array expected!'
+            print('NOTE: Two elementary array expected!')
 
     def _get_eog_freq(self):
         return self._eog_freq
@@ -1230,8 +1230,8 @@ class JuMEG_ocarta(object):
 
         # if no ECG channel is found use sigmoidal function as cost-function
         else:
-            print ">>>> NOTE: No ECG channel found!"
-            print ">>>>       Simoidal function used as cost-function for cardiac activity!"
+            print(">>>> NOTE: No ECG channel found!")
+            print(">>>>       Simoidal function used as cost-function for cardiac activity!")
             self._set_opt_cost_func_cardiac([1.0, 1.0])
 
 
@@ -1290,8 +1290,8 @@ class JuMEG_ocarta(object):
 
         # if no EOG channel is found use sigmoidal function as cost-function
         else:
-            print ">>>> NOTE: No EOG channel found!"
-            print ">>>>       Simoidal function used as cost-function for ocular activity!"
+            print(">>>> NOTE: No EOG channel found!")
+            print(">>>>       Simoidal function used as cost-function for ocular activity!")
             self._set_opt_cost_func_ocular([1.0, 1.0])
 
 
@@ -1309,7 +1309,7 @@ class JuMEG_ocarta(object):
         """
 
         # import necessary modules
-        from ica import whitening
+        from .ica import whitening
 
         # estimate PCA structure
         if self._pca is None:
@@ -1707,8 +1707,8 @@ class JuMEG_ocarta(object):
             ch_types = ['mag', 'grad']
 
             if verbose:
-                print ">>>> NOTE: as input data contain gardiometer and magnetometer"
-                print ">>>>       OCARTA has to be performed twice!"
+                print(">>>> NOTE: as input data contain gardiometer and magnetometer")
+                print(">>>>       OCARTA has to be performed twice!")
         else:
             ch_types = [True]
 
@@ -1730,27 +1730,27 @@ class JuMEG_ocarta(object):
 
             # print out some information
             if verbose:
-                print ">>>> calculating OCARTA"
-                print "       --> number of channels        : %d" % nchan
-                print "       --> number of timeslices      : %d" % self._ntsl
-                print "       --> dimension reduction method: %s" % self._dim_reduction
+                print(">>>> calculating OCARTA")
+                print("       --> number of channels        : %d" % nchan)
+                print("       --> number of timeslices      : %d" % self._ntsl)
+                print("       --> dimension reduction method: %s" % self._dim_reduction)
                 if self._dim_reduction == 'explVar':
-                    print "       --> explained variance        : %g" % self.explVar
-                print "       --> number of components      : %d" % weights.shape[0]
-                print "       --> block size (in s)         : %d" % self.seg_length
-                print "       --> number of blocks          : %d" % nsteps
-                print "       --> block shift (in s)        : %d" % self.shift_length
-                print "       --> maxsteps training         : %d" % (3 * self.maxsteps)
-                print "       --> maxsteps cleaning         : %d" % self.maxsteps
-                print "       --> costfunction CA           : a0=%g, a1=%g" % (self.opt_cost_func_cardiac[0], self.opt_cost_func_cardiac[1])
-                print "       --> costfunction OA           : a0=%g, a1=%g" % (self.opt_cost_func_ocular[0], self.opt_cost_func_ocular[1])
-                print ""
+                    print("       --> explained variance        : %g" % self.explVar)
+                print("       --> number of components      : %d" % weights.shape[0])
+                print("       --> block size (in s)         : %d" % self.seg_length)
+                print("       --> number of blocks          : %d" % nsteps)
+                print("       --> block shift (in s)        : %d" % self.shift_length)
+                print("       --> maxsteps training         : %d" % (3 * self.maxsteps))
+                print("       --> maxsteps cleaning         : %d" % self.maxsteps)
+                print("       --> costfunction CA           : a0=%g, a1=%g" % (self.opt_cost_func_cardiac[0], self.opt_cost_func_cardiac[1]))
+                print("       --> costfunction OA           : a0=%g, a1=%g" % (self.opt_cost_func_ocular[0], self.opt_cost_func_ocular[1]))
+                print("")
 
                 if self.flow or self.fhigh:
-                    print ">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!"
-                    print "           However, cleaning is performed on unfiltered input data!"
-                    print filter_info
-                    print ""
+                    print(">>>> NOTE: Optimal cleaning parameter are estimated from filtered data!")
+                    print("           However, cleaning is performed on unfiltered input data!")
+                    print(filter_info)
+                    print("")
 
 
             # check if denoising is desired
@@ -1769,7 +1769,7 @@ class JuMEG_ocarta(object):
 
                 # print out some information
                 if verbose:
-                    print ">>>> Step %d of %d..." % (istep+1, nsteps)
+                    print(">>>> Step %d of %d..." % (istep+1, nsteps))
 
                 # --------------------------------------
                 # Estimating un-mixing matrix and
@@ -1784,7 +1784,7 @@ class JuMEG_ocarta(object):
                                                                             ca_idx=idx_ca, oa_idx=idx_oa)
 
 
-                print "CA: %s, OA: %s" % (np.array_str(idx_ca), np.array_str(idx_oa))
+                print("CA: %s, OA: %s" % (np.array_str(idx_ca), np.array_str(idx_oa)))
 
                 # get cleaning matrices
                 iweights = pinv(weights)
@@ -1805,9 +1805,9 @@ class JuMEG_ocarta(object):
 
         # write out some additional information
         if verbose:
-            print ""
-            print ">>>> cleaning done!"
-            print ">>>> generate and save result files/images."
+            print("")
+            print(">>>> cleaning done!")
+            print(">>>> generate and save result files/images.")
 
 
 

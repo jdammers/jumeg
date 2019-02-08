@@ -139,7 +139,7 @@ class JuMEG_Filter_Ws(JuMEG_Filter_Base):
        
          if self.fcut1 is None:
              self.fcut1 = self.fcut2
-             print "WARNING JuMEG_Filter_WS.calc_filter_kernel value for fcut1 is not defined using fcut2 => %f" %(self.fcut2)
+             print("WARNING JuMEG_Filter_WS.calc_filter_kernel value for fcut1 is not defined using fcut2 => %f" %(self.fcut2))
 
          M       = int(M)
          Midx    = int( M / 2 );

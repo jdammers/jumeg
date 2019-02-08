@@ -153,7 +153,7 @@ class JuMEG_Base_Basic(object):
         jb.line(n=10,char="x")
         xxxxxxxxxx
         """
-        print char*n  
+        print(char*n)  
     
     def pp(self,param, head=None,l1=True,l2=True):
         """
@@ -392,7 +392,7 @@ class JuMEG_Base_StringHelper(object):
         if (isinstance(s, str)):
            return True
         try:
-           if (isinstance(s, basestring)):
+           if (isinstance(s, str)):
               return True
         except NameError:
            return False
@@ -422,7 +422,7 @@ class JuMEG_Base_StringHelper(object):
         "1-5"           => [1,2,3,4,5]
         "1,2,3-6,8,111" => [1,2,3,4,5,6,8,111]
         """
-        xranges = [(lambda l: xrange(l[0], l[-1]+1))(map(int, r.split('-'))) for r in seq_str.split(',')]
+        xranges = [(lambda l: range(l[0], l[-1]+1))(list(map(int, r.split('-')))) for r in seq_str.split(',')]
          # flatten list of xranges
         return [y for x in xranges for y in x]
       
@@ -498,7 +498,7 @@ class JuMEG_Base_FIF_IO(JuMEG_Base_Basic,JuMEG_Base_StringHelper):
          
         jb.set_raw_filename(raw,"/data/test-raw.fif")
         """
-        if raw.info.has_key('filename'):
+        if 'filename' in raw.info:
             raw.info['filename'] = v
         else:
             raw._filenames = []
@@ -522,7 +522,7 @@ class JuMEG_Base_FIF_IO(JuMEG_Base_Basic,JuMEG_Base_StringHelper):
         
         """
         if raw:
-           if raw.info.has_key('filename'):
+           if 'filename' in raw.info:
               return raw.info['filename']
            else:
               return raw.filenames[0]
@@ -862,17 +862,17 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         fif_out = self.get_fif_name(raw=raw,postfix=postfix)
 
         if self.verbose:
-           print "\n --> Update bad-channels"
-           print" --> FIF in  :" + self.get_raw_filename(raw)
-           print" --> FIF out :" + fif_out
-           print raw.info['bads']
-           print"\n"
+           print("\n --> Update bad-channels")
+           print(" --> FIF in  :" + self.get_raw_filename(raw))
+           print(" --> FIF out :" + fif_out)
+           print(raw.info['bads'])
+           print("\n")
               
         if ( interpolate and raw.info['bads'] ) :
-           print " --> Update BAD channels => interpolating: " + raw.info['filename']
-           print " --> BADs : " 
-           print raw.info['bads'] 
-           print "\n\n"
+           print(" --> Update BAD channels => interpolating: " + raw.info['filename'])
+           print(" --> BADs : ") 
+           print(raw.info['bads']) 
+           print("\n\n")
            raw.interpolate_bads()
      
       #--- save raw as bads-raw.fif
@@ -901,7 +901,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            if fname_ica is None:
               assert "---> ERROR no file foumd!!\n\n"
               if self.verbose:
-                 print "<<<< Reading ica raw data ..."
+                 print("<<<< Reading ica raw data ...")
         
            ica_raw = mne.preprocessing.read_ica(fname_ica)
          
@@ -929,7 +929,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         if raw is None:
            assert(fname_raw),"---> ERROR no file foumd!!\n"
            if self.verbose:
-              print "<<<< Reading raw data ..."
+              print("<<<< Reading raw data ...")
            fn = fname_raw
            if path:
               fn = path+"/"+fname_raw
@@ -1031,14 +1031,14 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         try:           
             fh.close()
         except:
-            print"  -> UP`s error: can not close list-file:" +fin
+            print("  -> UP`s error: can not close list-file:" +fin)
         
         if self.verbose :
-           print " --> INFO << get_filename_list_from_file >> Files found: %d" % ( len(found_list) )
-           print found_list
-           print "\n --> BADs: "
-           print opt_dict
-           print"\n"
+           print(" --> INFO << get_filename_list_from_file >> Files found: %d" % ( len(found_list) ))
+           print(found_list)
+           print("\n --> BADs: ")
+           print(opt_dict)
+           print("\n")
 
         return found_list,opt_dict
 
@@ -1058,14 +1058,14 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         from distutils.dir_util import mkpath
          
         if ( os.path.isfile(fname) and ( not overwrite) ) :
-           print " --> File exist => skip saving data to : " + fname
+           print(" --> File exist => skip saving data to : " + fname)
         else:
-          print ">>>> writing filtered data to disk..."
-          print ' --> saving: '+ fname
+          print(">>>> writing filtered data to disk...")
+          print(' --> saving: '+ fname)
           mkpath( os.path.dirname(fname) )
           raw.save(fname,overwrite=True)
-          print ' --> Bads:' + str( raw.info['bads'] )
-          print " --> Done writing data to disk..."
+          print(' --> Bads:' + str( raw.info['bads'] ))
+          print(" --> Done writing data to disk...")
         
         return fname
 
@@ -1111,12 +1111,12 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            try:
                fname_empty_room = glob.glob( path_scan + session_date +'*/*/*-empty.fif' )[0]
            except:
-               print"---> ERROR can not find empty room file: " + path_scan + session_date
+               print("---> ERROR can not find empty room file: " + path_scan + session_date)
                return
 
         if fname_empty_room and preload:
            if self.verbose:
-              print "\n --> Empty Room FIF file found: %s \n"  % (fname_empty_room)
+              print("\n --> Empty Room FIF file found: %s \n"  % (fname_empty_room))
            
            return self.get_raw_obj(fname_empty_room,raw=None,preload=True) # return raw,fname
 

@@ -101,7 +101,7 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
          
          if self.fcut1 is None :
              self.fcut1 = self.fcut2
-             print "WARNING JuMEG_Filter_Bw.calc_filter_kernel value for fcut1 is not defined using fcut2 => %f" %(self.fcut2)
+             print("WARNING JuMEG_Filter_Bw.calc_filter_kernel value for fcut1 is not defined using fcut2 => %f" %(self.fcut2))
          
          #t0 = time.time()  
          
@@ -170,11 +170,11 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
          self.filter_kernel_data[nyq_idx :] = fkd_part1[-1:0:-1]
          
          if self.verbose :
-             print"======================================="                    
+             print("=======================================")                    
              #print "Time to calc filter kernel data: % f " % (time.time() - t0 )       
-             print "FKD shape" 
-             print self.filter_kernel_data.shape
-             print "===>DONE calc butterworth filter function"     
+             print("FKD shape") 
+             print(self.filter_kernel_data.shape)
+             print("===>DONE calc butterworth filter function")     
         
          return self.filter_kernel_data
 
@@ -278,5 +278,5 @@ class JuMEG_Filter_Bw(JuMEG_Filter_Base):
          if (self.remove_dcoffset == False ): 
             data += dmean
             if self.verbose:
-               print " ---> NO DC Offset correction !!!"
+               print(" ---> NO DC Offset correction !!!")
          return data

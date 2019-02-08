@@ -136,7 +136,7 @@ def ica_array(data_orig, dim_reduction='',
 
     else:
         if verbose:
-            print "     ... perform centering and whitening ..."
+            print("     ... perform centering and whitening ...")
 
         data, pca = whitening(data.T, dim_reduction=dim_reduction, npc=max_pca_components,
                               explainedVar=explainedVar)
@@ -160,9 +160,9 @@ def ica_array(data_orig, dim_reduction='',
         elif method == 'extended-infomax':
             extended = True
         else:
-            print ">>>> WARNING: Entered ICA method not found!"
-            print ">>>>          Allowed are fastica, extended-infomax and infomax"
-            print ">>>>          Using now the default ICA method which is Infomax"
+            print(">>>> WARNING: Entered ICA method not found!")
+            print(">>>>          Allowed are fastica, extended-infomax and infomax")
+            print(">>>>          Using now the default ICA method which is Infomax")
             extended = False
 
         weights = infomax(data, weights=weights, l_rate=lrate, block=block,
@@ -286,7 +286,7 @@ def whitening(data, dim_reduction='',
     # import necessary modules
     # -------------------------------------------
     from sklearn.decomposition import RandomizedPCA
-    import dimension_selection as dim_sel
+    from . import dimension_selection as dim_sel
 
 
     # -------------------------------------------
@@ -443,7 +443,7 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
         block = int(math.floor(math.sqrt(n_samples / 3.0)))
 
     if verbose:
-        print 'computing%sInfomax ICA' % ' Extended ' if extended is True else ' '
+        print('computing%sInfomax ICA' % ' Extended ' if extended is True else ' ')
 
     # collect parameter
     nblock = n_samples // block
@@ -621,7 +621,7 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
 
             if l_rate > min_l_rate:
                 if verbose:
-                    print '... lowering learning rate to %g \n... re-starting...' % l_rate
+                    print('... lowering learning rate to %g \n... re-starting...' % l_rate)
             else:
                 raise ValueError('Error in Infomax ICA: unmixing_matrix matrix'
                                  'might not be invertible!')

@@ -368,7 +368,7 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
     # if epoch length is not provided, chose a suitable length
     if not epoch_length:
         epoch_length = int(raw.n_times/(raw.info['sfreq'] * 20))
-    print 'epoch_length of %d chosen' % epoch_length
+    print('epoch_length of %d chosen' % epoch_length)
     # add 0.01 to avoid 'dropping' of first epoch
     events = mne.make_fixed_length_events(raw, 42, start=0.01,
                                           duration=epoch_length)
@@ -404,9 +404,9 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
     unusual_ch_names = [raw.ch_names[i] for i in unusual]
     dead_ch_names = [raw.ch_names[i] for i in zero_suspects]
 
-    print "Suggested bads [jumps]:", jumps_ch_names
-    print "Suggested bads [unusual]:", unusual_ch_names
-    print "Suggested bads [dead]:", dead_ch_names
+    print("Suggested bads [jumps]:", jumps_ch_names)
+    print("Suggested bads [unusual]:", unusual_ch_names)
+    print("Suggested bads [dead]:", dead_ch_names)
 
     marks = list(set(picks_autodetect) | set(picks_bad) | set(zero_suspects))
 
@@ -425,7 +425,7 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
     marked = [raw.ch_names[i] for i in marks]
     # add suggested channels to the raw.info
     raw.info['bads'] = marked
-    print 'Suggested bad channels: ', marked
+    print('Suggested bad channels: ', marked)
 
     if show_raw:
         raw.plot(block=True)

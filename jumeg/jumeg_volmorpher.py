@@ -31,6 +31,7 @@ from mne.source_estimate import VolSourceEstimate
 from matplotlib.ticker import LinearLocator
 
 from nilearn.plotting.img_plotting import _MNI152Template
+from functools import reduce
 
 MNI152TEMPLATE = _MNI152Template()
 
@@ -38,7 +39,7 @@ MNI152TEMPLATE = _MNI152Template()
 #
 # =============================================================================
 def convert_to_unicode(inlist):
-    if type(inlist) != unicode:
+    if type(inlist) != str:
         inlist = inlist.decode('utf-8')
         return inlist
     else:
@@ -168,7 +169,7 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
         err_function = 'Euclidean Error Function'
         errfunc = _point_cloud_error
     else:
-        print 'No or invalid error function provided, using BallTree instead'
+        print('No or invalid error function provided, using BallTree instead')
         err_function = 'BallTree Error Function'
         errfunc = _point_cloud_error_balltree
 
@@ -184,9 +185,9 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
     temp_p = np.c_[x1, y1, z1]
     template = temp_src[0]['subject_his_id']
 
-    print """\n#### Attempting to match %d volume source space labels from
+    print("""\n#### Attempting to match %d volume source space labels from
     Subject: '%s' to Template: '%s' with
-    %s...""" % (len(volume_labels), subject, template, err_function)
+    %s...""" % (len(volume_labels), subject, template, err_function))
 
     # make sure to remove duplicate vertices before matching
     label_dict_subject = _remove_vert_duplicates(subject, subj_src, label_dict_subject,
@@ -211,8 +212,8 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
                                                                                       h.shape[0],
                                                                                       label_j))
 
-    print '    # N subject vertices:', vert_sum
-    print '    # N template vertices:', vert_sum_temp
+    print('    # N subject vertices:', vert_sum)
+    print('    # N template vertices:', vert_sum_temp)
 
     # Prepare empty containers to store the possible transformation results
     label_trans_dic = {}
@@ -226,7 +227,7 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
     for label_idx, label in enumerate(volume_labels):
         loadingBar(count=label_idx, total=len(volume_labels),
                    task_part='%s' % label)
-        print ''
+        print('')
 
         # Select coords for label and check if they exceed the label size limit
         s_pts = subj_p[label_dict_subject[label]]
@@ -352,7 +353,7 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             label_trans_dic_err.update({label: dist_err})
 
     if save_trans:
-        print '\n    Writing Transformation matrices to file..'
+        print('\n    Writing Transformation matrices to file..')
         fname_lw_trans = fname_save
         mat_mak_trans_dict = dict()
         mat_mak_trans_dict['ID'] = '%s -> %s' % (subject, template)
@@ -363,8 +364,8 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
         mat_mak_trans_dict['Distance Variance Error [mm]'] = label_trans_dic_var_dist
         mat_mak_trans_dict_arr = np.array([mat_mak_trans_dict])
         np.save(fname_lw_trans, mat_mak_trans_dict_arr)
-        print '    [done] -> Calculation Time: %.2f minutes.' % (
-            ((time2.time() - start_time) / 60))
+        print('    [done] -> Calculation Time: %.2f minutes.' % (
+            ((time2.time() - start_time) / 60)))
 
         return
 
@@ -495,11 +496,11 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
     x, y, z = subj_vol[0]['rr'].T
     subj_p = np.c_[x, y, z]
     label_dict = label_dict_subject_from
-    print """\n#### Attempting to transform %s source space labelwise to 
-    %s source space..""" % (subject, subject_to)
+    print("""\n#### Attempting to transform %s source space labelwise to 
+    %s source space..""" % (subject, subject_to))
 
     if label_trans_dic is None:
-        print '\n#### Attempting to read MatchMaking Transformations from file..'
+        print('\n#### Attempting to read MatchMaking Transformations from file..')
         indiv_spacing = (np.abs(subj_vol[0]['rr'][0, 0]) -
                          np.abs(subj_vol[0]['rr'][1, 0])) * 1e3
         fname_lw_trans = (subjects_dir + subject + '/' +
@@ -510,16 +511,16 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
             mat_mak_trans_dict_arr = np.load(fname_lw_trans)
 
         except IOError:
-            print 'MatchMaking Transformations file NOT found:'
-            print fname_lw_trans, '\n'
-            print 'Please calculate the transformation matrix dictionary by using'
-            print 'the jumeg.jumeg_volmorpher.auto_match_labels function.'
+            print('MatchMaking Transformations file NOT found:')
+            print(fname_lw_trans, '\n')
+            print('Please calculate the transformation matrix dictionary by using')
+            print('the jumeg.jumeg_volmorpher.auto_match_labels function.')
 
             import sys
             sys.exit(-1)
 
         label_trans_ID = mat_mak_trans_dict_arr[0]['ID']
-        print '    Reading MatchMaking file %s..' % label_trans_ID
+        print('    Reading MatchMaking file %s..' % label_trans_ID)
         label_trans_dic = mat_mak_trans_dict_arr[0]['Labeltransformation']
     else:
         label_trans_dic = label_trans_dic
@@ -531,8 +532,8 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
             if label_i != label_j:
                 h = np.intersect1d(label_dict[label_i], label_dict[label_j])
                 if h.shape[0] > 0:
-                    print "In Label:", label_i, """ are vertices from
-                           Label:""", label_j, "(", h.shape[0], ")"
+                    print("In Label:", label_i, """ are vertices from
+                           Label:""", label_j, "(", h.shape[0], ")")
                     break
 
     transformed_p = np.array([[0, 0, 0]])
@@ -550,7 +551,7 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
         del trans_p
     transformed_p = transformed_p[1:]
     idx_vertices = np.concatenate(np.asarray(idx_vertices))
-    print '    [done]'
+    print('    [done]')
 
     return transformed_p, idx_vertices
 
@@ -583,7 +584,7 @@ def set_unwanted_to_zero(vsrc, stc_data, volume_labels, label_dict):
 
         label_verts = label_dict[labels]
 
-        for i in xrange(0, label_verts.shape[0]):
+        for i in range(0, label_verts.shape[0]):
 
             LOI_idx.append(np.where(label_verts[i] == vsrc[0]['vertno']))
 
@@ -658,8 +659,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
           One or more new stc data array
     """
 
-    print '####                  START                ####'
-    print '####             Volume Morphing           ####'
+    print('####                  START                ####')
+    print('####             Volume Morphing           ####')
 
     if cond is None:
         str_cond = ''
@@ -676,8 +677,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
     string = '    Subject: %s' % subject_from + str_run + str_cond + str_niter
 
-    print string
-    print '\n#### Reading essential data files..'
+    print(string)
+    print('\n#### Reading essential data files..')
     # STC 
     stc_orig = mne.read_source_estimate(fname_stc_orig)
     stcdata = stc_orig.data
@@ -719,8 +720,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     # =========================================================================
     #        Interpolate the data
 
-    print '\n#### Attempting to interpolate STC Data for every time sample..'
-    print '    Interpolation method: ', interpolation_method
+    print('\n#### Attempting to interpolate STC Data for every time sample..')
+    print('    Interpolation method: ', interpolation_method)
 
     st_time = time2.time()
 
@@ -737,7 +738,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         inter_data = np.nan_to_num(inter_data)
 
     if unwanted_to_zero:
-        print '#### Setting all unknown vertex values to zero..'
+        print('#### Setting all unknown vertex values to zero..')
 
         # vertnos_unknown = label_dict_subject_to['Unknown']
         # vert_U_idx = np.array([], dtype=int)
@@ -768,7 +769,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
     if normalize:
 
-        print '\n#### Attempting to normalize the vol-morphed stc..'
+        print('\n#### Attempting to normalize the vol-morphed stc..')
         normalized_new_data = inter_data.copy()
 
         for p, labels in enumerate(volume_labels):
@@ -778,13 +779,13 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
             # get for the subject brain the indices of all vertices for the given label
             subj_vert_idx = []
-            for i in xrange(0, lab_verts.shape[0]):
+            for i in range(0, lab_verts.shape[0]):
                 subj_vert_idx.append(np.where(lab_verts[i] == subj_vol[0]['vertno']))
             subj_vert_idx = np.asarray(subj_vert_idx)
 
             # get for the template brain the indices of all vertices for the given label
             temp_vert_idx = []
-            for i in xrange(0, lab_verts_temp.shape[0]):
+            for i in range(0, lab_verts_temp.shape[0]):
                 temp_vert_idx.append(np.where(lab_verts_temp[i] == temp_vol[0]['vertno']))
             temp_vert_idx = np.asarray(temp_vert_idx)
 
@@ -814,12 +815,12 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
         new_data = inter_data
 
-    print '    [done] -> Calculation Time: %.2f minutes.' % (
+    print('    [done] -> Calculation Time: %.2f minutes.' % (
             (time2.time() - st_time) / 60.
-    )
+    ))
 
     if save_stc:
-        print '\n#### Attempting to write interpolated STC Data to file..'
+        print('\n#### Attempting to write interpolated STC Data to file..')
 
         if fname_save_stc is None:
             fname_stc_morphed = fname_stc_orig[:-7] + '_morphed_to_%s_%s-vl.stc'
@@ -828,7 +829,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         else:
             fname_stc_morphed = fname_save_stc
 
-        print '    Destination:', fname_stc_morphed
+        print('    Destination:', fname_stc_morphed)
 
         _write_stc(fname_stc_morphed, tmin=tmin, tstep=tstep,
                    vertices=temp_vol[0]['vertno'], data=new_data)
@@ -842,15 +843,15 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                                          volume_labels, subjects_dir=subjects_dir,
                                          cond=cond, run=run, n_iter=n_iter, save=True)
 
-        print '[done]'
-        print '####             Volume Morphing           ####'
-        print '####                  DONE                 ####'
+        print('[done]')
+        print('####             Volume Morphing           ####')
+        print('####                  DONE                 ####')
 
         return stc_morphed
 
-    print '#### Volume morphed stc data NOT saved..\n'
-    print '####             Volume Morphing           ####'
-    print '####                  DONE                 ####'
+    print('#### Volume morphed stc data NOT saved..\n')
+    print('####             Volume Morphing           ####')
+    print('####                  DONE                 ####')
 
     return new_data
 
@@ -925,7 +926,7 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     indiv_spacing = make_indiv_spacing(subject_from, subject_to,
                                        temp_spacing, subjects_dir)
 
-    print '\n#### Attempting to save the volume morphing results ..'
+    print('\n#### Attempting to save the volume morphing results ..')
     directory = subjects_dir + '%s/plots/VolumeMorphing/' % subject_from
     if not op.exists(directory):
         os.makedirs(directory)
@@ -973,8 +974,8 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     else:
         plt.show()
 
-    print """\n#### Attempting to compare subjects activity and interpolated
-        activity in template for all labels.."""
+    print("""\n#### Attempting to compare subjects activity and interpolated
+        activity in template for all labels..""")
     subj_lab_act = {}
     temp_lab_act = {}
     for label in volume_labels:
@@ -982,24 +983,24 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         lab_arr_temp = label_dict_template[str(label)]
         subj_vert_idx = np.array([], dtype=int)
         temp_vert_idx = np.array([], dtype=int)
-        for i in xrange(0, lab_arr.shape[0]):
+        for i in range(0, lab_arr.shape[0]):
             subj_vert_idx = np.append(subj_vert_idx,
                                       np.where(lab_arr[i]
                                                == subj_vol[0]['vertno']))
-        for i in xrange(0, lab_arr_temp.shape[0]):
+        for i in range(0, lab_arr_temp.shape[0]):
             temp_vert_idx = np.append(temp_vert_idx,
                                       np.where(lab_arr_temp[i]
                                                == temp_vol[0]['vertno']))
         lab_act_sum = np.array([])
         lab_act_sum_temp = np.array([])
-        for t in xrange(0, stc_orig.times.shape[0]):
+        for t in range(0, stc_orig.times.shape[0]):
             lab_act_sum = np.append(lab_act_sum,
                                     np.sum(stc_orig.data[subj_vert_idx, t]))
             lab_act_sum_temp = np.append(lab_act_sum_temp,
                                          np.sum(stc_morphed.data[temp_vert_idx, t]))
         subj_lab_act.update({label: lab_act_sum})
         temp_lab_act.update({label: lab_act_sum_temp})
-    print '    [done]'
+    print('    [done]')
 
     # Stc per label  
     # fig, axs = plt.subplots(len(volume_labels) / 5, 5, figsize=(15, 15),
@@ -1155,17 +1156,17 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
         if tstep is not None:
             img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
         else:
-            print '    Please provide the tstep value !'
+            print('    Please provide the tstep value !')
     img_data = img.get_data()
     aff = img.affine
     if time_sample is None:
         # global maximum amp in time
         t = int(np.where(np.sum(vstcdata, axis=0) == np.max(np.sum(vstcdata, axis=0)))[0])
     else:
-        print '    Time slice', time_sample
+        print('    Time slice', time_sample)
         t = time_sample
     t_in_ms = vstc.times[t] * 1e3
-    print '    Found time slice: ', t_in_ms, 'ms'
+    print('    Found time slice: ', t_in_ms, 'ms')
     if coords is None:
         cut_coords = np.where(img_data == img_data[:, :, :, t].max())
         max_try = np.concatenate((np.array([cut_coords[0][0]]),
@@ -1176,8 +1177,8 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
         cut_coords = coords
     slice_x, slice_y = int(cut_coords[0]), int(cut_coords[1])
     slice_z = int(cut_coords[2])
-    print ('    Coords [mri-space]:'
-           + 'X: ', slice_x, 'Y: ', slice_y, 'Z: ', slice_z)
+    print(('    Coords [mri-space]:'
+           + 'X: ', slice_x, 'Y: ', slice_y, 'Z: ', slice_z))
     temp_t1_fname = op.join(subjects_dir, subject, 'mri', 'T1.mgz')
 
     if threshold == 'min':
@@ -1194,7 +1195,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
                                       cmap=cmap, symmetric_cbar=symmetric_cbar)
     if save:
         if fname_save is None:
-            print 'please provide an filepath to save .png'
+            print('please provide an filepath to save .png')
         else:
             plt.savefig(fname_save)
             plt.close()
@@ -1265,7 +1266,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, title, time=None,
 
         start_time = time2.time()
 
-        print strftime('Start at %H:%M:%S on the %d.%m.%Y \n', localtime())
+        print(strftime('Start at %H:%M:%S on the %d.%m.%Y \n', localtime()))
 
         figure, axes = plt.subplots(grid[0], grid[1])
 
@@ -1297,18 +1298,18 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, title, time=None,
         # https://github.com/matplotlib/matplotlib/issues/8543#issuecomment-400679840
 
         frmt = fn_image.split('.')[-1]
-        print DPI, figure.get_size_inches()
+        print(DPI, figure.get_size_inches())
         plt.savefig(fn_image, format=frmt, dpi=DPI)
 
         plt.close()
 
         end_time = time2.time()
 
-        print strftime('End at %H:%M:%S on the %d.%m.%Y \n', localtime())
+        print(strftime('End at %H:%M:%S on the %d.%m.%Y \n', localtime()))
         minutes = (end_time - start_time) / 60
         seconds = (end_time - start_time) % 60
-        print "Calculation took %d minutes and %d seconds" % (minutes, seconds)
-        print ""
+        print("Calculation took %d minutes and %d seconds" % (minutes, seconds))
+        print("")
 
 
 def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, only_positive_values=False, **kwargs):
@@ -1342,7 +1343,7 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, only_positive_val
         if tstep is not None:
             img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
         else:
-            print '    Please provide the tstep value !'
+            print('    Please provide the tstep value !')
 
     subject = vsrc[0]['subject_his_id']
     temp_t1_fname = op.join(subjects_dir, subject, 'mri', 'T1.mgz')
@@ -1443,7 +1444,7 @@ def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6,
         t = np.argmin(np.fabs(vstc.times - time))
         t_in_ms = vstc.times[t] * 1e3
 
-    print '    Found time slice: ', t_in_ms, 'ms'
+    print('    Found time slice: ', t_in_ms, 'ms')
 
     if threshold == 'min':
         threshold = vstcdata.min()
@@ -1696,7 +1697,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
         if tstep is not None:
             img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
         else:
-            print '    Please provide the tstep value !'
+            print('    Please provide the tstep value !')
 
     if time is None:
         # global maximum amp in time
@@ -1706,7 +1707,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
     else:
         t = np.argmin(np.fabs(vstc.times - time))
         t_in_ms = vstc.times[t] * 1e3
-    print '    Found time slice: ', t_in_ms, 'ms'
+    print('    Found time slice: ', t_in_ms, 'ms')
 
     # img_data = img.get_data()
     # aff = img.affine
@@ -1733,7 +1734,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
                                       symmetric_cbar=symmetric_cbar)
     if save:
         if fname_save is None:
-            print 'please provide an filepath to save .png'
+            print('please provide an filepath to save .png')
         else:
             plt.savefig(fname_save)
             plt.close()
@@ -1818,7 +1819,7 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
             if tstep is not None:
                 img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
             else:
-                print '    Please provide the tstep value !'
+                print('    Please provide the tstep value !')
     subject = vsrc[0]['subject_his_id']
 
     if time is None:
@@ -1828,7 +1829,7 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
         t = np.argmin(np.fabs(vstc.times - time))
 
     t_in_ms = vstc.times[t] * 1e3
-    print '    Found time slice: ', t_in_ms, 'ms'
+    print('    Found time slice: ', t_in_ms, 'ms')
 
     # img_data = img.get_data()
     # aff = img.affine
@@ -1856,7 +1857,7 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
                                    only_positive_values=only_positive_values)
     if save:
         if fname_save is None:
-            print 'please provide an filepath to save .png'
+            print('please provide an filepath to save .png')
         else:
             plt.savefig(fname_save)
             plt.close()
@@ -2105,8 +2106,8 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     """
 
     from jumeg.jumeg_volmorpher import _make_image
-    print '\n#### Attempting to plot volume stc from file..'
-    print '    Creating 3D image from stc..'
+    print('\n#### Attempting to plot volume stc from file..')
+    print('    Creating 3D image from stc..')
     vstcdata = vstc.data
     img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
     subject = vsrc[0]['subject_his_id']
@@ -2114,14 +2115,14 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
         if tstep is not None:
             img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
         else:
-            print '    Please provide the tstep value !'
+            print('    Please provide the tstep value !')
     img_data = img.get_data()
     aff = img.affine
     if time_sample is None:
-        print '    Searching for maximal Activation..'
+        print('    Searching for maximal Activation..')
         t = int(np.where(np.sum(vstcdata, axis=0) == np.max(np.sum(vstcdata, axis=0)))[0])  # maximum amp in time
     else:
-        print '    Using Cluster No.', time_sample
+        print('    Using Cluster No.', time_sample)
         t = time_sample
     if title is None:
         title = 'Cluster No. %i' % t
@@ -2138,8 +2139,8 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
         cut_coords = coords
     slice_x, slice_y = int(cut_coords[0]), int(cut_coords[1])
     slice_z = int(cut_coords[2])
-    print '    Respective Space Coords [mri-space]:'
-    print '    X: ', slice_x, '    Y: ', slice_y, '    Z: ', slice_z
+    print('    Respective Space Coords [mri-space]:')
+    print('    X: ', slice_x, '    Y: ', slice_y, '    Z: ', slice_z)
     temp_t1_fname = subjects_dir + subject + '/mri/T1.mgz'
     VSTCPT_plot = plotting.plot_stat_map(index_img(img, t), temp_t1_fname,
                                          figure=figure, axes=axes,
@@ -2151,7 +2152,7 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
                                          cmap='black_red')
     if save:
         if fname_save is None:
-            print 'please provide an filepath to save .png'
+            print('please provide an filepath to save .png')
         else:
             plt.savefig(fname_save)
             plt.close()
@@ -2203,8 +2204,8 @@ def make_indiv_spacing(subject, ave_subject, template_spacing, subjects_dir):
     #                  % (c, mi, ma, md))
     prop = (diff / diff_temp).mean()
     indiv_spacing = (prop * template_spacing)
-    print "    '%s' individual-spacing to '%s'[%.2f] is: %.4fmm" % (
-        subject, ave_subject, template_spacing, indiv_spacing)
+    print("    '%s' individual-spacing to '%s'[%.2f] is: %.4fmm" % (
+        subject, ave_subject, template_spacing, indiv_spacing))
 
     return indiv_spacing
 
@@ -2247,8 +2248,8 @@ def _remove_vert_duplicates(subject, subj_src, label_dict_subject,
         all_volume_labels.append(lab.encode())
     all_volume_labels.remove('Unknown')
 
-    print """\n#### Attempting to check for vertice duplicates in labels due to
-    spatial aliasing in %s's volume source creation..""" % subject
+    print("""\n#### Attempting to check for vertice duplicates in labels due to
+    spatial aliasing in %s's volume source creation..""" % subject)
     del_count = 0
     for p, label in enumerate(all_volume_labels):
         loadingBar(p, len(all_volume_labels), task_part=None)
@@ -2273,7 +2274,7 @@ def _remove_vert_duplicates(subject, subj_src, label_dict_subject,
                 del_count += 1
         del_ver_idx = np.asarray(del_ver_idx_list)
         label_dict_subject[label] = np.delete(label_dict_subject[label], del_ver_idx)
-    print '    Deleted', del_count, 'vertice duplicates.\n'
+    print('    Deleted', del_count, 'vertice duplicates.\n')
 
     return label_dict_subject
 
@@ -2320,7 +2321,7 @@ def sum_up_vol_cluster(clu, p_thresh=0.05, tstep=1e-3, tmin=0,
     if len(good_cluster_inds) > 0:
         data = np.zeros((n_vertices, n_times))
         data_summary = np.zeros((n_vertices, len(good_cluster_inds) + 1))
-        print 'Data_summary is in shape of:', data_summary.shape
+        print('Data_summary is in shape of:', data_summary.shape)
         for ii, cluster_ind in enumerate(good_cluster_inds):
             loadingBar(ii + 1, len(good_cluster_inds), task_part='Cluster Idx %i' % cluster_ind)
             data.fill(0)

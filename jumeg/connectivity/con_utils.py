@@ -99,8 +99,8 @@ def make_communities(con, top_n=3):
     part = community.best_partition(G)
 
     from collections import Counter
-    top_communities = Counter(part.values()).most_common()[:top_n]
-    n_communities = len(Counter(part.values()))
+    top_communities = Counter(list(part.values())).most_common()[:top_n]
+    n_communities = len(Counter(list(part.values())))
     # gets tuple (most_common, number_most_common)
     top_nodes_list = []
     for common, _ in top_communities:
@@ -164,7 +164,7 @@ def get_label_distances(subject, subjects_dir, parc='aparc'):
 
     # compute the distances
     com_distances = np.zeros((N, N))
-    for (i, j) in itertools.combinations(range(N), 2):
+    for (i, j) in itertools.combinations(list(range(N)), 2):
         com_distances[i, j] = linalg.norm(coords_all[i] - coords_all[j])
 
     # only one half matrix is created above, make it full
@@ -221,7 +221,7 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
     all_coords, all_labels = [], []
     all_foci = []
     for netw in rsns.Network.unique():
-        print netw,
+        print(netw, end=' ')
         nodes = rsns[rsns.Network == netw]['Node'].values
         for node in nodes:
             mni_coords = rsns[(rsns.Network == netw) &
@@ -229,7 +229,7 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
             all_coords.append(mni_coords)
 
             hemi = rsns[(rsns.Network == netw) & (rsns.Node == node)].hemi.values[0]
-            print node, ':', mni_coords, hemi,
+            print(node, ':', mni_coords, hemi, end=' ')
 
             # but we are interested in getting the vertices and
             # growing our own labels
@@ -238,7 +238,7 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
             foci_surf.load_geometry()
             foci_vtxs = utils.find_closest_vertices(foci_surf.coords,
                                                     mni_coords)
-            print 'Closest vertex on surface chosen:', foci_vtxs
+            print('Closest vertex on surface chosen:', foci_vtxs)
             all_foci.append(foci_vtxs)
 
             if hemi == 'lh':

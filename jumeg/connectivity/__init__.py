@@ -3,7 +3,7 @@
 #
 # License: Simplified BSD
 
-import cross_frequency_coupling
+from . import cross_frequency_coupling
 from .con_viz import (sensor_connectivity_3d, plot_grouped_connectivity_circle,
                       plot_generic_grouped_circle,
                       plot_grouped_causality_circle)

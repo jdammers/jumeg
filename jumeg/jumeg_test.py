@@ -5,8 +5,8 @@ import os.path
 
 raw_fname = "109925_CAU01A_100715_0842_2_c,rfDC-raw.fif"
 if not os.path.isfile(raw_fname):
-    print "Please find the test file at the below location on the meg_store2 network drive - \
-           cp /data/meg_store2/fif_data/jumeg_test_data/109925_CAU01A_100715_0842_2_c,rfDC-raw.fif ."
+    print("Please find the test file at the below location on the meg_store2 network drive - \
+           cp /data/meg_store2/fif_data/jumeg_test_data/109925_CAU01A_100715_0842_2_c,rfDC-raw.fif .")
 
 # Function to check and explain the file naming standards
 #jumeg.jumeg_utils.check_jumeg_standards(raw_fname)

@@ -20,7 +20,7 @@ def plot_global_cdv_dist(stcdata, fwdmag=None):
     stcdata: stc with ||cdv|| (point sequence as in fwdmag['source_rr'])
     fwdmag:  (opt) forward solution (to colorize srcs)
     """
-    print "##### Plot global cdv-distribution at time of max |cdv|:"
+    print("##### Plot global cdv-distribution at time of max |cdv|:")
     time_idx = np.argmax(np.max(stcdata, axis=0))
     fig = plt.figure()
     plt.xlim((0, stcdata.shape[0] + 100))
@@ -28,14 +28,14 @@ def plot_global_cdv_dist(stcdata, fwdmag=None):
               1.1 * np.max(stcdata[:, time_idx])))
     if fwdmag is None:
         cdvnmax = stcdata[:, time_idx]
-        plt.plot(xrange(cdvnmax.shape[0]), cdvnmax)
+        plt.plot(range(cdvnmax.shape[0]), cdvnmax)
     else:
         offsets = [0]
         for s in fwdmag['src']:
             offsets = np.append(offsets, [offsets[-1] + s['nuse']])
-        for isrc in xrange(len(fwdmag['src'])):
+        for isrc in range(len(fwdmag['src'])):
             cdvnmax = stcdata[offsets[isrc]:offsets[isrc + 1], time_idx]
-            plt.plot(xrange(offsets[isrc], offsets[isrc + 1]), cdvnmax)
+            plt.plot(range(offsets[isrc], offsets[isrc + 1]), cdvnmax)
     plt.xlabel('n (index in fwd-solution)')
     plt.ylabel('|cdv(t_i=%d|' % time_idx)
     if fwdmag is None:
@@ -56,7 +56,7 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
     stcdata: stc with ||cdv|| (point sequence as in fwdmag['source_rr'])
     tmin, tstep, subject: passed to mne.SourceEstimate()
     """
-    print "##### Attempting to plot:"
+    print("##### Attempting to plot:")
     # cf. decoding/plot_decoding_spatio_temporal_source.py
     vertices = [s['vertno'] for s in fwdmag['src']]
     if len(vertices) == 1:
@@ -75,7 +75,7 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
         brain = stc_feat.plot(surface='white', hemi=hemi, subjects_dir=subjects_dir,
                               transparent=True, clim='auto')
         # use peak getter to move visualization to the time point of the peak
-        print "Restricting peak search to [%fs, %fs]" % (twmin, twmax)
+        print("Restricting peak search to [%fs, %fs]" % (twmin, twmax))
         if hemi == 'both':
             brain.show_view('parietal')
             vertno_max, time_idx = stc_feat.get_peak(hemi=None, time_as_index=True,
@@ -84,7 +84,7 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
             brain.show_view('lateral')
             vertno_max, time_idx = stc_feat.get_peak(hemi=hemi, time_as_index=True,
                                                      tmin=twmin, tmax=twmax)
-        print "hemi=%s: setting time_idx=%d" % (hemi, time_idx)
+        print("hemi=%s: setting time_idx=%d" % (hemi, time_idx))
         brain.set_data_time_index(time_idx)
         if hemi == 'lh' or hemi == 'rh':
             # draw marker at maximum peaking vertex
@@ -94,8 +94,8 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
         if len(fwdmag['src']) > ihemi:
             fwds = fwdmag['src'][ihemi]
             comax = fwds['rr'][vertno_max]
-            print "hemi=%s: vertno_max=%d, time_idx=%d fwdmag['src'][%d]['rr'][vertno_max] = " % \
-                  (hemi, vertno_max, time_idx, ihemi), comax
+            print("hemi=%s: vertno_max=%d, time_idx=%d fwdmag['src'][%d]['rr'][vertno_max] = " % \
+                  (hemi, vertno_max, time_idx, ihemi), comax)
 
             offsets = np.append([0], [s['nuse'] for s in fwdmag['src']])
             if hemi == 'lh':
@@ -104,18 +104,18 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
                 ifoci = [np.nonzero([stcdata[offsets[1]:, time_idx] >= 0.25 * np.max(stcdata[:, time_idx])][0])]
             vfoci = fwds['vertno'][ifoci[0][0]]
             cfoci = fwds['rr'][vfoci]
-            print "Coords  of %d sel. vfoci: " % cfoci.shape[0]
-            print cfoci
-            print "vfoci: "
-            print vfoci
-            print "brain.geo[%s].coords[vfoci] : " % hemi
-            print brain.geo[hemi].coords[vfoci]
+            print("Coords  of %d sel. vfoci: " % cfoci.shape[0])
+            print(cfoci)
+            print("vfoci: ")
+            print(vfoci)
+            print("brain.geo[%s].coords[vfoci] : " % hemi)
+            print(brain.geo[hemi].coords[vfoci])
 
             mrfoci = np.zeros(cfoci.shape)
             invmri_head_t = invert_transform(fwdmag['info']['mri_head_t'])
             mrfoci = apply_trans(invmri_head_t['trans'], cfoci, move=True)
-            print "mrfoci: "
-            print mrfoci
+            print("mrfoci: ")
+            print(mrfoci)
 
             # Just some blops along the coordinate axis:
             # This will not yield reasonable results w an inflated brain.
@@ -138,7 +138,7 @@ def plot_cdv_distribution(fwdmag, stcdata):
     fwdmag:  forward solution
     stcdata: stc with ||cdv|| (point sequence as in fwdmag['source_rr'])
     """
-    print "##### Plot cdv-distribution:"
+    print("##### Plot cdv-distribution:")
     maxxpnt = np.max([len(s['vertno']) for s in fwdmag['src']])
     time_idx = np.argmax(np.max(stcdata, axis=0))
     fig = plt.figure()
@@ -150,7 +150,7 @@ def plot_cdv_distribution(fwdmag, stcdata):
         offsets = np.append(offsets, [offsets[-1] + s['nuse']])
     for isrc, s in enumerate(fwdmag['src']):
         cdvnmax = stcdata[offsets[isrc]:offsets[isrc + 1], time_idx]
-        plt.plot(xrange(cdvnmax.shape[0]), np.sort(cdvnmax))
+        plt.plot(range(cdvnmax.shape[0]), np.sort(cdvnmax))
         plt.xlabel('index in amplitude-sorted list')
         plt.ylabel('|cdv(t_i=%d|' % time_idx)
 
@@ -169,7 +169,7 @@ def plot_max_amplitude_data(fwdmag, stcdata, tmin, tstep, subject, method='mft')
     tmin, tstep, subject: passed to mne.VolSourceEstimate()
     method: used as y-axis label
     """
-    print "##### Attempting to plot max. amplitude data:"
+    print("##### Attempting to plot max. amplitude data:")
     fig = plt.figure()
     offsets = [0]
     for s in fwdmag['src']:
@@ -197,7 +197,7 @@ def plot_max_cdv_data(stc_mft, lhmrinds, rhmrinds):
     ----------
     stcdata: stc with ||cdv|| (point sequence as in fwdmag['source_rr'])
     """
-    print "##### Attempting to plot max. cdv data:"
+    print("##### Attempting to plot max. cdv data:")
     fig = plt.figure()
     stcdata = stc_mft.data
     plt.plot(1e3 * stc_mft.times, np.max(stcdata[lhmrinds[0], :], axis=0), 'r', label='lh')
@@ -214,7 +214,7 @@ def plot_cdvsum_data(stc_mft, lhmrinds, rhmrinds):
     """
     Plot cdvsum data.
     """
-    print "##### Attempting to cdvsum data:"
+    print("##### Attempting to cdvsum data:")
     fig = plt.figure()
     stcdata = stc_mft.data
     plt.plot(1e3 * stc_mft.times, np.sum(stcdata[lhmrinds[0], :], axis=0), 'r', label='lh')
@@ -231,7 +231,7 @@ def plot_quality_data(qualmft, stc_mft):
     """
     Plot quality data.
     """
-    print "##### Attempting to plot quality data:"
+    print("##### Attempting to plot quality data:")
     fig = plt.figure()
     # relerrscal = pow(10,-int(np.log10(np.max(qualmft['relerr'][:]))))
     scalexp = -int(np.log10(np.max(qualmft['relerr'][:]))) - 1
@@ -254,15 +254,15 @@ def plot_cdm_data(qualmft, stc_mft, cdmlabels=None, selmaxjlong=False, outfile=N
     """
     Plot CDM data.
     """
-    if cdmlabels is not None and qualmft.has_key('cdmlabels'):
+    if cdmlabels is not None and 'cdmlabels' in qualmft:
         if selmaxjlong:
-            if qualmft.has_key('jlglabels'):
+            if 'jlglabels' in qualmft:
                 jlgmaxv = np.max(qualmft['jlglabels'], axis=1)
             else:
                 warnings.warn('plot_cdm_data(): qualmft-arg has no jlglabels-key')
                 return
 
-        print "##### Attempting to plot cdm data for labels:"
+        print("##### Attempting to plot cdm data for labels:")
         fig = plt.figure()
         plt.ylim((0, 1.05))
         cdmmean = np.mean(qualmft['cdmlabels'], axis=1)
@@ -274,12 +274,12 @@ def plot_cdm_data(qualmft, stc_mft, cdmlabels=None, selmaxjlong=False, outfile=N
         # Restrict to largest cdmmean-s:
         if len(cdmmean) > 10:
             if selmaxjlong:
-                for itop in xrange(10):
+                for itop in range(10):
                     itmp = np.argmax(jlgmaxv)
                     icdmtop[itmp] = 1
                     jlgmaxv[itmp] = 0.
             else:
-                for itop in xrange(10):
+                for itop in range(10):
                     itmp = np.argmax(cdmmean)
                     icdmtop[itmp] = 1
                     cdmmean[itmp] = 0.
@@ -287,15 +287,15 @@ def plot_cdm_data(qualmft, stc_mft, cdmlabels=None, selmaxjlong=False, outfile=N
             icdmtop = np.ones(len(cdmmean), dtype=np.int32)
         if len(cdmmean) > 10:
             if selmaxjlong:
-                print "Labels with largest max(jlong):"
+                print("Labels with largest max(jlong):")
             else:
-                print "Labels with largest avg(cdm):"
+                print("Labels with largest avg(cdm):")
         else:
-            print "Labels with largest avg(cdm):"
+            print("Labels with largest avg(cdm):")
         for ilab, label in enumerate(cdmlabels):
             if icdmtop[ilab] > 0:
-                print "%3d %30s %6s: avg(cdm) = %7.4f" % \
-                      (ilab + 1, label.name, label.hemi, np.mean(qualmft['cdmlabels'][ilab, :]))
+                print("%3d %30s %6s: avg(cdm) = %7.4f" % \
+                      (ilab + 1, label.name, label.hemi, np.mean(qualmft['cdmlabels'][ilab, :])))
                 # plt.plot(1e3 * stc_mft.times, qualmft['cdmlabels'][ilab,:], color=label.color, label='_none')
                 if label.color is not None:
                     plt.plot(1e3 * stc_mft.times, qualmft['cdmlabels'][ilab, :], color=label.color,
@@ -312,17 +312,17 @@ def plot_cdm_data(qualmft, stc_mft, cdmlabels=None, selmaxjlong=False, outfile=N
             plt.savefig('testfig_labelcdm')
         plt.close()
 
-    if not qualmft.has_key('cdmall') and not qualmft.has_key('cdmright') and \
-            not qualmft.has_key('cdmleft'):
+    if 'cdmall' not in qualmft and 'cdmright' not in qualmft and \
+            'cdmleft' not in qualmft:
         return
-    print "##### Attempting to plot cdm data:"
+    print("##### Attempting to plot cdm data:")
     fig = plt.figure()
     plt.ylim((0, 1.05))
-    if qualmft.has_key('cdmleft'):
+    if 'cdmleft' in qualmft:
         plt.plot(1e3 * stc_mft.times, qualmft['cdmleft'][:], 'r', label='lh')
-    if qualmft.has_key('cdmright'):
+    if 'cdmright' in qualmft:
         plt.plot(1e3 * stc_mft.times, qualmft['cdmright'][:], 'g', label='rh')
-    if qualmft.has_key('cdmall'):
+    if 'cdmall' in qualmft:
         plt.plot(1e3 * stc_mft.times, qualmft['cdmall'][:], 'b', label='all')
     plt.xlabel('time (ms)')
     plt.ylabel('cdm value')
@@ -339,17 +339,17 @@ def plot_jlong_data(qualmft, stc_mft, outfile=None):
     """
     Plot jlong label data.
     """
-    if not qualmft.has_key('jlgall') and not qualmft.has_key('jlgright') and \
-            not qualmft.has_key('jlgleft'):
+    if 'jlgall' not in qualmft and 'jlgright' not in qualmft and \
+            'jlgleft' not in qualmft:
         return
-    print "##### Attempting to plot jlong data:"
+    print("##### Attempting to plot jlong data:")
     fig = plt.figure()
     # plt.ylim((0,1.05))
-    if qualmft.has_key('jlgleft'):
+    if 'jlgleft' in qualmft:
         plt.plot(1e3 * stc_mft.times, qualmft['jlgleft'][:], 'r', label='lh')
-    if qualmft.has_key('jlgright'):
+    if 'jlgright' in qualmft:
         plt.plot(1e3 * stc_mft.times, qualmft['jlgright'][:], 'g', label='rh')
-    if qualmft.has_key('jlgall'):
+    if 'jlgall' in qualmft:
         plt.plot(1e3 * stc_mft.times, qualmft['jlgall'][:], 'b', label='all')
     plt.xlabel('time (ms)')
     plt.ylabel('jlong value')
@@ -366,11 +366,11 @@ def plot_jlong_labeldata(qualmft, stc_mft, cdmlabels, outfile=None):
     """
     Plot jlong label data.
     """
-    if cdmlabels is None or not qualmft.has_key('jlglabels') \
-            or not qualmft.has_key('cdmlabels'):
+    if cdmlabels is None or 'jlglabels' not in qualmft \
+            or 'cdmlabels' not in qualmft:
         return
 
-    print "##### Attempting to plot jlong data for labels:"
+    print("##### Attempting to plot jlong data for labels:")
     fig = plt.figure()
     jlgmaxv = np.max(qualmft['jlglabels'], axis=1)
     ijlgtop = np.zeros(len(jlgmaxv), dtype=np.int32)
@@ -381,18 +381,18 @@ def plot_jlong_labeldata(qualmft, stc_mft, cdmlabels, outfile=None):
     #        jlgmaxv[ilab] = 0.
     # Restrict to largest jlgmax-s:
     if len(jlgmaxv) > 10:
-        for itop in xrange(10):
+        for itop in range(10):
             itmp = np.argmax(jlgmaxv)
             ijlgtop[itmp] = 1
             jlgmaxv[itmp] = 0.
     else:
         ijlgtop = np.ones(len(jlgmaxv), dtype=np.int32)
     plt.ylim((0, 1.05 * jlgglbmax))
-    print "Labels with largest max(jlong):"
+    print("Labels with largest max(jlong):")
     for ilab, label in enumerate(cdmlabels):
         if ijlgtop[ilab] > 0:
-            print "%3d %30s %6s: max(jlong) = %12.4e" % \
-                  (ilab + 1, label.name, label.hemi, np.max(qualmft['jlglabels'][ilab, :]))
+            print("%3d %30s %6s: max(jlong) = %12.4e" % \
+                  (ilab + 1, label.name, label.hemi, np.max(qualmft['jlglabels'][ilab, :])))
             # plt.plot(1e3 * stc_mft.times, qualmft['jlglabels'][ilab,:], color=label.color, label='_none')
             if label.color is not None:
                 plt.plot(1e3 * stc_mft.times, qualmft['jlglabels'][ilab, :], color=label.color,
@@ -414,11 +414,11 @@ def plot_jtotal_labeldata(qualmft, stc_mft, cdmlabels, outfile=None):
     """
     Plot jtotal label data.
     """
-    if cdmlabels is None or not qualmft.has_key('jtotlabels') \
-            or not qualmft.has_key('cdmlabels'):
+    if cdmlabels is None or 'jtotlabels' not in qualmft \
+            or 'cdmlabels' not in qualmft:
         return
 
-    print "##### Attempting to plot jtotal data for labels:"
+    print("##### Attempting to plot jtotal data for labels:")
     fig = plt.figure()
     jtotmaxv = np.max(qualmft['jtotlabels'], axis=1)
     ijtottop = np.zeros(len(jtotmaxv), dtype=np.int32)
@@ -429,18 +429,18 @@ def plot_jtotal_labeldata(qualmft, stc_mft, cdmlabels, outfile=None):
     #        jtotmaxv[ilab] = 0.
     # Restrict to largest jtotmax-s:
     if len(jtotmaxv) > 10:
-        for itop in xrange(10):
+        for itop in range(10):
             itmp = np.argmax(jtotmaxv)
             ijtottop[itmp] = 1
             jtotmaxv[itmp] = 0.
     else:
         ijtottop = np.ones(len(jtotmaxv), dtype=np.int32)
     plt.ylim((0, 1.05 * jtotglbmax))
-    print "Labels with largest max(jtotal):"
+    print("Labels with largest max(jtotal):")
     for ilab, label in enumerate(cdmlabels):
         if ijtottop[ilab] > 0:
-            print "%3d %30s %6s: max(jtotal) = %12.4e" % \
-                  (ilab + 1, label.name, label.hemi, np.max(qualmft['jtotlabels'][ilab, :]))
+            print("%3d %30s %6s: max(jtotal) = %12.4e" % \
+                  (ilab + 1, label.name, label.hemi, np.max(qualmft['jtotlabels'][ilab, :])))
             # plt.plot(1e3 * stc_mft.times, qualmft['jtotlabels'][ilab,:], color=label.color, label='_none')
             if label.color is not None:
                 plt.plot(1e3 * stc_mft.times, qualmft['jtotlabels'][ilab, :], color=label.color,

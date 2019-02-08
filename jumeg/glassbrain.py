@@ -129,7 +129,7 @@ class ConnecBrain(surfer.Brain):
 
         if labels is not None:
             tl = []
-            for i in xrange(coords.shape[0]):
+            for i in range(coords.shape[0]):
                 tl.append(mlab.text3d(foci_coords[i, 0]*txt_pos[0],
                                        foci_coords[i, 1]*txt_pos[1],
                                        foci_coords[i, 2]*txt_pos[2],
@@ -193,8 +193,8 @@ class ConnecBrain(surfer.Brain):
 
         line_coords = np.vstack((x, y, z)).transpose()
         step = 5
-        idx_a = range(0, nsegs+1, step)
-        idx_b = range(10, nsegs+1, step)
+        idx_a = list(range(0, nsegs+1, step))
+        idx_b = list(range(10, nsegs+1, step))
 
         views = self._toggle_render(False)
 
