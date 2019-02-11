@@ -1,6 +1,18 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+
+import os
+from os import path as op
 
 from setuptools import setup
+
+def package_tree(pkgroot):
+    """Get the submodule list."""
+    # adapted from mne-python
+    path = os.path.dirname(__file__)
+    subdirs = [os.path.relpath(i[0], path).replace(os.path.sep, '.')
+               for i in os.walk(os.path.join(path, pkgroot))
+               if '__init__.py' in i[2]]
+    return sorted(subdirs)
 
 setup(name='jumeg',
       version='0.18',
@@ -10,6 +22,5 @@ setup(name='jumeg',
       author='Praveen Sripad',
       author_email='pravsripad@gmail.com',
       license='BSD (3-clause)',
-      packages=['jumeg'],
+      packages=package_tree('jumeg'),
       zip_safe=False)
-
