@@ -3,8 +3,6 @@
 
 import math
 import numpy as np
-from scipy import linalg
-import scot
 
 
 def _tsdata_to_var(X, p):
@@ -269,6 +267,7 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
     Returns:
     (is_white, consistency, is_stable)
     '''
+    import scot
     print('starting checks and MVAR fitting...')
     A, SIG, E = _tsdata_to_var(X, morder)
     whi = False
@@ -413,6 +412,8 @@ def compute_order(X, m_max, verbose=True):
     bic : ndarray, shape (m_max + 1,)
         The BIC for the orders from 1 to m_max.
     """
+    import scot
+    from scipy import linalg
 
     N, p, n = X.shape
     bic = []
