@@ -9,7 +9,7 @@ import numpy as np
 import os
 import mne
 from mne.datasets import sample
-from jumeg_mft_funcs import apply_mft
+from jumeg.mft import apply_mft
 from jumeg.mft import jumeg_mft_plot
 
 data_path = sample.data_path()

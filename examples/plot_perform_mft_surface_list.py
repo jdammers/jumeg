@@ -8,8 +8,7 @@ Perform MFT on a surface based forward solution.
 import numpy as np
 import mne
 from mne.datasets import sample
-from jumeg_mft_funcs import apply_mft
-from jumeg.mft import jumeg_mft_plot
+from jumeg.mft import (apply_mft, jumeg_mft_plot)
 
 data_path = sample.data_path()
 subject = 'sample'
