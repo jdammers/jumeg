@@ -1,3 +1,6 @@
+#-*- coding: utf-8 -*-
+#!/usr/bin/env python
+
 '''
 Modified MNE-Python example script to show connectivity between standard
 resting state network labels obtained from [1].
