@@ -95,7 +95,7 @@ with open(yaml_fname, 'r') as f:
 node_order = list()
 node_order.extend(label_names)
 
-group_bound = [len(key.values()[0]) for key in xlabels]
+group_bound = [len(list(key.values())[0]) for key in xlabels]
 group_bound = [0] + group_bound
 group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
 group_boundaries.pop()

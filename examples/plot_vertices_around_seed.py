@@ -26,7 +26,7 @@ dist[hemi] = mne.label.mesh_dist(tris[hemi], vert[hemi])
 my_verts, my_dist = mne.label._verts_within_dist(dist[hemi], [20], 5)
 
 # number of vertices in a given radius
-print len(my_verts)
+print(len(my_verts))
 
 from surfer import Brain
 brain = Brain('fsaverage', hemi='lh', surf='inflated',

@@ -34,9 +34,9 @@ parc_fname = 'standard_garces_2016'
 csv_fname = op.join(get_jumeg_path(), 'data', 'standard_rsns.csv')
 
 # set make_annot to True to save the annotation to disk
-labels, coords = make_annot_from_csv(subject, subjects_dir, csv_fname,
-                                     parc_fname=parc_fname, make_annot=False,
-                                     return_label_coords=True)
+labels, coords, _ = make_annot_from_csv(subject, subjects_dir, csv_fname,
+                                        parc_fname=parc_fname, make_annot=False,
+                                        return_label_coords=True)
 
 # to plot mni coords on glass brain
 n_nodes = np.array(coords).shape[0]

@@ -28,5 +28,5 @@ data = raw.get_data()[picks, :]
 
 rank_all, rank_median = rank_estimation(data)
 
-print 'Ranks in order: MIBS, BIC, GAP, AIC, MDL, pct95, pct99: ', rank_all
-print 'The median of the data is %f' % rank_median
+print('Ranks in order: MIBS, BIC, GAP, AIC, MDL, pct95, pct99: ', rank_all)
+print('The median of the data is %f' % rank_median)

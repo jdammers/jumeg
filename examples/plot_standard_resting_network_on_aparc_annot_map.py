@@ -50,15 +50,15 @@ for i, rst_label in enumerate(labels):
     if rst_label.hemi == 'lh':  # vertex hemi is stored in the rst_label
         for mylab in lh_aparc:
             if myfoci in mylab.vertices:
-                print 'Left: ', rst_label.name, myfoci, mylab, aparc.index(mylab)
+                print('Left: ', rst_label.name, myfoci, mylab, aparc.index(mylab))
                 rst_aparc.append(mylab)
     elif rst_label.hemi == 'rh':
         for mylab in rh_aparc:
             if myfoci in mylab.vertices:
-                print 'Right: ', rst_label.name, myfoci, mylab, aparc.index(mylab)
+                print('Right: ', rst_label.name, myfoci, mylab, aparc.index(mylab))
                 rst_aparc.append(mylab)
     else:
-        print 'ERROR: ', rst_label
+        print('ERROR: ', rst_label)
 
 # only 16 labels in aparc show up, there are no vertices in the left hemi for
 # Frontoinsular_Median cingulate-lh
