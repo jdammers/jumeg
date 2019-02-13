@@ -20,7 +20,9 @@ os.environ['SUBJECTS_DIR'] = subjects_dir
 stc_fname = data_path + '/MEG/sample/sample_audvis-meg'
 stc = mne.read_source_estimate(stc_fname)
 
-new_stc = mne.morph_data('sample', 'fsaverage', stc, grade=5, subjects_dir=subjects_dir, n_jobs=2)
+morph = mne.compute_source_morph(stc, subject_from='sample',
+                                 subject_to='fsaverage', spacing=5, subjects_dir=subjects_dir)
+new_stc = morph.apply(stc)
 
 subject = 'fsaverage'
 
