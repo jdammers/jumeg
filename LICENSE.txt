@@ -1,4 +1,4 @@
-Copyright © 2014-2015, authors of Jumeg
+Copyright © 2014-2019, authors of Jumeg
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

@@ -3,7 +3,7 @@
 '''
 Plot Networkx Communities on a connectome plot.
 
-author: Praveen sripad <pravsripad@gmail.com>
+Author: Praveen Sripad <pravsripad@gmail.com>
 '''
 
 import numpy as np
@@ -50,7 +50,7 @@ for top_nodes, col, cmap in zip(top_nodes_list, color_list, cmaps_list):
     for lab in community_:
         if lab.name is 'unknown-lh':
             continue
-        print lab.name
+        print(lab.name)
         # get the center of mass
         com = lab.center_of_mass('fsaverage')
         if lab.name.endswith('lh'):

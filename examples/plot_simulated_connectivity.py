@@ -28,7 +28,7 @@ assert shift < sfreq * duration, 'Choose a smaller shift.'
 # coherence using mlab function
 cohxy, freqs = mlab.cohere(x, y, Fs=sfreq, NFFT=nfft)
 
-n_freqs = nfft/2 + 1
+n_freqs = int(nfft/2 + 1)
 
 def compute_mean_psd_csd(x, y, n_epochs, nfft, sfreq):
     '''Computes mean of PSD and CSD for signals.'''
@@ -156,10 +156,10 @@ def my_con(x, y, n_epochs, nfft, sfreq, con_name='coh'):
         return wpli, wpli_surro, freqs, freqs_surro
 
     if con_name == '':
-        print 'Please provide the connectivity method to use.'
+        print('Please provide the connectivity method to use.')
         sys.exit()
     else:
-        print 'Connectivity method unrecognized.'
+        print('Connectivity method unrecognized.')
         sys.exit()
 
 con_name = 'wpli'

@@ -1,7 +1,7 @@
 """
 Compute the ica object on filtered data based on the mne and on the
 jumeg method.
-Compare pca_mean_ and _pre_whitener for:
+Compare pca_mean_ and pre_whitener_ for:
 mne & filtered data, jumeg & filtered data, jumeg & unfiltered data
 """
 
@@ -39,7 +39,7 @@ ica_mne.fit(raw_filt, picks=picks, reject=reject, verbose=True)
 
 # save mean and standard deviation of filtered MEG channels for the standard mne routine
 pca_mean_filt_mne = ica_mne.pca_mean_.copy()
-pca_pre_whitener_filt_mne = ica_mne._pre_whitener.copy()  # this is the standard deviation of MEG channels
+pca_pre_whitener_filt_mne = ica_mne.pre_whitener_.copy()  # this is the standard deviation of MEG channels
 
 
 ica_jumeg = ICA_jumeg(method='fastica', n_components=60, random_state=42,
@@ -50,7 +50,7 @@ ica_jumeg.fit(raw_filt, picks=picks, reject=reject, verbose=True)
 
 # save mean and standard deviation of filtered MEG channels for the standard mne routine
 pca_mean_filt_jumeg = ica_jumeg.pca_mean_.copy()
-pca_pre_whitener_filt_jumeg = ica_jumeg._pre_whitener.copy()  # this is the standard deviation of MEG channels
+pca_pre_whitener_filt_jumeg = ica_jumeg.pre_whitener_.copy()  # this is the standard deviation of MEG channels
 
 # use the same arguments for apply_ica_replace_mean_std as when you are initializing the ICA
 # object and when you are fitting it to the data
@@ -62,17 +62,17 @@ raw_clean = apply_ica_replace_mean_std(raw_unfilt, ica_jumeg, picks=picks, rejec
 
 # save mean and standard deviation of unfiltered MEG channels
 pca_mean_replaced_unfilt_jumeg = ica_jumeg.pca_mean_
-pca_pre_whitener_replaced_unfilt_jumeg = ica_jumeg._pre_whitener
+pca_pre_whitener_replaced_unfilt_jumeg = ica_jumeg.pre_whitener_
 
 # compare methods for filtered and unfiltered data
 for idx in range(0, len(pca_mean_filt_mne)):
-    print '%10.6f\t%10.6f\t%10.6f' % (pca_mean_filt_mne[idx], pca_mean_filt_jumeg[idx],
-                                      pca_mean_replaced_unfilt_jumeg[idx])
+    print('%10.6f\t%10.6f\t%10.6f' % (pca_mean_filt_mne[idx], pca_mean_filt_jumeg[idx],
+                                      pca_mean_replaced_unfilt_jumeg[idx]))
     if idx >= 9:
         break
 
 for idx in range(0, len(pca_pre_whitener_filt_mne)):
-    print pca_pre_whitener_filt_mne[idx], pca_pre_whitener_filt_jumeg[idx],\
-        pca_pre_whitener_replaced_unfilt_jumeg[idx]
+    print(pca_pre_whitener_filt_mne[idx], pca_pre_whitener_filt_jumeg[idx],\
+        pca_pre_whitener_replaced_unfilt_jumeg[idx])
     if idx >= 9:
         break
