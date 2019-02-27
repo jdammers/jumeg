@@ -7,10 +7,26 @@ Warning
 =======
 
 1. Please do not push any changes directly to the master branch of jdammers/jumeg. Always make a pull request, discuss and only then merge with the master branch.
-2. If you have code that you want to share and are not sure how to, please put it on a gist (https://gist.github.com/) and raise an issue on Github so that it can be discussed and added.
+2. If you have code that you want to share and are not sure how to, please put it on a gist (https://gist.github.com/) and raise an issue on Github so that it can be discused and added.
 
-Installation
-============
+User Installation (quick)
+=========================
+
+It is recommended to setup the mne-friendly jumeg environment using Anaconda / Miniconda.
+After downloading anaconda, an environment can be easily created using the below steps:
+
+1. Download conda environment file to download jumeg (default)[https://gist.github.com/pravsripad/0361ffee14913487eb7b7ef43c9367fe] or (jumeg with GPU support)[https://gist.github.com/pravsripad/7bb8f696999985b442d9aca8ade19f19].
+
+2. Create the conda environment using the below commands.
+
+``` conda env create -f=jumeg.yml ```
+
+or 
+
+``` conda env create -f=jumeg_cuda.yml ```
+
+Developer Installation
+======================
 
 1. Fork the repository by visiting https://github.com/jdammers/jumeg and clicking on the Fork button. 
 2. Your own fork of the repo will be created at https://github.com/your_username/jumeg.
