@@ -15,7 +15,7 @@ User Installation (quick)
 It is recommended to setup the mne-friendly jumeg environment using Anaconda / Miniconda.
 After downloading anaconda, an environment can be easily created using the below steps:
 
-1. Download conda environment file to download jumeg (default)[https://gist.github.com/pravsripad/0361ffee14913487eb7b7ef43c9367fe] or (jumeg with GPU support)[https://gist.github.com/pravsripad/7bb8f696999985b442d9aca8ade19f19].
+1. Download conda environment file to download jumeg [default](https://gist.github.com/pravsripad/0361ffee14913487eb7b7ef43c9367fe) or [jumeg with GPU support](https://gist.github.com/pravsripad/7bb8f696999985b442d9aca8ade19f19).
 
 2. Create the conda environment using the below commands.
 
@@ -70,7 +70,7 @@ Making some changes and updating it to the web server:
    git commit -m"Some useful comments" <file1> <file2>
    git push origin <new_branch>
    ```
-5. Now go to https://github.com/<yourname>/jumeg and use the "Compare and pull request" option to raise a pull request where you can discuss and finally merge the new changes to main master branch. 
+5. Now go to ```https://github.com/<yourname>/jumeg``` and use the "Compare and pull request" option to raise a pull request where you can discuss and finally merge the new changes to main master branch. 
 
 6. Use ```git checkout master``` and ```git pull upstream master``` to remain on the latest changes before making your own changes. 
 
