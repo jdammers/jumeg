@@ -2235,7 +2235,7 @@ def _remove_vert_duplicates(subject, subj_src, label_dict_subject,
         Dictionary with the labels and their respective vertices
         for the subject where duplicate vertices have been removed.
     """
-    fname_s_aseg = subjects_dir + subject + '/mri/aseg.mgz'
+    fname_s_aseg = op.join(subjects_dir, subject, 'mri', 'aseg.mgz')
     mgz = nib.load(fname_s_aseg)
     mgz_data = mgz.get_data()
     lut = _get_lut()
