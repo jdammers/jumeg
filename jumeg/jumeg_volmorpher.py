@@ -2242,15 +2242,14 @@ def _remove_vert_duplicates(subject, subj_src, label_dict_subject,
     vox2rastkr_trans = _get_mgz_header(fname_s_aseg)['vox2ras_tkr']
     vox2rastkr_trans[:3] /= 1000.
     inv_vox2rastkr_trans = linalg.inv(vox2rastkr_trans)
-    all_volume_labels = []
-    vol_lab = mne.get_volume_labels_from_aseg(fname_s_aseg)
-    for lab in vol_lab:
-        all_volume_labels.append(lab.encode())
+
+    all_volume_labels = mne.get_volume_labels_from_aseg(fname_s_aseg)
     all_volume_labels.remove('Unknown')
 
     print("""\n#### Attempting to check for vertice duplicates in labels due to
     spatial aliasing in %s's volume source creation..""" % subject)
     del_count = 0
+
     for p, label in enumerate(all_volume_labels):
         loadingBar(p, len(all_volume_labels), task_part=None)
         lab_arr = label_dict_subject[label]
