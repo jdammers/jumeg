@@ -7,7 +7,7 @@ from jumeg.jumeg_suggest_bads import suggest_bads
 from jumeg.jumeg_interpolate_bads import interpolate_bads as jumeg_interpolate_bads
 
 
-def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
+def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fname):
     """
     Apply the noise reducer to the raw file and save the result.
 
@@ -21,6 +21,9 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
         File name under which the denoised raw file is saved.
     refnotch : list
         List of frequencies for which a notch filter is applied.
+    state_space_fname : str
+        Second half of the name under which the state space dict is to
+        be saved, e.g., subj + state_space_name.
 
     Returns:
     --------
@@ -34,7 +37,7 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
     from jumeg.jumeg_noise_reducer import noise_reducer, plot_denoising
 
     subj = op.basename(raw_fname).split('_')[0]
-    config_dict_fname = op.join(op.dirname(raw_fname), subj + '_config_dict.pkl')
+    ss_dict_fname = op.join(op.dirname(raw_fname), subj + state_space_fname)
 
     # read the raw file
     raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
@@ -67,16 +70,16 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
     nr_dict['refnotch'] = refnotch
     nr_dict['output_file'] = denoised_fname
 
-    save_config_file(config_dict_fname, process='noise_reducer',
-                     input_fname=raw_fname, process_config_dict=nr_dict)
+    save_state_space_file(ss_dict_fname, process='noise_reducer',
+                          input_fname=raw_fname, process_config_dict=nr_dict)
 
 
-def save_config_file(config_dict_fname, process, input_fname, process_config_dict):
+def save_state_space_file(config_dict_fname, process, input_fname, process_config_dict):
     """
 
     Parameters:
     -----------
-    config_dict_fname : str
+    ss_dict_fname : str
         Name under which the config dict is to be saved.
     process : str
         Name of the process, e.g., 'noise_reducer'.
@@ -120,7 +123,7 @@ def save_dict(bads_dict, bads_dict_fname):
     bads_dict_file.close()
 
 
-def interpolate_bads_batch(subject_list, subjects_dir, bads_dict_fname):
+def interpolate_bads_batch(subject_list, subjects_dir, state_space_fname):
     """
     Scan the subject directories for files ending in ',nr-raw.fif' and
     ',nr-empty.fif' and interpolate the bad channels.
@@ -131,15 +134,13 @@ def interpolate_bads_batch(subject_list, subjects_dir, bads_dict_fname):
         List of all subject IDs.
     subjects_dir : str
         Path to the subjects directory.
-    bads_dict_fname : str
-        Name for the file storing the dictionary containing
-        a list of bad channels for each raw file.
+    state_space_fname : str
+        Second half of the name under which the state space dict is to
+        be saved, e.g., subj + state_space_name.
 
     Returns:
     --------
     """
-
-    bads_dict = init_dict(bads_dict_fname)
 
     for subj in subject_list:
         dirname = op.join(subjects_dir, subj)
@@ -148,19 +149,19 @@ def interpolate_bads_batch(subject_list, subjects_dir, bads_dict_fname):
 
             if raw_fname.endswith('meeg,nr-raw.fif'):
                 bcc_fname = op.join(dirname, raw_fname.split('/')[-1].split('-raw.fif')[0] + ',bcc-raw.fif')
-                interpolate_bads(raw_fname, bcc_fname, bads_dict, bads_dict_fname, dirname)
+                interpolate_bads(raw_fname, bcc_fname, dirname, state_space_fname)
 
             if raw_fname.endswith('rfDC,nr-empty.fif'):
                 bcc_fname = op.join(dirname, raw_fname.split('/')[-1].split('-empty.fif')[0] + ',bcc-empty.fif')
-                interpolate_bads(raw_fname, bcc_fname, bads_dict, bads_dict_fname, dirname)
+                interpolate_bads(raw_fname, bcc_fname, dirname, state_space_fname)
 
 
-def interpolate_bads(raw_fname, bcc_fname, dirname):
+def interpolate_bads(raw_fname, bcc_fname, dirname, state_space_fname):
 
     ib_dict = dict()
 
     subj = op.basename(raw_fname).split('_')[0]
-    config_dict_fname = op.join(op.dirname(raw_fname), subj + '_config_dict.pkl')
+    ss_dict_fname = op.join(op.dirname(raw_fname), subj + state_space_fname)
 
     if not op.isfile(bcc_fname):
 
@@ -180,5 +181,5 @@ def interpolate_bads(raw_fname, bcc_fname, dirname):
         ib_dict['bads_visual_inspection'] = raw_bcc.info['bads']
         ib_dict['output_file'] = bcc_fname
 
-        save_config_file(config_dict_fname, process='interpolate_bads',
-                         input_fname=raw_fname, process_config_dict=ib_dict)
+        save_state_space_file(ss_dict_fname, process='interpolate_bads',
+                              input_fname=raw_fname, process_config_dict=ib_dict)

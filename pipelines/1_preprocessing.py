@@ -4,7 +4,7 @@ import mne
 
 from utils import noise_reduction
 from utils import interpolate_bads_batch
-from utils import save_config_file
+from utils import save_state_space_file
 
 subject_list = ['subj']
 subjects_dir = 'test'
@@ -18,6 +18,8 @@ fhigh = 45.
 
 # resampling
 rsfreq = 250
+
+state_space_fname = '_state_space_dict.pkl'
 
 ###############################################################################
 # Noise reduction
@@ -38,14 +40,14 @@ for subj in subject_list:
                 denoised_fname = raw_fname.rsplit('-empty.fif')[0] + ',nr-empty.fif'
 
             if not op.isfile(op.join(dirname, denoised_fname)):
-                noise_reduction(dirname, raw_fname, denoised_fname, refnotch)
+                noise_reduction(dirname, raw_fname, denoised_fname, refnotch,
+                                state_space_fname)
 
 ###############################################################################
 # Identify bad channels
 ###############################################################################
 
-bads_dict_fname = 'bad_channels.pkl'
-interpolate_bads_batch(subject_list, subjects_dir, bads_dict_fname)
+interpolate_bads_batch(subject_list, subjects_dir, state_space_fname)
 
 ###############################################################################
 # Filter
@@ -57,7 +59,7 @@ for subj in subject_list:
     dirname = os.path.join(subjects_dir, subj)
     sub_file_list = os.listdir(dirname)
 
-    config_dict_fname = op.join(dirname, subj + '_config_dict.pkl')
+    ss_dict_fname = op.join(dirname, subj + state_space_fname)
 
     for raw_fname in sub_file_list:
 
@@ -85,8 +87,8 @@ for subj in subject_list:
             fi_dict['phase'] = phase
             fi_dict['output_file'] = raw_filt_fname
 
-            save_config_file(config_dict_fname, process='filtering',
-                             input_fname=raw_fname, process_config_dict=fi_dict)
+            save_state_space_file(ss_dict_fname, process='filtering',
+                                  input_fname=raw_fname, process_config_dict=fi_dict)
 
             raw_filt.save(raw_filt_fname)
 
@@ -102,7 +104,7 @@ for subj in subject_list:
     dirname = os.path.join(subjects_dir, subj)
     sub_file_list = os.listdir(dirname)
 
-    config_dict_fname = op.join(dirname, subj + '_config_dict.pkl')
+    ss_dict_fname = op.join(dirname, subj + state_space_fname)
 
     for raw_fname in sub_file_list:
 
@@ -125,8 +127,8 @@ for subj in subject_list:
             rs_dict['npad'] = npad
             rs_dict['output_file'] = raw_rs_fname
 
-            save_config_file(config_dict_fname, process='filtering',
-                             input_fname=raw_fname, process_config_dict=rs_dict)
+            save_state_space_file(ss_dict_fname, process='filtering',
+                                  input_fname=raw_fname, process_config_dict=rs_dict)
 
             raw_rs.save(raw_rs_fname)
 
