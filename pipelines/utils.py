@@ -62,8 +62,8 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
 
     # save config file
     nr_dict = dict()
-    nr_dict['reflp'] = 5.
-    nr_dict['refhp'] = 0.1
+    nr_dict['reflp'] = reflp
+    nr_dict['refhp'] = refhp
     nr_dict['refnotch'] = refnotch
     nr_dict['output_file'] = denoised_fname
 
