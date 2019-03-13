@@ -78,6 +78,8 @@ for subj in subject_list:
                 raw_filt_fname = raw_fname.rsplit('-empty.fif')[0] + ',fibp-empty.fif'
 
             fi_dict = dict()
+            fi_dict['flow'] = flow
+            fi_dict['fhigh'] = fhigh
             fi_dict['method'] = method
             fi_dict['fir_design'] = fir_design
             fi_dict['phase'] = phase
