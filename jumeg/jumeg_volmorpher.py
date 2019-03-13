@@ -67,7 +67,7 @@ def read_vert_labelwise(fname_src, subject, subjects_dir):
     
     """
     fname_labels = fname_src[:-4] + '_vertno_labelwise.npy'
-    label_dict = np.load(fname_labels).item()
+    label_dict = np.load(fname_labels, encoding='latin1').item()
     subj_vert_src = mne.read_source_spaces(fname_src)
     label_dict = _remove_vert_duplicates(subject, subj_vert_src, label_dict,
                                          subjects_dir)
@@ -503,12 +503,13 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
         print('\n#### Attempting to read MatchMaking Transformations from file..')
         indiv_spacing = (np.abs(subj_vol[0]['rr'][0, 0]) -
                          np.abs(subj_vol[0]['rr'][1, 0])) * 1e3
-        fname_lw_trans = (subjects_dir + subject + '/' +
-                          '%s_%s_vol-%.2f_lw-trans.npy' % (subject, subject_to,
-                                                           indiv_spacing))
+
+        fname_lw_trans = op.join(subjects_dir, subject,
+                                 '%s_%s_vol-%.2f_lw-trans.npy' % (subject, subject_to,
+                                                                  indiv_spacing))
 
         try:
-            mat_mak_trans_dict_arr = np.load(fname_lw_trans)
+            mat_mak_trans_dict_arr = np.load(fname_lw_trans, encoding='latin1')
 
         except IOError:
             print('MatchMaking Transformations file NOT found:')
@@ -692,11 +693,11 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     # get dictionaries with labels and their respective vertices
     fname_label_dict_subject_from = (fname_vsrc_subject_from[:-4] +
                                      '_vertno_labelwise.npy')
-    label_dict_subject_from = np.load(fname_label_dict_subject_from).item()
+    label_dict_subject_from = np.load(fname_label_dict_subject_from, encoding='latin1').item()
 
     fname_label_dict_subject_to = (fname_vsrc_subject_to[:-4] +
                                    '_vertno_labelwise.npy')
-    label_dict_subject_to = np.load(fname_label_dict_subject_to).item()
+    label_dict_subject_to = np.load(fname_label_dict_subject_to, encoding='latin1').item()
 
     # Check for vertex duplicates
     label_dict_subject_from = _remove_vert_duplicates(subject_from, subj_vol,
@@ -927,7 +928,7 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
                                        temp_spacing, subjects_dir)
 
     print('\n#### Attempting to save the volume morphing results ..')
-    directory = subjects_dir + '%s/plots/VolumeMorphing/' % subject_from
+    directory = op.join(subjects_dir , subject_from, 'plots', 'VolumeMorphing')
     if not op.exists(directory):
         os.makedirs(directory)
 
@@ -2141,7 +2142,7 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     slice_z = int(cut_coords[2])
     print('    Respective Space Coords [mri-space]:')
     print('    X: ', slice_x, '    Y: ', slice_y, '    Z: ', slice_z)
-    temp_t1_fname = subjects_dir + subject + '/mri/T1.mgz'
+    temp_t1_fname = op.join(subjects_dir, subject, 'mri', 'T1.mgz')
     VSTCPT_plot = plotting.plot_stat_map(index_img(img, t), temp_t1_fname,
                                          figure=figure, axes=axes,
                                          display_mode='ortho',
@@ -2182,8 +2183,8 @@ def make_indiv_spacing(subject, ave_subject, template_spacing, subjects_dir):
     trans : SourceEstimate
           The generated source time courses.
     """
-    fname_surf = subjects_dir + subject + '/bem/watershed/%s_inner_skull_surface' % subject
-    fname_surf_temp = subjects_dir + ave_subject + '/bem/watershed/%s_inner_skull_surface' % ave_subject
+    fname_surf = op.join(subjects_dir, subject, 'bem', 'watershed', '%s_inner_skull_surface' % subject)
+    fname_surf_temp = op.join(subjects_dir, ave_subject, 'bem', 'watershed', '%s_inner_skull_surface' % ave_subject)
     surf = mne.read_surface(fname_surf, return_dict=True, verbose='ERROR')[-1]
     surf_temp = mne.read_surface(fname_surf_temp, return_dict=True, verbose='ERROR')[-1]
     x_sp, y_sp, z_sp = surf['rr'].T / 1e3
