@@ -4,7 +4,7 @@ import os.path as op
 import pickle
 
 from jumeg.jumeg_suggest_bads import suggest_bads
-from jumeg.jumeg_interpolate_bads import interpolate_bads
+from jumeg.jumeg_interpolate_bads import interpolate_bads as jumeg_interpolate_bads
 
 
 def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
@@ -27,7 +27,14 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
     None
     """
 
+    reflp = 5.
+    refhp = 0.1
+    noiseref_hp = ['RFG ...']
+
     from jumeg.jumeg_noise_reducer import noise_reducer, plot_denoising
+
+    subj = op.basename(raw_fname).split('_')[0]
+    config_dict_fname = op.join(op.dirname(raw_fname), subj + '_config_dict.pkl')
 
     # read the raw file
     raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
@@ -35,11 +42,11 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
     # apply noise reducer thrice to reference channels with different freq parameters
     # the nr-raw.fif are rewritten
     # low pass filter for freq below 5 hz
-    raw_nr = noise_reducer(raw_fname, raw=raw, reflp=5., return_raw=True)
+    raw_nr = noise_reducer(raw_fname, raw=raw, reflp=reflp, return_raw=True)
 
     raw.close()
 
-    raw_nr = noise_reducer(raw_fname, raw=raw_nr, refhp=0.1, noiseref=['RFG ...'], return_raw=True)
+    raw_nr = noise_reducer(raw_fname, raw=raw_nr, refhp=refhp, noiseref=noiseref_hp, return_raw=True)
 
     # notch filter to remove power line noise
     raw_nr = noise_reducer(raw_fname, raw=raw_nr, refnotch=refnotch,
@@ -53,8 +60,49 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch):
     plot_denoising([op.join(dirname, raw_fname), op.join(dirname, denoised_fname)],
                    n_jobs=2, fnout=op.join(dirname, plot_name), show=False)
 
+    # save config file
+    nr_dict = dict()
+    nr_dict['reflp'] = 5.
+    nr_dict['refhp'] = 0.1
+    nr_dict['refnotch'] = refnotch
+    nr_dict['output_file'] = denoised_fname
 
-def init_bads_dict(bads_dict_fname):
+    save_config_file(config_dict_fname, process='noise_reducer',
+                     input_fname=raw_fname, process_config_dict=nr_dict)
+
+
+def save_config_file(config_dict_fname, process, input_fname, process_config_dict):
+    """
+
+    Parameters:
+    -----------
+    config_dict_fname : str
+        Name under which the config dict is to be saved.
+    process : str
+        Name of the process, e.g., 'noise_reducer'.
+    input_fname : str
+        Name of the input raw file.
+    process_config_dict : dict
+        Dictionary containing all the settings used in the process.
+
+    Returns:
+    --------
+    None
+    """
+
+    config_dict = init_dict(config_dict_fname)
+
+    try:
+        config_dict[process][input_fname] = process_config_dict
+    except KeyError:
+        # dict does not exist create first
+        config_dict[process] = dict()
+        config_dict[process][input_fname] = process_config_dict
+
+    save_dict(config_dict, config_dict_fname)
+
+
+def init_dict(bads_dict_fname):
     if op.isfile(bads_dict_fname):
         bads_dict_file = open(bads_dict_fname, mode='r')
         bads_dict = pickle.load(bads_dict_file)
@@ -66,7 +114,7 @@ def init_bads_dict(bads_dict_fname):
     return bads_dict
 
 
-def save_bads_dict(bads_dict, bads_dict_fname):
+def save_dict(bads_dict, bads_dict_fname):
     bads_dict_file = open(bads_dict_fname, mode='w')
     pickle.dump(bads_dict, bads_dict_file)
     bads_dict_file.close()
@@ -91,7 +139,7 @@ def interpolate_bads_batch(subject_list, subjects_dir, bads_dict_fname):
     --------
     """
 
-    bads_dict = init_bads_dict(bads_dict_fname)
+    bads_dict = init_dict(bads_dict_fname)
 
     for subj in subject_list:
         dirname = op.join(subjects_dir, subj)
@@ -100,29 +148,37 @@ def interpolate_bads_batch(subject_list, subjects_dir, bads_dict_fname):
 
             if raw_fname.endswith('meeg,nr-raw.fif'):
                 bcc_fname = op.join(dirname, raw_fname.split('/')[-1].split('-raw.fif')[0] + ',bcc-raw.fif')
-                _interpolate_bads(raw_fname, bcc_fname, bads_dict, bads_dict_fname, dirname)
+                interpolate_bads(raw_fname, bcc_fname, bads_dict, bads_dict_fname, dirname)
 
             if raw_fname.endswith('rfDC,nr-empty.fif'):
                 bcc_fname = op.join(dirname, raw_fname.split('/')[-1].split('-empty.fif')[0] + ',bcc-empty.fif')
-                _interpolate_bads(raw_fname, bcc_fname, bads_dict, bads_dict_fname, dirname)
+                interpolate_bads(raw_fname, bcc_fname, bads_dict, bads_dict_fname, dirname)
 
 
-def _interpolate_bads(raw_fname, bcc_fname, bads_dict, bads_dict_fname, dirname):
+def interpolate_bads(raw_fname, bcc_fname, dirname):
 
-    bads_dict_key = bcc_fname.split('/')[-1]
+    ib_dict = dict()
+
+    subj = op.basename(raw_fname).split('_')[0]
+    config_dict_fname = op.join(op.dirname(raw_fname), subj + '_config_dict.pkl')
 
     if not op.isfile(bcc_fname):
 
         raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
-        if bads_dict_key not in bads_dict:
-            #  automatically suggest bad channels and plot results for visual inspection
-            marked, raw = suggest_bads(raw, show_raw=True)
-            bads_dict[bads_dict_key] = marked
-        else:
-            marked = bads_dict[bads_dict_key]
-            raw.info['bads'] = marked
+        # automatically suggest bad channels and plot results for visual inspection
+        marked, raw = suggest_bads(raw, show_raw=True)
+
+        ib_dict['suggested_bads'] = raw.info['bads']
+
         # Interpolate bad channels using jumeg
-        raw_bcc = interpolate_bads(raw, origin=None, reset_bads=True)
+        raw_bcc = jumeg_interpolate_bads(raw, origin=None, reset_bads=True)
+
+        # check if everything looks good
         raw_bcc.plot(block=True)
         raw_bcc.save(bcc_fname, overwrite=True)
-        save_bads_dict(bads_dict, bads_dict_fname)
+
+        ib_dict['bads_visual_inspection'] = raw_bcc.info['bads']
+        ib_dict['output_file'] = bcc_fname
+
+        save_config_file(config_dict_fname, process='interpolate_bads',
+                         input_fname=raw_fname, process_config_dict=ib_dict)
