@@ -6,11 +6,24 @@ from utils import noise_reduction
 from utils import interpolate_bads_batch
 from utils import save_state_space_file
 
-subject_list = ['subj']
-subjects_dir = 'test'
+import yaml
+
+with open('config_file.yaml', 'r') as f:
+    config = yaml.load(f)
+
+###############################################################################
+# Get settings from config
+###############################################################################
+
+# directories
+basedir = config['basedir']
+recordings_dir = op.join(basedir, config['recordings_dir'])
+
+# subject list
+subjects = config['subjects']
 
 # noise reducer
-refnotch = [50., 100., 150., 200., 250., 300., 350., 400., 60., 120., 180., 240., 360.]
+refnotch = config['refnotch']
 
 # filtering
 flow = 1.
@@ -25,14 +38,14 @@ state_space_fname = '_state_space_dict.pkl'
 # Noise reduction
 ###############################################################################
 
-for subj in subject_list:
+for subj in subjects:
     print("Noise reduction for subject %s" % subj)
-    dirname = os.path.join(subjects_dir, subj)
+    dirname = op.join(recordings_dir, subj)
     sub_file_list = os.listdir(dirname)
 
     for raw_fname in sub_file_list:
 
-        if raw_fname.endswith('meeg-raw.fif') or raw_fname.endswith('meeg-empty.fif'):
+        if raw_fname.endswith('meeg-raw.fif') or raw_fname.endswith('rfDC-empty.fif'):
 
             if raw_fname.endswith('-raw.fif'):
                 denoised_fname = raw_fname.rsplit('-raw.fif')[0] + ',nr-raw.fif'
@@ -47,16 +60,16 @@ for subj in subject_list:
 # Identify bad channels
 ###############################################################################
 
-interpolate_bads_batch(subject_list, subjects_dir, state_space_fname)
+interpolate_bads_batch(subjects, recordings_dir, state_space_fname)
 
 ###############################################################################
 # Filter
 ###############################################################################
 
-for subj in subject_list:
+for subj in subjects:
     print("Filtering for subject %s" % subj)
 
-    dirname = os.path.join(subjects_dir, subj)
+    dirname = os.path.join(recordings_dir, subj)
     sub_file_list = os.listdir(dirname)
 
     ss_dict_fname = op.join(dirname, subj + state_space_fname)
@@ -69,7 +82,7 @@ for subj in subject_list:
             fir_design = 'firwin'
             phase = 'zero'
 
-            raw = mne.io.Raw(raw_fname, preload=True)
+            raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
 
             raw_filt = raw.filter(flow, fhigh, method=method, n_jobs=2,
                                   fir_design=fir_design, phase=phase)
@@ -90,7 +103,7 @@ for subj in subject_list:
             save_state_space_file(ss_dict_fname, process='filtering',
                                   input_fname=raw_fname, process_config_dict=fi_dict)
 
-            raw_filt.save(raw_filt_fname)
+            raw_filt.save(op.join(dirname, raw_filt_fname))
 
             raw_filt.close()
 
@@ -98,10 +111,10 @@ for subj in subject_list:
 # Resampling
 ###############################################################################
 
-for subj in subject_list:
+for subj in subjects:
     print("Filtering for subject %s" % subj)
 
-    dirname = os.path.join(subjects_dir, subj)
+    dirname = os.path.join(recordings_dir, subj)
     sub_file_list = os.listdir(dirname)
 
     ss_dict_fname = op.join(dirname, subj + state_space_fname)
@@ -112,7 +125,7 @@ for subj in subject_list:
         if raw_fname.endswith('bcc-raw.fif') or raw_fname.endswith('bcc-empty.fif') or \
                 raw_fname.endswith('fibp-raw.fif') or raw_fname.endswith('fibp-empty.fif'):
 
-            raw = mne.io.Raw(raw_fname, preload=True)
+            raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
 
             npad = 'auto'
             raw_rs = raw.resample(rsfreq, npad=npad)
@@ -130,6 +143,6 @@ for subj in subject_list:
             save_state_space_file(ss_dict_fname, process='filtering',
                                   input_fname=raw_fname, process_config_dict=rs_dict)
 
-            raw_rs.save(raw_rs_fname)
+            raw_rs.save(op.join(dirname, raw_rs_fname))
 
             raw_rs.close()
