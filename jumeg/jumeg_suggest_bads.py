@@ -422,14 +422,18 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
         fig.show()
 
     # channel names in str
-    marked = [raw.ch_names[i] for i in marks]
+    suggested = [raw.ch_names[i] for i in marks]
     # add suggested channels to the raw.info
-    raw.info['bads'] = marked
-    print('Suggested bad channels: ', marked)
+    raw.info['bads'] = suggested
+    print('Suggested bad channels: ', suggested)
 
     if show_raw:
         raw.plot(block=True)
-        marked = raw.info['bads']
-        marked.sort()
+        visual = raw.info['bads']
+        visual.sort()
+        print('Bad channels after visual inspection: ', visual)
 
-    return marked, raw
+        return visual, raw
+
+    else:
+        return suggested, raw
