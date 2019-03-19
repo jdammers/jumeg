@@ -1,0 +1,75 @@
+
+#  config file for the jumeg sample data analysis.
+
+version: 'v0.1'
+
+# directories
+basedir: '/Volumes/KieferFreeViewingData/jusample'
+subjects: ['101611']
+recordings_dir: 'recordings'
+subjects_dir: 'subjects'
+
+# noise reducer
+refnotch: [50., 100., 150., 200., 250., 300., 350., 400., 60., 120., 180., 240., 360.]
+
+# filtering
+l_freq: 1.0
+h_freq: 45.
+
+# resampling
+rsfreq: 250
+
+conditions: ['stim']
+
+n_jobs: 4
+event_id: 1
+
+snr: 1
+inv_method: 'MNE'
+
+snr_list: 3
+inv_methods: ['MNE', 'dSPM']
+
+stim:
+    ch_name: 'STI 014'
+    tmin: -0.4
+    tmax: 0.6
+    raw_fnames: [
+    '101611_CAU01A_100706_1430_1_c,rfDC,t1,n_bcc,nr,ar-raw.fif'
+    ]
+paced:
+    ch_name: 'STI 013'
+    tmin: -0.4
+    tmax: 0.6
+    raw_fnames: [
+    '101611_CAU01A_100706_1429_1_c,rfDC,t1,n_bcc,nr,ar-raw.fif'
+    ]
+both:
+    ch_name: 'STI 014'
+    tmin: -0.4
+    tmax: 0.6
+    raw_fnames: [
+    '101611_CAU01A_100706_1430_2_c,rfDC,t1,n_bcc,nr,ar-raw.fif'
+    ]
+
+label_names:
+    ['bankssts-lh', 'bankssts-rh', 'caudalanteriorcingulate-lh',
+     'caudalanteriorcingulate-rh', 'caudalmiddlefrontal-lh',
+     'caudalmiddlefrontal-rh', 'cuneus-lh', 'cuneus-rh', 'entorhinal-lh',
+     'entorhinal-rh', 'frontalpole-lh', 'frontalpole-rh', 'fusiform-lh',
+     'fusiform-rh', 'inferiorparietal-lh', 'inferiorparietal-rh',
+     'inferiortemporal-lh', 'inferiortemporal-rh', 'insula-lh', 'insula-rh',
+     'isthmuscingulate-lh', 'isthmuscingulate-rh', 'lateraloccipital-lh',
+     'lateraloccipital-rh', 'lateralorbitofrontal-lh', 'lateralorbitofrontal-rh',
+     'lingual-lh', 'lingual-rh', 'medialorbitofrontal-lh', 'medialorbitofrontal-rh',
+     'middletemporal-lh', 'middletemporal-rh', 'paracentral-lh', 'paracentral-rh',
+     'parahippocampal-lh', 'parahippocampal-rh', 'parsopercularis-lh', 'parsopercularis-rh',
+     'parsorbitalis-lh', 'parsorbitalis-rh', 'parstriangularis-lh', 'parstriangularis-rh',
+     'pericalcarine-lh', 'pericalcarine-rh', 'postcentral-lh', 'postcentral-rh',
+     'posteriorcingulate-lh', 'posteriorcingulate-rh', 'precentral-lh',
+     'precentral-rh', 'precuneus-lh', 'precuneus-rh', 'rostralanteriorcingulate-lh',
+     'rostralanteriorcingulate-rh', 'rostralmiddlefrontal-lh', 'rostralmiddlefrontal-rh',
+     'superiorfrontal-lh', 'superiorfrontal-rh', 'superiorparietal-lh',
+     'superiorparietal-rh', 'superiortemporal-lh', 'superiortemporal-rh',
+     'supramarginal-lh', 'supramarginal-rh', 'temporalpole-lh', 'temporalpole-rh',
+     'transversetemporal-lh', 'transversetemporal-rh']

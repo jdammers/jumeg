@@ -2,9 +2,39 @@ import mne
 import os
 import os.path as op
 import pickle
+import fnmatch
+import errno
 
 from jumeg.jumeg_suggest_bads import suggest_bads
 from jumeg.jumeg_interpolate_bads import interpolate_bads as jumeg_interpolate_bads
+
+
+def find_files(rootdir='.', pattern='*'):
+    """
+    Looks for all files in the root directory matching the file
+    name pattern.
+
+    Parameters:
+    -----------
+    rootdir : str
+        Path to the directory to be searched.
+    pattern : str
+        File name pattern to be looked for.
+
+    Returns:
+    --------
+    files : list
+        List of file names matching the pattern.
+    """
+
+    files = []
+    for root, dirnames, filenames in os.walk(rootdir):
+        for filename in fnmatch.filter(filenames, pattern):
+            files.append(os.path.join(root, filename))
+
+    files = sorted(files)
+
+    return files
 
 
 def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fname):
@@ -60,6 +90,7 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fn
 
     # plot final plotting
     plot_name = denoised_fname.rsplit('-raw.fif')[0] + '-plot'
+    # TODO: fix plot_denoising
     plot_denoising([op.join(dirname, raw_fname), op.join(dirname, denoised_fname)],
                    n_jobs=2, fnout=op.join(dirname, plot_name), show=False)
 
@@ -105,20 +136,20 @@ def save_state_space_file(config_dict_fname, process, input_fname, process_confi
     save_dict(config_dict, config_dict_fname)
 
 
-def init_dict(bads_dict_fname):
-    if op.isfile(bads_dict_fname):
-        bads_dict_file = open(bads_dict_fname, mode='r')
-        bads_dict = pickle.load(bads_dict_file)
-        bads_dict_file.close()
+def init_dict(dict_fname):
+    if op.isfile(dict_fname):
+        dict_file = open(dict_fname, mode='rb')
+        dictionary = pickle.load(dict_file)
+        dict_file.close()
 
     else:
-        bads_dict = dict()
+        dictionary = dict()
 
-    return bads_dict
+    return dictionary
 
 
 def save_dict(bads_dict, bads_dict_fname):
-    bads_dict_file = open(bads_dict_fname, mode='w')
+    bads_dict_file = open(bads_dict_fname, mode='wb')
     pickle.dump(bads_dict, bads_dict_file)
     bads_dict_file.close()
 
@@ -132,7 +163,7 @@ def interpolate_bads_batch(subject_list, subjects_dir, state_space_fname):
     -----------
     subject_list : list of str
         List of all subject IDs.
-    subjects_dir : str
+    recordings_dir : str
         Path to the subjects directory.
     state_space_fname : str
         Second half of the name under which the state space dict is to
@@ -169,7 +200,7 @@ def interpolate_bads(raw_fname, bcc_fname, dirname, state_space_fname):
         # automatically suggest bad channels and plot results for visual inspection
         marked, raw = suggest_bads(raw, show_raw=True)
 
-        ib_dict['suggested_bads'] = raw.info['bads']
+        ib_dict['bads_channels'] = raw.info['bads']
 
         # Interpolate bad channels using jumeg
         raw_bcc = jumeg_interpolate_bads(raw, origin=None, reset_bads=True)
@@ -178,8 +209,49 @@ def interpolate_bads(raw_fname, bcc_fname, dirname, state_space_fname):
         raw_bcc.plot(block=True)
         raw_bcc.save(bcc_fname, overwrite=True)
 
-        ib_dict['bads_visual_inspection'] = raw_bcc.info['bads']
         ib_dict['output_file'] = bcc_fname
 
         save_state_space_file(ss_dict_fname, process='interpolate_bads',
                               input_fname=raw_fname, process_config_dict=ib_dict)
+
+
+def mksubjdirs(subjects_dir, subj):
+    """
+    Create the directories required by freesurfer.
+
+    Parameters:
+    -----------
+    recordings_dir : str
+        Path to the subjects directory.
+    subj : str
+        ID of the subject.
+
+    Returns:
+    --------
+    None
+    """
+
+    # make list of folders to create
+
+    folders_to_create = ['bem', 'label', 'morph', 'mpg', 'mpg', 'mri', 'rgb',
+                         'scripts', 'stats', 'surf', 'tiff', 'tmp', 'touch']
+
+    mri_subfolders = ['aseg', 'brain', 'filled', 'flash', 'fsamples', 'norm',
+                      'orig', 'T1', 'tmp', 'transforms', 'wm']
+
+    for count in range(0,len(mri_subfolders)):
+        mri_subfolders[count] = os.path.join('mri', mri_subfolders[count])
+
+    folders_to_create.extend(mri_subfolders)
+
+    # create folders
+    for folder in folders_to_create:
+        dirname_prep = os.path.join(subjects_dir, subj, folder)
+
+        try:
+            os.makedirs(dirname_prep)
+        except OSError as exc:
+            if exc.errno == errno.EEXIST and os.path.isdir(dirname_prep):
+                pass
+            else:
+                raise
