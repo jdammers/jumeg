@@ -9,6 +9,31 @@ from jumeg.jumeg_suggest_bads import suggest_bads
 from jumeg.jumeg_interpolate_bads import interpolate_bads as jumeg_interpolate_bads
 
 
+def reset_directory(path=None):
+    """
+    check whether the directory exits, if yes, recreate the directory
+    ----------
+    path : the target directory.
+    """
+    import shutil
+    isexists = os.path.exists(path)
+    if isexists:
+        shutil.rmtree(path)
+    os.makedirs(path)
+
+
+def set_directory(path=None):
+    """
+    check whether the directory exits, if no, create the directory
+    ----------
+    path : the target directory.
+
+    """
+    exists = os.path.exists(path)
+    if not exists:
+        os.makedirs(path)
+
+
 def find_files(rootdir='.', pattern='*'):
     """
     Looks for all files in the root directory matching the file
