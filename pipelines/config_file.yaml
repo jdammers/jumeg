@@ -8,6 +8,7 @@ basedir: '/Volumes/KieferFreeViewingData/jusample'
 subjects: ['101611']
 recordings_dir: 'recordings'
 subjects_dir: 'subjects'
+plot_dir: 'plots'
 
 ###############################################################################
 # pre-processing settings
@@ -65,7 +66,8 @@ stim:
     tmin: -0.4
     tmax: 0.6
     raw_fnames: [
-    '101611_CAU01A_100706_1430_1_c,rfDC,t1,n,meeg,nr,bcc,fibp,rs,ar-raw.fif'
+    '101611_CAU01A_100706_1430_1_c,rfDC,t1,n,meeg,nr,bcc,fibp,rs,ar-raw.fif',
+    '101611_CAU01A_100706_1430_1_c,rfDC,t1,n,meeg,nr,bcc,rs,ar-raw.fif'
     ]
 paced:
     ch_name: 'STI 013'

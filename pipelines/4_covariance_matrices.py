@@ -81,8 +81,6 @@ if compute_epo_cov:
                 subj = epochs_fname.split('_')[0]
                 epochs_fpath = op.join(recordings_dir, subj, epochs_fname)
 
-                print(epochs_fpath)
-
                 epochs = mne.read_epochs(epochs_fpath)
                 noise_cov_reg = mne.compute_covariance(epochs, tmin=None, tmax=0., method='empirical', n_jobs=2)
                 cov_fpath = epochs_fpath.split('-epo.fif')[0] + '-cov.fif'

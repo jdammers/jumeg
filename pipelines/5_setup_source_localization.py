@@ -75,7 +75,7 @@ for subj in subjects:
     # do not do this step if file is already in 001.mgz format
 
     call([freesurfer_bin + 'mri_convert',
-          op.join(subjects_dir, subj, subj + nii_fname),
+          op.join(subjects_dir, subj + nii_fname),
           op.join(subjects_dir, subj + mri_dir)])
 
     # Reconstruct all surfaces and basically everything else.
