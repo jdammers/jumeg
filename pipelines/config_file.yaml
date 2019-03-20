@@ -4,7 +4,7 @@
 version: 'v0.1'
 
 # directories
-basedir: '/Volumes/KieferFreeViewingData/jusample'
+basedir: '/path/to/jusample'
 subjects: ['101611']
 recordings_dir: 'recordings'
 subjects_dir: 'subjects'

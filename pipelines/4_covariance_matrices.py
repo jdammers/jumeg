@@ -32,6 +32,10 @@ unfiltered = config['unfiltered']
 compute_empty_cov = True
 compute_epo_cov = True
 
+###############################################################################
+# Compute noise covariance matrix based on empty room measurements
+###############################################################################
+
 if compute_empty_cov:
 
     for subj in subjects:
@@ -61,6 +65,10 @@ if compute_empty_cov:
             covplot_fpath = op.join(plot_dir, 'cov', subj, empty_fname.split('-empty.fif')[0] + ',empty-cov.png')
             fig.savefig(covplot_fpath)
 
+
+###############################################################################
+# Compute noise covariance matrix based on the baseline (pre-stim) of epoch data
+###############################################################################
 
 if compute_epo_cov:
     for cond in config['conditions']:

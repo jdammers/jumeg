@@ -33,6 +33,7 @@ unfiltered = config['unfiltered']
 # resampling
 rsfreq = config['rsfreq']
 
+# WIP: the state space file saves the parameters for the creation of each file
 state_space_fname = '_state_space_dict.pkl'
 
 ###############################################################################
