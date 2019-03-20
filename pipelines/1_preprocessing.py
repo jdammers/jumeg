@@ -26,12 +26,14 @@ subjects = config['subjects']
 refnotch = config['refnotch']
 
 # filtering
-flow = 1.
-fhigh = 45.
+flow = config['l_freq']
+fhigh = config['h_freq']
+unfiltered = config['unfiltered']
 
 # resampling
-rsfreq = 250
+rsfreq = config['rsfreq']
 
+# WIP: the state space file saves the parameters for the creation of each file
 state_space_fname = '_state_space_dict.pkl'
 
 ###############################################################################
@@ -69,7 +71,7 @@ interpolate_bads_batch(subjects, recordings_dir, state_space_fname)
 for subj in subjects:
     print("Filtering for subject %s" % subj)
 
-    dirname = os.path.join(recordings_dir, subj)
+    dirname = op.join(recordings_dir, subj)
     sub_file_list = os.listdir(dirname)
 
     ss_dict_fname = op.join(dirname, subj + state_space_fname)
@@ -84,7 +86,7 @@ for subj in subjects:
 
             raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
 
-            raw_filt = raw.filter(flow, fhigh, method=method, n_jobs=2,
+            raw_filt = raw.filter(flow, fhigh, method=method, n_jobs=1,
                                   fir_design=fir_design, phase=phase)
 
             if raw_fname.endswith('-raw.fif'):
@@ -114,16 +116,21 @@ for subj in subjects:
 for subj in subjects:
     print("Filtering for subject %s" % subj)
 
-    dirname = os.path.join(recordings_dir, subj)
+    dirname = op.join(recordings_dir, subj)
     sub_file_list = os.listdir(dirname)
 
     ss_dict_fname = op.join(dirname, subj + state_space_fname)
 
     for raw_fname in sub_file_list:
 
-        # resample filtered and unfiltered data
-        if raw_fname.endswith('bcc-raw.fif') or raw_fname.endswith('bcc-empty.fif') or \
-                raw_fname.endswith('fibp-raw.fif') or raw_fname.endswith('fibp-empty.fif'):
+        valid_file = raw_fname.endswith('fibp-raw.fif') or raw_fname.endswith('fibp-empty.fif')
+
+        # perform resampling on unfiltered data
+        if unfiltered:
+            valid_file = valid_file or raw_fname.endswith('bcc-raw.fif') or raw_fname.endswith('bcc-empty.fif')
+
+        # resample valid data
+        if valid_file:
 
             raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
 

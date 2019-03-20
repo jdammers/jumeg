@@ -9,6 +9,31 @@ from jumeg.jumeg_suggest_bads import suggest_bads
 from jumeg.jumeg_interpolate_bads import interpolate_bads as jumeg_interpolate_bads
 
 
+def reset_directory(path=None):
+    """
+    check whether the directory exits, if yes, recreate the directory
+    ----------
+    path : the target directory.
+    """
+    import shutil
+    isexists = os.path.exists(path)
+    if isexists:
+        shutil.rmtree(path)
+    os.makedirs(path)
+
+
+def set_directory(path=None):
+    """
+    check whether the directory exits, if no, create the directory
+    ----------
+    path : the target directory.
+
+    """
+    exists = os.path.exists(path)
+    if not exists:
+        os.makedirs(path)
+
+
 def find_files(rootdir='.', pattern='*'):
     """
     Looks for all files in the root directory matching the file
@@ -92,7 +117,7 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fn
     plot_name = denoised_fname.rsplit('-raw.fif')[0] + '-plot'
     # TODO: fix plot_denoising
     plot_denoising([op.join(dirname, raw_fname), op.join(dirname, denoised_fname)],
-                   n_jobs=2, fnout=op.join(dirname, plot_name), show=False)
+                   n_jobs=1, fnout=op.join(dirname, plot_name), show=False)
 
     # save config file
     nr_dict = dict()

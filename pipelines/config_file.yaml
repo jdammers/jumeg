@@ -4,24 +4,55 @@
 version: 'v0.1'
 
 # directories
-basedir: '/Volumes/KieferFreeViewingData/jusample'
+basedir: '/path/to/jusample'
 subjects: ['101611']
 recordings_dir: 'recordings'
 subjects_dir: 'subjects'
+plot_dir: 'plots'
+
+###############################################################################
+# pre-processing settings
+###############################################################################
 
 # noise reducer
-refnotch: [50., 100., 150., 200., 250., 300., 350., 400., 60., 120., 180., 240., 360.]
+refnotch: [50., 100., 150., 200., 250., 300., 350., 400.,
+           60., 120., 180., 240., 360.]
 
 # filtering
 l_freq: 1.0
 h_freq: 45.
+unfiltered: True
 
 # resampling
 rsfreq: 250
 
+# file name extension with the pre-processing steps
+pre_proc_ext: ',nr,bcc,fibp,rs'
+
+###############################################################################
+# ica settings
+###############################################################################
+
+ecg_ch: 'ECG 001'
+eog_hor_ch: 'EOG 001'
+eog_ver_ch: 'EOG 002'
+
+flow_ecg: 8
+fhigh_ecg: 20
+flow_eog: 1
+fhigh_eog: 20
+
+ecg_thresh: 0.3
+eog_thresh: 0.3
+random_state: 42
+
+###############################################################################
+#
+###############################################################################
+
 conditions: ['stim']
 
-n_jobs: 4
+n_jobs: 1
 event_id: 1
 
 snr: 1
@@ -35,7 +66,8 @@ stim:
     tmin: -0.4
     tmax: 0.6
     raw_fnames: [
-    '101611_CAU01A_100706_1430_1_c,rfDC,t1,n_bcc,nr,ar-raw.fif'
+    '101611_CAU01A_100706_1430_1_c,rfDC,t1,n,meeg,nr,bcc,fibp,rs,ar-raw.fif',
+    '101611_CAU01A_100706_1430_1_c,rfDC,t1,n,meeg,nr,bcc,rs,ar-raw.fif'
     ]
 paced:
     ch_name: 'STI 013'
