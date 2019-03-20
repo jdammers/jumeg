@@ -24,8 +24,6 @@ subjects_dir = op.join(basedir, config['subjects_dir'])
 # subject list
 subjects = config['subjects']
 
-l_freq, h_freq = config['l_freq'], config['h_freq']
-
 ###############################################################################
 # Create epochs
 ###############################################################################
@@ -45,22 +43,20 @@ for cond in config['conditions']:
         picks = mne.pick_types(raw.info, meg=True, exclude='bads')
 
         # get channel with events
-        ch_name = config[cond]['ch_name']
+        stim_channel = config[cond]['ch_name']
         event_id = config['event_id']
 
         # get tmin, tmax for epoch creation
         tmin, tmax = config[cond]['tmin'], config[cond]['tmax']
 
-        events = mne.find_events(raw, stim_channel=ch_name, output='onset')
+        events = mne.find_events(raw, stim_channel=stim_channel, output='onset')
         epochs = mne.Epochs(raw, events, event_id, tmin, tmax, baseline=(None, 0.),
                             picks=picks, proj=False)
 
-        # fi stands for filtered
         epochs_fname = raw_fname.split('-raw.fif')[0] + ',%s-epo.fif' % cond
         print('saving ', epochs_fname)
         epochs.save(epochs_fname)
 
-        # fi stands for filtered
         evoked = epochs.average()
         evoked_fname = epochs_fname.split('-epo.fif')[0] + '-ave.fif'
         print('saving ', evoked_fname)
