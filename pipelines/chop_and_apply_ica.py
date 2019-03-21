@@ -151,7 +151,7 @@ def apply_ica_and_plot_performance(raw, ica, name_ecg, name_eog, raw_fname, clea
 
 def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
             flow_ecg, fhigh_ecg, flow_eog, fhigh_eog, ecg_thresh,
-            eog_thresh, random_state):
+            eog_thresh, use_jumeg=True, random_state=42):
     """
     Fit an ICA object to the raw file. Identify cardiac and ocular components
     and mark them for removal.
@@ -206,6 +206,9 @@ def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
         Threshold for ECG component idenfication.
     eog_thresh : float
         Threshold for EOG component idenfication.
+    use_jumeg : bool
+        Use the JuMEG scoring method for the identification of
+        artifact components.
     random_state : None | int | instance of np.random.RandomState
         np.random.RandomState to initialize the FastICA estimation.
         As the estimation is non-deterministic it can be useful to
@@ -218,9 +221,10 @@ def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
 
     """
     # increased iteration to make it converge
-    # fix the number of components to 60 to avoid diff numbers across different chops of data
+    # fix the number of components to 40, depending on your application you
+    # might want to raise the number
     # 'extended-infomax', 'fastica', 'picard'
-    ica = ICA(method='fastica', n_components=60, random_state=random_state,
+    ica = ICA(method='fastica', n_components=40, random_state=random_state,
               max_pca_components=None, max_iter=5000, verbose=False)
     ica.fit(raw, picks=picks, decim=None, reject=reject, verbose=True)
 
@@ -230,64 +234,73 @@ def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
 
     # get ECG and EOG related components using MNE
     print('Computing scores and identifying components..')
-    ecg_scores = ica.score_sources(raw, target=ecg_ch, score_func='pearsonr',
-                                   l_freq=flow_ecg, h_freq=fhigh_ecg, verbose=False)
-    # horizontal channel
-    eog1_scores = ica.score_sources(raw, target=eog_hor, score_func='pearsonr',
-                                    l_freq=flow_eog, h_freq=fhigh_eog, verbose=False)
-    # vertical channel
-    eog2_scores = ica.score_sources(raw, target=eog_ver, score_func='pearsonr',
-                                    l_freq=flow_eog, h_freq=fhigh_eog, verbose=False)
 
-    # print the top ecg, eog correlation scores
-    ecg_inds = np.where(np.abs(ecg_scores) > ecg_thresh)[0]
-    eog1_inds = np.where(np.abs(eog1_scores) > eog_thresh)[0]
-    eog2_inds = np.where(np.abs(eog2_scores) > eog_thresh)[0]
+    if use_jumeg:
 
-    highly_corr = list(set(np.concatenate((ecg_inds, eog1_inds, eog2_inds))))
-    highly_corr.sort()
+        # get ECG/EOG related components using JuMEG
+        ic_ecg = get_ics_cardiac(raw, ica, flow=flow_ecg, fhigh=fhigh_ecg,
+                                 thresh=ecg_thresh, tmin=-0.5, tmax=0.5, name_ecg=ecg_ch,
+                                 use_CTPS=True)[0]
+        ic_eog = get_ics_ocular(raw, ica, flow=flow_eog, fhigh=fhigh_eog,
+                                thresh=eog_thresh, name_eog_hor=eog_hor, name_eog_ver=eog_ver,
+                                score_func='pearsonr')
+        ic_ecg = list(set(ic_ecg))
+        ic_eog = list(set(ic_eog))
+        ic_ecg.sort()
+        ic_eog.sort()
 
-    # get ECG/EOG related components using JuMEG
-    ic_ecg = get_ics_cardiac(raw, ica, flow=flow_ecg, fhigh=fhigh_ecg,
-                             thresh=ecg_thresh, tmin=-0.5, tmax=0.5, name_ecg=ecg_ch,
-                             use_CTPS=True)[0]
-    ic_eog = get_ics_ocular(raw, ica, flow=flow_eog, fhigh=fhigh_eog,
-                            thresh=eog_thresh, name_eog_hor=eog_hor, name_eog_ver=eog_ver,
-                            score_func='pearsonr')
-    ic_ecg = list(set(ic_ecg))
-    ic_eog = list(set(ic_eog))
-    ic_ecg.sort()
-    ic_eog.sort()
+        # if necessary include components identified by correlation as well
+        bads_list = list(set(list(ic_ecg) + list(ic_eog)))
+        bads_list.sort()
+        ica.exclude = bads_list
 
-    # if necessary include components identified by correlation as well
-    bads_list = list(set(list(ic_ecg) + list(ic_eog) + highly_corr))
-    bads_list.sort()
-    ica.exclude = bads_list
+        print('Identified ECG components are: ', ic_ecg)
+        print('Identified EOG components are: ', ic_eog)
 
-    highly_corr_ecg = list(set(ecg_inds))
-    highly_corr_eog1 = list(set(eog1_inds))
-    highly_corr_eog2 = list(set(eog2_inds))
+    else:
 
-    highly_corr_ecg.sort()
-    highly_corr_eog1.sort()
-    highly_corr_eog2.sort()
+        ecg_scores = ica.score_sources(raw, target=ecg_ch, score_func='pearsonr',
+                                       l_freq=flow_ecg, h_freq=fhigh_ecg, verbose=False)
+        # horizontal channel
+        eog1_scores = ica.score_sources(raw, target=eog_hor, score_func='pearsonr',
+                                        l_freq=flow_eog, h_freq=fhigh_eog, verbose=False)
+        # vertical channel
+        eog2_scores = ica.score_sources(raw, target=eog_ver, score_func='pearsonr',
+                                        l_freq=flow_eog, h_freq=fhigh_eog, verbose=False)
 
-    print('Highly correlated artifact components are:')
-    print('    ECG:  ', highly_corr_ecg)
-    print('    EOG 1:', highly_corr_eog1)
-    print('    EOG 2:', highly_corr_eog2)
-    print('')
-    print('Identified ECG components are: ', ic_ecg)
-    print('Identified EOG components are: ', ic_eog)
+        # print the top ecg, eog correlation scores
+        ecg_inds = np.where(np.abs(ecg_scores) > ecg_thresh)[0]
+        eog1_inds = np.where(np.abs(eog1_scores) > eog_thresh)[0]
+        eog2_inds = np.where(np.abs(eog2_scores) > eog_thresh)[0]
+
+        highly_corr = list(set(np.concatenate((ecg_inds, eog1_inds, eog2_inds))))
+        highly_corr.sort()
+
+        highly_corr_ecg = list(set(ecg_inds))
+        highly_corr_eog1 = list(set(eog1_inds))
+        highly_corr_eog2 = list(set(eog2_inds))
+
+        highly_corr_ecg.sort()
+        highly_corr_eog1.sort()
+        highly_corr_eog2.sort()
+
+        print('Highly correlated artifact components are:')
+        print('    ECG:  ', highly_corr_ecg)
+        print('    EOG 1:', highly_corr_eog1)
+        print('    EOG 2:', highly_corr_eog2)
+
+        # if necessary include components identified by correlation as well
+        ica.exclude = highly_corr
+
     print("Plot ica sources to remove jumpy component for channels 4, 6, 8, 22")
 
     return ica
 
 
-def chop_and_apply_ica(raw_filt_fname, pre_proc_ext, chop_length=60.,
-                       flow_ecg=8., fhigh_ecg=20., flow_eog=1., fhigh_eog=20.,
-                       ecg_thresh=0.25, eog_thresh=0.25, random_state=42, ecg_ch='EEG 002',
-                       eog_hor='EEG 001', eog_ver='EEG 003', exclude='bads',
+def chop_and_apply_ica(raw_filt_fname, chop_length=60., flow_ecg=8., fhigh_ecg=20.,
+                       flow_eog=1., fhigh_eog=20., ecg_thresh=0.25, eog_thresh=0.25,
+                       random_state=42, ecg_ch='EEG 002', eog_hor='EEG 001',
+                       eog_ver='EEG 003', exclude='bads', use_jumeg=True,
                        unfiltered=True, save=False):
     """
     Read raw file, chop it after trials and apply ica on the chops.
@@ -301,8 +314,6 @@ def chop_and_apply_ica(raw_filt_fname, pre_proc_ext, chop_length=60.,
     ----------
     raw_filt_fname : str
         The filtered raw file to clean.
-    pre_proc_ext : str
-        Extension listing the pre-processing steps done.
     chop_length : float
         Length of the chops in seconds.
     flow : float
@@ -332,6 +343,9 @@ def chop_and_apply_ica(raw_filt_fname, pre_proc_ext, chop_length=60.,
     exclude : list of string | str
         List of channels to exclude. If 'bads' (default), exclude channels
         in info['bads'].
+    use_jumeg : bool
+        Use the JuMEG scoring method for the identification of
+        artifact components.
     unfiltered : bool
         Apply ICA cleaning to unfiltered data as well.
     save : bool
@@ -417,7 +431,7 @@ def chop_and_apply_ica(raw_filt_fname, pre_proc_ext, chop_length=60.,
                           flow_ecg=flow_ecg, fhigh_ecg=fhigh_ecg,
                           flow_eog=flow_eog, fhigh_eog=fhigh_eog,
                           ecg_thresh=ecg_thresh, eog_thresh=eog_thresh,
-                          random_state=random_state)
+                          use_jumeg=use_jumeg, random_state=random_state)
 
         # plot topo-plots first because sometimes components are hard to identify
         # ica.plot_components()
