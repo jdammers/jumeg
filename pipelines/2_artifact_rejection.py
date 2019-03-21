@@ -31,6 +31,7 @@ fhigh_eog = config['fhigh_eog']
 
 ecg_thresh = config['ecg_thresh']
 eog_thresh = config['eog_thresh']
+use_jumeg = config['use_jumeg']
 random_state = config['random_state']
 unfiltered = config['unfiltered']
 
@@ -62,8 +63,8 @@ for subj in subjects:
                                                                         ecg_thresh=ecg_thresh, eog_thresh=eog_thresh,
                                                                         random_state=random_state, ecg_ch=ecg_ch,
                                                                         eog_hor=eog_hor_ch, eog_ver=eog_ver_ch,
-                                                                        exclude='bads', unfiltered=unfiltered,
-                                                                        save=True)
+                                                                        exclude='bads', use_jumeg=use_jumeg,
+                                                                        unfiltered=unfiltered, save=True)
 
                 clean_filt_concat = mne.concatenate_raws(clean_filt_list)
                 clean_filt_concat.save(clean_filt_fname)
