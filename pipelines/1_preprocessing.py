@@ -98,9 +98,9 @@ for subj in subjects:
                 raw_filt_fname = raw_fname.rsplit('-empty.fif')[0] + ',fibp-empty.fif'
 
             fi_dict = fi_cfg.copy()
-            fi_dict['input_file'] = raw_fname
+            fi_dict['input_file'] = op.join(dirname, raw_fname)
             fi_dict['process'] = 'filtering'
-            fi_dict['output_file'] = raw_filt_fname
+            fi_dict['output_file'] = op.join(dirname, raw_filt_fname)
 
             save_state_space_file(ss_dict_fname, process_config_dict=fi_dict)
 
@@ -141,9 +141,9 @@ for subj in subjects:
                 raw_rs_fname = raw_fname.rsplit('-empty.fif')[0] + ',rs-empty.fif'
 
             rs_dict = rs_cfg.copy()
-            rs_dict['input_file'] = raw_fname
+            rs_dict['input_file'] = op.join(dirname, raw_fname)
             rs_dict['process'] = 'resampling'
-            rs_dict['output_file'] = raw_rs_fname
+            rs_dict['output_file'] = op.join(dirname, raw_rs_fname)
 
             save_state_space_file(ss_dict_fname, process_config_dict=rs_dict)
 

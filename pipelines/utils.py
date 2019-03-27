@@ -121,9 +121,9 @@ def noise_reduction(dirname, raw_fname, denoised_fname, nr_cfg, state_space_fnam
 
     # save config file
     nr_dict = nr_cfg.copy()
-    nr_dict['input_file'] = raw_fname
+    nr_dict['input_file'] = op.join(dirname, raw_fname)
     nr_dict['process'] = 'noise_reducer'
-    nr_dict['output_file'] = denoised_fname
+    nr_dict['output_file'] = op.join(dirname, denoised_fname)
 
     save_state_space_file(ss_dict_fname, process_config_dict=nr_dict)
 
