@@ -30,13 +30,15 @@ fi_cfg = config['filtering']
 
 flow = fi_cfg['l_freq']
 fhigh = fi_cfg['h_freq']
-unfiltered = fi_cfg['unfiltered']
 fi_method = fi_cfg['method']
 fir_design = fi_cfg['fir_design']
 phase = fi_cfg['phase']
 
 # resampling
-rsfreq = config['resampling']['rsfreq']
+rs_cfg = config['resampling']
+rsfreq = rs_cfg['rsfreq']
+npad = rs_cfg['npad']
+unfiltered = rs_cfg['unfiltered']
 
 # TODO WIP: the state space file saves the parameters for the creation of each file
 state_space_fname = '_state_space_dict.pkl'
@@ -95,16 +97,12 @@ for subj in subjects:
             else:
                 raw_filt_fname = raw_fname.rsplit('-empty.fif')[0] + ',fibp-empty.fif'
 
-            fi_dict = dict()
-            fi_dict['flow'] = flow
-            fi_dict['fhigh'] = fhigh
-            fi_dict['method'] = fi_method
-            fi_dict['fir_design'] = fir_design
-            fi_dict['phase'] = phase
+            fi_dict = fi_cfg.copy()
+            fi_dict['input_file'] = raw_fname
+            fi_dict['process'] = 'filtering'
             fi_dict['output_file'] = raw_filt_fname
 
-            save_state_space_file(ss_dict_fname, process='filtering',
-                                  input_fname=raw_fname, process_config_dict=fi_dict)
+            save_state_space_file(ss_dict_fname, process_config_dict=fi_dict)
 
             raw_filt.save(op.join(dirname, raw_filt_fname))
 
@@ -135,7 +133,6 @@ for subj in subjects:
 
             raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
 
-            npad = 'auto'
             raw_rs = raw.resample(rsfreq, npad=npad)
 
             if raw_fname.endswith('-raw.fif'):
@@ -143,13 +140,12 @@ for subj in subjects:
             else:
                 raw_rs_fname = raw_fname.rsplit('-empty.fif')[0] + ',rs-empty.fif'
 
-            rs_dict = dict()
-            rs_dict['rsfreq'] = rsfreq
-            rs_dict['npad'] = npad
+            rs_dict = rs_cfg.copy()
+            rs_dict['input_file'] = raw_fname
+            rs_dict['process'] = 'resampling'
             rs_dict['output_file'] = raw_rs_fname
 
-            save_state_space_file(ss_dict_fname, process='filtering',
-                                  input_fname=raw_fname, process_config_dict=rs_dict)
+            save_state_space_file(ss_dict_fname, process_config_dict=rs_dict)
 
             raw_rs.save(op.join(dirname, raw_rs_fname))
 

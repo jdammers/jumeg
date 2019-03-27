@@ -53,6 +53,9 @@ filtering:
 resampling:
     # re-sampling frequency
     rsfreq: 250
+    npad: 'auto'
+    # re-sample unfiltered files as well
+    unfiltered: True
 
 # file name extension with the pre-processing steps
 pre_proc_ext: ',nr,bcc,fibp,rs'
