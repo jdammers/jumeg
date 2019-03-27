@@ -23,17 +23,20 @@ recordings_dir = op.join(basedir, config['recordings_dir'])
 subjects = config['subjects']
 
 # noise reducer
-refnotch = config['refnotch']
+refnotch = config['noise_reducer']['refnotch']
 
 # filtering
-flow = config['l_freq']
-fhigh = config['h_freq']
-unfiltered = config['unfiltered']
+flow = config['filtering']['l_freq']
+fhigh = config['filtering']['h_freq']
+unfiltered = config['filtering']['unfiltered']
+fi_method = config['filtering']['method']
+fir_design = config['filtering']['fir_design']
+phase = config['filtering']['phase']
 
 # resampling
-rsfreq = config['rsfreq']
+rsfreq = config['resampling']['rsfreq']
 
-# WIP: the state space file saves the parameters for the creation of each file
+# TODO WIP: the state space file saves the parameters for the creation of each file
 state_space_fname = '_state_space_dict.pkl'
 
 ###############################################################################
@@ -80,13 +83,9 @@ for subj in subjects:
 
         if raw_fname.endswith('bcc-raw.fif') or raw_fname.endswith('bcc-empty.fif'):
 
-            method = 'fir'
-            fir_design = 'firwin'
-            phase = 'zero'
-
             raw = mne.io.Raw(op.join(dirname, raw_fname), preload=True)
 
-            raw_filt = raw.filter(flow, fhigh, method=method, n_jobs=1,
+            raw_filt = raw.filter(flow, fhigh, method=fi_method, n_jobs=1,
                                   fir_design=fir_design, phase=phase)
 
             if raw_fname.endswith('-raw.fif'):
@@ -97,7 +96,7 @@ for subj in subjects:
             fi_dict = dict()
             fi_dict['flow'] = flow
             fi_dict['fhigh'] = fhigh
-            fi_dict['method'] = method
+            fi_dict['method'] = fi_method
             fi_dict['fir_design'] = fir_design
             fi_dict['phase'] = phase
             fi_dict['output_file'] = raw_filt_fname

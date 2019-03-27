@@ -115,7 +115,6 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fn
 
     # plot final plotting
     plot_name = denoised_fname.rsplit('-raw.fif')[0] + '-plot'
-    # TODO: fix plot_denoising
     plot_denoising([op.join(dirname, raw_fname), op.join(dirname, denoised_fname)],
                    n_jobs=1, fnout=op.join(dirname, plot_name), show=False)
 

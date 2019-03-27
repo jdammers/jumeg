@@ -20,20 +20,20 @@ recordings_dir = op.join(basedir, config['recordings_dir'])
 subjects = config['subjects']
 
 
-ecg_ch = config['ecg_ch']
-eog_hor_ch = config['eog_hor_ch']
-eog_ver_ch = config['eog_ver_ch']
+ecg_ch = config['ica']['ecg_ch']
+eog_hor_ch = config['ica']['eog_hor_ch']
+eog_ver_ch = config['ica']['eog_ver_ch']
 
-flow_ecg = config['flow_ecg']
-fhigh_ecg = config['fhigh_ecg']
-flow_eog = config['flow_eog']
-fhigh_eog = config['fhigh_eog']
+flow_ecg = config['ica']['flow_ecg']
+fhigh_ecg = config['ica']['fhigh_ecg']
+flow_eog = config['ica']['flow_eog']
+fhigh_eog = config['ica']['fhigh_eog']
 
-ecg_thresh = config['ecg_thresh']
-eog_thresh = config['eog_thresh']
-use_jumeg = config['use_jumeg']
-random_state = config['random_state']
-unfiltered = config['unfiltered']
+ecg_thresh = config['ica']['ecg_thresh']
+eog_thresh = config['ica']['eog_thresh']
+use_jumeg = config['ica']['use_jumeg']
+random_state = config['ica']['random_state']
+unfiltered = config['ica']['unfiltered']
 
 pre_proc_ext = config['pre_proc_ext']
 

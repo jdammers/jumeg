@@ -50,8 +50,8 @@ os.environ['SUBJECTS_DIR'] = subjects_dir
 mri_dir = '/mri/orig/001.mgz'
 nii_fname = '_1x1x1mm.nii'
 
-mne_bin_path = '/Users/kiefer/mne/MNE-2.7.3-3268-MacOSX-i386/bin/'  # Path to MNE-C binary files
-freesurfer_home = '/Users/kiefer/mne/freesurfer/'
+mne_bin_path = config['mne_bin_path']
+freesurfer_home = config['freesurfer_home']
 freesurfer_bin = freesurfer_home + 'bin/'
 
 # determiny granularity of source space

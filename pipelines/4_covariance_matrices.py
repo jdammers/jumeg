@@ -27,10 +27,10 @@ plot_dir = op.join(basedir, config['plot_dir'])
 subjects = config['subjects']
 l_freq, h_freq = config['l_freq'], config['h_freq']
 pre_proc_ext = config['pre_proc_ext']
-unfiltered = config['unfiltered']
 
-compute_empty_cov = True
-compute_epo_cov = True
+compute_empty_cov = config['cov_matrices']['compute_empty_cov']
+compute_epo_cov = config['cov_matrices']['compute_epo_cov']
+unfiltered = config['cov_matrices']['unfiltered']
 
 ###############################################################################
 # Compute noise covariance matrix based on empty room measurements
