@@ -23,15 +23,17 @@ recordings_dir = op.join(basedir, config['recordings_dir'])
 subjects = config['subjects']
 
 # noise reducer
-refnotch = config['noise_reducer']['refnotch']
+nr_cfg = config['noise_reducer']
 
 # filtering
-flow = config['filtering']['l_freq']
-fhigh = config['filtering']['h_freq']
-unfiltered = config['filtering']['unfiltered']
-fi_method = config['filtering']['method']
-fir_design = config['filtering']['fir_design']
-phase = config['filtering']['phase']
+fi_cfg = config['filtering']
+
+flow = fi_cfg['l_freq']
+fhigh = fi_cfg['h_freq']
+unfiltered = fi_cfg['unfiltered']
+fi_method = fi_cfg['method']
+fir_design = fi_cfg['fir_design']
+phase = fi_cfg['phase']
 
 # resampling
 rsfreq = config['resampling']['rsfreq']
@@ -58,7 +60,7 @@ for subj in subjects:
                 denoised_fname = raw_fname.rsplit('-empty.fif')[0] + ',nr-empty.fif'
 
             if not op.isfile(op.join(dirname, denoised_fname)):
-                noise_reduction(dirname, raw_fname, denoised_fname, refnotch,
+                noise_reduction(dirname, raw_fname, denoised_fname, nr_cfg,
                                 state_space_fname)
 
 ###############################################################################

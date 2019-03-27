@@ -32,8 +32,7 @@ noise_reducer:
     reflp: 5.
     # high pass filter for reference channels, default 0.1 Hz
     refhp: 0.1
-    # TODO: check if comment is correct -> Eberhard
-    # Names of the reference channels for high pass filter
+    # Names of the reference channels for high pass filter, default ['RFG ...']
     noiseref_hp: ['RFG ...']
     # frequencies for notch filter (for power line noise, projector, etc.)
     refnotch: [50., 100., 150., 200., 250., 300., 350., 400.,

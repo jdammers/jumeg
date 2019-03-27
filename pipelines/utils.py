@@ -62,7 +62,7 @@ def find_files(rootdir='.', pattern='*'):
     return files
 
 
-def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fname):
+def noise_reduction(dirname, raw_fname, denoised_fname, nr_cfg, state_space_fname):
     """
     Apply the noise reducer to the raw file and save the result.
 
@@ -74,8 +74,9 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fn
         File name of the raw file.
     denoised_fname : str
         File name under which the denoised raw file is saved.
-    refnotch : list
-        List of frequencies for which a notch filter is applied.
+    nr_cfg: dict
+        Dict containing the noise reducer specific settings from
+        the config file.
     state_space_fname : str
         Second half of the name under which the state space dict is to
         be saved, e.g., subj + state_space_name.
@@ -84,10 +85,10 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fn
     --------
     None
     """
-
-    reflp = 5.
-    refhp = 0.1
-    noiseref_hp = ['RFG ...']
+    refnotch = nr_cfg['refnotch']
+    reflp = nr_cfg['reflp']
+    refhp = nr_cfg['refhp']
+    noiseref_hp = nr_cfg['noiseref_hp']
 
     from jumeg.jumeg_noise_reducer import noise_reducer, plot_denoising
 
