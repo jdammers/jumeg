@@ -33,18 +33,19 @@ os.environ['SUBJECTS_DIR'] = subjects_dir
 # subject list
 subjects = config['subjects']
 
-n_jobs = config['n_jobs']
 pre_proc_ext = config['pre_proc_ext']
 
 # inverse solution
-method = config['inv_method']
-snr = config['snr']
+method = config['source_loc']['inv_method']
+n_jobs = config['source_loc']['n_jobs']
+snr = config['source_loc']['snr']
 lambda2 = 1.0 / snr ** 2
-do_inv_epo = False
+
+do_inv_epo = config['source_loc']['do_inv_epo']
 
 # plotting stc
-plot_stc = True
-time_viewer = True
+plot_stc = config['source_loc']['plot_stc']
+time_viewer = config['source_loc']['time_viewer']
 
 ###############################################################################
 # Calculate forward and inverse solution

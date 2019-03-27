@@ -31,7 +31,7 @@ subjects = config['subjects']
 for cond in config['conditions']:
     print(cond)
 
-    # you may want to use glob etc. to avoid having to write down all file names in the config
+    # TODO: may want to use glob etc. to avoid having to write down all file names in the config
     for fname in config[cond]['raw_fnames']:
         subject = fname.split('_')[0]
         raw_fname = op.join(recordings_dir, subject, fname)
@@ -44,7 +44,7 @@ for cond in config['conditions']:
 
         # get channel with events
         stim_channel = config[cond]['ch_name']
-        event_id = config['event_id']
+        event_id = config[cond]['event_id']
 
         # get tmin, tmax for epoch creation
         tmin, tmax = config[cond]['tmin'], config[cond]['tmax']
