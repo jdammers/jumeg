@@ -297,62 +297,21 @@ def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
     return ica
 
 
-def chop_and_apply_ica(raw_filt_fname, chop_length=60., flow_ecg=8., fhigh_ecg=20.,
-                       flow_eog=1., fhigh_eog=20., ecg_thresh=0.25, eog_thresh=0.25,
-                       random_state=42, ecg_ch='EEG 002', eog_hor='EEG 001',
-                       eog_ver='EEG 003', exclude='bads', use_jumeg=True,
-                       unfiltered=True, save=False):
+def chop_and_apply_ica(raw_filt_fname, ica_cfg):
     """
-    Read raw file, chop it after trials and apply ica on the chops.
-    Save the ICA object, cleaned raw chops and plots overview of the artefact
-    rejection.
+    Read raw file, chop it into smaller segments and apply ica on the
+    chops. Save the ICA objects plus cleaned raw chops. Plot overview
+    of the artifact rejection.
 
-    The function has a lot of parameters hard coded within, please look
-    through carefully and modify as seems fit.
-
-    Parameters
-    ----------
+    Parameters:
+    -----------
     raw_filt_fname : str
         The filtered raw file to clean.
-    chop_length : float
-        Length of the chops in seconds.
-    flow : float
-        Lower frequency for the filtering applied to the raw file prior to chopping.
-    fhigh : float
-        Higher frequency for the filtering applied to the raw file prior to chopping.
-    flow_ecg : float
-        Lower frequency for the scoring of ECG sources.
-    fhigh_ecg : float
-        Higher frequency for the scoring of ECG sources.
-    flow_eog : float
-        Lower frequency for the scoring of EOG sources.
-    fhigh_eog : float
-        Higher frequency for the scoring of EOG sources.
-    random_state : int
-        Seed for pseudo random number generator.
-    ecg_ch : str
-        Name of the ECG channel.
-    eog_hor : str
-        Name of the horizontal EOG channel.
-    eog_ver : str
-        Name of the vertical EOG channel.
-    ecg_thresh : float
-        Threshold for independent ecg components.
-    eog_thresh : float
-        Threshold for independent eog components.
-    exclude : list of string | str
-        List of channels to exclude. If 'bads' (default), exclude channels
-        in info['bads'].
-    use_jumeg : bool
-        Use the JuMEG scoring method for the identification of
-        artifact components.
-    unfiltered : bool
-        Apply ICA cleaning to unfiltered data as well.
-    save : bool
-        Save raw chops after applying ICA.
+    ica_cfg : dict
+        Dict containing the ica specific settings from the config file.
 
-    Returns
-    -------
+    Returns:
+    --------
     raw_chop_clean_filtered_list : list of mne.io.Raw instances
         List of the filtered raw chops after applying ICA cleaning.
     raw_chop_clean_unfiltered_list : list of mne.io.Raw instances
@@ -364,7 +323,30 @@ def chop_and_apply_ica(raw_filt_fname, chop_length=60., flow_ecg=8., fhigh_ecg=2
 
     print('Running chop_and_apply_ica on ', raw_filt_fname)
 
-    reject = {'mag': 5e-12}
+    ###########################################################################
+    # load settings from ica config
+    ###########################################################################
+    chop_length = ica_cfg['chop_length']
+    ecg_ch = ica_cfg['ecg_ch']
+    eog_hor = ica_cfg['eog_hor_ch']
+    eog_ver = ica_cfg['eog_ver_ch']
+
+    flow_ecg = ica_cfg['flow_ecg']
+    fhigh_ecg = ica_cfg['fhigh_ecg']
+    flow_eog = ica_cfg['flow_eog']
+    fhigh_eog = ica_cfg['fhigh_eog']
+
+    ecg_thresh = ica_cfg['ecg_thresh']
+    eog_thresh = ica_cfg['eog_thresh']
+    use_jumeg = ica_cfg['use_jumeg']
+    random_state = ica_cfg['random_state']
+    unfiltered = ica_cfg['unfiltered']
+
+    reject = ica_cfg['reject']
+    exclude = ica_cfg['exclude']
+    save = ica_cfg['save']
+
+    # start cleaning
 
     raw_filt = mne.io.Raw(raw_filt_fname, preload=True, verbose=True)
 

@@ -19,8 +19,9 @@ subjects_dir: 'subjects'
 plot_dir: 'plots'
 
 # Path to MNE-C binary files
-mne_bin_path: '/Users/kiefer/mne/MNE-2.7.3-3268-MacOSX-i386/bin/'
-freesurfer_home: '/Users/kiefer/mne/freesurfer/'
+mne_bin_path: '/path/to/MNE-2.7.3-3268-MacOSX-i386/bin/'
+# Path to freesurfer directory
+freesurfer_home: '/path/to/freesurfer/'
 
 ###############################################################################
 # pre-processing settings
@@ -40,16 +41,17 @@ noise_reducer:
 
 # filtering
 filtering:
+    # High pass frequency
     l_freq: 1.0
+    # Low pass frequency
     h_freq: 45.
     method: 'fir'
     fir_design: 'firwin'
     phase: 'zero'
-    # create files for unfiltered data as well
-    unfiltered: True
 
-# resampling
+# re-sampling
 resampling:
+    # re-sampling frequency
     rsfreq: 250
 
 # file name extension with the pre-processing steps
@@ -60,19 +62,46 @@ pre_proc_ext: ',nr,bcc,fibp,rs'
 ###############################################################################
 
 ica:
+    # Apply ica only to filtered (False) or to both filtered and
+    # unfiltered data (True)
+    unfiltered: False
+
+    # Chop raw data into smaller segments of length given by chop_length
+    # and apply ica on each segment separately. Concatenate results in the end.
+    chop_length: 60.
+
+    # Name of the ECG channel.
     ecg_ch: 'ECG 001'
+    # Name of the horizontal EOG channel.
     eog_hor_ch: 'EOG 001'
+    # Name of the vertical EOG channel.
     eog_ver_ch: 'EOG 002'
 
+    # Lower frequency for the scoring of ECG sources.
     flow_ecg: 8
+    # Higher frequency for the scoring of ECG sources.
     fhigh_ecg: 20
+    # Lower frequency for the scoring of EOG sources.
     flow_eog: 1
+    # Higher frequency for the scoring of EOG sources.
     fhigh_eog: 20
 
+    # Threshold for independent ecg components.
     ecg_thresh: 0.3
+    # Threshold for independent EOG components.
     eog_thresh: 0.3
+    # Use jumeg or mne methods for artifact component identification
     use_jumeg: True
+    # Seed for pseudo random number generator.
     random_state: 42
+
+    exclude: 'bads'
+
+    reject:
+        'mag': 5e-12
+
+    # Save raw chops after applying ICA.
+    save: True
 
 ###############################################################################
 # conditions
