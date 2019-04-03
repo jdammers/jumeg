@@ -19,21 +19,8 @@ recordings_dir = op.join(basedir, config['recordings_dir'])
 # subject list
 subjects = config['subjects']
 
-
-ecg_ch = config['ica']['ecg_ch']
-eog_hor_ch = config['ica']['eog_hor_ch']
-eog_ver_ch = config['ica']['eog_ver_ch']
-
-flow_ecg = config['ica']['flow_ecg']
-fhigh_ecg = config['ica']['fhigh_ecg']
-flow_eog = config['ica']['flow_eog']
-fhigh_eog = config['ica']['fhigh_eog']
-
-ecg_thresh = config['ica']['ecg_thresh']
-eog_thresh = config['ica']['eog_thresh']
-use_jumeg = config['ica']['use_jumeg']
-random_state = config['ica']['random_state']
-unfiltered = config['ica']['unfiltered']
+ica_cfg = config['ica']
+unfiltered = ica_cfg['unfiltered']
 
 pre_proc_ext = config['pre_proc_ext']
 
@@ -57,14 +44,7 @@ for subj in subjects:
             if not op.exists(clean_filt_fname) or (unfiltered and not op.exists(clean_unfilt_fname)):
 
                 # creates list of small, cleaned chops
-                clean_filt_list, clean_unfilt_list = chop_and_apply_ica(raw_filt_fname, pre_proc_ext, chop_length=60,
-                                                                        flow_ecg=flow_ecg, fhigh_ecg=fhigh_ecg,
-                                                                        flow_eog=flow_eog, fhigh_eog=fhigh_eog,
-                                                                        ecg_thresh=ecg_thresh, eog_thresh=eog_thresh,
-                                                                        random_state=random_state, ecg_ch=ecg_ch,
-                                                                        eog_hor=eog_hor_ch, eog_ver=eog_ver_ch,
-                                                                        exclude='bads', use_jumeg=use_jumeg,
-                                                                        unfiltered=unfiltered, save=True)
+                clean_filt_list, clean_unfilt_list = chop_and_apply_ica(raw_filt_fname, ica_cfg)
 
                 clean_filt_concat = mne.concatenate_raws(clean_filt_list)
                 clean_filt_concat.save(clean_filt_fname)
