@@ -53,22 +53,22 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           :return:
           """
           for k in ('time_pre','time_post','baseline'):
-              if k in ctps_parameter :
+              if ctps_parameter.has_key(k) :
                  if ctps_parameter[k]:
                     self.ctps_hdf_parameter[k] = ctps_parameter[k]
                     continue
 
-              if 'ctps' in ep_param:
+              if ep_param.has_key('ctps'):
                  self.ctps_hdf_parameter[k] = ep_param['ctps'][k]
               elif ep_param[k]:
                  self.ctps_hdf_parameter[k] = ep_param[k]
 
-              if k not in self.ctps_hdf_parameter :
+              if not self.ctps_hdf_parameter.has_key(k) :
                  self.ctps_hdf_parameter[k] = None
 
           if self.verbose:
-             print(" --> ctps  hdf parameter: ")
-             print(self.ctps_hdf_parameter)
+             print " --> ctps  hdf parameter: "
+             print self.ctps_hdf_parameter
 
           return self.ctps_hdf_parameter
 
@@ -112,7 +112,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           :return:
           """
 
-          print(" ---> Start CTPS  init select brain responses")
+          print " ---> Start CTPS  init select brain responses"
 
          #--- ck template
           if template_name:
@@ -146,7 +146,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           :param template_name:
           :return:
           """
-          print(" ---> Start CTPS  init clean brain responses")
+          print " ---> Start CTPS  init clean brain responses"
 
          #--- ck template
           if template_name:
@@ -182,7 +182,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
           artifact_events = dict()
 
-          for kbad in ( list(aev.keys()) ):
+          for kbad in ( aev.keys() ):
               node_name = '/ocarta/' + kbad
 
               if self.HDFobj.get(node_name) is None:
@@ -261,7 +261,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
         #--- ck for artefacts => set bads to -1
          if exclude_events :
-            for kbad in ( list(exclude_events.keys()) ):
+            for kbad in ( exclude_events.keys() ):
                 for idx in range( exclude_events[kbad]['tsl'].shape[-1] ) :    #df.index :
                     df['bads'][ ( exclude_events[kbad]['tsl'][0,idx] < df[stim['output']] ) & ( df[stim['output']] < exclude_events[kbad]['tsl'][1,idx] ) ] = self.idx_bad
 
@@ -284,11 +284,11 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
         # self.verbose = True
          #if self.verbose :
-         print(" ---> Update Artifact & Bads Info:")
-         print("      events: %d" % events.shape)
+         print" ---> Update Artifact & Bads Info:"
+         print"      events: %d" % events.shape
          bads = df[ stim['marker_type'] ][ (df['bads']== self.idx_bad)  ]
-         print("      bads  : " + str(bads.shape))
-         print(bads)
+         print"      bads  : " + str(bads.shape)
+         print bads
 
          self.ctps_hdf_parameter['stim']      = {k: stim[k] for k in ('channel','output','marker_type')}
          self.ctps_hdf_parameter['condition'] = condi,
@@ -350,19 +350,19 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           self.hdf_obj_update_dataframe(pd.DataFrame( self.ctps_freq_bands ).astype(np.int16),key=stst_key,**storer_attrs )
 
          #--- get fresh IC's data & filter inplace
-          print(" ---> get ica sources ...\n")
+          print " ---> get ica sources ...\n"
           ica_orig = self.ica_raw.get_sources(self.raw)
 
          #---for filter bands
           for idx_freq in range( self.ctps_freq_bands.shape[0] ):
-              print(" ---> START CTPS  Steady-State Artifact Detection Filter Band ==> %d  / %d\n" % (idx_freq+1, self.ctps_freq_bands.shape[0]+1 ))
-              print(self.ctps_freq_bands[idx_freq])
+              print " ---> START CTPS  Steady-State Artifact Detection Filter Band ==> %d  / %d\n" % (idx_freq+1, self.ctps_freq_bands.shape[0]+1 )
+              print self.ctps_freq_bands[idx_freq]
 
           #--- get fresh IC's data & filter inplace
-              print(" ---> copy ica sources ...\n")
+              print " ---> copy ica sources ...\n"
               ica = ica_orig.copy() # self.ica_raw.get_sources(self.raw)
 
-              print(" ---> apply filter ...\n")
+              print " ---> apply filter ...\n"
               jfi_bw.fcut1 = self.ctps_freq_bands[idx_freq][0]
               jfi_bw.fcut2 = self.ctps_freq_bands[idx_freq][1]
               jfi_bw.verbose = self.verbose
@@ -376,7 +376,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                                       baseline=self.ctps_hdf_parameter['baseline'],
                                       verbose=self.verbose,proj=proj)
 
-              print(" ---> Steady-State Artifact -> apply compute_ ctps ...\n")
+              print " ---> Steady-State Artifact -> apply compute_ ctps ...\n"
 
              #--- compute CTPS
              #-------
@@ -398,9 +398,9 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                  _,pk_dynamics_f64,_ = ctps( ica_epochs.get_data() )
                  self.HDFobj[pk_dynamics_key] = pd.DataFrame( (pk_dynamics_f64 * self.ctps_hdf_parameter['scale_factor']) ).astype( np.int16 )
 
-              print(" ---> done Steady-State Artifact -> "+ pk_dynamics_key)
-              print("Max : %f" % ( pk_dynamics_f64.max() ))
-              print("\n")
+              print " ---> done Steady-State Artifact -> "+ pk_dynamics_key
+              print "Max : %f" % ( pk_dynamics_f64.max() )
+              print "\n"
 
               self.HDFobj.flush()
 
@@ -457,19 +457,19 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
               self.hdf_obj_reset_key('/ctps/'+ condi)
 
        #--- get fresh IC's data & filter inplace
-          print(" ---> get ica sources ...\n")
+          print " ---> get ica sources ...\n"
           ica_orig = self.ica_raw.get_sources(self.raw)
 
        #---for filter bands
           for idx_freq in range( self.ctps_freq_bands.shape[0] ):
-              print(" ---> START CTPS  Filter Band ==> %d  / %d\n" % (idx_freq+1, self.ctps_freq_bands.shape[0]+1 ))
-              print(self.ctps_freq_bands[idx_freq])
+              print " ---> START CTPS  Filter Band ==> %d  / %d\n" % (idx_freq+1, self.ctps_freq_bands.shape[0]+1 )
+              print self.ctps_freq_bands[idx_freq]
 
           #--- get fresh IC's data & filter inplace
-              print(" ---> copy ica sources ...\n")
+              print " ---> copy ica sources ...\n"
               ica = ica_orig.copy() # self.ica_raw.get_sources(self.raw)
 
-              print(" ---> apply filter ...\n")
+              print " ---> apply filter ...\n"
               jfi_bw.fcut1 = self.ctps_freq_bands[idx_freq][0]
               jfi_bw.fcut2 = self.ctps_freq_bands[idx_freq][1]
               jfi_bw.verbose = self.verbose
@@ -479,16 +479,16 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           #--- for epocher condition
               for condi in epocher_condition_list:
 
-                  print(" ---> START condition : " + condi + " CTPS  Filter Band ==> %d  / %d \n" % (idx_freq+1, self.ctps_freq_bands.shape[0] ))
+                  print " ---> START condition : " + condi + " CTPS  Filter Band ==> %d  / %d \n" % (idx_freq+1, self.ctps_freq_bands.shape[0] )
                   ctps_key = '/ctps/' + condi
 
                   #stim,ep_param,info_param = self.ctps_update_condition_parameter(condi,artifact_events)
 
                   #self.ctps_update_ctps_hdf_parameter_time(ctps_parameter=ctps_parameter,ep_param=ep_param)
 
-                  if not( ctps_key in list(self.HDFobj.keys()) ):
+                  if not( ctps_key in self.HDFobj.keys() ):
 
-                     print("---> NEW HDF key: " + ctps_key)
+                     print"---> NEW HDF key: " + ctps_key
 
                      stim,ep_param,info_param = self.ctps_update_condition_parameter(condi,artifact_events)
                      self.ctps_update_ctps_hdf_parameter_time(ctps_parameter=ctps_parameter,ep_param=ep_param)
@@ -504,7 +504,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
                      self.HDFobj.flush()
 
-                     print("--->done update storer: " + ctps_key)
+                     print"--->done update storer: " + ctps_key
 
                   else:
                      ev = self.HDFobj.get(ctps_key+'/events')
@@ -536,7 +536,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                  #     The phase values for epochs, sources and time slices. If ``assume_raw``
                  #    is False, None is returned.
 
-                  print(" ---> apply compute_ctps ...\n")
+                  print " ---> apply compute_ctps ...\n"
 
                   if save_phase_angles :
                      phase_angles_key = ctps_key +'/phase_angle/'+ self.ctps_freq_bands_list[idx_freq]
@@ -644,10 +644,10 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
           ics_global = np.array([])
 
-          for c in list(condi_ics_dict.keys()):
-              print("---> "+ c   +":  %d" % (condi_ics_dict[c].size))
-              print(condi_ics_dict[c])
-              print()
+          for c in condi_ics_dict.keys():
+              print "---> "+ c   +":  %d" % (condi_ics_dict[c].size)
+              print condi_ics_dict[c]
+              print
               ics_global = np.unique( np.append( ics_global,condi_ics_dict[c] ) )
 
 
@@ -657,8 +657,8 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
           self.hdf_obj_update_dataframe(pd.Series( ics_global ).astype( np.int16 ),key='/ics_global',reset=True,**storer_attrs )
 
 
-          print("ICs GLOBAL : %d"  % (ics_global.size))
-          print(ics_global)
+          print"ICs GLOBAL : %d"  % (ics_global.size)
+          print ics_global
 
 
           fhdf = self.HDFobj.filename
@@ -711,22 +711,22 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
              ics       = self.HDFobj['ics_global']
              ica_picks = ics.values
 
-             print("CTPs Clean Global RAW")
+             print "CTPs Clean Global RAW"
              raw_ctps_clean = self.ica_raw.apply(self.raw,include=ica_picks,n_pca_components=None,copy=True)
 
              fout = jumeg_base.get_fif_name(fname,postfix=fif_postfix+'-raw',extention=fif_extention)
 
              if clean_global['save_raw'] :
                 raw_ctps_clean.save(fout,overwrite=True)
-                print("---> save raw ctps global clean\n ---> " + fout +"\n")
+                print"---> save raw ctps global clean\n ---> " + fout +"\n"
 
              if ( clean_global['save_epochs'] or clean_global['save_evoked'] ):
 
                 for condi in ctps_condition_list:
-                    print("---> Init parameter global : " + condi)
-                    print(" --> save epochs : %r" %(clean_global['save_epochs']))
-                    print(" --> save evoked : %r" %(clean_global['save_evoked']))
-                    print(" --> ICs global count : %d" %(ica_picks.size))
+                    print "---> Init parameter global : " + condi
+                    print " --> save epochs : %r" %(clean_global['save_epochs'])
+                    print " --> save evoked : %r" %(clean_global['save_evoked'])
+                    print " --> ICs global count : %d" %(ica_picks.size)
 
                     if not ica_picks.size: continue
 
@@ -738,10 +738,10 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                     #stimulus_info = self.hdf_obj_get_attributes(key=epocher_key,attr='info_parameter')
 
                     if self.verbose:
-                       print(" --> Epocher Parameter: ")
-                       print(ep_param)
+                       print " --> Epocher Parameter: "
+                       print ep_param
                        #print " --> Stimulus Info :"
-                       print("\n\n")
+                       print "\n\n"
 
                  #--- make event array from < ctps condition events>
                     ctps_key= '/ctps/' + condi
@@ -758,7 +758,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
                    #--- get global epochs
                     for k in ('time_pre','time_post','reject'):
-                        if k in ep_param: continue
+                        if ep_param.has_key(k): continue
                         ep_param[k] = None
 
                     dout = mne.Epochs(raw_ctps_clean,events=ev,event_id=dict( condi = int(ev[0,2]) ),
@@ -771,33 +771,33 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                     if clean_global['save_epochs']:
                        fout = jumeg_base.get_fif_name(fname,postfix=fif_postfix+'-'+condi+'-epo',extention=fif_extention)
                        dout.save(fout)
-                       print("---> save epochs ctps global condition clean: " + condi +"\n"+ fout +"\n")
+                       print"---> save epochs ctps global condition clean: " + condi +"\n"+ fout +"\n"
 
                   #---  global evoked ( average condi epochs )
                     if clean_global['save_evoked']:
-                       print("Global Evoked (Averager) :" + condi)
+                       print "Global Evoked (Averager) :" + condi
                        fout = jumeg_base.get_fif_name(fname,postfix=fif_postfix+'-'+condi+'-ave',extention=fif_extention)
                        dout = dout.average()
                        dout.save(fout)
-                       print("---> save evoked ctps global condition clean: " + condi +"\n"+ fout + "\n")
+                       print"---> save evoked ctps global condition clean: " + condi +"\n"+ fout + "\n"
 
-                    print("---> Done ctps global condition clean: " + condi + "\n")
+                    print"---> Done ctps global condition clean: " + condi + "\n"
          #------
           if any( clean_condition.values() ):
-             print("CTPs Clean Condition RAW")
+             print "CTPs Clean Condition RAW"
 
              for condi in ctps_condition_list:
-                 print("---> Init parameter condition : " + condi)
-                 print(" --> save epochs : %r" %(clean_condition['save_epochs']))
-                 print(" --> save evoked : %r" %(clean_condition['save_evoked']))
+                 print "---> Init parameter condition : " + condi
+                 print " --> save epochs : %r" %(clean_condition['save_epochs'])
+                 print " --> save evoked : %r" %(clean_condition['save_evoked'])
 
                  ctps_key = '/ctps/' + condi
 
                  ics       = self.HDFobj[ctps_key+'/ics_selected']
                  ica_picks = np.array( np.where( ics ),dtype=np.int16).flatten()
-                 print(" ICs counts: %d" %( ica_picks.size ))
-                 print("ICS:")
-                 print(ica_picks)
+                 print" ICs counts: %d" %( ica_picks.size )
+                 print "ICS:"
+                 print ica_picks
 
                  if not ica_picks.size: continue
 
@@ -807,7 +807,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
                  if clean_condition['save_raw']:
                     raw_ctps_clean.save(fout) # mne
-                    print("---> save raw ctps condition clean: " + condi +"\n"+ fout +"\n")
+                    print"---> save raw ctps condition clean: " + condi +"\n"+ fout +"\n"
 
                  if ( clean_condition['save_epochs'] or clean_condition['save_evoked'] ):
 
@@ -816,10 +816,10 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                     ep_param    = self.hdf_obj_get_attributes(key=epocher_key,attr='epocher_parameter')
 
                     if self.verbose:
-                       print(" --> CTPs Condition Epocher Parameter: " + condi)
-                       print(ep_param)
+                       print " --> CTPs Condition Epocher Parameter: " + condi
+                       print ep_param
                        #print " --> Stimulus Info :"
-                       print("\n\n")
+                       print "\n\n"
 
                  #--- make event array from < ctps condition events>
                     ev_tsl  = self.hdf_obj_get_dataframe(key= ctps_key+'/events')
@@ -835,7 +835,7 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
 
                    #--- get global epochs
                     for k in ('time_pre','time_post','reject'):
-                        if k in ep_param: continue
+                        if ep_param.has_key(k): continue
                         ep_param[k] = None
 
                     dout = mne.Epochs(raw_ctps_clean,events=ev,event_id=dict( condi = int( ev[0,2] ) ),
@@ -847,17 +847,17 @@ class JuMEG_Epocher_CTPS(JuMEG_Epocher_Events):
                     if clean_condition['save_epochs']:
                        fout = jumeg_base.get_fif_name(fname,postfix=fif_postfix+'_co-'+condi+'-epo',extention=fif_extention)
                        dout.save(fout)
-                       print("---> save epochs ctps condition clean: " + condi +"\n"+ fout +"\n")
+                       print"---> save epochs ctps condition clean: " + condi +"\n"+ fout +"\n"
 
                   #---  global evoked ( average condi epochs )
                     if clean_condition['save_evoked']:
-                       print("Global Evoked (Averager) :" + condi)
+                       print "Global Evoked (Averager) :" + condi
                        fout = jumeg_base.get_fif_name(fname,postfix=fif_postfix+'_co-'+condi+'-ave',extention=fif_extention)
                        dout = dout.average()
                        dout.save(fout)
-                       print("---> save evoked ctps condition clean: " + condi +"\n"+ fout +"\n")
+                       print"---> save evoked ctps condition clean: " + condi +"\n"+ fout +"\n"
 
-                    print("---> Done ctps condition clean: " + condi + "\n")
+                    print"---> Done ctps condition clean: " + condi + "\n"
 
 
 
