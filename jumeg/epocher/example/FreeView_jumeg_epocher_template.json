@@ -10,7 +10,7 @@
            
            "marker"   :{"channel":"StimImageOnset","type_input":"iod_onset","type_output":"sac_onset","prefix":"iod","type_result":"hit"},
            "response" :{"matching":true,"channel":"ETevents","type_input":"sac_onset","type_offset":"sac_offset","prefix":"sac"},         
-           
+        
            "iod"      :{"marker"  :{"channel":"StimImageOnset","type_input":"img_onset","prefix":"img"},
                         "response":{"matching":true,"channel":"IOD","type_input":"iod_onset","type_offset":"iod_onset","prefix":"iod"}},
 
@@ -65,9 +65,40 @@
                         "system_delay_ms"      : 0.0,
                         "early_ids_to_ignore"  : null,
                         "event_id"             : 128,
-                        "and_mask"             : 255
+                        "and_mask"             : 128
                        }                                    
               },
+       
+             "KEYS":{
+                        "events":{
+                                  "stim_channel"   : "STI 013",
+                                  "output"         : "onset",
+                                  "consecutive"    : true,
+                                  "min_duration"   : 0.0005,
+                                  "shortest_event" : 1,
+                                  "mask"           : 0
+                                 },
+                        
+                        "window"               : [0.1,6.0],
+                        "counts"               : "first",
+                        "system_delay_ms"      : 0.0,
+                        "early_ids_to_ignore"  : null,
+                        "event_id"             : "1,2",
+                        "and_mask"             : 3
+                       }                                    
+              },
+
+
+"MEkey1":{
+         "postfix"   :"MEkey1", 
+         "info"      :"memory, key onset, no baseline correction",
+         "baseline"  : null,
+         "marker"   :{"channel":"StimImageOnset","type_input":"iod_onset","type_output":"key_onset","prefix":"iod","type_result":"hit"},
+         "response" :{"matching":true,"channel":"KEYS","type_input":"key_onset","type_offset":"key_offset","prefix":"key"},         
+                         
+         "StimImageOnset" : {"event_id":94},
+         "KEYS" : {"event_id":1}
+         }
 
 "ImoIODBc":{
          "postfix"   : "ImoIOD", 

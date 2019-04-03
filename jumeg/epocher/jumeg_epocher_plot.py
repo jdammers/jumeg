@@ -4,6 +4,7 @@ Created on 08.06.2018
 
 @author: fboers
 """
+
 import os.path
 from distutils.dir_util import mkpath
 
@@ -16,6 +17,11 @@ from jumeg.jumeg_base import JuMEG_Base_IO
 import matplotlib.pyplot as pl
 from matplotlib.backends.backend_pdf import PdfPages
 
+
+import logging
+logger = logging.getLogger('root')
+
+__version__="2019.04.02.001"
 
 #--- A4 landscape
 pl.rc('figure', figsize=(11.69,8.27))
@@ -36,15 +42,38 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
       
         return ymin,ymax
         
-    def plot_evoked(self,ep,fname=None,save_plot=True,show_plot=False,condition=None,plot_dir=None,
+    def plot_evoked(self,evt,fname=None,save_plot=True,show_plot=False,condition=None,plot_dir=None,
                     info={'meg':{'scale':1e15,'unit':'fT'},'eeg':{'scale':1e3,'unit':'mV'}}):
         '''
-        plot subplots evoked/average 
+        
+        :param evt:
+        
+         event dictionary
+         evt['events']  : <np.array([])>  from mne.find_events
+         evt['event_id']: <None> list of event ids
+         evt['baseline_corrected']: True/False
+         baseline:
+         evt['bc']['events']   = np.array([])
+         evt['bc']['event_id'] = None
+  
+        :param fname:
+        :param save_plot:
+        :param show_plot:
+        :param condition:
+        :param plot_dir:
+        :param info:
+        
+        plot subplots evoked/average
         MEG
-        ECG/EOG + performance 
+        ECG/EOG + performance
         STIM Trigger/Response
-        events, rt mean median min max        
+        events, rt mean median min max
+        
+        :return:
         '''
+      
+        if not evt: return
+        ep   = evt["epochs"]
         name = 'test'
         subject_id = name
         if fname:
@@ -75,7 +104,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
         pl.subplot(nplt,1,1)
         picks = self.picks.meg_nobads(ep)
         if picks.any():
-           avg   = ep.average(picks=picks) 
+           avg   = ep.average(picks=picks)
            avg.data *= info['meg']['scale']
            pl.plot(avg.times, avg.data.T,color='black')
            pl.ylim(self.minmax(avg.data))
@@ -123,13 +152,37 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
         pl.xlim(t0,t1)
         pl.xlabel('[s]')
         pl.grid(True)
-              
-       #---
+        
+      #--- plt event_id table
+        cols = ('EvtId', 'Counts')
+      #--- get ids and counts
+        ids,cnts = np.unique( evt["events"][:,-1],return_counts=True)
+        
+        #ids=np.arange(80)
+        #cnts=ids+11
+        data = np.zeros((len(ids),2),dtype=np.int)
+        data[:,0] += ids
+        data[:,1] += cnts
+        
+        yend= len(ids)*0.12  #[left, bottom, width, height]
+        if yend > 4.0:
+           yend= 4.0
+        tab = pl.table(cellText=data,colLabels=cols,loc='top',
+                       colWidths=[0.04 for x in cols],
+                       bbox=[-0.15, -0.40, 0.1, yend], cellLoc='left')
+        
+        #cellDict = tab.get_celld()
+        #for i in range(0,len(cols)):
+        #    cellDict[(0,i)].set_height(.02)
+        #    for j in range(1,len(ids)+1):
+        #        cellDict[(j,i)].set_height(.02)
+        tab.set_fontsize(9)
+      #---
         if save_plot:
            fout += self.file_extention              
            pl.savefig(fout, dpi=self.dpi)
            if self.verbose:
-              print("---> done saving plot: " +fout) 
+              print("---> done saving plot: " +fout)
         else:
            fout= "no plot saved"
        #---
@@ -139,10 +192,5 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
            pl.close()            
          
         return fout
-
-#TODO
-# ck units ep.info['chs']['unit']  -> 107 
-# call mne.io.constant.FIFF 
-# returns 'FIFF_UNIT_V': 107,
 
 jumeg_epocher_plot = JuMEG_Epocher_Plot()

@@ -1,0 +1,7 @@
+{
+"python_versions":[ "None","python","python2","python3"],
+"hosts": {
+          "local":    {"name":"local",    "nodes": 1,"maxnodes": 1, "kernels":1,"maxkernels": 1,"cmd_prefix":"/usr/bin/env"},
+          "mrcluster":{"name":"mrcluster","nodes": 1,"maxnodes": 10,"kernels":1,"maxkernels": 8,"cmd_prefix":"/usr/bin/env"}
+         }
+}

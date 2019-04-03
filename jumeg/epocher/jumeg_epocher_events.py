@@ -64,20 +64,26 @@ jumeg_epocher.apply_epochs(fname=fname,raw=raw,**ep_param)
 
 '''
 import sys
+import logging
+logger = logging.getLogger('root')
+
+#from jumeg import jumeg_logger
+#logger = jumeg_logger.getLogger(name="epocher-events",level="DEBUG")
+
 import numpy as np
 import pandas as pd
 
 import mne
-from jumeg.jumeg_base                import jumeg_base,JuMEG_Base_Basic,JuMEG_Base_PickChannels
+from jumeg.jumeg_base                import jumeg_base,JuMEG_Base_Basic #,JuMEG_Base_PickChannels
 from jumeg.epocher.jumeg_epocher_hdf import JuMEG_Epocher_HDF
 
-__version__="2018.06.19.001"
-
+__version__="2019.04.02.001"
 
 class JuMEG_Epocher_Channel_Baseline(object):
     """ 
     base class for baseline dict definitions  & properties
-    "baseline" :{"method":"avg","type_input":"iod_onset","baseline": [null,0]},
+    "baseline" :{"method":"avg","type_input":"iod_onset","baseline": [null,0]}
+    ToDO: use __slots__?
     """
     def __init__(self,parameter=None,label="baseline"):
         super(JuMEG_Epocher_Channel_Baseline,self).__init__()
@@ -113,20 +119,24 @@ class JuMEG_Epocher_Channel_Baseline(object):
   #---baseline
     @property
     def onset(self):
-        if type( self._get_param("baseline") ) is list: return self.baseline[0]  
-    
+        if type( self._get_param("baseline") ) is list: return self.baseline[0]
   #---baseline
     @property
     def offset(self):
-        if type( self._get_param("baseline") ) is list: return self.baseline[1]  
-   
-
+        if type( self._get_param("baseline") ) is list: return self.baseline[1]
+   #---
+    def info(self):
+        """
+        logs parameter with logger.info
+        :return:
+        """
+        logger.info( jumeg_base.pp_list2str(self._param) )
+        
 class JuMEG_Epocher_Basic(JuMEG_Base_Basic):
     """ 
     base class for definitions  & properties
     
     """
-    
     def __init__(self):
         super(JuMEG_Epocher_Basic,self).__init__()
         self._rt_type_list             = ['MISSED', 'TOEARLY', 'WRONG', 'HIT']
@@ -135,27 +145,25 @@ class JuMEG_Epocher_Basic(JuMEG_Base_Basic):
         
         self._stat_postfix = '-epocher-stats.csv'
         self._idx_bad      = -1
-        self.version       = __version__
-        
-#---
+   #---
     @property
     def idx_bad(self): return self._idx_bad
-#---
+   #---
     @property
     def data_frame_stimulus_cols(self): return self._data_frame_stimulus_cols
     @data_frame_stimulus_cols.setter
     def data_frame_stimulus_cols(self,v): self._data_frame_stimulus_cols = v   
-#---
+   #---
     @property
     def data_frame_response_cols  (self): return self._data_frame_response_cols
     @data_frame_response_cols.setter
     def data_frame_response_cols(self,v): self._data_frame_response_cols = v
     
-#--- rt_type list: 'MISSED', 'TOEARLY', 'WRONG', 'HIT'
+   #--- rt_type list: 'MISSED', 'TOEARLY', 'WRONG', 'HIT'
     @property
     def rt_type_list(self): return self._rt_type_list
     
-#--- rt type index: 'MISSED', 'TOEARLY', 'WRONG', 'HIT'
+   #--- rt type index: 'MISSED', 'TOEARLY', 'WRONG', 'HIT'
     def rt_type_as_index(self,s):
         return self._rt_type_list.index( s.upper() )
     
@@ -179,10 +187,9 @@ class JuMEG_Epocher_Basic(JuMEG_Base_Basic):
     def data_frame_response_cols(self,v): self._data_frame_response_cols = v 
   #--- events stat file (output as csv)
     @property
-    def stat_postfix(self):return self._stat_postfix
+    def stat_postfix(self): return self._stat_postfix
     @stat_postfix.setter
-    def stat_postfix(self, v):   self._stat_postfix = v  
-
+    def stat_postfix(self, v):   self._stat_postfix = v
 
 class JuMEG_Epocher_Events_Channel_Base(object): 
     """ base class to handel epocher template channel parameter
@@ -292,8 +299,14 @@ class JuMEG_Epocher_Events_Channel_Base(object):
     def time_post(self):   return self.get_parameter("time_post")  
     @time_post.setter
     def time_post(self,v): self.set_parameter("time_post",v) 
-
-      
+#---
+    def info(self):
+        """
+        logs parameter with logger.info
+        :return:
+        """
+        logger.info( jumeg_base.pp_list2str(self._param) )
+        
 class JuMEG_Epocher_Events_Channel_IOD(object):
     """class to handel epocher template IOD parameter
     
@@ -364,7 +377,14 @@ class JuMEG_Epocher_Events_Channel_IOD(object):
 #---    
     @property
     def marker_channel_parameter(self):   return self._param[self.marker.channel]
-   
+#---
+    def info(self):
+        """
+        logs parameter with logger.info
+        :return:
+        """
+        logger.info( jumeg_base.pp_list2str(self._param) )
+  
  
 class JuMEG_Epocher_Events_Channel(JuMEG_Epocher_Events_Channel_Base):
     '''
@@ -374,7 +394,6 @@ class JuMEG_Epocher_Events_Channel(JuMEG_Epocher_Events_Channel_Base):
     def __init__(self,label=None,parameter=None):
         super(JuMEG_Epocher_Events_Channel,self).__init__(label=label,parameter=parameter)
         self._info = None
-         
 #--- 
     @property
     def info(self):   return self._info
@@ -401,7 +420,6 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
                  resp_df=None,resp_param=None,resp_type_input="onset",resp_type_offset="offset",resp_prefix="resp",verbose=False):
                 
         super(JuMEG_Epocher_ResponseMatching, self).__init__()
-        #self.column_name_list_update = ['rt_type','rt_id','rt_onset','rt_offset','rt_index','rt_counts']
         self.column_name_list_update = ['div','type','index','counts']
         self.column_name_list_extend = ['bads','selected','weighted_selected']
         self.raw              = raw
@@ -422,7 +440,6 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
    #---      
     @property
     def div_column(self): return self.resp_prefix+"-div"
-    
     
     def reset_dataframe(self,max_rows):
         """
@@ -455,7 +472,7 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
             if k not in col:
                col.append(k)
         
-        return pd.DataFrame(0,index=list(range(max_rows)),columns=col)
+        return pd.DataFrame(0,index=range(max_rows),columns=col)
         
         
     def update(self,raw=None,stim_df=None,stim_param=None,stim_type_input=None,stim_prefix=None,resp_df=None,
@@ -505,7 +522,7 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
         
         
         if not self.resp_type_offset:
-           self.resp_type_offset = self.resp_type_inputJuMEG_Base_PickChannels
+           self.resp_type_offset = self.resp_type_input
            
     def _ck_errors(self):
         """ checking for errors
@@ -535,14 +552,14 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
            err_msg.append("ERROR no response type input provided")
      
         if err_msg :
-           self.pp(err_msg,head="JuMEG Epocher Response Matching ERROR check")
+           logger.error(jumeg_base.pp_list2str(err_msg,"JuMEG Epocher Response Matching ERROR check"))
            return False 
        
         return True      
         
     def calc_max_rows(self,tsl0=None,tsl1=None,resp_event_id=None,early_ids_to_ignore=None):
         """
-        counting the necessary number of rows for dataframe
+        counting the necessary number of rows for dataframe in advance
         
         Parameter
         ---------
@@ -617,7 +634,8 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
          e.g. prints differences in tsls between stimulus and IOD onset
          
         """
-        self.pp( self.DataFrame,head=" --> Response Matching " )
+        #self.pp( self.DataFrame,head=" --> Response Matching " )
+        logger.info(jumeg_base.pp_list2str(self.DataFrame,head=" --> Response Matching: ",))
         ddiv    = self.DataFrame[ self.resp_prefix + "_div" ] 
         n_zeros = ( ddiv == 0 ).sum()
         tsldiv  =  abs( ddiv.replace(0,np.NaN) )
@@ -635,13 +653,11 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
         else:
            tdmean,tdstd,tdmin,tdmax = 0,0,0,0
         
+        logger.info("\n".join(["\n --> "+ text +" time difference [ms]",
+                      "  -> bad epochs count : {:d}".format(n_zeros),
+                      "  -> mean [ s ]: {:3.3f}  std: {:3.3f} max: {:3.3f} min: {:3.3f}".format(tdmean,tdstd,tdmin,tdmax),
+                      "  -> mean [tsl]: {:3.3f}  std: {:3.3f} max: {:3.3f} min: {:3.3f}".format(dmean,dstd,dmin,dmax),"-"*50]))
         
-        print(" --> "+ text +" time difference [ms]")
-        print("  -> bad epochs count : {:d}".format(n_zeros))
-        print("  -> mean [ s ]: {:3.3f}  std: {:3.3f} max: {:3.3f} min: {:3.3f}".format(tdmean,tdstd,tdmin,tdmax))
-        print("  -> mean [tsl]: {:3.3f}  std: {:3.3f} max: {:3.3f} min: {:3.3f}".format(dmean,dstd,dmin,dmax))
-        self.line()   
-   
    #---   
     def _set_stim_df_resp(self,df,stim_idx=None,df_idx=None,resp_idx=None,resp_type=0,counts=0):
         """set dataframe row
@@ -661,20 +677,27 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
         """
         for col in self.stim_df.columns:
             df[col][df_idx] = self.stim_df[col][stim_idx]
-       
+        
         if self.is_number( resp_idx ):
            for col in self.resp_df.columns:
                df[col][df_idx] = self.resp_df[col][resp_idx]
            df[self.resp_prefix +'_index'][df_idx] = resp_idx
+           df[self.resp_prefix + '_type'][df_idx] = resp_type
+           df[self.resp_prefix + "_div"][df_idx] = df[self.resp_type_input][df_idx] - df[self.stim_type_input][df_idx]
+
         else:
            for col in self.resp_df.columns:
                df[col][df_idx] = 0
-           df[self.resp_prefix +'_index'][df_idx] = 0
+          # logger.error("NOT resp_idx {} idx: {}".format(resp_type,resp_idx))
            
-        df[self.resp_prefix +'_type'][df_idx]    = resp_type
+           df[self.resp_prefix +'_index'][df_idx] = -1 # None/nan needs change to np.float
+           df[self.resp_prefix +'_type'][df_idx]  = self.idx_missed # resp_type
+           df[self.resp_prefix + "_div"][df_idx]  = 0 # None
+        
         df[self.resp_prefix + "_counts"][df_idx] = counts
-        df[self.resp_prefix + "_div"][df_idx]    = df[ self.resp_type_input ][df_idx]- df[ self.stim_type_input ][df_idx]
-      
+        
+        #print("TEST: {}".format(resp_idx))
+        #print( df.loc[df_idx,:])
         return df
 
     def _set_hit(self,df,stim_idx=None,df_idx=None,resp_idx=None):
@@ -807,16 +830,16 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
            
        #--- ck RT window range
         if ( self.resp_param['window'][0] >= self.resp_param['window'][1] ):
-           print(" --> ERROR in <apply_response_matching>")
-           print("ERROR in self.parameter response windows")
+           logger.error(" --> ERROR in response parameter window range: start: {} > end: {}".format(self.resp_param['window'][0],self.resp_param['window'][1]))
            return
         
         (r_window_tsl_start, r_window_tsl_end ) = self.raw.time_as_index( self.resp_param['window'] );
         
        #--- get respose code -> event_id [int or string] as np array
+        #print("---> RESPONSE Matching apply")
+        #print("  -> resp param event_id: {}".format(self.resp_param['event_id'] ))
         resp_event_id = jumeg_base.str_range_to_numpy( self.resp_param['event_id'] )
-
-
+    
        #--- ck if any toearly-id is defined, returns None if not
         if self.resp_param["early_ids_to_ignore"] != 'all':
            early_ids_to_ignore = jumeg_base.str_range_to_numpy( self.resp_param['early_ids_to_ignore'] )
@@ -827,7 +850,7 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
         ridx = 0
        #--- get rt important part of respose df
         resp_tsls = self.resp_df[ self.resp_type_input ]
-        
+        #print("  -> resp param : {}".format(resp_tsls))
         max_rows = self.calc_max_rows(tsl0=r_window_tsl_start,tsl1=r_window_tsl_end,resp_event_id=resp_event_id,early_ids_to_ignore=early_ids_to_ignore)
         df = self.reset_dataframe(max_rows)
         
@@ -838,7 +861,9 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
             st_window_tsl1 = self.stim_df[ self.stim_type_input ][idx] + r_window_tsl_end
             
             if (st_window_tsl0 < 0) or (st_window_tsl1 < 0) : continue
-           
+            
+            #print("  -> resp param wtsl0: {} wtsl1:{} idx:{}".format(st_window_tsl0,st_window_tsl1,idx))
+            
          #--- to-early responses  e.g. response winfow[0.01,1,0] =>  =>  0<= toearly window < 0.01
             if r_window_tsl_start > 0:
                resp_index = self.find_toearly(tsl1=st_window_tsl0,early_ids_to_ignore=early_ids_to_ignore)
@@ -848,12 +873,16 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
                   continue
 
           #--- find index of responses from window-start till end of res_event_type array [e.g. onset / offset]
+           # print( resp_tsls)
             resp_in_index = self.resp_df[ ( st_window_tsl0 <= resp_tsls ) & ( resp_tsls <= st_window_tsl1) ].index
 
-            
-          #--- MISSED response
+           # print("  -> resp in idx:{}".format(resp_in_index))
+           # print( self.resp_df.loc[ resp_in_index,:])
+           #--- MISSED response
             if resp_in_index.empty:
                df_idx += 1
+               #print("MISSED: {}".format(idx))
+               #print(self.resp_df.loc[resp_in_index,:])
                self._set_stim_df_resp(df,stim_idx=idx,df_idx=df_idx,resp_idx=None,resp_type=self.idx_missed,counts=0 )
                continue
            
@@ -871,7 +900,10 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
            #--- ck if first resp is True/False  e.g. IOD matching
             elif self.resp_param['counts'] == 'first':
                if ( self.resp_df[self.resp_prefix + "_id"][ resp_in_index[0] ] in resp_event_id ):
-                  df_idx = self._set_hit(df,stim_idx=idx,df_idx=df_idx,resp_idx=[ resp_in_index[0] ] )   
+                  #print("HIT First")
+                  #print(self.resp_df.loc[resp_in_index,:])
+                  df_idx = self._set_hit(df,stim_idx=idx,df_idx=df_idx,resp_idx=[ resp_in_index[0] ] )
+                  #print(df_idx)
                else:
                   df_idx = self._set_wrong(df,stim_idx=idx,df_idx=df_idx,resp_idx=[resp_in_index[0]] )  
         
@@ -888,8 +920,8 @@ class JuMEG_Epocher_ResponseMatching(JuMEG_Epocher_Basic):
             #--- Wrong: found response counts > counts      
                  else:
                    df_idx = self._set_wrong(df,stim_idx=idx,df_idx=df_idx,resp_idx=resp_in_index)  
-           
-        
+        #print("RESP MATHCH DF out")
+        #print(df)
         self.DataFrame = df
        #char = sys.stdin.read(1)
         return df
@@ -938,7 +970,8 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                                              "consecutive"    : True,
                                              "min_duration"   : 0.0001,
                                              "shortest_event" : 1,
-                                             "mask"           : 0
+                                             "initial_event"  : True,
+                                             "mask"           : None
                                             },
                                     "event_id" : None,        
                                     "and_mask" : None,
@@ -955,12 +988,20 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
 
 #---
     def channel_events_to_dataframe(self):
-        """find events from stimulus [STI 014,ET_events] and response channels [STI 013]
-        store as pandas dataframe and save in hdf5 obj key: /events
+        """
+        find events from groups
+         mne.pick_types(stim=True)
+         stimulus group <stim> [STI 014 TRIGGER, ET_events, ...]
+         
+         mne.pick_types(resp=True)
+         response group [STI 013 RESPONSE,...]
+        store event information as pandas dataframe and save in hdf5 obj key: /events
         """
        #--- stimulus channel group    
         for ch_idx in jumeg_base.picks.stim(self.raw):
+            #print(ch_idx)
             ch_label = jumeg_base.picks.picks2labels(self.raw,ch_idx)
+            #print(ch_label)
             self.event_data_stim_channel = ch_label
             self._channel_events_dataframe_to_hdf(ch_label,"stim")
     
@@ -984,8 +1025,9 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         None
         """
         self.event_data_stim_channel = ch_label
+        #print(self.event_data_parameter)
         found = self.events_find_events(self.raw,prefix=prefix,**self.event_data_parameter)
-        
+        #print(found)
         if found:
            df   = found[0]
            info = found[1] 
@@ -1030,9 +1072,9 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         #self.pp( mrk_df, head="  --> Response Matching --> IOD MRK/STIM IN" )
         #self.pp( resp_df,head="  --> Response Matching --> IOD RESP IN" )
         
-        if self.verbose:
-           self.pp( mrk_df,head=" --> Marker DF --> IOD out" )
-           self.pp( resp_df,head=" --> Response DF --> IOD out" )
+        #if self.verbose:
+        #   self.pp( mrk_df,head=" --> Marker DF --> IOD out" )
+        #   self.pp( resp_df,head=" --> Response DF --> IOD out" )
         
         df = self.ResponseMatching.apply(raw=raw,stim_df=mrk_df,resp_df=resp_df,
                                          stim_param      = self.iod.marker_channel_parameter.copy(),
@@ -1045,6 +1087,10 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                                         )                              
          
         #sys.exit()
+        if self.verbose:
+           if "iod_div" in df.columns:
+              logger.info("  -> Stimulus Onset and IOD div [tsl] mean: {0:3.1f}  std:{1:3.1f}".format(df["iod_div"].mean(),df["iod_div"].std()))
+            
         return df,mrk_info  
     
 #---    
@@ -1124,27 +1170,23 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         self.channel_events_to_dataframe()
         
         if not condition_list :
-           condition_list = list(self.template_data.keys())
+           condition_list = self.template_data.keys()
        #--- condi loop
-        # for condi, param, in self.template_data.iteritems():
+        # for condi, param, in self.template_data.items():
         for condi in condition_list:
             param = self.template_data[condi]
           #--- check for real condition
             if condi == 'default': continue
           
           #--- check for condition in list
-            if condi not in list(self.template_data.keys()): continue
+            if condi not in self.template_data.keys(): continue
           #--- update & merge condi self.parameter with defaults
             self.update_parameter(param=param)
             
             iod_data_frame = None
             
-            self.line()
-            print("===> Jumeg Epocher Events ====\n")
-            print(" --> Start Events Store into HDF")      
-            print(" --> condition: "+ condi)
-            self.line()
-            
+            logger.info("---> Epocher start store events into HDF\n  --> condition: "+ condi)
+                        
             if not self.marker.channel_parameter: continue
          
            #--- stimulus init dict's & dataframes
@@ -1154,8 +1196,8 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
             response_info       = dict()
                        
             if self.verbose:
-               print(' --> EPOCHER  Template: %s  Condition: %s' %(self.template_name,condi))
-               print('  -> find events and epochs,  generate epocher output HDF5')
+               logger.info(' --> EPOCHER  Template: %s  Condition: %s' %(self.template_name,condi)+
+                           '\n   -> find events and epochs, save epocher output in HDF5 format')
                #self.pp(self.parameter,head="  -> parameter")               
             
            #--- iod matching ckek if true and if channe == stimulus channel
@@ -1174,9 +1216,9 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                     
            #--- ck if not stimulus_data_frame        
             if marker_data_frame.empty : 
-               print("  -> MARKER CHANNEL -> find events => condition: "+ condi +" ---> marker channel: "+ self.marker.channel)
+               logger.info("  -> MARKER CHANNEL -> find events => condition: "+ condi +"\n ---> marker channel: "+ self.marker.channel)
                if self.verbose:
-                  self.pp( self.marker.parameter,head="  -> Marker Channel parameter:")
+                  logger.info(self.pp( self.marker.parameter,head="  -> Marker Channel parameter:"))
                marker_data_frame,marker_info = self.events_find_events(self.raw,prefix=self.marker.prefix,**self.marker.channel_parameter)
            #---
             if marker_data_frame.empty: continue
@@ -1188,18 +1230,17 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
            # self.event_data_frames[self.marker.channel],self.event_data_info[self.marker.channel] = self.events_find_events(raw,prefix=self.marker.prefix,**self.event_data_parameter)
             
             if self.verbose:
-               print("  -> Marker Epocher Events Data Frame [marker channel]: "+ condi)
-               print(marker_data_frame)
-               print("\n")
-            
+               logger.info("  -> Marker Epocher Events Data Frame [marker channel]: "+ condi)
+               #print(marker_data_frame)
+               
            #--- Marker Matching task
            #--- match between stimulus and response or vice versa
            #--- get all response events for condtion e.g. button press 4
         
             if self.response.matching :
-               print("  -> Marker Matching -> matching marker & response channel: " + condi)
-               print("  -> marker   channel : " + self.marker.channel)
-               print("  -> response channel : " + self.response.channel)
+               logger.info(" --> Marker Matching -> matching marker & response channel: {}\n".format(condi)+
+                           "   -> marker   channel : {}\n".format(self.marker.channel)+
+                           "   -> response channel : {}".format(self.response.channel) )
              #--- look for all responses => 'event_id' = None
                if response_data_frame.empty:
                   res_channel_param = self.response.channel_parameter.copy()
@@ -1210,12 +1251,9 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
               # self.event_data_info[self.response.channel]   = response_info 
                 
                if self.verbose:
-                  print("---> Response Epocher Events Data Frame [response channel] : " + self.response.channel)
-                  print(self.response.parameter)
-                     #print"---> Response Epocher Events Data Frame [respnse channel] : " + self.parameter['response_channel']
-                  print(response_data_frame)
-                  print("\n\n")
-
+                  logger.info(self.pp_list2str(self.response.parameter,
+                                               head="---> Response Epocher Events Data Frame [response channel] : " + self.response.channel))
+               
               #--- update stimulus epochs with response matching
                marker_data_frame = self.ResponseMatching.apply(raw=self.raw,verbose=self.verbose,
                                                                stim_df         = marker_data_frame,
@@ -1233,21 +1271,17 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
             else: 
                mrk_type = self.marker.prefix +'_type'  
                if mrk_type not in marker_data_frame :
-                  marker_data_frame[ mrk_type ] = self.rt_type_as_index( self.marker.type_result ) 
-                
-                
-                
-            print("\n---> Marker DataFrame out:")
-            print(marker_data_frame)
-                
+                  marker_data_frame[ mrk_type ] = self.rt_type_as_index( self.marker.type_result )
+
+            if self.verbose:
+               logger.info(self.pp_list2str(marker_data_frame,head="  -> Marker Matching DataFrame : " + condi))
+
             key = self.hdf_node_name_epocher +'/'+condi
             storer_attrs = {'epocher_parameter': self.parameter,'info_parameter':marker_info}
             self.hdf_obj_update_dataframe(marker_data_frame.astype(np.int32),key=key,**storer_attrs )
-         
+            
         self.HDFobj.close()
-
-        print(" ---> DONE save epocher data into HDF5 :")
-        print("  --> " + self.hdf_filename +"\n\n")
+        logger.info(" ---> DONE save epocher data into HDF5 : " + self.hdf_filename)
         return self.raw,fname
 
 #---
@@ -1282,7 +1316,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                 (TSL => timeslices,samples)
         """
         if raw is None:
-           print("ERROR in  <get_event_structure: No raw obj \n")
+           logger.error("ERROR in  <get_event_structure: raw obj is None")
            return 
         
        #---
@@ -1307,8 +1341,16 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         events           = param['events'].copy()
         events['output'] = 'step'
        # self.pp( events )
+     
+      #--- check if channel label in raw
+        if not jumeg_base.picks.labels2picks(raw,events["stim_channel"]):
+           return df,dict()
+     
+        if self.verbose:
+           logger.debug("---> mne.find_events:\n"+ self.pp_list2str(events))
         ev = mne.find_events(raw, **events) #-- return int64
-
+     
+        # self.pp(ev)
        #--- apply and mask e.g. 255 get the first 8 bits in Trigger channel
         if param['and_mask']:
            ev[:, 1:] = np.bitwise_and(ev[:, 1:], param['and_mask'])
@@ -1319,9 +1361,9 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
 
         if param['event_id']:
            ev_id = jumeg_base.str_range_to_numpy(param['event_id'],exclude_zero=True)
-           
+           #print(ev_id)
            evt_ids=np.where(np.in1d(ev[:,2],ev_id))
-           
+           #print(evt_ids)
           #--- check if code in events
            if len( np.squeeze(evt_ids) ):   
               ev_id_idx = np.squeeze( np.where( np.in1d( ev_onset[:,2],ev_id )))
@@ -1329,15 +1371,15 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                    ev_onset = ev_onset[ ev_id_idx,:]
                    ev_offset= ev_offset[ev_id_idx,:]
               else:
-                  print('Warning => No such event code(s) found (ev_id_idx) -> event: ' + str( param['event_id'] ))
+                  logger.warning('===> No such event code(s) found (ev_id_idx) -> event: ' + str( param['event_id'] ))
                   return 
            else:
-               print('Warning => No such event code(s) found (ev_id) -> event: ' + str(param['event_id']))
+               logger.warning('===> No such event code(s) found (ev_id) -> event: ' + str(param['event_id']))
                return 
 
        #---- use all event ids
         if ( ev_onset.size == 0 ):
-            print('Warning => No such event code(s) found -> event: ' + str(param['event_id']))
+            logger.warning('===> No such event code(s) found -> event: ' + str(param['event_id']))
             return 
        #--- apply system delay if is defined e.g. auditory take`s 20ms to subjects ears
         if param['system_delay_ms']:

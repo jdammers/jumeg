@@ -1,5 +1,3 @@
-import numpy as np
-import time
 '''
 ----------------------------------------------------------------------
 --- JuMEG Filter_Base  Class    --------------------------------------
@@ -9,6 +7,9 @@ import time
  update: 16.12.2014
  update: 21.12.2016
   --> add function calc_lowpass_value
+ update: 17.12.2018
+  --> filter_name_postfix use print() with format(),
+      print fcut as float 0.001-200.0Hz
 
  version    : 0.031415
 ---------------------------------------------------------------------- 
@@ -20,630 +21,638 @@ import time
 ----------------------------------------------------------------------
  Butterworth filter design from  KD
 ---------------------------------------------------------------------- 
-
+2019.04.03 update logger
 ----------------------------------------------------------------------
 
 '''
 
-class JuMEG_Filter_Base(object):
-     def __init__ (self):
-        self.__jumeg_filter_base_version   = 0.0314
-         
+import numpy as np
+import time
+from jumeg.jumeg_base import JuMEG_Base_Basic
+
+import logging
+logger = logging.getLogger('root')
+
+__version__= '2019.04.03.001'
+
+class JuMEG_Filter_Base(JuMEG_Base_Basic):
+    """
+    JuMEG Filter Basic Class for FIR FFT filtering
+    """
+    def __init__ (self):
+        super(JuMEG_Filter_Base,self).__init__()  
+        
         self.__sampling_frequency          = None # 678.17
+        self.__default_sampling_frequency  = 678.17 # JuMEG 4D-srate
+        
         self.__filter_type                 = "bp" #lp,hp,bp,notch
         self.__filter_method               = None
 
         self.__fcut1                       = 1.0
         self.__fcut2                       = 45.0
         self.__filter_order                = None 
-#---
+
         self.__filter_notch                = np.array([])
         self.__filter_notch_width          = 1.0
          
         self.___settling_time_factor        = 5.0
         self.__filter_kernel_length_factor = 16.0
-#---
+
         self.__filter_attenuation_factor   = 1  # 1, 2
         self.__filter_window               = 'blackmann' # blackmann, kaiser, hamming
         self.__kaiser_beta                 = 16 #  for kaiser window  
-#---   flags    
+       #--- flags    
         self.__remove_dcoffset             = True
-        self.__filter_kernel_isinit        = False
-        self.__verbose                     = False
-#---         
-        
-#---   data      
+        self.__filter_kernel_isinit        = False       
+       #--- data      
         self.__data                        = np.array([])
         self.__data_mean                   = 0.0
         self.__data_plane_isinit           = False
         self.__data_plane_data_in          = np.array([])
 
         self._lp_for_srate = {'678': 200.0, '1017': 400.0}
-
-     def calc_lowpass_value(self,sf):
-         '''
-          extimates fcut1 for lowpass with respect 4D aquisition settings: sampling-rates & bandwidth
-          678  -> 200.0
-          1017 -> 400.0
-         :param
-          sf: sampling frequency default obj.sampling_frequency
-         :return:
-          value to set the fcut1 for lp
-          must be set in main pgr !!!
-         '''
-         sfreq = np.int64( self.sampling_frequency )
-         if sf:
-            sfreq = np.int64(sf)
-         if str(sfreq) in self._lp_for_srate:
-            return self._lp_for_srate[str(sfreq)]
-         else:
-            return sfreq/3.0
-
+     
 #--- version
-     def __get_version(self):
-         return self.__jumeg_filter_base_version
-       
-     version = property(__get_version)
-
-#--- verbose    
-     def __set_verbose(self,value):
-         self.__verbose = value
-
-     def __get_verbose(self):
-         return self.__verbose
-       
-     verbose = property(__get_verbose, __set_verbose)
+    @property       
+    def version(self): return __version__
      
 #--- filter method bw,ws,mne
-     def __get_filter_method(self):
-         return self.__filter_method
-     filter_method = property(__get_filter_method)
-     
+    @property       
+    def filter_method(self): return self.__filter_method 
+    
 #--- filter_kernel_isinit check for call init fct.
-     def __set_filter_kernel_isinit(self,value):
-        self.__filter_kernel_isinit = value
-         
-     def __get_filter_kernel_isinit(self):
-        return self.__filter_kernel_isinit
-        
-     filter_kernel_isinit = property(__get_filter_kernel_isinit, __set_filter_kernel_isinit)
- 
+    @property       
+    def filter_kernel_isinit(self):   return self.__filter_kernel_isinit
+    @filter_kernel_isinit.setter
+    def filter_kernel_isinit(self,v): self.__filter_kernel_isinit = v 
+    
 #--- data_plane_isinit check for call init fct.
-     def __set_data_plane_isinit(self,value):
-        self.__data_plane_isinit = value
-         
-     def __get_data_plane_isinit(self):
-        return self.__data_plane_isinit
+    @property       
+    def data_plane_isinit(self):   return self.__data_plane_isinit
+    @data_plane_isinit.setter
+    def data_plane_isinit(self,v): self.__data_plane_isinit = v       
+                   
+#--- remove dcoffset 
+    @property       
+    def remove_dcoffset(self):   return self.__remove_dcoffset
+    @remove_dcoffset.setter
+    def remove_dcoffset(self,v): self.__remove_dcoffset = v
+    
+#---  settling_time_factor
+    @property       
+    def settling_time_factor(self): return self.__settling_time_factor
+    @settling_time_factor.setter
+    def settling_time_factor(self,v):
+        self.filter_kernel_isinit  = False
+        self.__settling_time_factor = v   
         
-     data_plane_isinit = property(__get_data_plane_isinit, __set_data_plane_isinit)
-                          
-#--- remove dcoffset    
-     def __set_remove_dcoffset(self,value):
-         self.__remove_dcoffset = value
+#--- sampling_frequency 
+    @property       
+    def sampling_frequency(self): return self.__sampling_frequency
+    @sampling_frequency.setter
+    def sampling_frequency(self,v):
+        self.__sampling_frequency = v
+        self.filter_kernel_isinit  = False
 
-     def __get_remove_dcoffset(self):
-         return self.__remove_dcoffset
-       
-     remove_dcoffset = property(__get_remove_dcoffset, __set_remove_dcoffset)
-                       
-#---  settling_time_factor   
-     def __set_settling_time_factor(self,value):
-         self.filter_kernel_isinit  = False
-         self.__settling_time_factor = value
-      
-         
-     def __get_settling_time_factor(self):
-         return self.__settling_time_factor
-
-     settling_time_factor = property(__get_settling_time_factor,__set_settling_time_factor)
-
-#--- sampling_frequency  
-     def __set_sampling_frequency(self, value):
-         self.__sampling_frequency = value
-         self.filter_kernel_isinit  = False
-
-     def __get_sampling_frequency(self):
-         return self.__sampling_frequency
-
-     sampling_frequency = property(__get_sampling_frequency,__set_sampling_frequency)
-
+#--- default_sampling_frequency 
+    @property       
+    def default_sampling_frequency(self): return self.__default_sampling_frequency
+        
 #--- alias  MNE sfreq sampling_frquency
-     sfreq = property(__get_sampling_frequency,__set_sampling_frequency)
-
+    @property
+    def sfreq(self):   return self.__sampling_frequency
+    @sfreq.setter
+    def sfreq(self,v): self.__sampling_frequency=v     
+    
 #--- alias  MEG srate sampling_frquency
-     srate = property(__get_sampling_frequency,__set_sampling_frequency)
-
-#--- filter_kernel_length_factor    
-     def __set_filter_kernel_length_factor(self, value):
-         self.__filter_kernel_length_factor = value
-         self.filter_kernel_isinit  = False
-         
-     def __get_filter_kernel_length_factor(self):
-         return self.__filter_kernel_length_factor
-
-     filter_kernel_length_factor = property(__get_filter_kernel_length_factor,__set_filter_kernel_length_factor)
-
+    @property
+    def srate(self):   return self.__sampling_frequency
+    @srate.setter
+    def sfrate(self,v): self.__sampling_frequency=v     
+    
+#--- filter_kernel_length_factor
+    @property       
+    def filter_kernel_length_factor(self):  return self.__filter_kernel_length_factor
+    @filter_kernel_length_factor.setter
+    def filter_kernel_length_factor(self,v):
+        self.__filter_kernel_length_factor = v
+        self.filter_kernel_isinit  = False
+        
 #--- filter_kernel_length
-     def __get_filter_kernel_length(self):
-         try:
-            self.__filter_kernel_length = np.ceil( self.sampling_frequency ) * self.filter_kernel_length_factor
-            
-         finally: 
-               return self.__filter_kernel_length
-
-     filter_kernel_length = property(__get_filter_kernel_length)
-
+    @property       
+    def filter_kernel_length(self):
+        try:
+           self.__filter_kernel_length = np.ceil( self.sampling_frequency ) * self.filter_kernel_length_factor
+        finally: 
+           return self.__filter_kernel_length
+       
 #--- filter_type    
-     def __set_filter_type(self,value):
-         self.__filter_type = value
-         self.filter_kernel_isinit  = False
-     def __get_filter_type(self):
-         return self.__filter_type
-       
-     filter_type = property(__get_filter_type, __set_filter_type)
-
+    @property       
+    def filter_type(self):  return self.__filter_type
+    @filter_type.setter
+    def filter_type(self,v):
+        self.__filter_type = v
+        self.filter_kernel_isinit  = False
+        
 #--- fcut1    
-     def __set_fcut1(self,value):
-         self.__fcut1 = value
-         self.filter_kernel_isinit  = False
-         
-     def __get_fcut1(self):
-         return self.__fcut1
-    
-     fcut1 = property(__get_fcut1, __set_fcut1)
-
+    @property       
+    def fcut1(self):  return self.__fcut1
+    @fcut1.setter
+    def fcut1(self,v):
+        self.__fcut1 = v
+        self.filter_kernel_isinit  = False
+        
 #--- fcut2    
-     def __set_fcut2(self,value):
-         self.__fcut2 = value
-         self.filter_kernel_isinit  = False
-         
-     def __get_fcut2(self):
-         return self.__fcut2
-    
-     fcut2 = property(__get_fcut2, __set_fcut2)
-
+    @property       
+    def fcut2(self):  return self.__fcut2
+    @fcut2.setter
+    def fcut2(self,v):
+        self.__fcut2 = v
+        self.filter_kernel_isinit  = False
+        
 #--- filter_window   
-     def __set_filter_window(self,value):
-         self.__filter_window = value
-         self.filter_kernel_isinit = False
- 
-     def __get_filter_window(self):
-         return self.__filter_window
-   
-     filter_window = property(__get_filter_window,__set_filter_window)
-
+    @property       
+    def filter_window(self):  return self.__filter_window
+    @filter_window.setter
+    def filter_window(self,v):
+        self.__filter_window = v
+        self.filter_kernel_isinit = False
+        
 #--- kaiser_beta beat value for kaiser window e.g. 8.6 9.5 14 ...    
-     def __set_kaiser_beta(self,value):
-         self.__kaiser_beta=value
-       
-     def __get_kaiser_beta(self):
-         return self.__kaiser_beta
-       
-     kaiser_beta = property(__get_kaiser_beta,__set_kaiser_beta)
-     
-#--- filter_kernel_data   
-     def __set_filter_kernel_data(self,d):
-         self.__filter_kernel_data = d
-     
-     def __get_filter_kernel_data(self):
-         return self.__filter_kernel_data
-   
-     filter_kernel_data = property(__get_filter_kernel_data,__set_filter_kernel_data)
+    @property       
+    def kaiser_beta(self):       return self.__kaiser_beta
+    @kaiser_beta.setter
+    def kaiser_beta(self,v): self.__kaiser_beta=v  
+    
+#--- filter_kernel_data
+    @property       
+    def filter_kernel_data(self):   return self.__filter_kernel_data
+    @filter_kernel_data.setter
+    def filter_kernel_data(self,v): self.__filter_kernel_data = v
 
 #---- filter_data_length
-     def calc_filter_data_length(self,dl):
-         self.__filter_data_length = self.calc_zero_padding( dl + self.filter_kernel_data.size * self.settling_time_factor * 2 +1)
-         return self.__filter_data_length 
-
-     def __get_filter_data_length(self):
-         return self.__filter_data_length  
+    @property
+    def filter_data_length(self):  return self.__filter_data_length 
     
-     filter_data_length = property(__get_filter_data_length)
-
 #---- notch
-     def __set_filter_notch (self,value):
-         self.__filter_notch = np.array([])
-         if isinstance(value, (np.ndarray)) :
-           self.__filter_notch = value
-         else :
-            self.__filter_notch = np.array([value])
-            
-         self.filter_kernel_isinit = False
-         
-     def __get_filter_notch(self):
-         return self.__filter_notch
+    @property
+    def filter_notch(self):    return self.__filter_notch
+    @filter_notch.setter
+    def filter_notch(self,v):
+        if isinstance(v,(np.ndarray)):
+           self.__filter_notch = v
+        elif v:
+           self.__filter_notch = np.array([v],dtype=np.float)
+        else:   
+           self.__filter_notch = np.array([],dtype=np.float)        
+        self.filter_kernel_isinit = False
+    
+    @property
+    def notch(self):    return self.__filter_notch
+    @notch.setter
+    def notch(self,v): 
+        self.filter_notch(v)
 
-     filter_notch = property(__get_filter_notch,__set_filter_notch)
-     notch        = property(__get_filter_notch,__set_filter_notch)
-   
 #---- notch width e.g. window sinc
-     def __set_filter_notch_width (self,value):
-         self.__filter_notch_width = value
-
-     def __get_filter_notch_width(self):
-         return self.__filter_notch_width
-
-     filter_notch_width = property(__get_filter_notch_width,__set_filter_notch_width)
-
+    @property
+    def filter_notch_width(self):    return self.__filter_notch_width
+    @filter_notch_width.setter
+    def filter_notch_width (self,v): self.__filter_notch_width = v
+    
 #--- data_mean    
-     def __set_data_mean(self,value):
-         self.__data_mean = value
+    @property
+    def data_mean(self): return self.__data_mean
+    @data_mean.setter
+    def data_mean(self,v):   self.__data_mean = v
     
-     def __get_data_mean(self):
-         return self.__data_mean
-    
-     data_mean = property(__get_data_mean, __set_data_mean)
-
 #--- data_std    
-     def __set_data_std(self,value):
-         self.__data_std = value
+    @property
+    def data_std(self):   return self.__data_std
+    @data_std.setter
+    def data_std(self,v): self.__data_std = v    
     
-     def __get_data_std(self):
-         return self.__data_std
-    
-     data_std = property(__get_data_std, __set_data_std)
-
 #--- data_plane dummy data container to filter data
-     def __set_data_plane(self,value):
-         self.__data_plane = value
-    
-     def __get_data_plane(self):
-         return self.__data_plane
-    
-     data_plane = property(__get_data_plane, __set_data_plane)
+    @property
+    def data_plane(self):   return self.__data_plane
+    @data_plane.setter
+    def data_plane(self,v): self.__data_plane = v    
     
 #--- data_plane_in dummy data container to filter data
-     def __set_data_plane_data_in(self,value):
-         self.__data_plane_data_in = value
+    @property
+    def data_plane_data_in(self):   return self.__data_plane_data_in
+    @data_plane_data_in.setter
+    def data_plane_data_in(self,v): self.__data_plane_data_in = v 
     
-     def __get_data_plane_data_in(self):
-         return self.__data_plane_data_in
-    
-     data_plane_data_in = property(__get_data_plane_data_in, __set_data_plane_data_in)
- 
-#--- data_plane_data_in_lenght 
-     def __get_data_plane_data_in_lenght(self):
-         return self.data_plane_data_in.shape[-1]
-         
-     data_plane_data_in_length = property(__get_data_plane_data_in_lenght)
+#--- data_plane_data_in_length
+    @property
+    def data_plane_data_in_length(self): return self.data_plane_data_in.shape[-1]  
     
 #--- data_plane_out dummy data container to filter data
-     def __set_data_plane_data_out(self,value):
-         self.__data_plane_data_out = value
+    @property
+    def data_plane_data_out(self):   return self.__data_plane_data_out
+    @data_plane_data_out.setter   
+    def data_plane_data_out(self,v): self.__data_plane_data_out = v   
     
-     def __get_data_plane_data_out(self):
-         return self.__data_plane_data_out
-    
-     data_plane_data_out = property(__get_data_plane_data_out, __set_data_plane_data_out)
-
 #--- data_plane_pre dummy data container reduce filter onset artefact
-     def __set_data_plane_data_pre(self,value):
-         self.__data_plane_data_pre = value
+    @property
+    def data_plane_data_pre(self):   return self.__data_plane_data_pre
+    @data_plane_data_pre.setter
+    def data_plane_data_pre(self,v): self.__data_plane_data_pre = v    
     
-     def __get_data_plane_data_pre(self):
-         return self.__data_plane_data_pre
-    
-     data_plane_data_pre = property(__get_data_plane_data_pre, __set_data_plane_data_pre)
-
 #--- data_plane_post dummy data container reduce filter offset artefact
-     def __set_data_plane_data_post(self,value):
-         self.__data_plane_data_post = value
+    @property
+    def data_plane_data_post(self):   return self.__data_plane_data_post
+    @data_plane_data_post.setter
+    def data_plane_data_post(self,v): self.__data_plane_data_post = v
     
-     def __get_data_plane_data_post(self):
-         return self.__data_plane_data_post
-    
-     data_plane_data_post = property(__get_data_plane_data_post, __set_data_plane_data_post)
-
 #--- data to filter
-     def __set_data(self,value):
-         self.filter_kernel_isinit = False
-         self.data_plane_isinit    = False
-         self.__data = value
-
-     def __get_data(self):
-         return self.__data
-         
-     data = property(__get_data,__set_data)
-         
+    @property
+    def data(self):        return self.__data
+    @data.setter
+    def data(self,v):
+        self.filter_kernel_isinit = False
+        self.data_plane_isinit    = False
+        self.__data = v
+        
 #--- data_length
-     def __get_data_length(self):
-         return self.data.shape[-1]
-         
-     data_length = property(__get_data_length)
+    @property
+    def data_length(self): return self.data.shape[-1]
  
 #--- data_plane_cplx 
-     def __get_data_plane_cplx(self):
-         return self.__data_plane_cplx
-     
-     def __set_data_plane_cplx(self,value):
-         self.__data_plane_cplx = value
-         
-     data_plane_cplx = property(__get_data_plane_cplx,__set_data_plane_cplx)
-    
-#--- filter_name_postfix
-     def __get_filter_name_postfix(self):
-         """return string with filter parameters for file name postfix"""
-         self.__filter_name_extention  = "fi" + self.filter_type 
-         
-         if self.filter_type == 'bp' :
-              self.__filter_name_extention += "%d-%d" % (self.fcut1,self.fcut2)
-         else:
-              self.__filter_name_extention += "%d" % (self.fcut1)
+    @property
+    def data_plane_cplx(self):    return self.__data_plane_cplx
+    @data_plane_cplx.setter 
+    def data_plane_cplx(self,v): self.__data_plane_cplx = v
 
-         #if ( self.filter_attenuation_factor != 1 ):
-         #     self.__filter_name_extention += "att%d" % (self.filter_attenuation_factor)
+#--- filter_name_postfix
+    @property
+    def filter_name_postfix(self):
+        """return string with filter parameters for file name postfix"""
         
-         if self.filter_notch.size :
-              self.__filter_name_extention += "n"
+        self.__filter_name_extention  = "fi" + self.filter_type 
+        if self.filter_type == 'bp' :
+           self.__filter_name_extention +=  "{}".format(self.fcut1).rstrip("0").rstrip(".")
+           self.__filter_name_extention += "-{}".format(self.fcut2).rstrip("0").rstrip(".")
+           
+        elif self.filter_type != 'notch' :
+           self.__filter_name_extention += "{}".format(self.fcut1).rstrip("0").rstrip(".")
+           
+        if self.filter_notch.size :
+           self.__filter_name_extention += "n%d"%(self.filter_notch.size)
          
-         #if ( self.dcoffset ):
-         #    self.__filter_name_extention += "o"
-         
-         return self.__filter_name_extention
-        
-     filter_name_postfix = property(__get_filter_name_postfix)
+        return self.__filter_name_extention
 
 #--- filter_info
-     def __get_filter_info_string(self):
-         """return info string with filter parameters """ 
-         self.__filter_info_string = self.filter_method +" ---> "+ self.filter_type
+    @property
+    def filter_info(self):
+        """return info string with filter parameters """ 
+        self.__filter_info_string = self.filter_method +" ---> "+ self.filter_type
 
-
-         if self.filter_type == 'bp' :
-            self.__filter_info_string += "%0.3f-%0.1f Hz" % (self.fcut1,self.fcut2)
-         else:
-            self.__filter_info_string += "%0.3f Hz" % (self.fcut1)
-
-         if self.filter_notch.size :
-            self.__filter_info_string += ",apply notch"
-            print(self.filter_notch)
+        if self.filter_type == 'bp' :
+           self.__filter_info_string += "{}-{} Hz".format(self.fcut1,self.fcut2)
+        elif self.filter_type != "notch":
+           self.__filter_info_string += "{} Hz".format(self.fcut1)
+       
+        if self.filter_notch.size :
+           self.__filter_info_string += ",apply notch"
+           print( self.filter_notch)
          
-         if ( self.remove_dcoffset ):
-          self.__filter_info_string +=",remove DC offset"
+        if ( self.remove_dcoffset ):
+           self.__filter_info_string +=",remove DC offset"
          
-         return self.__filter_info_string
-     
-     filter_info = property(__get_filter_info_string)
+        return self.__filter_info_string
      
 #--- filter_info short string
-     def __get_filter_info_short_string(self):
-         """return info string with filter parameters """ 
-         self.__filter_info_short_string = self.filter_method +"/"+ self.filter_type+"/"
+    @property 
+    def filter_info_short_string(self):
+        """return info string with filter parameters """ 
+        self.__filter_info_short_string = self.filter_method +"/"+ self.filter_type+"/"
 
+        if self.filter_type == 'bp' :
+           self.__filter_info_short_string += "%0.3f-%0.1f Hz/" % (self.fcut1,self.fcut2)
+        else:
+           self.__filter_info_short_string += "%0.3f Hz/" % (self.fcut1)
+         
+        if self.__filter_order:
+           self.__filter_info_short_string += "O%d/" % ( self.__filter_order )
+         
+        if self.filter_notch.size :
+           self.__filter_info_short_string += "n/"
+         
+        if ( self.remove_dcoffset ):
+           self.__filter_info_short_string +="DC/"
+         
+        return self.__filter_info_short_string
+         
+    def update_info_filter_settings(self,raw):
+        """ 
+        update raw info filter settings low-,highpass
+        store
+         
+        Parameters
+        -----------
+         raw obj
+        """
+        if self.filter_type == 'bp' :
+          if raw.info.get('highwpass'):
+             raw.info['highpass'] = self.fcut2
+          else:
+             raw.info['highpass']=self.fcut2
+              
+        if self.filter_type in ('lp','bp') :
+           if raw.info.get('lowpass'):
+              raw.info['lowpass'] =self.fcut1
+           else:
+              raw.info['lowpass']=self.fcut1
+        elif self.filter_type == 'hp' :
+             if raw.info.get('highpass'):
+                raw.info['highpass'] += self.fcut1
+             else:
+                raw.info['highpass']=self.fcut1
+       
 
-         if self.filter_type == 'bp' :
-            self.__filter_info_short_string += "%0.3f-%0.1f Hz/" % (self.fcut1,self.fcut2)
-         else:
-            self.__filter_info_short_string += "%0.3f Hz/" % (self.fcut1)
-         
-         if self.__filter_order:
-            self.__filter_info_short_string += "O%d/" % ( self.__filter_order )
-         
-         if self.filter_notch.size :
-            self.__filter_info_short_string += "n/"
-         
-         if ( self.remove_dcoffset ):
-          self.__filter_info_short_string +="DC/"
-         
-         return self.__filter_info_short_string
-     
-     filter_info_short = property(__get_filter_info_short_string)
+    def calc_lowpass_value(self,sf):
+        """
+         extimates fcut1 for lowpass with respect 4D aquisition settings: sampling-rates & bandwidth
+         678  -> 200.0
+         1017 -> 400.0
           
-     def update_info_filter_settings(self,raw):
-         """ update raw info filter settings low-,highpass
-             input: raw obj
-         """
-         if self.filter_type == 'bp' :
-            raw.info['lowpass'] = self.fcut1
-            raw.info['highpass']= self.fcut2
-         elif self.filter_type == 'lp' :
-            raw.info['lowpass'] = self.fcut1
-         elif self.filter_type == 'hp' :
-            raw.info['highpass']= self.fcut1
-           
-
-#---------------------------------------------------------# 
-#--- calc_notches                -------------------------#
-#---------------------------------------------------------# 
-     def calc_notches(self,nfreq,nfreq_max=0.0):
-         """
-             return numpy array with notches and their harmoincs
-             
-             input: notch frequency , maximum harmonic frequency
-         """
+        Parameters
+        -----------
+         sf: sampling frequency default obj.sampling_frequency
          
-         if self.sampling_frequency is None :
-             srate = 678.17 # JuMEG 4D-srate
-         else :
-             srate = self.sampling_frequency
-
-         freq_max_nyq = srate/ 2.5 -1
-
-         if nfreq_max > freq_max_nyq :
-            nfreq_max = freq_max_nyq
-            
-         self.filter_notch = np.array([])
-         if nfreq_max :
-            self.filter_notch = np.arange(nfreq,nfreq_max+1,nfreq)
-         elif nfreq :
-            self.filter_notch = np.array( [nfreq] )
-
-         return self.filter_notch  
-
-#---------------------------------------------------------# 
-#--- calc_zero_padding           -------------------------#
-#---------------------------------------------------------# 
-     def calc_zero_padding(self,nr):
-         """
-             return number of elements to get padded
-             
-             input nr => e.g. 10 out=>16
-         """
+        Results
+        -------
+         value to set the fcut1 for lp
+         must be set in main pgr !!!
+        """
+        sfreq = np.int64( self.sampling_frequency )
+        if sf:
+           sfreq = np.int64(sf)
+        if str(sfreq) in self._lp_for_srate:
+           return self._lp_for_srate[str(sfreq)]
+        else:
+           return sfreq/3.0
+   
+    def calc_filter_data_length(self,dl):
+        """ 
+        calc length of data array to filter via fft
+        with zero padding and settling-time-factor for start and end range
          
-         return 2 ** ( np.ceil( np.log(nr) / np.log(2) ) )  
-
-#---------------------------------------------------------# 
-#---- calc_data_mean_std         -------------------------#
-#---------------------------------------------------------# 
-     def calc_data_mean_std(self,data):
-         """
-            return mean and std from data
-           
-            input: data => signal of one channel
-         """  
+        Parameter
+        ---------
+         data lenth
          
-         self.data_mean = np.mean(data)
-         d              =  data - self.data_mean 
-         # variance      = np.dot(d,d)/data.size
-         self.data_std  = np.sqrt( np.dot(d,d)/data.size ) # speed up np.std      
+        Result
+        ------
+         filter length
+        """
+        self.__filter_data_length = self.calc_zero_padding( dl + self.filter_kernel_data.size * self.settling_time_factor * 2 +1)
+        return self.__filter_data_length 
 
-         return (self.data_mean,self.data_std)  
-
-#---------------------------------------------------------# 
-#---- calc_data_mean             -------------------------#
-#---------------------------------------------------------# 
-     def calc_data_mean(self,data):
-         """
-            return mean from data use last axis
-           
-            input: data => signal of one channel
-         """  
-         
-         self.data_mean = np.mean(data, axis = -1)
-         #self.data_mean = np.mean(data)
+    def calc_notches(self,nfreq,nfreq_max=0.0):
+        """
+        calc notch array
         
-         return (self.data_mean)  
-         
-#---------------------------------------------------------# 
-#---- calc_remove_dcoffset       -------------------------#
-#---------------------------------------------------------# 
-     def calc_remove_dcoffset(self,data):
-         """
-            return data with zero mean
-         
-            input: data => signal of one channel
-         """ 
-         
-         self.calc_data_mean(data)
-         if self.data_mean.size == 1 :
-              data -= self.data_mean
-         else :
-              data -= self.data_mean[:, np.newaxis] 
-     
-         return self.data_mean  
+        if sampling rate is not defined use default srate
+        for 4D-system (678.17 Hz)
+        
+        
+        Parameters
+        ----------
+         nfreq    : notch frequency, string e.g 50,100 or list or np.array [50,100.0]
+         nfreq_max: maximum harmonic notch frequency
+                    if defined will extend the notches from first notch in steps of first notch to maximum 
+                    default = <0.0>
+       
+        Results
+        --------
+         numpy array with notches and their harmonics
+        
+        Examples
+        --------
+        from jumeg.filter.jumeg_filter_base import JuMEG_Filter_Base as JFB
+        jfb=JFB()
+        jfb.verbose=True
+        
+        
+        jfb.calc_notches("50")  
+        >>calculate Notches: [50.]
+        
+        jfb.calc_notches("50,60,100")
+        >>calculate Notches: [ 50.  60. 100.]
+        
+        jfb.calc_notches([50,60,70])
+        >>calculate Notches: [50. 60. 70.]
+        
+        n=np.array([10,20,30])
+        jfb.calc_notches(n)
+        >>calculate Notches: [10 20 30]
 
- 
-#---------------------------------------------------------# 
-#--- init_filter                 -------------------------#
-#---------------------------------------------------------# 
-     def init_filter(self):  
-         """
-            setting complex filter function/kernel and dataplane in memory
+        now use <nfreq_max> to extend notches in steps of first notch      
+        jfb.calc_notches("50,60,111,150",nfreq_max=200)
+        >>calculate Notches: [ 50.  60. 100. 111. 150. 200.]
+        
+        """
+       
+        if self.sampling_frequency is None :
+           srate = self.__default_sampling_frequency # JuMEG 4D-srate
+        else :
+           srate = self.sampling_frequency
+        
+        notches           = np.array([])
+        self.filter_notch = notches  
+        
+        if self.isNotEmpty( nfreq ): # ck is not empty string
+           if isinstance( nfreq,(int,float,list,tuple) ):
+              notches = np.array([nfreq],dtype=np.float)
+           elif self.isNotEmptyString(nfreq): # string
+                notches = np.array( [nfreq.replace(","," ").split() ],dtype=np.float)
+        elif isinstance(nfreq,np.ndarray): # np.array
+             notches = nfreq 
+        else: return
            
-            input: number_of_samples => will be padded 
+        notches = notches.flatten() # just in case xdim
+        self.filter_notch = notches
+        
+      #--- ck for max notches to calc 
+        if nfreq_max: 
+           notch_max=float(nfreq_max) 
+           if notch_max and notches.size:
+              nf_max = float(srate)/ 2.5 -1.0
+          #--- ck max notch via srate lookup
+              if notch_max > nf_max: notch_max = nf_max # not optimal
+              if notch_max > notches[0]:
+                 self.filter_notch = np.unique( np.append(notches,np.arange(notches[0],notch_max+1,notches[0])) )
+       
+        if self.verbose:
+           logger.info("calculate Notches: {}".format(self.filter_notch))
+           
+        return self.filter_notch  
+    
+    def calc_zero_padding(self,nr):
+        """
+         return number of elements to get padded
+         
+         Parameter
+         ---------
+          int => e.g. 10 out=>16
+         
+         Result
+         ------
+          int
+        """
+        return 2 ** ( np.ceil( np.log(nr) / np.log(2) ) )  
+ 
+    def calc_data_mean_std(self,data):
+        """
+        cal data mean
+         
+        Parameter
+        ---------
+         numpy array 1d
+        
+        Results
+        --------
+        mean and std
+        """  
+        self.data_mean = np.mean(data)
+        d              =  data - self.data_mean 
+        # variance      = np.dot(d,d)/data.size
+        self.data_std  = np.sqrt( np.dot(d,d)/data.size ) # speed up np.std      
+
+        return (self.data_mean,self.data_std)  
+
+    def calc_data_mean(self,data):
+        """
+        calc mean from data use last axis
+        
+        Parameter
+        ---------
+         numpy array 1d
+        
+        Results
+        --------
+        mean and std
+        """  
+        self.data_mean = np.mean(data, axis = -1)
+        return (self.data_mean)  
+         
+    def calc_remove_dcoffset(self,data):
+        """
+        remove dcoffset remove zero mean  
+        
+        Parameter
+        ---------
+         numpy array 1d
+        
+        Results
+        --------
+        data with zero mean
+         
+        """ 
+        self.calc_data_mean(data)
+        if self.data_mean.size == 1 :
+           data -= self.data_mean
+        else :
+           data -= self.data_mean[:, np.newaxis] 
+     
+        return self.data_mean  
+
+    
+    def init_filter(self):  
+         """
+         setting complex filter function/kernel and dataplane in memory
+         
+         Result
+         ------
+         True/False
          """    
          self.init_filter_kernel()
          self.init_filter_data_plane()
          
          if self.verbose :
-            print("---> DONE init filter %s ---> calculating filter function/kernel and adjusting data plane" % (self.filter_type))
+            logger.info( "---> DONE init filter %s ---> calculating filter function/kernel and adjusting data plane" % (self.filter_type) )
             
          return (self.filter_kernel_isinit and self.data_plane_isinit)
 
-#---------------------------------------------------------# 
-#--- filter_isinit               -------------------------#
-#---------------------------------------------------------# 
-     def filter_isinit(self):  
-         """check if filter parameter and data plane is initialize"""
+    def filter_isinit(self):  
+        """
+        check if filter parameter and data plane is initialize
         
-         if self.verbose :
-             print("====== Check filter is init =================================")                 
-             print("---> filter     is init: %r" % (self.filter_kernel_isinit))
-             print("---> data plane is init: %r" % (self.data_plane_isinit)) 
-             res = ( self.filter_kernel_isinit and self.data_plane_isinit and ( self.data_length == self.data_plane_data_in_length )) 
-             print("result is init         : %r" % (res)) 
-             print("---> size   data: %d  plane %d " % ( self.data_length, self.data_plane_data_in_length )) 
-                        
-         return ( self.filter_kernel_isinit and self.data_plane_isinit and (self.data_length == self.data_plane_data_in_length )) 
-
-#---------------------------------------------------------# 
-#--- apply_filter                -------------------------#
-#---------------------------------------------------------# 
-     def apply_filter(self,data, picks=None):
-       """apply filter """
+        Result
+        ------
+         True/False
+        """
+        if self.verbose :
+           msg=["---> Check if filter is init",
+                "  -> filter     is init: %r" % (self.filter_kernel_isinit) ,
+                "  -> data plane is init: %r" % (self.data_plane_isinit)]
+           
+           res = ( self.filter_kernel_isinit and self.data_plane_isinit and ( self.data_length == self.data_plane_data_in_length ))
+           
+           msg.append("  -> result     is init: %r" % (res))
+           msg.append("  -> size data: %d plane %d "% ( self.data_length, self.data_plane_data_in_length ))
+           logger.info( "\n".join(msg))
+        return ( self.filter_kernel_isinit and self.data_plane_isinit and (self.data_length == self.data_plane_data_in_length )) 
+  
+    def apply_filter(self,data, picks=None):
+       """
+       apply filter
+       
+       Parameters
+       ----------
+       data as np.array [ch,timepoints]
+       picks: np.array of data index to process <None>
+       
+       !!! filter works inplace!!!
+       input data will be overwriten
+       
+       Results
+       -------
+       None
+       """
        
        self.data = data 
-
-      # from joblib import Parallel, delayed
+     # from joblib import Parallel, delayed
 
        if self.verbose :
            t0 = time.time()
-           print("===> Start apply filter")
+           self.line()
+           logger.info("===> Start apply filter")
        
-       if not( self.filter_isinit() ): 
-            self.init_filter()
+       if not( self.filter_isinit() ): self.init_filter()
            
        if data.ndim > 1 :
-           if picks is None :
-              picks = np.arange( self.data.shape[0] )
-           for ichan in picks:
-               self.do_apply_filter( self.data[ichan,:] )
-               if self.verbose :
-                  print("===> ch %d" %(ichan))
-
+          if picks is None :
+             picks = np.arange( self.data.shape[0] )
+          for ichan in picks:
+              self.do_apply_filter( self.data[ichan,:] )
+              if self.verbose : 
+                 logger.info("  => filter channel idx : {} dc correction: {}".format(ichan,self.remove_dcoffset) )
        else:
             self.do_apply_filter( data )  
        
        if self.verbose :
-            print("===> Done apply filter %d" %( time.time() -t0 ))
+            logger.info(" ==> Done apply filter %d" %( time.time() -t0 ) )
+            
+            
+    def reset(self):
+        """ rest all """
+        self.filter_kernel_isinit = False
+        self.data_plane_isinit    = False
+         
+        self.__data_plane                   = None
+        self.__data_plane_data_in           = None
+        self.__data_plane_data_out          = None
+        self.__data_plane_pre               = None
+        self.__data_plane_post              = None
+        self.__data_plane_cplx              = None
+        self.__data                         = None
+         
+        self.__filter_kernel_data_cplx      = None
+        self.__filter_kernel_data_cplx_sqrt = None
+        self.__filter_kernel_data           = None
+        return True
 
-#---------------------------------------------------------# 
-#--- reset                       -------------------------#
-#---------------------------------------------------------# 
-     def reset(self):
-         self.filter_kernel_isinit = False
-         self.data_plane_isinit    = False
-         
-         self.__data_plane                   = None
-         self.__data_plane_data_in           = None
-         self.__data_plane_data_out          = None
-         self.__data_plane_pre               = None
-         self.__data_plane_post              = None
-         self.__data_plane_cplx              = None
-         self.__data                         = None
-         
-         self.__filter_kernel_data_cplx      = None
-         self.__filter_kernel_data_cplx_sqrt = None
-         self.__filter_kernel_data           = None
-         return 1
-        
-#---------------------------------------------------------# 
-#--- destroy                     -------------------------#
-#---------------------------------------------------------# 
-     def destroy(self):
-         self.filter_kernel_isinit = False
-         self.data_plane_isinit    = False
-         
-         self.__data_plane                   = None
-         self.__data_plane_data_in           = None
-         self.__data_plane_data_out          = None
-         self.__data_plane_pre               = None
-         self.__data_plane_post              = None
-         self.__data_plane_cplx              = None
-         self.__data                         = None
-         
-         self.__filter_kernel_data_cplx      = None
-         self.__filter_kernel_data_cplx_sqrt = None
-         self.__filter_kernel_data           = None
-         
-         # d = np.array([])
-         del self.__data_plane
-         del self.__data_plane_data_in 
-         del self.__data_plane_data_out 
-         del self.__filter_kernel_data_cplx 
-         del self.__filter_kernel_data_cplx_sqrt 
-         del self.__filter_kernel_data 
-         #print self.data_plane
-
-         return 1
-        
+    
