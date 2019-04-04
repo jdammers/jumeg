@@ -24,7 +24,7 @@ logger = logging.getLogger('root')
 from jumeg.jumeg_base import jumeg_base
 from jumeg.template.jumeg_template import JuMEG_Template
 
-__version__="2019.04.02.001"
+__version__="2019.04.04.001"
 
 class JuMEG_Epocher_Template(JuMEG_Template):
     def __init__ (self):

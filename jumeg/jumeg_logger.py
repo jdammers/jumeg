@@ -36,7 +36,7 @@ logger.warning("Start LOG")
 logger.error("Start LOG")
 '''
 
-__version__="2019.04.02.001"
+__version__="2019.04.04.001"
 
 
 class _oldJuMEG_Logger(object):
@@ -188,15 +188,18 @@ class LogFileHandler(logging.FileHandler):
     def __init__(self,fname=None,prefix=None,name="root_logger",postfix="001",extention=".log",path=None,level=None,mode="a"):
         """
         LogFileHandler : for writing log messages into a file
-        
-        :param fname:     filename if None generate automatically a log filename
-        :param prefix:    prefix in log-filename  <None>
-        :param name:      part of log file        <root_logger>
-        :param postfix:   postfix in log-filename <001>
+      
+        :param fname    : name of logfile
+                          if fname is defined no <auto generated log filename> will be generated
+        :param name     : name of script as part of <auto generated log filename>
+        :param prefix   : prefix in log-filename  <None>
+        :param postfix  : postfix in log-filename <001>
         :param extention: logfile extention       <.log>
-        :param path:      logfile path            <None>
-        :param level:     log level
-        :param mode:      logfile mode <a> append [a,w]
+        :param path     : logfile path            <None>
+        :param level    : log level
+        :param mode     : logfile mode <a> append [a,w]
+        :param path     : logfile path            <None>
+       
         :return
         LogFileHandler CLASS
         
@@ -240,13 +243,14 @@ class LogFileHandler(logging.FileHandler):
     
     def init_logfile_name(self,fname=None,prefix=None,name="logger_info",postfix="001",extention=".log",path=None):
        """
-       
-       :param fname:     filename if None generate automatically a log filename
-       :param prefix:    prefix in log-filename  <None>
-       :param name:      part of log file        <root_logger>
-       :param postfix:   postfix in log-filename <001>
+       :param fname    : name of logfile
+                         if fname is defined no <auto generated log filename> will be generated
+       :param name     : name of script as part of <auto generated log filename>
+       :param prefix   : prefix in log-filename  <None>
+       :param name     : part of log file        <root_logger>
+       :param postfix  : postfix in log-filename <001>
        :param extention: logfile extention       <.log>
-       :param path:      logfile path            <None>
+       :param path     : logfile path            <None>
        
        :return:
         logger filename
@@ -317,25 +321,31 @@ class LoggingContext(object):
             self.handler.close()
         # implicit return of None => don't swallow exceptions
         
-def setup_script_logging(name=None,opt=None,level="DEBUG",logger=None,path=None,version=None):
+def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None,path=None,version=None,logfile=False,mode="a"):
     """
     setup logger :
      loging level, log handler, logs information e.g input parameter
-     
-    :param name   : name of script
+    
+    :param fname  : name of logfile
+                    if fname is defined no <auto generated log filename> will be generated
+    :param name   : name of script as part of <auto generated log filename> if logfile==True
     :param opt    : option obj from argpraser
                     opt, parser = get_args(argv)
     
     :param level  : logging level <DEBUG>
     :param logger : logger <root>
-    :param path   : logfile path
     :param version: version  e.g.__version__
+    :param logfile: flag log to logfile
+    :param path   : logfile path <None> :
+    :param mode   : logfile mode <a>  [a,w]  append or write
     
     :return:
+    logger
+    
     """
     if not logger:
        logger=logging.getLogger("root")
-    
+   #----
     name = name if name else "jumeg_logger"
     
     logger.setLevel(level)
@@ -343,9 +353,12 @@ def setup_script_logging(name=None,opt=None,level="DEBUG",logger=None,path=None,
     HStream.setLevel(logging.INFO)
     logger.addHandler(HStream)
     
-    script_name = os.path.basename(name)
-    script_name = os.path.splitext(script_name)[0]
-  
+    if fname:
+       script_name = None
+    else:
+       script_name = os.path.basename(name)
+       script_name = os.path.splitext(script_name)[0]
+       
     if not version:
        try:
          #--- get __version__ from caller obj
@@ -356,23 +369,39 @@ def setup_script_logging(name=None,opt=None,level="DEBUG",logger=None,path=None,
     version = version if version else __version__
     
    #--- ToDo make logfile dir in fileout dir
-    try:
-        if opt.logfile:
-           HFile = LogFileHandler(name=script_name,mode="w",path=path)
-           HFile.setLevel(logging.DEBUG)
-           logger.addHandler(HFile)
-    except:
-        logger.error("logfile option is not defined: no logfile will be generated")
+
+    msg=[]
+    log2file = logfile
+
+    if opt:
+       try:
+          log2file = opt.logfile
+       except:
+         # logger.error("logfile option is not defined: no logfile will be generated")
+          pass
+       
+       try:
+          if opt.verbose:
+             msg = ["---> {}".format(script_name),
+                    "  -> version             : {}".format(version),
+                    "  -> python sys version  : {}".format(sys.version_info),
+                    "   " + "-" * 40," --> ARGV parameter:"]
+             for k,v in sorted(vars(opt).items()):
+                 msg.append("  -> {0:<30}: {1}".format(k,v))
+       except:
+          #logger.error("logfile option <verbose> is not defined: no parameter info")
+          pass
         
-    if opt.verbose:
-        msg = ["---> {}".format(script_name),
-               "  -> version             : {}".format(version),
-               "  -> python sys version  : {}".format(sys.version_info),
-               "   " + "-" * 40," --> ARGV parameter:"]
-        for k,v in sorted(vars(opt).items()):
-            msg.append("  -> {0:<30}: {1}".format(k,v))
-        logger.info("\n".join(msg))
+    if log2file:
+       HFile = LogFileHandler(fname=fname,name=script_name,mode=mode,path=path)
+       HFile.setLevel(logging.DEBUG)
+       logger.addHandler(HFile)
     
+    if msg:
+       logger.info("\n".join(msg))
+
+    return logger
+
     
 def update_filehandler(**kwargs):
     """
