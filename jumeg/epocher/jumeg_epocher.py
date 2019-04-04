@@ -49,16 +49,16 @@ event_ids = jumeg_epocher.apply_epochs(fname=fname,raw=raw,**ep_param)
 
 '''
 
-# import os,sys,argparse
-import numpy as np
-import pandas as pd
+import os,sys,argparse
+#import numpy as np
+#import pandas as pd
 
 import logging
 logger = logging.getLogger("root")
 
 from jumeg.epocher.jumeg_epocher_epochs import JuMEG_Epocher_Epochs
 
-__version__= "2019.04.02.001"
+__version__= "2019.04.04.001"
 
 class JuMEG_Epocher(JuMEG_Epocher_Epochs):
     def __init__ (self,template_path=None,template_name="DEFAULT",verbose=False):
@@ -96,9 +96,11 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
         #print("LOGlevel")
        # print( logger.getEffectiveLevel() )
         logger.info( "---> START  apply events to HDF  fname: {}\n".format(fname))
-        
-        raw,fname = self.events_store_to_hdf(fname=fname,raw=raw,**kwargs)
-
+        try:
+            raw,fname = self.events_store_to_hdf(fname=fname,raw=raw,**kwargs)
+        except:
+            logger.exception( "---> apply_events:\n  -> parameter:\n" +self.pp_list2str(kwargs))
+            sys.exit()
         logger.info( "---> DONE  apply events to HDF: {}\n".format(self.hdf_filename))
         
         return (raw,fname)
@@ -125,9 +127,12 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
         """
         
         logger.info("---> START apply epocher => fname   : {}\n".format(fname))
-      
-        raw,fname = self.apply_hdf_to_epochs(fname=fname,raw=raw,**kwargs)
-
+        
+        try:
+            raw,fname = self.apply_hdf_to_epochs(fname=fname,raw=raw,**kwargs)
+        except:
+            logger.exception( "---> apply_epochs:\n  -> parameter:\n" +self.pp_list2str(kwargs))
+            sys.exit()
         logger.info("---> DONE apply epocher  => hdf name: {}\n".format(self.hdf_filename))
         return (raw,fname)
      
