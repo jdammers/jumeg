@@ -699,9 +699,9 @@ class JuMEG_UtilsIO_PDFBTi(JuMEG_UtilsIO_PDFBase):
         if self.debug:
            msg=[]
            for id in self.pdfs.keys():
-               msg.append(("  -> ID: "+id)
+               msg.append("  -> ID: "+id)
                for pdf in self.pdfs[id]:
-                   msg.append((pdf)
+                   msg.append(pdf)
                
            logger.debug("\n".join(msg))
 
