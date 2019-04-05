@@ -64,6 +64,8 @@ jumeg_epocher.apply_epochs(fname=fname,raw=raw,**ep_param)
 
 '''
 import sys
+from copy import deepcopy
+
 import logging
 logger = logging.getLogger('root')
 
@@ -1109,8 +1111,11 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         self.response  = None
         self.iod       = None
         self.parameter = None
-        self.parameter = self.template_data['default'].copy()
-        self.parameter = self.template_update_and_merge_dict(self.parameter,param)
+        
+        from copy import deepcopy
+        
+        self.parameter = deepcopy( self.template_data['default'] )
+        self.parameter = self.template_update_and_merge_dict( self.parameter,param )
   
         #if "marker" in self.parameter:  
         self.marker = JuMEG_Epocher_Events_Channel(label="marker",parameter=self.parameter)
