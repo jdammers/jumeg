@@ -28,8 +28,7 @@ from jumeg import jumeg_logger
 import logging
 logger = logging.getLogger('root')
 
-
-__version__="2019.04.02.001"
+__version__="2019.04.04.001"
 
 
 class JuMEG_Epocher_Marker(JuMEG_Epocher_Events_Channel):
@@ -317,12 +316,12 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
 
         logger.info(" ---> EPOCHER HDF to MNE events -> extract condition : " + condi)
       
-       #--- get hdf key make node  
+       #--- check and get hdf key make node
         ep_key = self.hdf_get_hdf_key(condi)
         if not ep_key :
-           logger.info("NO HDF-key found for condition: "+ condi +"\n")
-           return
-        
+           logger.exception(" NO HDF-key found for condition: "+ condi)
+           sys.exit()
+
        #--- get pandas data frame from HDF
         df = self.hdf_obj_get_dataframe(ep_key)
        #--- get stored attributes -> epocher_parameter -> ...

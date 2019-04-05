@@ -77,7 +77,7 @@ import mne
 from jumeg.jumeg_base                import jumeg_base,JuMEG_Base_Basic #,JuMEG_Base_PickChannels
 from jumeg.epocher.jumeg_epocher_hdf import JuMEG_Epocher_HDF
 
-__version__="2019.04.02.001"
+__version__="2019.04.04.001"
 
 class JuMEG_Epocher_Channel_Baseline(object):
     """ 
@@ -1174,8 +1174,19 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
        #--- condi loop
         # for condi, param, in self.template_data.items():
         for condi in condition_list:
-            param = self.template_data[condi]
-          #--- check for real condition
+            param = self.template_data.get(condi)
+          
+          #--- check if condi is defined
+            if not param:
+               msg = "---> no condition key found in template data\n"
+               msg+= "  -> condition: {}\n".format(condi)
+               msg+= "  -> template file: {}\n".format(self.template_name)
+               if self.debug:
+                  msg+="  -> template data:\n"+ self.pp_list2str(self.template_data)
+               logger.exception(msg)
+               sys.exit()
+
+           #--- check for real condition
             if condi == 'default': continue
           
           #--- check for condition in list
