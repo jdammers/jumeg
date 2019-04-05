@@ -1,0 +1,258 @@
+{
+  "info": {
+    "time": "15-01-2017  00:00:01",
+    "user": "fboers",
+    "version": "20171501"
+  },
+  "experiment": {
+    "name": "LEDA",
+    "ids": [
+         ],
+    "mri": {
+      "path": {
+        "brain": "mrdata/iso/brain",
+        "dicom": "mrdata/dicom",
+        "iso": "mrdata/iso",
+        "mask": "mrdata/iso/mask",
+        "mni": "mrdata/iso/mni",
+        "mni_trafo": "mrdata/iso/mni_trafo",
+        "mrdata": "mrdata",
+        "mri": "mrdata/iso/mri",
+        "mri_orig": "mrdata/mri_orig",
+        "segmentation": "mrdata/segmentation",
+        "freesurfer":"mrdata/freesurfer"
+      }
+    },
+    "path": {
+      "experiment": "/data/meg_store1/exp/LEDA",
+      "stage": "/data/meg_store1/exp/LEDA",
+      "mne": "mne",
+      "empty_room": "empty_room",
+      "eeg": "eeg",
+      "mft": "mft",
+      "doc": "doc",
+      "source": "source",
+      "stimuli": "stimuli"
+    },
+    "stimulus": {
+      "stim_channel": "STI 014",
+      "start_code": 128,
+      "stopt_code": 128
+    },
+    "data_preprocessing": {
+      "raw": {
+        "bads": {
+          "fif_extention": ".fif",
+          "do_run": false,
+          "verbose":false,
+          "save": true
+        },     
+       "epocher": {
+          "template_name": "LEDA",
+          "fif_extention": ".fif",
+          "do_run": true,
+          "verbose": false,
+          "save": true
+        },
+       "meeg_merger": {
+                     "do_run": false,
+                     "verbose": false,
+                     "save": true
+        },
+
+
+     "noise_reducer": {
+                       "parameter": {
+                                      "signals":[],
+                                      "noiseref":[],
+                                      "detrending": null,
+                                      "tmin": null,
+                                      "tmax" : null,
+                                      "exclude_artifacts":true,
+                                      "checkresults":true,
+                                      "complementary_signal":false
+                                     },
+                         "reflp": 5.0,
+                         "refhp": null,
+                         "refnotch": [23.8,50.0,60.0],
+                         "return_raw":true,                                             
+                         "fif_extention": "-raw.fif",
+                         "fif_postfix": "nr",
+                         "plot":true,
+                         "verbose": false,
+                         "do_run": false,
+                         "save": true
+                       },
+
+    "noise_covariance": {
+          "filter_parameter": {
+            "filter_method": "bw",
+            "filter_type": "hp",
+            "fcut1": 1.0,
+            "fcut2": null,
+            "notch": 50.0,
+            "notch_max": 200.0,
+            "order": 4,
+            "remove_dcoffset": false,
+            "njobs": 8,
+            "fif_extention": "-empty.fif",
+            "picks": null,
+            "overwrite": false,
+            "do_run": false,
+            "verbose": false,
+            "save": false
+          },
+          "do_filter": false,
+          "do_run": false,
+          "save": true
+        },
+    "ocarta": {
+          "global_parameter": {
+            "name_ecg": "ECG",
+            "ecg_freq": [
+              8,
+              16
+            ],
+            "thresh_ecg": 0.3,
+            "name_eog": "EOG ver",
+            "eog_freq": [
+              1,
+              10
+            ],
+            "seg_length": 30.0,
+            "shift_length": 10.0,
+            "percentile_eog": 70,
+            "npc": null,
+            "explVar": 0.95,
+            "lrate": null,
+            "maxsteps": 100
+          },
+          "fit_parameter": {
+            "name_ecg": "ECG",
+            "ecg_freq": [
+              8,
+              16
+            ],
+            "thresh_ecg": 0.3,
+            "name_eog": "EOG ver",
+            "eog_freq": [
+              1,
+              10
+            ],
+            "seg_length": 30.0,
+            "shift_length": 10.0,
+            "npc": null,
+            "explVar": 0.95,
+            "lrate": null,
+            "maxsteps": 100,
+            "denoising": null,
+            "plot_template_OA": false,
+            "verbose": false
+          },
+          "template_name": "LEDA",
+          "fif_extention": ".fif",
+          "fif_postfix": "ocarta-raw",
+          "verbose": false,
+          "do_run": false,
+          "save":true
+        },
+    "filter_after_ocarta": {
+                              "filter_method": "bw",
+                              "filter_type": "bp",
+                              "fcut1": 1.0,
+                              "fcut2": 45.0,
+                              "notch": null,
+                              "notch_max": null,
+                              "order": 4,
+                              "remove_dcoffset": false,
+                              "njobs": 8,
+                              "fif_extention": "-raw.fif",
+                              "fif_postfix": "fibp1-45",
+                              "picks": null,
+                              "overwrite": true,
+                              "do_run": false,
+                              "verbose": false,
+                              "save": true
+                             },
+
+
+    "events": {
+          "parameter":{
+                       "event_extention": ".eve",
+                       "weights":{"mode":"equal","method":"median","skipp_first":null},
+                       "save_condition":{"events":true,"epochs":true,"evoked":true},
+                       "time":{"time_pre":null,"time_post":null,"baseline":null},
+                       "exclude_events":{"eog_events":{"tmin":-0.4,"tmax":0.6} } },
+          "fif_postfix": "evt",
+          "template_name":"LEDA",
+          "do_run": false,
+          "verbose": false
+        }},
+    "brainresponse":{
+                       "ica": {
+                                "global_parameter": {
+                                                      "max_pca_components": null,
+                                                      "n_pca_components": null,
+                                                      "noise_cov": null,
+                                                      "random_state": null,
+                                                      "method": "fastica",
+                                                      "fit_params": null,
+                                                      "max_iter": 200,
+                                                      "n_components": 0.99,
+                                                      "verbose": false
+                                                     },
+                                "fit_parameter": {
+                                                  "reject": {"mag": 4e-12},
+                                                  "decim": null,
+                                                  "start": null,
+                                                  "stop": null,
+                                                  "flat": null,
+                                                  "tstep": 2.0,
+                                                  "verbose": false
+                                                 },
+                                "fif_extention": ".fif",
+                                "fif_postfix": "-ica",
+                                "do_run": false,
+                                "verbose": false,
+                                "save": true
+                               },
+                       "ctps": {
+                                "template_name": "LEDA",
+                                "update_parameter": {
+                                                      "exclude_events": {
+                                                                         "eog_events": {
+                                                                                        "tmin": -0.5,
+                                                                                        "tmax": 0.5
+                                                                                       }
+                                                                             },
+                                                      "filter_method": "bw",
+                                                      "fmin": 4,
+                                                      "fmax": 200,
+                                                      "fstep": 8,
+                                                      "njobs": 8,
+                                                      "remove_dcoffset": false
+                                                    },
+                                "select_parameter": {
+                                                     "ctps_pkd_theshold": 110,
+                                                     "ctps_pkd_min_number_of_timeslices":4
+                                                    },
+                                "do_update":true,
+                                "do_select":true,
+                                "do_run": false,
+                                "verbose": false,
+                                "save": true
+                               },
+                       "clean":{
+                                "njobs": 8,
+                                "template_name": "LEDA",
+                                "fif_extention": ".fif",
+                                "fif_postfix": "ctpsbr",
+                                "clean_global":{"save_raw":true,"save_epochs":false,"save_evoked":true},
+                                "clean_condition":{"save_raw":false,"save_epochs":false,"save_evoked":true},
+                                "do_run": false,
+                                "verbose": false
+                               }
+                     }
+      }}}
+
+

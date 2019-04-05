@@ -1,0 +1,57 @@
+{
+    "info": {
+        "time": "2019-01-29 11:49:41",
+        "user": "test",
+        "version": "2019-01-29-0.001",
+        "jumeg_template_version": "2018-12-13.001",
+        "jumeg_gui_version": "2019-01-04.001"
+    },
+    "experiment": {
+        "name": "INTEXT",
+        "stages": [
+            "${JUMEG_PATH_MNE_IMPORT}",
+            "${JUMEG_PATH_LOCAL_DATA}/exp"],
+        "scans": [
+            "INTEXT01"
+        ],
+        "bads_list": [
+            "MEG 007",
+            "MEG 010",
+            "MEG 142",
+            "MEG 156",
+            "RFM 011"
+        ],
+        "path": {
+            "mne": "mne",
+            "eeg": "eeg",
+            "mft": "mft",
+            "doc": "doc",
+            "source": "source",
+            "stimuli": "stimuli"
+        },
+        "segmentation": {
+            "path": {
+                "mrdata": "mrdata",
+                "dicom": "mrdata/dicom",
+                "freesurfer": "mrdata/freesurfer"
+            }
+        }
+    },
+    "bti_export": {
+        "bti_path": [
+                     "${JUMEG_PATH_BTI_EXPORT}",
+                     "${JUMEG_PATH_LOCAL_DATA}/megdaw_data21"
+                    ],
+        "pdf_name": "c,rfDC",
+        "config_fname": "config",
+        "head_shape_fname": "hs_file",
+        "rotation_x": "None",
+        "translation": "None",
+        "ecg_ch": "None",
+        "eog_ch": "None",
+        "fif_extention": "-raw.fif",
+        "emptyroom": "-empty.fif",
+        "overwrite": false,
+        "fakesHS": false
+    }
+}
