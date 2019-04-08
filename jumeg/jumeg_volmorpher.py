@@ -389,10 +389,6 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
         else:
             if e_func == 'balltree':
                 temp_tree = BallTree(t_pts)
-            elif e_func == 'euclidean':
-                # TODO: why continue when e_func is euclidean?
-                #   then none of the following code is executed
-                continue
 
             # Calculate a scaling factor for the subject to match template size
             x_scale, y_scale, z_scale = _get_scaling_factors(s_pts, t_pts)
