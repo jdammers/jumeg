@@ -109,6 +109,136 @@ def _trans_from_est(params):
     return trans
 
 
+def _get_scaling_factors(s_pts, t_pts):
+
+    """
+    Calculate scaling factors to match the size of the subject
+    brain and the template brain.
+
+    Paramters:
+    ----------
+    s_pts : np.array
+        Coordinates of the vertices in a given label from the
+        subject source space.
+    t_pts :  np.array
+        Coordinates of the vertices in a given label from the
+        template source space.
+
+    Returns:
+    --------
+
+    """
+    # Get the x-,y-,z- min and max Limits to create the span for each axis
+    s_x, s_y, s_z = s_pts.T
+    s_x_diff = np.max(s_x) - np.min(s_x)
+    s_y_diff = np.max(s_y) - np.min(s_y)
+    s_z_diff = np.max(s_z) - np.min(s_z)
+    t_x, t_y, t_z = t_pts.T
+    t_x_diff = np.max(t_x) - np.min(t_x)
+    t_y_diff = np.max(t_y) - np.min(t_y)
+    t_z_diff = np.max(t_z) - np.min(t_z)
+
+    # Calculate a scaling factor for the subject to match template size
+    # and avoid 'Nan' by zero division
+
+    # instead of comparing float with zero, check absolute value up to a given precision
+    precision = 1e-18
+    if np.fabs(t_x_diff) < precision or np.fabs(s_x_diff) < precision:
+        x_scale = 0.
+    else:
+        x_scale = t_x_diff / s_x_diff
+
+    if np.fabs(t_y_diff) < precision or np.fabs(s_y_diff) < precision:
+        y_scale = 0.
+    else:
+        y_scale = t_y_diff / s_y_diff
+
+    if np.fabs(t_z_diff) < precision or np.fabs(s_z_diff) < precision:
+        z_scale = 0.
+    else:
+        z_scale = t_z_diff / s_z_diff
+
+    return x_scale, y_scale, z_scale
+
+
+def _get_best_trans_matrix(init_trans, s_pts, t_pts, template_spacing,
+                           e_func, temp_tree, errfunc):
+    """
+    Calculate the least squares error for different variations of
+    the initial transformation and return the transformation with
+    the minimum error
+
+    Parameters:
+    -----------
+    init_trans : np.array of shape (4, 4)
+        Numpy array containing the initial transformation matrix.
+    s_pts : np.array
+        Coordinates of the vertices in a given label from the
+        subject source space.
+    t_pts :  np.array
+        Coordinates of the vertices in a given label from the
+        template source space.
+    template_spacing : float
+        Grid spacing for the template source space.
+    e_func :
+    temp_tree :
+    errfunc :
+
+    Returns:
+    --------
+
+    trans :
+
+    err_stats : [dist_mean, dist_max, dist_var, dist_err]
+    """
+
+    # Find calculate the least squares error for variation of the initial transformation
+    poss_trans = find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
+                                              e_func, temp_tree, errfunc)
+    dist_max_list = []
+    dist_mean_list = []
+    dist_var_list = []
+    dist_err_list = []
+    for tra in poss_trans:
+        points_to_match = s_pts
+        points_to_match = apply_trans(tra, points_to_match)
+
+        if e_func == 'balltree':
+            template_pts = temp_tree
+        elif e_func == 'euclidean':
+            template_pts = t_pts
+
+        dist_mean_list.append(np.mean(errfunc(points_to_match[:, :3], template_pts)))
+        dist_var_list.append(np.var(errfunc(points_to_match[:, :3], template_pts)))
+        dist_max_list.append(np.max(errfunc(points_to_match[:, :3], template_pts)))
+        dist_err_list.append(errfunc(points_to_match[:, :3], template_pts))
+
+        del points_to_match
+
+    dist_mean_arr = np.asarray(dist_mean_list)
+
+    # Select the best fitting Transformation-Matrix
+    idx1 = np.argmin(dist_mean_arr)
+
+    # Collect all values belonging to the optimum solution
+    trans = poss_trans[idx1]
+    dist_max = dist_max_list[idx1]
+    dist_mean = dist_mean_list[idx1]
+    dist_var = dist_var_list[idx1]
+    dist_err = dist_err_list[idx1]
+
+    del poss_trans
+    del dist_mean_arr
+    del dist_mean_list
+    del dist_max_list
+    del dist_var_list
+    del dist_err_list
+
+    err_stats = [dist_mean, dist_max, dist_var, dist_err]
+
+    return trans, err_stats
+
+
 def auto_match_labels(fname_subj_src, label_dict_subject,
                       fname_temp_src, label_dict_template,
                       subjects_dir, volume_labels, template_spacing,
@@ -161,6 +291,8 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
         Dictionary of all the labels transformation matrizes distance
         error variance (mm)
     """
+
+    # TODO: move to _get_best_trans_matrix()
 
     if e_func == 'balltree':
         err_function = 'BallTree Error Function'
@@ -258,36 +390,12 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             if e_func == 'balltree':
                 temp_tree = BallTree(t_pts)
             elif e_func == 'euclidean':
+                # TODO: why continue when e_func is euclidean?
+                #   then none of the following code is executed
                 continue
-            # Get the x-,y-,z- min and max Limits to create the span for each axis
-            s_x, s_y, s_z = s_pts.T
-            s_x_diff = np.max(s_x) - np.min(s_x)
-            s_y_diff = np.max(s_y) - np.min(s_y)
-            s_z_diff = np.max(s_z) - np.min(s_z)
-            t_x, t_y, t_z = t_pts.T
-            t_x_diff = np.max(t_x) - np.min(t_x)
-            t_y_diff = np.max(t_y) - np.min(t_y)
-            t_z_diff = np.max(t_z) - np.min(t_z)
 
             # Calculate a scaling factor for the subject to match template size
-            # and avoid 'Nan' by zero division
-
-            # instead of comparing float with zero, check absolute value up to a given precision
-            precision = 1e-18
-            if np.fabs(t_x_diff) < precision or np.fabs(s_x_diff) < precision:
-                x_scale = 0.
-            else:
-                x_scale = t_x_diff / s_x_diff
-
-            if np.fabs(t_y_diff) < precision or np.fabs(s_y_diff) < precision:
-                y_scale = 0.
-            else:
-                y_scale = t_y_diff / s_y_diff
-
-            if np.fabs(t_z_diff) < precision or np.fabs(s_z_diff) < precision:
-                z_scale = 0.
-            else:
-                z_scale = t_z_diff / s_z_diff
+            x_scale, y_scale, z_scale = _get_scaling_factors(s_pts, t_pts)
 
             # Find center of mass
             cm_s = np.mean(s_pts, axis=0)
@@ -303,47 +411,15 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             init_trans[2, 3] = initial_transl[2]
             init_trans[3, 3] = 1.
 
-            # Find calculate the least squares error for variation of the initial transformation
-            poss_trans = find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
-                                                      e_func, temp_tree, errfunc)
-            dist_max_list = []
-            dist_mean_list = []
-            dist_var_list = []
-            dist_err_list = []
-            for tra in poss_trans:
-                points_to_match = s_pts
-                points_to_match = apply_trans(tra, points_to_match)
+            # Calculate the least squares error for different variations of
+            # the initial transformation and return the transformation with
+            # the minimum error
+            trans, err_stats = _get_best_trans_matrix(init_trans, s_pts, t_pts,
+                                                      template_spacing, e_func,
+                                                      temp_tree, errfunc)
 
-                if e_func == 'balltree':
-                    template_pts = temp_tree
-                elif e_func == 'euclidean':
-                    template_pts = t_pts
-
-                dist_mean_list.append(np.mean(errfunc(points_to_match[:, :3], template_pts)))
-                dist_var_list.append(np.var(errfunc(points_to_match[:, :3], template_pts)))
-                dist_max_list.append(np.max(errfunc(points_to_match[:, :3], template_pts)))
-                dist_err_list.append(errfunc(points_to_match[:, :3], template_pts))
-
-                del points_to_match
-
-            dist_mean_arr = np.asarray(dist_mean_list)
-
-            # Select the best fitting Transformation-Matrix
-            idx1 = np.argmin(dist_mean_arr)
-
-            # Collect all values belonging to the optimum solution
-            trans = poss_trans[idx1]
-            dist_max = dist_max_list[idx1]
-            dist_mean = dist_mean_list[idx1]
-            dist_var = dist_var_list[idx1]
-            dist_err = dist_err_list[idx1]
-
-            del poss_trans
-            del dist_mean_arr
-            del dist_mean_list
-            del dist_max_list
-            del dist_var_list
-            del dist_err_list
+            # TODO: test that the results are still the same
+            [dist_mean, dist_max, dist_var, dist_err] = err_stats
 
             # Append the Dictionaries with the result and error values
             label_trans_dic.update({label: trans})
