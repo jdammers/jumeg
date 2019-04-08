@@ -33,6 +33,9 @@ from matplotlib.ticker import LinearLocator
 from nilearn.plotting.img_plotting import _MNI152Template
 from functools import reduce
 
+import logging
+logger = logging.getLogger("root")
+
 MNI152TEMPLATE = _MNI152Template()
 
 # =============================================================================
@@ -161,8 +164,7 @@ def _get_scaling_factors(s_pts, t_pts):
     return x_scale, y_scale, z_scale
 
 
-def _get_best_trans_matrix(init_trans, s_pts, t_pts, template_spacing,
-                           e_func, temp_tree, errfunc):
+def _get_best_trans_matrix(init_trans, s_pts, t_pts, template_spacing, e_func):
     """
     Calculate the least squares error for different variations of
     the initial transformation and return the transformation with
@@ -180,9 +182,8 @@ def _get_best_trans_matrix(init_trans, s_pts, t_pts, template_spacing,
         template source space.
     template_spacing : float
         Grid spacing for the template source space.
-    e_func :
-    temp_tree :
-    errfunc :
+    e_func : str
+        Either 'balltree' or 'euclidean'.
 
     Returns:
     --------
@@ -191,6 +192,13 @@ def _get_best_trans_matrix(init_trans, s_pts, t_pts, template_spacing,
 
     err_stats : [dist_mean, dist_max, dist_var, dist_err]
     """
+
+    if e_func == 'balltree':
+        errfunc = _point_cloud_error_balltree
+        temp_tree = BallTree(t_pts)
+    elif e_func == 'euclidean':
+        errfunc = _point_cloud_error
+        temp_tree = None
 
     # Find calculate the least squares error for variation of the initial transformation
     poss_trans = find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
@@ -292,18 +300,13 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
         error variance (mm)
     """
 
-    # TODO: move to _get_best_trans_matrix()
-
     if e_func == 'balltree':
         err_function = 'BallTree Error Function'
-        errfunc = _point_cloud_error_balltree
     elif e_func == 'euclidean':
         err_function = 'Euclidean Error Function'
-        errfunc = _point_cloud_error
     else:
         print('No or invalid error function provided, using BallTree instead')
         err_function = 'BallTree Error Function'
-        errfunc = _point_cloud_error_balltree
 
     subj_src = mne.read_source_spaces(fname_subj_src)
     x, y, z = subj_src[0]['rr'].T
@@ -387,8 +390,6 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             label_trans_dic_var_dist.update({label: np.min(0)})
             label_trans_dic_err.update({label: 0})
         else:
-            if e_func == 'balltree':
-                temp_tree = BallTree(t_pts)
 
             # Calculate a scaling factor for the subject to match template size
             x_scale, y_scale, z_scale = _get_scaling_factors(s_pts, t_pts)
@@ -411,8 +412,7 @@ def auto_match_labels(fname_subj_src, label_dict_subject,
             # the initial transformation and return the transformation with
             # the minimum error
             trans, err_stats = _get_best_trans_matrix(init_trans, s_pts, t_pts,
-                                                      template_spacing, e_func,
-                                                      temp_tree, errfunc)
+                                                      template_spacing, e_func)
 
             # TODO: test that the results are still the same
             [dist_mean, dist_max, dist_var, dist_err] = err_stats
