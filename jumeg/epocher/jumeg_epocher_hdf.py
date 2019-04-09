@@ -24,7 +24,7 @@ logger = logging.getLogger('root')
 from jumeg.jumeg_base import jumeg_base
 from jumeg.template.jumeg_template import JuMEG_Template
 
-__version__="2019.04.04.001"
+__version__="2019.04.09.001"
 
 class JuMEG_Epocher_Template(JuMEG_Template):
     def __init__ (self):
@@ -44,6 +44,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         super(JuMEG_Epocher_HDF, self).__init__()
 
         self._hdf_obj           = None
+        self._hdf_path          = None
         self._hdf_filename      = None
         self._hdf_node_names    = {"epo":"epocher","eve":"events","oca":"ocarta","cha":"channel_events","con":"conditions","art":"artifacts" }
         
@@ -53,8 +54,16 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         self.hdf_key_space_alias     = "xXx"
         self._raw_postfix            = 'c,rfDC'
         self._raw_extention          = '.fif'
-       
+
   #---
+    @property
+    def hdf_path(self): return os.path.dirname(self._hdf_filename)
+    
+  #--- hdf epocher filename for HDF obj
+    @property
+    def hdf_filename(self):
+        return self._hdf_filename
+    #---
     @property
     def hdf_obj_attribute_epocher(self):return self._hdf_obj_attributes['epocher']
   #---
@@ -110,10 +119,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
     def hdf_postfix(self): return self._hdf_postfix
     @hdf_postfix.setter
     def hdf_postfix(self,v): self._hdf_postfix=v   
-  #--- hdf epocher filename for HDF obj
-    @property
-    def hdf_filename(self): return self._hdf_filename    
-    
+  #---
     def key2hdfkey(self,key):
         """
         replace spaces to pattern to use in HDF
@@ -121,7 +127,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         :return: string
         """
         return key.replace(" ",self.hdf_key_space_alias)
-    
+   #---
     def hdfkey2name(self,key):
         """
         change pattern to spaces
@@ -131,8 +137,40 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         """
         return key.replace(self.hdf_key_space_alias," ")
     
-  #---
-    def hdf_filename_init(self,fname=None,raw=None):
+   #---
+    def _update_hdf_name_from_path(self,hdf_path=hdf_path,fname=None):
+        """
+        if fname is not None set HDF filename to fname and then
+        update <hdf path> in the HDF file name
+        if <hdf_path> is not None
+         ->change HDF filename path to new <hdf_path> and creates subdirs along the new path
+         
+        :param hdf_path:
+        :param fname:
+        :return:
+        
+        hdf filename, class property
+        """
+        if fname:
+           self._hdf_filename = fname
+        if hdf_path:
+           try:
+               hdf_path = self.expandvars(hdf_path)
+               os.makedirs(hdf_path,exist_ok=True)
+               # or use  # import pathlib #pathlib.Path(path).mkdir(parents=True,exist_ok=True)
+               self._hdf_filename = hdf_path +"/"+ os.path.basename( self._hdf_filename )
+           except:
+               logger.exception(" can not create HDF directory path: {}".format(hdf_path)+
+                                " HDF file: {}".format(self._hdf_filename))
+               self._hdf_path = None
+
+        if self.verbose:
+           logger.info("  -> setting HDF file name to: {}".format(self.hdf_filename))
+        
+        return self._hdf_filename
+
+    #---
+    def hdf_filename_init(self,fname=None,raw=None,hdf_path=None):
         """ init hdf filename
         Parameters
         ----------
@@ -145,39 +183,48 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         """
         fname = jumeg_base.get_fif_name(fname=fname,raw=raw)
         self._hdf_filename = fname.split( self.raw_postfix )[0].strip( self.raw_extention ) +'_' + self.template_name + self.hdf_postfix
+        
         self._hdf_filename = self._hdf_filename.replace('__', '_')
 
-        return self._hdf_filename
-
+        return self._update_hdf_name_from_path(hdf_path=hdf_path)
+        
+     
+    
 #--- init epocher output pandas HDF obj
-    def hdf_obj_init(self,fhdf=None,fname=None,raw=None,overwrite=True):
+    def hdf_obj_init(self,fhdf=None,hdf_path=None,fname=None,raw=None,overwrite=True):
         """create pandas HDF5-Obj and file 
         
         Parameters
         ----------
-        fhdf  : hdf5 filename <None>
-        fname : fif-filename  <None>
-        raw   : mne raw obj   <None>
+        fhdf     : hdf5 filename <None>
+        fname    : fif-filename  <None>
+        raw      : mne raw obj   <None>
+        hdf_path : path to hdf file <None> if None use fif-file path
         overwrite: will overwrite existing output file <True>
         
         Returns
         ---------
         pandas.HDFobj   
         """
+        
         if not fhdf :
-           fhdf = self.hdf_filename_init(fname=fname,raw=raw)
-
+           fhdf = self.hdf_filename_init(fname=fname,raw=raw,hdf_path=hdf_path)
+        
         if ( os.path.exists(fhdf) and overwrite ):
            os.remove(fhdf)
-        # return pd.HDFStore( fhdf,format='table' ) not usefull with float16 !! ????
-        self.HDFobj= pd.HDFStore( fhdf )
 
+        # return pd.HDFStore( fhdf,format='table' ) not usefull with float16 !! ????
+        try:
+            self.HDFobj= pd.HDFStore( fhdf )
+        except:
+            logger.exception(" error open or creating HDFobj; e.g.: release lock?"+
+                             "  -> HDF filename: {}".format(fhdf))
         if self.verbose:
-           logger.info("Open HDF file: {}".format(self.HDFobj.filename))
+           logger.info("---> Open HDF file: {}".format(self.HDFobj.filename))
        
         return self.HDFobj
 
-    def hdf_obj_open(self,fhdf=None,fname=None,raw=None):
+    def hdf_obj_open(self,fhdf=None,hdf_path=None,fname=None,raw=None):
          """open  HDF file; pandas HDF5-Obj 
          
          Parameters
@@ -190,7 +237,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
          ---------
          pandas.HDFStore obj
          """
-         return self.hdf_obj_init(fhdf=fhdf,fname=fname,raw=raw,overwrite=False)
+         return self.hdf_obj_init(fhdf=fhdf,hdf_path=hdf_path,fname=fname,raw=raw,overwrite=False)
 
     def hdf_obj_reset_key(self,k):
         khdf = self.key2hdfkey(k)
@@ -199,11 +246,12 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         return k
 
     def hdf_obj_is_open(self):
-        if self.HDFobj.is_open:
-           return True
-        else:
-           logger.error(" HDFobj is not open !!!\n")
-           return None
+        try:
+           if self.HDFobj.is_open:
+              return True
+        except:
+           logger.exception(" HDFobj is not open !!!\n")
+        return False
 
     def hdf_obj_list_keys_from_node(self,node):
         """ get key list from HDF node
@@ -340,11 +388,11 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         if self.verbose :
            msg=[
             "---> HDFobj store attributes to HDF5",
-            "  --> input key   : {}".format(key),
-            "  --> HDFkey      : {}".format(self.key2hdfkey(key)),
-            "  --> HDF filename: {}".format(self.HDFobj.filename)]
+            " --> input key   : {}".format(key),
+            " --> HDFkey      : {}".format(self.key2hdfkey(key)),
+            " --> HDF filename: {}".format(self.HDFobj.filename)]
            for atr in storer_attrs :
-               msg.append("   -> PARAMETER -> HDF storer attributes: {} \n{}:".format(atr,HStorer.attrs[atr]) )
+               msg.append("  -> PARAMETER -> HDF storer attributes: {} \n{}:".format(atr,HStorer.attrs[atr]) )
            logger.debug( "\n".join(msg) )
         return HStorer
 
