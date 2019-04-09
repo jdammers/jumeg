@@ -67,7 +67,7 @@ from pprint import PrettyPrinter #,pprint,pformat
 import logging
 logger = logging.getLogger("root")
 
-__version__="2019.04.03.001"
+__version__="2019.04.09.001"
 
 '''
 class AccessorType(type):
@@ -264,6 +264,7 @@ class JuMEG_Base_Basic(object):
         :param v: list of strings  or string
         :return: input with expanded env's
         """
+        if not v: return None
         if isinstance(v,(list)):
             for i in range(len(v)):
                 v[i] = os.path.expandvars(os.path.expanduser( str(v[i]) ))
@@ -983,14 +984,15 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         self.brainvision_response_shift = 1000
         self.brainvision_extention      = '.vhdr'
         
-    def get_fif_name(self, fname=None, raw=None, prefix=None,postfix=None, extention="-raw.fif", update_raw_fname=False):
+    def get_fif_name(self, fname=None, raw=None,path=None, prefix=None,postfix=None, extention="-raw.fif", update_raw_fname=False):
         """
-        changing filename with prefix postfix and option to update filename in raw-obj
+        changing filename with prefix postfix path and option to update filename in raw-obj
         
         Parameters:
         -----------
         fname            : base file name
         raw              : raw obj, if defined get filename from raw obj                <None>
+        path             : new path, must exsist                                        <None>
         prefix           : string to add as prefix in filename                          <None>
         postfix          : string to add as postfix for applied operation               <None>
         extention        : string to add as extention                                   <-raw.fif>
@@ -999,6 +1001,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         Returns:
         ----------
         fif filename, based on input file name and applied operation
+        with new path if path is not None
         
         Example:
         ----------
@@ -1027,7 +1030,10 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
               fname += extention
            if update_raw_fname:
                self.set_raw_filename(raw,fname)
-        return fname
+           if path:
+              if os.path.isdir(path):
+                 fname = path +"/"+ os.path.basename( fname )
+        return self.expandvars( fname )
         
     def update_bad_channels(self,fname,raw=None,bads=None,preload=True,append=False,save=False,interpolate=False,postfix=None):
         """ update bad channels in raw obj

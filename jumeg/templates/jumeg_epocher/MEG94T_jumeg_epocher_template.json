@@ -1,0 +1,89 @@
+{
+"default":{
+           "experiment"       : "MEG94T",
+           "condition"        : "TEST",
+           "postfix"          : "test",
+           "time_pre"         : -0.50,
+           "time_post"        :  2.00,
+           "baseline"         : [null,0],
+           "stimulus_channel" : "stimulus",
+           "response_channel" : "response",
+           "marker_channel"   : "stimulus",
+           "marker_type"      : "onset",
+           "response_matching": false,
+           "response_matching_type": "hit",
+           "ctps"             : {"time_pre":-0.50,"time_post":2.0,"baseline":[null,0]},
+           "reject"           : {"mag": 4e-12},
+           "stimulus":{
+                       "events":{
+                                  "stim_channel"   : "STI 014",
+                                  "output"         : "onset",
+                                  "consecutive"    : true,
+                                  "min_duration"   : 0.002,
+                                  "shortest_event" : 2,
+                                  "mask"           : 0
+                                 },
+                        "and_mask"        : 255,
+                        "system_delay_ms" : 0.0,
+                        "event_id"        : null
+                       },
+
+           "response":{
+                        "events":{
+                                  "stim_channel"   : "STI 013",
+                                  "output"         : "onset",
+                                  "consecutive"    : true,
+                                  "min_duration"   : 0.002,
+                                  "shortest_event" : 2,
+                                  "mask"           : 0
+                                 },
+                        "and_mask"             : 72,
+                        "window"               : [0.10,1.70],
+                        "counts"               : 1,
+                        "system_delay_ms"      : 0.0,
+                        "include_early_ids"    : null,
+                        "event_id"             : null
+                       }
+          },
+
+"URon":{
+         "condition" : "URon",
+         "postfix"   : "URon",
+         "stimulus"  : {"events":{"output": "onset"},"event_id":10}
+       },
+"URoff":{
+         "condition" : "URoff",
+         "postfix"   : "URoff",
+         "stimulus"  : {"events":{"output": "offset"},"event_id":10}
+        },
+"ULon":{
+         "condition" : "ULon",
+         "postfix"   : "ULon",
+         "stimulus"  : {"events":{"output": "onset"},"event_id":20}
+       },
+"ULoff":{
+         "condition" : "ULoff",
+         "postfix"   : "ULoff",
+          "stimulus" : {"events":{"output": "offset"},"event_id":20}
+       },
+"LLon":{
+         "condition" : "LLon",
+         "postfix"   : "LLon",
+         "stimulus"  : {"events":{"output": "onset"},"event_id":30}
+       },
+"LLoff":{
+         "condition" : "LLoff",
+         "postfix"   : "LLoff",
+         "stimulus"  : {"events":{"output": "offset"},"event_id":30}
+       },
+"LRon":{
+         "condition" : "LRon",
+         "postfix"   : "LRon",
+         "stimulus"  : {"events":{"output": "onset"},"event_id":40}
+       },
+"LRoff":{
+         "condition" : "LRoff",
+         "postfix"   : "LRoff",
+         "stimulus"  : {"events":{"output": "offset"},"event_id":40}
+       }
+}

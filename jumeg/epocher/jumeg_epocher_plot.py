@@ -5,8 +5,8 @@ Created on 08.06.2018
 @author: fboers
 """
 
-import os.path
-from distutils.dir_util import mkpath
+import os,os.path
+#from distutils.dir_util import mkpath
 
 import numpy as np
 #import matplotlib.pylab as pl
@@ -21,7 +21,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import logging
 logger = logging.getLogger('root')
 
-__version__="2019.04.02.001"
+__version__="2019.04.09.001"
 
 #--- A4 landscape
 pl.rc('figure', figsize=(11.69,8.27))
@@ -86,7 +86,15 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
        
         if plot_dir:
            fout_path += "/" + plot_dir
-           mkpath( fout_path )        
+           try:
+               os.makedirs(fout_path,exist_ok=True)
+           except:
+               logger.exception("---> can not create epocher plot\n"+
+                                "  -> directory: {}\n".format(fout_path)+
+                                "  -> filename : {}".format(fname) )
+               return
+            
+          # mkpath( fout_path )
         fout =fout_path +'/'+ name   
            
         #pl.ioff()  # switch  off (interactive) plot visualisation
