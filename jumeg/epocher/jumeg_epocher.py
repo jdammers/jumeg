@@ -16,36 +16,75 @@ Class JuMEG_Epocher
 #--------------------------------------------
 # Updates
 # 18.12.2018 use python3 logging instead of print()
+# 09.04.2019 py3 deepcopy, logger, output path
 #--------------------------------------------
 extract mne-events per condition, save to HDF5 file
+generate event-files,evoked,averaged data for each condition
 
 Example:
 --------
-   
+from jumeg import jumeg_logger
+logger = jumeg_logger.setup_script_logging( fname="log_fv_epocher.log",level="DEBUG",logfile=True,mode="w" )
+
+from jumeg.jumeg_base import jumeg_base as jb
 from jumeg.epocher.jumeg_epocher import jumeg_epocher
 
-template_name = 'M100'
-template_path = "${JUMEG_PATH_TEMPLATE_EPOCHER}"
-evt_param = { "condition_list":condition_list,
-              "template_path": template_path, 
-              "template_name": template_name,
-              "verbose"      : verbose
-            }
-           
-(_,raw,epocher_hdf_fname) = jumeg_epocher.apply_events(fname,raw=raw,**evt_param)
+DO_EVENTS=True
+DO_EPOCHS=True
+
+template_name ="M100"
+template_path = "."
+
+fname= /data/megdata1/exp/M100/mne/0815_M100_12345_1_c,rfDC-raw.fif
+
+raw = None
+
+#--- init log filename
+flog= os.path.splitext(fname)[0]+".epocher.log"
+jumeg_logger.update_filehandler(logger=logger,fname=flog,mode="w")  # w: overwrite logfile
+logger.info(fname)
 
 
-ep_param={
-          "condition_list": condition_list,
-          "template_path" : template_path, 
-          "template_name" : template_name,
-          "verbose"       : verbose,
-          "parameter":{
-                       "event_extention": ".eve",
-                       "save_condition":{"events":True,"epochs":True,"evoked":True}
-        }}  
+epocher_path = os.path.dirname(fname)+"/epocher/"
+hdf_path     = epocher_path
 
-event_ids = jumeg_epocher.apply_epochs(fname=fname,raw=raw,**ep_param)
+# --- Epocher events
+if DO_EVENTS:
+            logger.info("---> EPOCHER Events\n"+
+                        "  -> FIF File    : {}\n".format(fname)+
+                        "  -> Template    : {}\n".format(template_name)+
+                        "  -> HDF path    : {}\n".format(hdf_path)+
+                        "  -> Epocher path: {}\n".format(epocher_path)
+                        )
+
+            evt_param = {"condition_list": condition_list,
+                         "template_path": template_path,
+                         "template_name": template_name,
+                         "hdf_path"     : hdf_path,
+                         "verbose"      : verbose
+                         }
+            try:
+                raw, fname = jumeg_epocher.apply_events(fname, raw=raw, **evt_param)
+            except:
+                logger.exception(" error in calling jumeg_epocher.apply_events")
+
+# --- Epocher epochs
+if DO_EPOCHS:
+            ep_param = {
+                "condition_list": condition_list,
+                "template_path": template_path,
+                "template_name": template_name,
+                "hdf_path"     : hdf_path,
+                "verbose"      : verbose,
+                "event_extention": ".eve",
+                "output_mode":{ "events":True,"epochs":True,"evoked":True,"stage":epocher_path,"use_condition_in_path":True}
+               }
+            
+            try:
+                raw, fname = jumeg_epocher.apply_epochs(fname=fname, raw=raw, **ep_param)
+            except:
+                logger.exception(" error in calling jumeg_epocher.apply_epochs")
+            logger.info("---> DONE EPOCHER Epochs\n   -> File  :{}\n   -> Epocher Template: {}".format(fname,template_name))
 
 '''
 
