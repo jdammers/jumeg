@@ -64,6 +64,8 @@ jumeg_epocher.apply_epochs(fname=fname,raw=raw,**ep_param)
 
 '''
 import sys
+from copy import deepcopy
+
 import logging
 logger = logging.getLogger('root')
 
@@ -77,7 +79,7 @@ import mne
 from jumeg.jumeg_base                import jumeg_base,JuMEG_Base_Basic #,JuMEG_Base_PickChannels
 from jumeg.epocher.jumeg_epocher_hdf import JuMEG_Epocher_HDF
 
-__version__="2019.04.04.001"
+__version__="2019.04.09.001"
 
 class JuMEG_Epocher_Channel_Baseline(object):
     """ 
@@ -964,6 +966,9 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         self.stimulus          = None
         self.response          = None
         self.iod               = None
+        
+        #self.exit_on_error_in_condition = True # debug flag
+        
         self.event_data_parameter={"events":{
                                              "stim_channel"   : "STI 014",
                                              "output"         : "onset",
@@ -1077,10 +1082,10 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         #   self.pp( resp_df,head=" --> Response DF --> IOD out" )
         
         df = self.ResponseMatching.apply(raw=raw,stim_df=mrk_df,resp_df=resp_df,
-                                         stim_param      = self.iod.marker_channel_parameter.copy(),
+                                         stim_param      = deepcopy(self.iod.marker_channel_parameter),
                                          stim_type_input = self.iod.marker.type_input,
                                          stim_prefix     = self.iod.marker.prefix,
-                                         resp_param      = self.iod.response_channel_parameter.copy(),
+                                         resp_param      = deepcopy(self.iod.response_channel_parameter),
                                          resp_type_input = self.iod.response.type_input, 
                                          resp_prefix     = self.iod.response.prefix,
                                          verbose         = self.verbose
@@ -1109,8 +1114,9 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         self.response  = None
         self.iod       = None
         self.parameter = None
-        self.parameter = self.template_data['default'].copy()
-        self.parameter = self.template_update_and_merge_dict(self.parameter,param)
+        
+        self.parameter = deepcopy( self.template_data['default'] )
+        self.parameter = self.template_update_and_merge_dict( self.parameter,param )
   
         #if "marker" in self.parameter:  
         self.marker = JuMEG_Epocher_Events_Channel(label="marker",parameter=self.parameter)
@@ -1123,7 +1129,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
            
 #---
     def events_store_to_hdf(self,fname=None,raw=None,condition_list=None,overwrite_hdf=False,
-                            template_path=None,template_name=None,verbose=False):
+                            template_path=None,template_name=None,hdf_path=None,verbose=False):
         """find & store epocher data to hdf5:
         -> readding parameter from epocher template file
         -> find events from raw-obj using mne.find_events
@@ -1133,6 +1139,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         Parameter
         ---------
          fname         : string, fif file name <None>
+         fname         : string, fif file name <None>
          raw           : raw obj <None>
          condition_list: list of conditions to process
                          select special conditions from epocher template
@@ -1141,7 +1148,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
          
          template_path : path to jumeg epocher templates
          template_name : name of template e.g: experimnet name 
-         
+         hdf_path      : path to hdf file <None> if None use fif-file path
          verbose       : flag, <False>
 
         Results
@@ -1165,7 +1172,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         self.raw,fname = jumeg_base.get_raw_obj(fname,raw=raw)
        
        #---  init obj
-        self.hdf_obj_init(raw=self.raw,overwrite=overwrite_hdf)
+        self.hdf_obj_init(raw=self.raw,hdf_path=hdf_path,overwrite=overwrite_hdf)
         
         self.channel_events_to_dataframe()
         
@@ -1184,7 +1191,8 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                if self.debug:
                   msg+="  -> template data:\n"+ self.pp_list2str(self.template_data)
                logger.exception(msg)
-               sys.exit()
+               #if self.exit_error_in_condition:
+               #sys.exit()
 
            #--- check for real condition
             if condi == 'default': continue
@@ -1196,7 +1204,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
             
             iod_data_frame = None
             
-            logger.info("---> Epocher start store events into HDF\n  --> condition: "+ condi)
+            logger.info("---> Epocher start store events into HDF\n --> condition: "+ condi)
                         
             if not self.marker.channel_parameter: continue
          
@@ -1208,7 +1216,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                        
             if self.verbose:
                logger.info(' --> EPOCHER  Template: %s  Condition: %s' %(self.template_name,condi)+
-                           '\n   -> find events and epochs, save epocher output in HDF5 format')
+                           '\n  -> find events and epochs, save epocher output in HDF5 format')
                #self.pp(self.parameter,head="  -> parameter")               
             
            #--- iod matching ckek if true and if channe == stimulus channel
@@ -1250,11 +1258,11 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         
             if self.response.matching :
                logger.info(" --> Marker Matching -> matching marker & response channel: {}\n".format(condi)+
-                           "   -> marker   channel : {}\n".format(self.marker.channel)+
-                           "   -> response channel : {}".format(self.response.channel) )
+                           "  -> marker   channel : {}\n".format(self.marker.channel)+
+                           "  -> response channel : {}".format(self.response.channel) )
              #--- look for all responses => 'event_id' = None
                if response_data_frame.empty:
-                  res_channel_param = self.response.channel_parameter.copy()
+                  res_channel_param = deepcopy(self.response.channel_parameter)
                   res_channel_param['event_id']     = None
                   response_data_frame,response_info = self.events_find_events(self.raw,prefix=self.response.prefix,**res_channel_param)
                    
@@ -1268,12 +1276,12 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
               #--- update stimulus epochs with response matching
                marker_data_frame = self.ResponseMatching.apply(raw=self.raw,verbose=self.verbose,
                                                                stim_df         = marker_data_frame,
-                                                               stim_param      = self.marker.channel_parameter.copy(),
+                                                               stim_param      = deepcopy(self.marker.channel_parameter),
                                                                stim_type_input = self.marker.type_input,
                                                                stim_prefix     = self.marker.prefix,
                                                              #---  
                                                                resp_df         = response_data_frame,
-                                                               resp_param      = self.response.channel_parameter.copy(),
+                                                               resp_param      = deepcopy(self.response.channel_parameter),
                                                                resp_type_input = self.response.type_input, 
                                                                resp_type_offset= self.response.type_offset, 
                                                                resp_prefix     = self.response.prefix
@@ -1292,7 +1300,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
             self.hdf_obj_update_dataframe(marker_data_frame.astype(np.int32),key=key,**storer_attrs )
             
         self.HDFobj.close()
-        logger.info(" ---> DONE save epocher data into HDF5 : " + self.hdf_filename)
+        logger.info("---> DONE save epocher data into HDF5 : " + self.hdf_filename)
         return self.raw,fname
 
 #---
@@ -1349,7 +1357,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
            col_onset = "onset"
            col_offset= "offset" 
        #---
-        events           = param['events'].copy()
+        events           = deepcopy(param['events'])
         events['output'] = 'step'
        # self.pp( events )
      

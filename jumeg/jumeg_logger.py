@@ -321,7 +321,7 @@ class LoggingContext(object):
             self.handler.close()
         # implicit return of None => don't swallow exceptions
         
-def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None,path=None,version=None,logfile=False,mode="a"):
+def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None,path=None,version=None,logfile=False,mode="a",captureWarnings=True):
     """
     setup logger :
      loging level, log handler, logs information e.g input parameter
@@ -338,6 +338,7 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     :param logfile: flag log to logfile
     :param path   : logfile path <None> :
     :param mode   : logfile mode <a>  [a,w]  append or write
+    :param captureWarnings: capture Warnings form wranings module <True>
     
     :return:
     logger
@@ -349,6 +350,8 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     name = name if name else "jumeg_logger"
     
     logger.setLevel(level)
+    logging.captureWarnings(captureWarnings)
+    
     HStream = LogStreamHandler()
     HStream.setLevel(logging.INFO)
     logger.addHandler(HStream)
@@ -403,11 +406,13 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     return logger
 
     
-def update_filehandler(**kwargs):
+def update_filehandler(logger=None,logger_name="root",**kwargs):
     """
     close all filehandlers first and add a new filehandler to the logger
     https://stackoverflow.com/questions/13839554/how-to-change-filehandle-with-python-logging-on-the-fly-with-different-classes-a
     
+    :param logger      : the logger obj <None>
+    :param logger_name : logger name <root>, used if logger is None
     :param fname:
     :param prefix:
     :param name:
@@ -417,12 +422,21 @@ def update_filehandler(**kwargs):
     :param level:
     :return:
     new filehandler
+    
     """
+    
+    if not logger:
+       if logger_name:
+           logger=logging.getLogger("root")
+  
     logger = logging.getLogger()     # root logger - Good to get it only once.
+    
+    level=kwargs.get("level")
+    
     for hdlr in logger.handlers[:]:  # remove the existing file handlers
-        if isinstance(hdlr,logging.FileHandler): #fixed two typos here
+        if isinstance(hdlr,logging.FileHandler):
            if not level:
-              level = hdlr.getLevel() or logger.getEffectiveLevel()
+              level = hdlr.getLevel() if hdlr.getLevel() else logger.getEffectiveLevel()
            hdlr.flush()
            hdlr.close()
            logger.removeHandler(hdlr)

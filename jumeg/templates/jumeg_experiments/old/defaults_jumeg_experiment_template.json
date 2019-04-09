@@ -1,0 +1,20 @@
+{
+  "info": {
+    "time": "2018-03-20  00:00:01",
+    "user": "fboers",
+    "version": "v2018-03-20-001"
+  },
+  "experiment": {
+    "name": "TEST",
+    "bads":[],
+    "ids": [],
+    "scans": [],
+    "path":{
+            "stage": [
+      "/data/meg/meg_store1/exp/TEST/"
+    ],
+    "dicom": "mrdata/dicom",
+    "dti": "mrdata/dti",
+    "freesurfer": "mrdata/freesurfer"
+  }}
+}
