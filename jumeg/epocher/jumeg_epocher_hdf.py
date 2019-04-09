@@ -158,7 +158,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
                hdf_path = self.expandvars(hdf_path)
                os.makedirs(hdf_path,exist_ok=True)
                # or use  # import pathlib #pathlib.Path(path).mkdir(parents=True,exist_ok=True)
-               self._hdf_filename = hdf_path +"/"+ os.path.basename( self._hdf_filename )
+               self._hdf_filename = os.path.join(hdf_path,os.path.basename( self._hdf_filename ) )
            except:
                logger.exception(" can not create HDF directory path: {}".format(hdf_path)+
                                 " HDF file: {}".format(self._hdf_filename))

@@ -114,7 +114,7 @@ class JuMEG_Epocher_OutputMode(object):
            self.path = jumeg_base.expandvars(self.path)
            if self.use_condition_in_path:
               if condition:
-                 self.path += "/"+ condition
+                 self.path = os.path.join(self.path,condition)
            try:
               os.makedirs(self.path,exist_ok=True)
            except:
