@@ -762,21 +762,29 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     subj_vol = mne.read_source_spaces(fname_vsrc_subject_from)
     temp_vol = mne.read_source_spaces(fname_vsrc_subject_to)
 
+    ###########################################################################
     # get dictionaries with labels and their respective vertices
+    ###########################################################################
+
     fname_label_dict_subject_from = (fname_vsrc_subject_from[:-4] +
                                      '_vertno_labelwise.npy')
-    label_dict_subject_from = np.load(fname_label_dict_subject_from, encoding='latin1').item()
+    label_dict_subject_from = np.load(fname_label_dict_subject_from,
+                                      encoding='latin1').item()
 
     fname_label_dict_subject_to = (fname_vsrc_subject_to[:-4] +
                                    '_vertno_labelwise.npy')
-    label_dict_subject_to = np.load(fname_label_dict_subject_to, encoding='latin1').item()
+    label_dict_subject_to = np.load(fname_label_dict_subject_to,
+                                    encoding='latin1').item()
 
     # Check for vertex duplicates
     label_dict_subject_from = _remove_vert_duplicates(subject_from, subj_vol,
                                                       label_dict_subject_from,
                                                       subjects_dir)
 
+    ###########################################################################
     # Labelwise transform the whole subject source space
+    ###########################################################################
+
     transformed_p, idx_vertices = _transform_src_lw(subj_vol,
                                                     label_dict_subject_from,
                                                     volume_labels, subject_to,
@@ -790,8 +798,9 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     stcdata_sel = np.asarray(stcdata_sel).flatten()
     stcdata_ch = stcdata[stcdata_sel]
 
-    # =========================================================================
-    #        Interpolate the data
+    ###########################################################################
+    # Interpolate the data
+    ###########################################################################
 
     print('\n#### Attempting to interpolate STC Data for every time sample..')
     print('    Interpolation method: ', interpolation_method)
@@ -813,25 +822,11 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     if unwanted_to_zero:
         print('#### Setting all unknown vertex values to zero..')
 
-        # vertnos_unknown = label_dict_subject_to['Unknown']
-        # vert_U_idx = np.array([], dtype=int)
-        # for i in xrange(0, vertnos_unknown.shape[0]):
-        #     vert_U_idx = np.append(vert_U_idx,
-        #                            np.where(vertnos_unknown[i] == temp_vol[0]['vertno'])
-        #                            )
-        # inter_data[vert_U_idx, :] = 0.
-        #
-        # # now the original data
-        # vertnos_unknown_from = label_dict_subject_from['Unknown']
-        # vert_U_idx = np.array([], dtype=int)
-        # for i in xrange(0, vertnos_unknown_from.shape[0]):
-        #     vert_U_idx = np.append(vert_U_idx,
-        #                            np.where(vertnos_unknown_from[i] == subj_vol[0]['vertno'])
-        #                            )
-        # stc_orig.data[vert_U_idx, :] = 0.
-
+        # set all vertices that do not belong to a label of interest (given by
+        # label_dict IIRC) to zero
         inter_data = set_unwanted_to_zero(temp_vol, inter_data, volume_labels, label_dict_subject_to)
 
+        # do the same for the original data for normalization purposes (I think)
         d2 = set_unwanted_to_zero(subj_vol, stc_orig.data, volume_labels, label_dict_subject_from)
 
         if not stc_orig.data.flags["WRITEABLE"]:
