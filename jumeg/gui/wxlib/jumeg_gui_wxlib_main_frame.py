@@ -149,7 +149,6 @@ class JuMEG_wxMainFrame(wx.Frame):
            msgtxt= "\n".join(data)
         wx.MessageBox("Info: "+data,caption="Info  " +self.Name,style=wx.ICON_INFORMATION|wx.OK)
    #---
-  
     def init_toolbar(self,**kwargs):
         """
         overwrite  e.g.
