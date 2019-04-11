@@ -1152,7 +1152,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
    
         return ica_raw,self.get_raw_filename(ica_raw)
             
-    def get_raw_obj(self,fname_raw,raw=None,path=None,preload=True):
+    def get_raw_obj(self,fname,raw=None,path=None,preload=True):
         """
         load file in fif format <*.raw> or brainvision eeg data
         check for filename or raw obj
@@ -1161,8 +1161,8 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
         Parameters
         ----------
-         fname_raw: name of raw-file 
-         raw      : raw obj <None>
+         fname: name of raw-file
+         raw  : raw obj <None>
         
         Results
         ----------
@@ -1170,25 +1170,30 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
          
          fname from raw obj 
         """
-        if raw is None:
-           assert(fname_raw),"---> ERROR no file foumd!!\n"
-           if self.verbose:
-              logger.info("<<<< Reading raw data ...")
-           fn = fname_raw
-           if path:
-              fn = path+"/"+fname_raw
-           if ( fn.endswith(self.brainvision_extention) ):
+        if self.verbose:
+           logger.info("<<<< Reading raw data ...")
+        if self.debug:
+           logger.debug(" --> reading raw data:\n"+
+                        "  -> file: {}\n".format(fname)+
+                        "  -> path: {}\n".format(path))
+        
+        fn = fname
+        if path:
+           fn = os.path.join(path,fname)
+        try:
+            if not os.path.isfile(fn):
+               raise FileNotFoundError("ERROR no file found:{}".format(fn))
+            
+            if ( fn.endswith(self.brainvision_extention) ):
                raw = mne.io.read_raw_brainvision(fn,response_trig_shift=self.brainvision_response_shift,preload=preload)
-               raw.info['bads'] = []
-               #--- ToDo may decide for eeg-name .eeg or.vhdr
-           else:
+               #raw.info['bads'] = []
+          #--- ToDo may decide for eeg-name .eeg or.vhdr
+            else:
                raw = mne.io.Raw(fn,preload=preload)
-       
-        assert(raw), "---> ERROR in jumeg.jumeg_base.get_raw_obj => could not get raw obj:\n ---> FIF name: " + fname_raw
+        except:
+            logger.exception("---> could not get raw obj from file:\n ---> FIF name: {}".format(fn))
    
         return raw,self.get_raw_filename(raw)
-
-
 
     def get_files_from_list(self, fin):
         """ get filename or filenames from a list
