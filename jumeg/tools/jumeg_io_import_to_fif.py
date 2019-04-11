@@ -28,7 +28,7 @@ from jumeg.jumeg_base  import jumeg_base as jb
 from jumeg import jumeg_logger
 logger = logging.getLogger('root')
 
-__version__= "2019.04.02.001"
+__version__= "2019.04.11.001"
 
 #=========================================================================================
 #==== script part
@@ -212,7 +212,7 @@ def get_args(argv):
                if vars( opt ).get(obj.dest):
                   opt.__dict__[obj.dest] = False
                   for flg in argv:
-                      if flg.startswith("-"+obj.dest) or flg.startswith("--"+obj.dest):
+                      if flg in obj.option_strings:
                          opt.__dict__[obj.dest] = True
                          break
   
