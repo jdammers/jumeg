@@ -372,10 +372,9 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     version = version if version else __version__
     
    #--- ToDo make logfile dir in fileout dir
-
     msg=[]
     log2file = logfile
-
+    
     if opt:
        try:
           log2file = opt.logfile
