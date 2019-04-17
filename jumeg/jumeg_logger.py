@@ -38,102 +38,6 @@ logger.error("Start LOG")
 
 __version__="2019.04.04.001"
 
-
-class _oldJuMEG_Logger(object):
-    """
-     logger cls
-     :param: app_name => logger name <None>
-     :param: level    => logging level  <10>
-        level values:
-         CRITICAL 50
-         ERROR 	 40
-         WARNING  30
-         INFO 	 20
-         DEBUG 	 10
-         NOTSET 	 0
- 
-     https://realpython.com/python-logging/
-     https://docs.python.org/3/howto/logging-cookbook.html
-     https://stackoverflow.com/questions/44522676/including-the-current-method-name-when-printing-in-python
- 
-     Example:
-     ---------
-     from jumeg.jumeg_base import JuMEG_Logger
-     myLog=JuMEG_Logger(app_name="MYLOG",level=logging.DEBUG)
-     myLog.info( "test logging info instead of using <print> ")
- 
-     from jumeg.jumeg_base import JuMEG_Base_Basic as JB
-     jb=JB()
-     jb.Log.info("test logging info instead of using <print>")
- 
-     https://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
-     import logging
-     logger = logging.getLogger('root')
-     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
-     logging.basicConfig(format=FORMAT)
-     logger.setLevel(logging.DEBUG)
- 
-    """
-    
-    def __init__(self,app_name=None,level=10,**kwargs):
-        super(JuMEG_Logger,self).__init__(**kwargs)
-        import logging
-        self.verbose = False
-        self.logger = logging.getLogger(app_name or __name__)
-        self.logger.setLevel(logging.DEBUG)
-        self.fmt_info = 'JuMEG LOG %(asctime)s %(message)s'
-        logging.basicConfig(format=self.fmt_info,datefmt='%Y/%m/%d %I:%M:%S')
-        
-        #self.fmt_debug   = '%(asctime)-15s] %(levelname) %(funcName)s %(message)s'
-        #self.fmt_error   = '[%(asctime)-15s] [%(levelname)08s] (%(funcName)s %(message)s'
-        #formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
-    
-    def list2str(self,msg):
-        if isinstance(msg,(list)):
-            return "\n" + "\n".join(msg)
-        return msg
-    
-    def info(self,msg):
-        #self.logger.setFormatter()
-        self.logger.info(self.list2str(msg))
-    
-    def warning(self,msg):
-        self.logger.warning(self.list2str(msg))
-    
-    def error(self,msg):
-        if isinstance(msg,(list)):
-            self.logger.error("\nERROR:\n" + self.list2str(msg) + "\n",exc_info=True)
-        else:
-            self.logger.error("\nERROR: " + msg + "\n",exc_info=True,)
-    
-    # if self.verbose:
-    #    traceback.print_exc()
-    
-    def debug(self,msg):
-        self.logger.debug(self.list2str(msg),exc_info=True)
-    
-    def exception(self,msg,*args,**kwargs):
-        self.logger.exception(msg,*args,**kwargs)
-
-
-'''
-class bcolors():
-  """
-  cls for printing in colors
-  https://stackoverflow.com/questions/287871/print-in-terminal-with-colors
-  """
-  def __init__ (self):
-      super(bcolors, self).__init__()
-      HEADER = '\033[95m'
-      OKBLUE = '\033[94m'
-      OKGREEN = '\033[92m'
-      WARNING = '\033[93m'
-      ERROR = '\033[91m'
-      ENDC = '\033[0m'
-      BOLD = '\033[1m'
-      UNDERLINE = '\033[4m'
-'''
-
 class JuMEGLogFormatter(logging.Formatter):
     """
     Logging Formatter to add colors and count warning / errors
@@ -497,3 +401,99 @@ def getLogger(name="root",captureWarnings=True,level="INFO"):
 
 #if __name__ == "__main__":
    #init_logger()
+
+
+class _oldJuMEG_Logger(object):
+    """
+     logger cls
+     :param: app_name => logger name <None>
+     :param: level    => logging level  <10>
+        level values:
+         CRITICAL 50
+         ERROR 	 40
+         WARNING  30
+         INFO 	 20
+         DEBUG 	 10
+         NOTSET 	 0
+
+     https://realpython.com/python-logging/
+     https://docs.python.org/3/howto/logging-cookbook.html
+     https://stackoverflow.com/questions/44522676/including-the-current-method-name-when-printing-in-python
+
+     Example:
+     ---------
+     from jumeg.jumeg_base import JuMEG_Logger
+     myLog=JuMEG_Logger(app_name="MYLOG",level=logging.DEBUG)
+     myLog.info( "test logging info instead of using <print> ")
+
+     from jumeg.jumeg_base import JuMEG_Base_Basic as JB
+     jb=JB()
+     jb.Log.info("test logging info instead of using <print>")
+
+     https://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
+     import logging
+     logger = logging.getLogger('root')
+     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+     logging.basicConfig(format=FORMAT)
+     logger.setLevel(logging.DEBUG)
+
+    """
+    
+    def __init__(self,app_name=None,level=10,**kwargs):
+        super(JuMEG_Logger,self).__init__(**kwargs)
+        import logging
+        self.verbose = False
+        self.logger = logging.getLogger(app_name or __name__)
+        self.logger.setLevel(logging.DEBUG)
+        self.fmt_info = 'JuMEG LOG %(asctime)s %(message)s'
+        logging.basicConfig(format=self.fmt_info,datefmt='%Y/%m/%d %I:%M:%S')
+        
+        #self.fmt_debug   = '%(asctime)-15s] %(levelname) %(funcName)s %(message)s'
+        #self.fmt_error   = '[%(asctime)-15s] [%(levelname)08s] (%(funcName)s %(message)s'
+        #formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
+    
+    def list2str(self,msg):
+        if isinstance(msg,(list)):
+            return "\n" + "\n".join(msg)
+        return msg
+    
+    def info(self,msg):
+        #self.logger.setFormatter()
+        self.logger.info(self.list2str(msg))
+    
+    def warning(self,msg):
+        self.logger.warning(self.list2str(msg))
+    
+    def error(self,msg):
+        if isinstance(msg,(list)):
+            self.logger.error("\nERROR:\n" + self.list2str(msg) + "\n",exc_info=True)
+        else:
+            self.logger.error("\nERROR: " + msg + "\n",exc_info=True,)
+    
+    # if self.verbose:
+    #    traceback.print_exc()
+    
+    def debug(self,msg):
+        self.logger.debug(self.list2str(msg),exc_info=True)
+    
+    def exception(self,msg,*args,**kwargs):
+        self.logger.exception(msg,*args,**kwargs)
+
+
+'''
+class bcolors():
+  """
+  cls for printing in colors
+  https://stackoverflow.com/questions/287871/print-in-terminal-with-colors
+  """
+  def __init__ (self):
+      super(bcolors, self).__init__()
+      HEADER = '\033[95m'
+      OKBLUE = '\033[94m'
+      OKGREEN = '\033[92m'
+      WARNING = '\033[93m'
+      ERROR = '\033[91m'
+      ENDC = '\033[0m'
+      BOLD = '\033[1m'
+      UNDERLINE = '\033[4m'
+'''
