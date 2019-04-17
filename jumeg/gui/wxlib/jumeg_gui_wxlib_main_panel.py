@@ -215,7 +215,7 @@ class JuMEG_wxMainPanelBase(wx.Panel):
         pub.subscribe(self.ShowHelp, self.GetName()+".SHOW_HELP")
         
 #--- overwrite methods
-    def update_from_kwargs(self,**kwargs):
+    def _update_from_kwargs(self,**kwargs):
         """ pass """
         pass
 
@@ -243,7 +243,7 @@ class JuMEG_wxMainPanelBase(wx.Panel):
            self.clear()
       #---
         self._update_from_kwargs_default(**kwargs)
-        self.update_from_kwargs(**kwargs)
+        self._update_from_kwargs(**kwargs)
       #---
         self._wx_init_default()
         self.wx_init(**kwargs)
@@ -330,7 +330,7 @@ class JuMEG_wxMainPanel(JuMEG_wxMainPanelBase):
 
     def wx_init(self, **kwargs):
         """ init WX controls """
-        self.update_from_kwargs(**kwargs)
+        self._update_from_kwargs(**kwargs)
        #---
         if self.ShowTopPanel:
            self._pnl_top = wx.Panel(self.MainPanel)
