@@ -32,12 +32,3 @@ fig, ax = plot_lines_and_blobs(con, degrees, yaml_fname,
 ax.set_title('Eigen vector centrality: Coh,alpha')
 fig.tight_layout()
 
-# test connections
-# con = np.zeros((68, 68))
-# con[55, 47] = 0.9  # rostralmiddlefrontal-rh - posteriorcingulate-rh
-# con[46, 22] = 0.6  # lateraloccipital-lh - posteriorcingulate-lh
-# con = con + con.T
-# degrees = mne.connectivity.degree(con, threshold=0.2)
-# fig, ax = plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
-#                                figsize=(8, 8), node_labels=True,
-#                                out_fname=None)
