@@ -1106,15 +1106,15 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         fif_out = self.get_fif_name(raw=raw,postfix=postfix)
 
         if self.verbose:
-           logger.info(self.pp_list2str([
-                       " --> FIF in  :" + self.get_raw_filename(raw),
-                       " --> FIF out :" + fif_out,
-                       raw.info['bads'],"\n"],head=" --> Update bad-channels"))
+           logger.info(" --> Update bad-channels\n"+
+                       " --> FIF in  : {}\n".format(self.get_raw_filename(raw))+
+                       " --> FIF out : {}\n".format(fif_out)+
+                       " --> bads    : {}\n".format(raw.info['bads']))
               
         if ( interpolate and raw.info['bads'] ) :
            logger.info( self.pp_list2str(
-              [" --> Update BAD channels => interpolating: " + raw.info['filename'],
-               " --> BADs : ",raw.info['bads'],"\n"]))
+              [" --> Update BAD channels => interpolating: {}".format(raw.info['filename']),
+               " --> BADs : {}".format(raw.info['bads'])]))
            raw.interpolate_bads()
      
       #--- save raw as bads-raw.fif
@@ -1152,7 +1152,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
    
         return ica_raw,self.get_raw_filename(ica_raw)
             
-    def get_raw_obj(self,fname,raw=None,path=None,preload=True):
+    def get_raw_obj(self,fname,raw=None,path=None,preload=True,reload_raw=False):
         """
         load file in fif format <*.raw> or brainvision eeg data
         check for filename or raw obj
@@ -1161,25 +1161,41 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
         Parameters
         ----------
-         fname: name of raw-file
-         raw  : raw obj <None>
-        
+         fname     : name of raw-file
+         raw       : raw obj <None>
+         preload   : True
+         reload_raw:  reload raw-object via raw.filename <False>
+
         Results
         ----------
          raw obj
          
          fname from raw obj 
         """
+        
+        if raw:
+           if reload_raw:
+              raw= mne.io.Raw( self.get_raw_filename(raw),preload=preload )
+           return raw,self.get_raw_filename(raw)
+        
         if self.verbose:
            logger.info("<<<< Reading raw data ...")
         if self.debug:
            logger.debug(" --> reading raw data:\n"+
+                        "  -> raw : {}\n".format(raw)+
                         "  -> file: {}\n".format(fname)+
                         "  -> path: {}\n".format(path))
+        if fname:
+           fn = self.expandvars( fname )
+           if path:
+              path = self.expandvars(path)
+              fn   = os.path.join(path,fn)
+        else:
+           fn = self.get_raw_filename(raw)
         
-        fn = fname
-        if path:
-           fn = os.path.join(path,fname)
+        if not fn:
+           logger.error("ERROR no such file or raw-object:\n  -> raw obj: {}\n  -> fname: {}\n  -> path : {}".format(raw,fname,path))
+           return
         try:
             if not os.path.isfile(fn):
                raise FileNotFoundError("ERROR no file found:{}".format(fn))
