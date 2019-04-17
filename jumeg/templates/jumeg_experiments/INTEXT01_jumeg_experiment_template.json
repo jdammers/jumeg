@@ -1,13 +1,13 @@
 {
     "info": {
-        "time": "2019-04-17 09:32:17",
+        "time": "2019-04-17 09:31:40",
         "user": "fboers",
         "version": "2019-04-17-0.001",
         "jumeg_template_version": "2019-04-02.001",
         "jumeg_gui_version": "2019-02-07.001"
     },
     "experiment": {
-        "name": "INTEXT",
+        "name": "INTEXT01",
         "stages": [
             "${JUMEG_PATH_MNE_IMPORT}",
             "${JUMEG_PATH_LOCAL_DATA}/exp"
