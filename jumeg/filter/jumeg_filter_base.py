@@ -27,13 +27,12 @@
 '''
 
 import numpy as np
-import time
-from jumeg.jumeg_base import JuMEG_Base_Basic
+import time,logging
 
-import logging
+from jumeg.base.jumeg_base import JuMEG_Base_Basic
+
 logger = logging.getLogger('root')
-
-__version__= '2019.04.03.001'
+__version__= '2019.04.18.001'
 
 class JuMEG_Filter_Base(JuMEG_Base_Basic):
     """

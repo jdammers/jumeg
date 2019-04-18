@@ -59,15 +59,10 @@ with warnings.catch_warnings():
 
 from pprint import PrettyPrinter #,pprint,pformat
 
-
-#from jumeg import jumeg_logger
-#logger = logging.getLogger(__name__)
-#logger = jumeg_logger.getLogger(name="jumeg_base",level="DEBUG")
-
 import logging
 logger = logging.getLogger("root")
 
-__version__="2019.04.17.001"
+__version__="2019.04.18.001"
 
 '''
 class AccessorType(type):

@@ -58,11 +58,7 @@ jumeg_merge_meeg(meg_fname= my_meg_fname.fif, eeg_fname = my_eeg_fname.vhdr)
      add flag to check equal meg, eeg ids
 
 '''
-
-
 import numpy as np
-
-# import warnings
 import os,sys,argparse
 
 #--- https://stackoverflow.com/questions/40993553/unable-to-suppress-deprecation-warnings
@@ -72,15 +68,14 @@ with warnings.catch_warnings():
      import mne
 
 import logging
-from jumeg import jumeg_logger
 logger = logging.getLogger('root')
 
-from jumeg.jumeg_base                   import JuMEG_Base_IO
-from jumeg.jumeg_base                   import jumeg_base as jb
-from jumeg.filter.jumeg_filter          import jumeg_filter
+from jumeg.base.jumeg_base     import JuMEG_Base_IO
+from jumeg.base.jumeg_base     import jumeg_base as jb
+from jumeg.base                import jumeg_logger
+from jumeg.filter.jumeg_filter import jumeg_filter
 
-
-__version__= '2019.04.11.001'
+__version__= '2019.04.18.001'
 
 class JuMEG_MergeMEEG_HiLoRate(object):
     """

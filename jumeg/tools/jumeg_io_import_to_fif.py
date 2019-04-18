@@ -23,12 +23,11 @@ import numpy as np
 import logging
 import mne
 
-from jumeg.jumeg_base  import jumeg_base as jb
-
-from jumeg import jumeg_logger
+from jumeg.base.jumeg_base  import jumeg_base as jb
+from jumeg.base import jumeg_logger
 logger = logging.getLogger('root') # init a logger
 
-__version__= "2019.04.17.001"
+__version__= "2019.04.18.001"
 
 #=========================================================================================
 #==== script part
@@ -56,7 +55,6 @@ def apply_import_to_fif(opt):
     return mne.io.Raw instance
     """
    # --- ck file fullpath
-   # opt.pdf_fname+="LAAL"
     fpdf = jb.isFile(opt.pdf_fname,path=opt.pdf_stage,head="apply_import_to_fif => file check: 4D/BTI <raw>",exit_on_error=True)
     if not fpdf: return
     fcfg = jb.isFile(opt.config_fname,path=opt.pdf_stage,head="apply_import_to_fif:=> file check: 4D/BTI <config>",exit_on_error=True)

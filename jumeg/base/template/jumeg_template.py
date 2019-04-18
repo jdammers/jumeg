@@ -39,9 +39,9 @@ import json,time
 import logging
 logger = logging.getLogger('root')
 
-from jumeg.jumeg_base import JuMEG_Base_Basic
+from jumeg.base.jumeg_base import JuMEG_Base_Basic
 
-__version__='2019-04-02.001'
+__version__='2019-04-18.001'
 logger = logging.getLogger(__name__)
 
 class dict2obj(dict):
@@ -114,7 +114,7 @@ class JuMEG_Template(JuMEG_Base_Basic):
     def __init__ (self,template_name='DEFAULT'):
         super(JuMEG_Template,self).__init__()
 
-        self._template_path     = "123"#None  # os.getenv('JUMEG_PATH_TEMPLATE',self.__JUMEG_PATH_TEMPLATE)
+        self._template_path     = "." #None  # os.getenv('JUMEG_PATH_TEMPLATE',self.__JUMEG_PATH_TEMPLATE)
         self._template_name     = template_name
         self._template_list     = []
         self._template_name_list= []
@@ -135,7 +135,9 @@ class JuMEG_Template(JuMEG_Base_Basic):
     def template_path(self,v): self._template_path = v
    #--- tmp path default
     @property
-    def template_path_default(self): return os.path.abspath( os.path.dirname(__file__) ) + '/../examples/templates'
+    def template_path_default(self):
+        return os.getenv("JUMEG_PATH_TEMPLATE",os.path.join( os.getenv("JUMEG_PATH"),'data/templates' ))
+        
    #--- tmp name
     @property
     def template_name(self):   return self._template_name
@@ -169,7 +171,7 @@ class JuMEG_Template(JuMEG_Base_Basic):
     def template_filename(self): return self.template_name + "_" + self.template_postfix + self.template_suffix
    #--- template_full_filename
     @property
-    def template_full_filename(self): return self.template_path + '/' + self.template_filename
+    def template_full_filename(self): return os.path.join( self.template_path,self.template_filename )
    #---
     @property
     def template_extention(self): return self.template_postfix + self.template_suffix

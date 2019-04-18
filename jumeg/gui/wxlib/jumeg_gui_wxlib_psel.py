@@ -15,7 +15,7 @@ from pubsub  import pub
 
 from jumeg.gui.utils.jumeg_gui_utils_pdfs  import JuMEG_Utils_PDFsMEEG,JuMEG_Utils_PDFsBTi,JuMEG_Utils_PDFsMNE
 
-__version__="2019-02-11-001"
+__version__="2019-04-18-001"
 
 
 class JuMEG_wxPDFMEEGTextEditor(JuMEG_wxRichTextFrame):

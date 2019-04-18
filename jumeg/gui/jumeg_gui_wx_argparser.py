@@ -19,13 +19,13 @@ start them with chosen parameters
 #--------------------------------------------
 
 import os,sys,argparse
-import warnings
+import logging
 import wx
 
 from pubsub import pub
 from wx.lib.scrolledpanel import ScrolledPanel
 
-from jumeg.jumeg_base                                     import jumeg_base as jb
+from jumeg.base.jumeg_base                                import jumeg_base as jb
 from jumeg.gui.wxlib.jumeg_gui_wxlib_main_frame           import JuMEG_wxMainFrame
 from jumeg.gui.wxlib.jumeg_gui_wxlib_main_panel           import JuMEG_wxMainPanel
 
@@ -33,17 +33,11 @@ from jumeg.gui.wxlib.jumeg_gui_wxlib_pbshost              import JuMEG_wxPBSHost
 from jumeg.gui.wxlib.jumeg_gui_wxlib_logger               import JuMEG_wxLogger
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxControlButtonPanel,JuMEG_wxControls,JuMEG_wxControlIoDLGButtons,JuMEG_wxControlGrid,JuMEG_wxSplitterWindow
 
-from jumeg.ioutils.jumeg_ioutils_function_parser          import JuMEG_IoUtils_FunctionParser,JuMEG_IoUtils_FunctionParserBase,JuMEG_IoUtils_JuMEGModule
-from jumeg.ioutils.jumeg_ioutils_subprocess               import JuMEG_IoUtils_SubProcess
+from jumeg.base.ioutils.jumeg_ioutils_function_parser     import JuMEG_IoUtils_FunctionParser,JuMEG_IoUtils_FunctionParserBase,JuMEG_IoUtils_JuMEGModule
+from jumeg.base.ioutils.jumeg_ioutils_subprocess          import JuMEG_IoUtils_SubProcess
 
-#from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_property_grid import JuMEG_wxPropertyGridPageBase,JuMEG_wxPropertyGridPageNotebookBase,JuMEG_wxPropertyGridSubProperty
-
-import logging
 logger = logging.getLogger("root")
-
-__version__='2019-04-03.001'
-
-
+__version__='2019-04-18-001'
 
 class JuMEG_ArgParserBase(JuMEG_IoUtils_FunctionParserBase):
     """

@@ -16,7 +16,7 @@ import numpy as np
 import logging
 logger = logging.getLogger('root')
 
-from jumeg.jumeg_base import JuMEG_Base_Basic
+from jumeg.base.jumeg_base import JuMEG_Base_Basic
 jb = JuMEG_Base_Basic()
 
 __version__="2019-04-03-001"

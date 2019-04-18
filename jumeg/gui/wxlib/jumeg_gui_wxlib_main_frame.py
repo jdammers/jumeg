@@ -27,7 +27,7 @@ try:
 except:
    from wx import AboutBox,AboutDialogInfo
    
-__version__= '2019.04.02.001'
+__version__= '2019-04-18-001'
 
 class JuMEG_wxAboutBox(object):
     def __init__(self):

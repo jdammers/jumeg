@@ -21,12 +21,11 @@ import mne
 
 
 '''
+import logging
 from jumeg.filter.jumeg_filter_base import JuMEG_Filter_Base
 
-import logging
 logger = logging.getLogger('root')
-
-__version__= '2019.04.03.001'
+__version__= '2019.04.18.001'
 
 class JuMEG_Filter_MNE(JuMEG_Filter_Base):
     """" wrapper for MNE filter function"""

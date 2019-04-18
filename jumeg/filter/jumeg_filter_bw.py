@@ -18,16 +18,16 @@
 2019.04.03 update logger
 ----------------------------------------------------------------------
 '''
+import logging
 import numpy as np
 import scipy.fftpack as scipack # import fft,ifft
 
+from jumeg.base.jumeg_base          import jumeg_base_basic as jb
 from jumeg.filter.jumeg_filter_base import JuMEG_Filter_Base
-from jumeg.jumeg_base import jumeg_base_basic as jb
 
-import logging
+
 logger = logging.getLogger('root')
-
-__version__= '2019.04.03.001'
+__version__= '2019.04.18.001'
 
 class JuMEG_Filter_Bw(JuMEG_Filter_Base):
     """  Filter FIR FFT butterworth implementation""" 

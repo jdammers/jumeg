@@ -16,15 +16,10 @@ call <jumeg_merge_meeeg> with meg and eeg file and parameters
 #--------------------------------------------
 # Updates
 #--------------------------------------------
-import os,sys
-import numpy as np
-
+import os
 import wx
-from   pubsub import pub
-# import wx.lib.scrolledpanel as scrolled
+from pubsub import pub
 
-#--- jumeg cls
-from jumeg.jumeg_base                                     import jumeg_base as jb
 #--- jumeg wx stuff
 from jumeg.gui.wxlib.jumeg_gui_wxlib_main_frame           import JuMEG_wxMainFrame
 from jumeg.gui.wxlib.jumeg_gui_wxlib_main_panel           import JuMEG_wxMainPanel
@@ -38,9 +33,10 @@ from jumeg.gui.wxlib.jumeg_gui_wxlib_psel                 import JuMEG_wxPselMEE
 from jumeg.gui.wxlib.jumeg_gui_wxlib_pbshost              import JuMEG_wxPBSHosts
 from jumeg.gui.jumeg_gui_wx_argparser                     import JuMEG_GUI_wxArgvParser
 #---
-from jumeg.ioutils.jumeg_ioutils_subprocess               import JuMEG_IoUtils_SubProcess
+from jumeg.base.jumeg_base                                import jumeg_base as jb
+from jumeg.base.ioutils.jumeg_ioutils_subprocess          import JuMEG_IoUtils_SubProcess
 
-__version__="2019-02-06-001"
+__version__="2019-04-18-001"
 
 class JuMEG_wxMEEGMergerPanel(JuMEG_wxMainPanel):
       """

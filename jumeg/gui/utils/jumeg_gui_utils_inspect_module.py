@@ -11,19 +11,18 @@ Created on Tue Mar 27 10:08:17 2018
 
 import os,sys,glob,re,textwrap
 import ast
+import logging
 from types import ModuleType
 
 from pathlib import Path
 
 import numpy as np
 
-from jumeg.jumeg_base import JuMEG_Base_Basic
+from jumeg.base.jumeg_base import JuMEG_Base_Basic
 jb = JuMEG_Base_Basic()
 
-import logging
 logger = logging.getLogger('root')
-
-__version__="2019-04-03-001"
+__version__="2019-04-18-001"
 
 class JuMEG_Utils_Inspect_ModuleBase(object):
     """

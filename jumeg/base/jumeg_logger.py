@@ -18,7 +18,37 @@ import sys,os,time
 import logging
 
 '''
-Example:
+Example A:
+--------
+
+#--- in your main-script
+#--- first import and setup a logger at the top
+import logging
+logger = logging.getLogger('root')
+
+#---
+from jumeg.base import jumeg_logger
+
+# ...
+# put your code e.g.: class XYZ() def XYZ()
+# use logger e.g: logger.info() logger.debug() ...
+# ...
+
+__main__
+
+opt = None
+
+#--- or using argparser
+#--- examples in jumeg.tools
+# opt, parser = get_args(argv)
+
+
+#--- set <logger> to the logger-obj generated in script
+jumeg_logger.setup_script_logging(name=argv[0],opt=opt,logger=logger)
+#  do your stuff
+
+
+Example B classic from logging:
 --------
 import logging
 logger = logging.getLogger('root')
@@ -36,7 +66,7 @@ logger.warning("Start LOG")
 logger.error("Start LOG")
 '''
 
-__version__="2019.04.17.001"
+__version__="2019.04.18.001"
 
 class JuMEGLogFormatter(logging.Formatter):
     """
