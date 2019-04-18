@@ -30,7 +30,7 @@ print(len(my_verts))
 
 from surfer import Brain
 brain = Brain('fsaverage', hemi='lh', surf='inflated',
-              subjects_dir='/Users/psripad/sciebo/resting_state_analysis/')
+              subjects_dir=subjects_dir)
 
 for myv in my_verts:
     brain.add_foci(myv, coords_as_verts=True, color='b', scale_factor=0.1)
