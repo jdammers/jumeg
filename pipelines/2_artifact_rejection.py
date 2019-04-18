@@ -1,6 +1,5 @@
 import os
 import os.path as op
-import mne
 import yaml
 
 from chop_and_apply_ica import chop_and_apply_ica
@@ -44,13 +43,11 @@ for subj in subjects:
             if not op.exists(clean_filt_fname) or (unfiltered and not op.exists(clean_unfilt_fname)):
 
                 # creates list of small, cleaned chops
-                clean_filt_list, clean_unfilt_list = chop_and_apply_ica(raw_filt_fname, ica_cfg)
+                clean_filt, clean_unfilt = chop_and_apply_ica(raw_filt_fname, ica_cfg)
 
-                clean_filt_concat = mne.concatenate_raws(clean_filt_list)
-                clean_filt_concat.save(clean_filt_fname)
+                clean_filt.save(clean_filt_fname)
 
                 if unfiltered:
-                    clean_unfilt_concat = mne.concatenate_raws(clean_unfilt_list)
-                    clean_unfilt_concat.save(clean_unfilt_fname)
+                    clean_unfilt.save(clean_unfilt_fname)
 
 
