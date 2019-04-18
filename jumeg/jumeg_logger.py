@@ -36,7 +36,7 @@ logger.warning("Start LOG")
 logger.error("Start LOG")
 '''
 
-__version__="2019.04.04.001"
+__version__="2019.04.17.001"
 
 class JuMEGLogFormatter(logging.Formatter):
     """
@@ -149,9 +149,8 @@ class LogFileHandler(logging.FileHandler):
        """
        :param fname    : name of logfile
                          if fname is defined no <auto generated log filename> will be generated
-       :param name     : name of script as part of <auto generated log filename>
+       :param name     : name of script as part of <auto generated log filename> <logger_info>
        :param prefix   : prefix in log-filename  <None>
-       :param name     : part of log file        <root_logger>
        :param postfix  : postfix in log-filename <001>
        :param extention: logfile extention       <.log>
        :param path     : logfile path            <None>
@@ -251,7 +250,7 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     if not logger:
        logger=logging.getLogger("root")
    #----
-    name = name if name else "jumeg_logger"
+    name = name if name else "jumeg_logfile"
     
     logger.setLevel(level)
     logging.captureWarnings(captureWarnings)
@@ -275,7 +274,6 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
           
     version = version if version else __version__
     
-   #--- ToDo make logfile dir in fileout dir
     msg=[]
     log2file = logfile
     
@@ -316,6 +314,8 @@ def update_filehandler(logger=None,logger_name="root",**kwargs):
     
     :param logger      : the logger obj <None>
     :param logger_name : logger name <root>, used if logger is None
+    
+    parameter for LogFileHandler
     :param fname:
     :param prefix:
     :param name:
@@ -323,6 +323,7 @@ def update_filehandler(logger=None,logger_name="root",**kwargs):
     :param extention:
     :param path:
     :param level:
+    
     :return:
     new filehandler
     

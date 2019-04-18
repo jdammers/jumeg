@@ -67,7 +67,7 @@ from pprint import PrettyPrinter #,pprint,pformat
 import logging
 logger = logging.getLogger("root")
 
-__version__="2019.04.09.001"
+__version__="2019.04.17.001"
 
 '''
 class AccessorType(type):
@@ -1163,8 +1163,9 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         ----------
          fname     : name of raw-file
          raw       : raw obj <None>
+                     if raw: return raw and fullfilename of raw
          preload   : True
-         reload_raw:  reload raw-object via raw.filename <False>
+         reload_raw: reload raw-object via raw.filename <False>
 
         Results
         ----------
@@ -1364,14 +1365,17 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            fname = raw.filenames[0]
         
         fname = os.path.expandvars(fname)  # expand envs
-        if ( os.path.isfile(fname) and ( not overwrite) ) :
-           logger.info(" --> File exist => skip saving data to : " + fname)
-        else:
-           logger.info(">>>> writing filtered data to disk...\n --> saving: "+ fname)
-           mkpath( os.path.dirname(fname) )
-           raw.save(fname,overwrite=True)
-           logger.info(' --> Bads:' + str( raw.info['bads'] ) +"\n --> Done writing data to disk...")
-        
+        try:
+           if ( os.path.isfile(fname) and ( not overwrite) ) :
+              logger.info(" --> File exist => skip saving data to : " + fname)
+           else:
+              logger.info(">>>> writing filtered data to disk...\n --> saving: "+ fname)
+              mkpath( os.path.dirname(fname) )
+              raw.save(fname,overwrite=True)
+              logger.info(' --> Bads:' + str( raw.info['bads'] ) +"\n --> Done writing data to disk...")
+        except:
+           logger.exception("---> error in saving raw object:\n  -> file: {}".format(fname))
+           
         return fname
 
     def get_empty_room_fif(self,fname=None,raw=None, preload=True):
