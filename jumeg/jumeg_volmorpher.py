@@ -1275,7 +1275,8 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
                           display_mode=['x'], cut_coords=6,
                           cmap='nipy_spectral', threshold='min',
                           only_positive_values=False, grid=[4, 6],
-                          res_save=[1920, 1080], fn_image='plot.png'):
+                          res_save=[1920, 1080], fn_image='plot.png',
+                          overwrite=False):
     """
 
     Parameters:
@@ -1319,6 +1320,8 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
         Resolution of the saved image.
     fn_image : str
         File name for the saved image.
+    overwrite : bool
+        Overwrite an existing image.
 
     Returns:
     --------
@@ -1328,7 +1331,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
     if display_mode not in {'x', 'y', 'z'}:
         raise ValueError("display_mode must be one of 'x', 'y', or 'z'.")
 
-    if not op.exists(fn_image):
+    if not op.exists(fn_image) or overwrite:
 
         start_time = time2.time()
 
@@ -1377,6 +1380,8 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
         seconds = (end_time - start_time) % 60
         print("Calculation took %d minutes and %d seconds" % (minutes, seconds))
         print("")
+    else:
+        print("File %s exists." % fn_image)
 
 
 def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, only_positive_values=False, **kwargs):
@@ -1697,7 +1702,8 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
 
 def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=6,
                          display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
-                         symmetric_cbar=False, threshold='min', save=False, fname_save=None):
+                         symmetric_cbar=False, threshold='min', only_positive_values=False,
+                         save=False, fname_save=None):
     """
     Plot a volume source space estimation.
 
@@ -1748,6 +1754,9 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
+    only_positive_values : bool
+        Constrain the plots to only positive values, e.g., if there
+        are no negative values as in the case of MFT inverse solutions.
     save : bool | None
         Default is False. If True the plot is forced to close and written to disk
         at fname_save location
@@ -1793,15 +1802,16 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
     if threshold == 'min':
         threshold = vstcdata.min()
 
-    vstc_plt = plotting.plot_stat_map(stat_map_img=index_img(img, t),
-                                      bg_img=temp_t1_fname,
-                                      figure=figure, axes=axes,
-                                      display_mode=display_mode,
-                                      threshold=threshold,
-                                      annotate=True, title=None,
-                                      cut_coords=cut_coords,
-                                      cmap=cmap, colorbar=colorbar,
-                                      symmetric_cbar=symmetric_cbar)
+    vstc_plt = jumeg_plot_stat_map(stat_map_img=img, t=t,
+                                   bg_img=temp_t1_fname,
+                                   figure=figure, axes=axes,
+                                   display_mode=display_mode,
+                                   threshold=threshold,
+                                   annotate=True, title=None,
+                                   cut_coords=cut_coords,
+                                   cmap=cmap, colorbar=colorbar,
+                                   symmetric_cbar=symmetric_cbar,
+                                   only_positive_values=only_positive_values)
     if save:
         if fname_save is None:
             print('please provide an filepath to save .png')
