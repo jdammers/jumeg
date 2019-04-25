@@ -1271,7 +1271,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     return vstc_plt
 
 
-def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, title, time=None,
+def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
                           display_mode=['x'], cut_coords=6,
                           cmap='nipy_spectral', threshold='min',
                           only_positive_values=False, grid=[4, 6],
@@ -1287,8 +1287,6 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, title, time=None,
     vsrc : instance of SourceSpaces
         The source space of the subject equivalent to the
         subject.
-    tstep : int
-        Time step between successive samples in data.
     title : str
         Title for the plot.
     time : float
@@ -1340,7 +1338,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, tstep, title, time=None,
 
         axes = axes.flatten()
 
-        params_plot_img_with_bg = get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir,
+        params_plot_img_with_bg = get_params_for_grid_slice(vstc, vsrc, vstc.tstep, subjects_dir,
                                                             only_positive_values=only_positive_values)
 
         for i, (ax, z) in enumerate(zip(axes, cut_coords)):
@@ -1408,7 +1406,10 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, only_positive_val
     """
 
     img = vstc.as_volume(vsrc, dest='mri', mri_resolution=False)
+
+    # TODO: why should vstc ever be 0?
     if vstc == 0:
+        # TODO: how would _make_image work if vstc is zero anyways?
         if tstep is not None:
             img = _make_image(vstc, vsrc, tstep, dest='mri', mri_resolution=False)
         else:
@@ -2076,20 +2077,20 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
 
     return display
 
-
-def _make_image(stc_data, vsrc, tstep, label_inds=None, dest='mri',
+# TODO: remove tstep if not necessary (use vstc.tstep)
+def _make_image(vstc, vsrc, tstep, label_inds=None, dest='mri',
                 mri_resolution=False):
-    """Make a volume source estimation in a NIfTI file.
+    """
+     TODO: improve function description
+    Make a volume source estimation in a NIfTI file.
 
     Parameters
     ----------
-    stc_data : VolSourceEstimate
+    vstc : VolSourceEstimate
         The volume source estimate.
     vsrc : instance of VolSourceSpaces
         The source space of the subject equivalent to the 
         subject.
-    tstep : float
-        The tstep value for the recorded data
     dest : 'mri' | 'surf'
         If 'mri' the volume is defined in the coordinate system of
         the original T1 image. If 'surf' the coordinate system
@@ -2104,7 +2105,7 @@ def _make_image(stc_data, vsrc, tstep, label_inds=None, dest='mri',
     img : instance Nifti1Image
         The image object.
     """
-    n_times = stc_data.shape[1]
+    n_times = vstc.shape[1]
     shape = vsrc[0]['shape']
     shape3d = (shape[2], shape[1], shape[0])
     shape = (n_times, shape[2], shape[1], shape[0])
@@ -2127,7 +2128,7 @@ def _make_image(stc_data, vsrc, tstep, label_inds=None, dest='mri',
         interpolator = vsrc[0]['interpolator']
 
     for k, v in enumerate(vol):
-        v[mask3d] = stc_data[:, k]
+        v[mask3d] = vstc[:, k]
         if mri_resolution:
             mri_vol[k] = (interpolator * v.ravel()).reshape(mri_shape3d)
 
