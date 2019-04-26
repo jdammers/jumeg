@@ -1702,7 +1702,7 @@ def jumeg_plot_stat_map_grid(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=
 
 def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=6,
                          display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
-                         symmetric_cbar=False, threshold='min', only_positive_values=False,
+                         symmetric_cbar=False, threshold='min', cbar_range=None,
                          save=False, fname_save=None):
     """
     Plot a volume source space estimation.
@@ -1754,9 +1754,8 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
-    only_positive_values : bool
-        Constrain the plots to only positive values, e.g., if there
-        are no negative values as in the case of MFT inverse solutions.
+    cbar_range : None, 2-tuple
+        Color range of the plot.
     save : bool | None
         Default is False. If True the plot is forced to close and written to disk
         at fname_save location
@@ -1811,7 +1810,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
                                    cut_coords=cut_coords,
                                    cmap=cmap, colorbar=colorbar,
                                    symmetric_cbar=symmetric_cbar,
-                                   only_positive_values=only_positive_values)
+                                   cbar_range=cbar_range)
     if save:
         if fname_save is None:
             print('please provide an filepath to save .png')
@@ -1824,7 +1823,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
 
 def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_coords=6,
                      display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
-                     symmetric_cbar=False, only_positive_values=False, threshold='min', save=False,
+                     symmetric_cbar=False, cbar_range=None, threshold='min', save=False,
                      fname_save=None):
     """ Plot a volume source space estimation.
 
@@ -1877,9 +1876,8 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
-    only_positive_values : bool
-        Constrain the plots to only positive values, e.g., if there
-        are no negative values as in the case of MFT inverse solutions.
+    cbar_range : None, 2-tuple
+        Color range of the plot.
     save : bool | None
         Default is False. If True the plot is forced to close and written to disk
         at fname_save location
@@ -1934,7 +1932,7 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
                                    cut_coords=cut_coords,
                                    cmap=cmap, colorbar=colorbar,
                                    symmetric_cbar=symmetric_cbar,
-                                   only_positive_values=only_positive_values)
+                                   cbar_range=cbar_range)
     if save:
         if fname_save is None:
             print('please provide an filepath to save .png')
@@ -1949,7 +1947,7 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
                         output_file=None, display_mode='ortho', colorbar=True,
                         figure=None, axes=None, title=None, threshold=1e-6,
                         annotate=True, draw_cross=True, black_bg='auto',
-                        cmap='gist_ncar', symmetric_cbar="auto", only_positive_values=False,
+                        cmap='gist_ncar', symmetric_cbar="auto", cbar_range=None,
                         dim='auto', vmax=None, resampling_interpolation='continuous',
                         **kwargs):
     """
@@ -2021,9 +2019,8 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
         or from vmin to vmax. Setting to 'auto' will select the latter if
         the range of the whole image is either positive or negative.
         Note: The colormap will always be set to range from -vmax to vmax.
-    only_positive_values : bool
-        Constrain the plots to only positive values, e.g., if there
-        are no negative values as in the case of MFT inverse solutions.
+    cbar_range : None, 2-tuple
+        Color range of the plot.
     dim : float, 'auto' (by default), optional
         Dimming factor applied to background image. By default, automatic
         heuristics are applied based upon the background image intensity.
@@ -2068,10 +2065,11 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
     cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(_safe_get_data(stat_map_img, ensure_finite=True),
                                                                      vmax, symmetric_cbar, kwargs)
 
-    if only_positive_values:
-        # there are no negative values
-        cbar_vmin = 0.
-        vmin = 0.
+    if cbar_range is not None:
+        cbar_vmin = cbar_range[0]
+        cbar_vmax = cbar_range[1]
+        vmin = cbar_range[0]
+        vmax = cbar_range[1]
 
     stat_map_img_at_time_t = index_img(stat_map_img, t)
     stat_map_img_at_time_t = check_niimg_3d(stat_map_img_at_time_t, dtype='auto')
