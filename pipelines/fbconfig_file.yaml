@@ -1,0 +1,55 @@
+# test config file for the jumeg sample data analysis.
+
+#--- auto generated or by experts
+info:
+    time: "2019-01-17 08:44:21"
+    user: "test"
+    version: "2019-01-17-0.001"
+
+#--- global settings
+global:
+    subjects: ['211747']
+    stage: None
+    fif_extention: ["meeg-raw.fif","rfDC-empty.fif"]
+
+###############################################################################
+# pre-processing settings
+###############################################################################
+
+#--- noise reducer fb
+noise_reducer:
+    # low pass filter for reference channels, default 5.0 Hz
+    reflp: 5.
+    # high pass filter for reference channels, default 0.1 Hz
+    refhp: 0.1
+    # TODO: check if comment is correct -> Eberhard
+    # Names of the reference channels for high pass filter
+    noiseref_hp: ['RFG ...']
+    # frequencies for notch filter (for power line noise, projector, etc.)
+    refnotch: [50., 100., 150., 200., 250., 300., 350., 400.,
+               60., 120., 180., 240., 360.]
+
+    plot: True
+    plot_dir: 'plots'
+    save: True
+    run:  True
+    overwrite: True
+
+
+#--- filtering
+filtering:
+    l_freq: 1.0
+    h_freq: 45.
+    method: 'fir'
+    fir_design: 'firwin'
+    phase: 'zero'
+    # create files for unfiltered data as well
+    unfiltered: True
+
+
+#--- resampling
+resampling:
+    rsfreq: 250
+    run: True
+    # file name extension with the pre-processing steps
+    pre_proc_ext: ',nr,bcc,fibp,rs'
