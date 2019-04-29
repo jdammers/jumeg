@@ -66,7 +66,7 @@ logger.warning("Start LOG")
 logger.error("Start LOG")
 '''
 
-__version__="2019.04.18.001"
+__version__="2019.04.29.001"
 
 class JuMEGLogFormatter(logging.Formatter):
     """
@@ -266,9 +266,9 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
                     opt, parser = get_args(argv)
     
     :param level  : logging level <DEBUG>
-    :param logger : logger <root>
+    :param logger : logger <root logger obj> if <None> get new logger obj
     :param version: version  e.g.__version__
-    :param logfile: flag log to logfile
+    :param logfile: flag log to logfile, will overwrite opt.logfile
     :param path   : logfile path <None> :
     :param mode   : logfile mode <a>  [a,w]  append or write
     :param captureWarnings: capture Warnings form wranings module <True>
@@ -308,11 +308,12 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     log2file = logfile
     
     if opt:
-       try:
-          log2file = opt.logfile
-       except:
-         # logger.error("logfile option is not defined: no logfile will be generated")
-          pass
+      # use logfile parameter; avoid logfile at start, write logfile for each file to process
+      # try:
+      #    log2file = opt.logfile
+      # except:
+      #   # logger.error("logfile option is not defined: no logfile will be generated")
+      #    pass
        
        try:
           if opt.verbose:
