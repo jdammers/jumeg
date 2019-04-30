@@ -312,10 +312,11 @@ def chop_and_apply_ica(raw_filt_fname, ica_cfg):
 
     Returns:
     --------
-    raw_chop_clean_filtered_list : list of mne.io.Raw instances
-        List of the filtered raw chops after applying ICA cleaning.
-    raw_chop_clean_unfiltered_list : list of mne.io.Raw instances
-        List of the unfiltered raw chops after applying ICA cleaning.
+    clean_filtered : mne.io.Raw instances
+        Cleaned, filtered raw object.
+    clean_unfiltered : mne.io.Raw instances or None
+        Cleaned, unfiltered raw object or None if ica is not to be
+        applied on unfiltered data.
     """
 
     raw_chop_clean_filtered_list = []
@@ -451,4 +452,13 @@ def chop_and_apply_ica(raw_filt_fname, ica_cfg):
         if tmax is None:
             break
 
-    return raw_chop_clean_filtered_list, raw_chop_clean_unfiltered_list
+    clean_filt_concat = mne.concatenate_raws(raw_chop_clean_filtered_list)
+
+    if unfiltered:
+
+        clean_unfilt_concat = mne.concatenate_raws(raw_chop_clean_unfiltered_list)
+
+    else:
+        clean_unfilt_concat = None
+
+    return clean_filt_concat, clean_unfilt_concat
