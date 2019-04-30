@@ -123,8 +123,8 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
 
 def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
                           display_mode=['x'], cut_coords=6,
-                          cmap='nipy_spectral', threshold='min',
-                          only_positive_values=False, grid=[4, 6],
+                          cmap='magma', threshold='min',
+                          cbar_range=None, grid=[4, 6],
                           res_save=[1920, 1080], fn_image='plot.png',
                           overwrite=False):
     """
@@ -161,9 +161,8 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
         values below the threshold (in absolute value) are plotted
         as transparent. If auto is given, the threshold is determined
         magically by analysis of the image.
-    only_positive_values : bool
-        Constrain the plots to only positive values, e.g., if there
-        are no negative values as in the case of MFT inverse solutions.
+    cbar_range : None, 2-tuple
+        Color range of the plot.
     grid : 2-tuple
         Specifies how many images per row and column are to be depicted.
     res_save : 2-tuple
@@ -192,7 +191,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
         axes = axes.flatten()
 
         params_plot_img_with_bg = get_params_for_grid_slice(vstc, vsrc, vstc.tstep, subjects_dir,
-                                                            only_positive_values=only_positive_values)
+                                                            cbar_range=cbar_range)
 
         for i, (ax, z) in enumerate(zip(axes, cut_coords)):
             cut_coords_slice = [z]
@@ -234,7 +233,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
         print("File %s exists." % fn_image)
 
 
-def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, only_positive_values=False, **kwargs):
+def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, cbar_range=None, **kwargs):
     """
     Makes calculations that would be executed repeatedly every time a slice is
     computed and saves the results in a dictionary which is then read by
@@ -250,9 +249,8 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, only_positive_val
         Time step between successive samples in data.
     subjects_dir:
         Path to the subject directory.
-    only_positive_values : bool
-        Constrain the plots to only positive values, e.g., if there
-        are no negative values as in the case of MFT inverse solutions.
+    cbar_range : None, 2-tuple
+        Color range of the plot.
 
     Returns:
     --------
@@ -289,10 +287,11 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, only_positive_val
     cbar_vmin, cbar_vmax, vmin, vmax = _get_colorbar_and_data_ranges(
         _safe_get_data(stat_map_img, ensure_finite=True), vmax, symmetric_cbar, kwargs)
 
-    if only_positive_values:
-        # there are no negative values, e.g., for MFT solutions
-        cbar_vmin = 0.
-        vmin = 0.
+    if cbar_range is not None:
+        cbar_vmin = cbar_range[0]
+        cbar_vmax = cbar_range[1]
+        vmin = cbar_range[0]
+        vmax = cbar_range[1]
 
     params_plot_img_with_bg = dict()
     params_plot_img_with_bg['bg_img'] = bg_img
