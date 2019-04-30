@@ -41,6 +41,7 @@ logger = logging.getLogger("root")
 
 MNI152TEMPLATE = _MNI152Template()
 
+
 # =============================================================================
 #
 # =============================================================================
@@ -93,8 +94,8 @@ def _point_cloud_error_balltree(subj_p, temp_tree):
 def _point_cloud_error(src_pts, tgt_pts):
     """Find the distance from each source point to its closest target point.
     Parameters."""
-    Y = cdist(src_pts, tgt_pts, 'euclidean')
-    dist = Y.min(axis=1)
+    y = cdist(src_pts, tgt_pts, 'euclidean')
+    dist = y.min(axis=1)
     return dist
 
 
@@ -199,7 +200,8 @@ def _get_best_trans_matrix(init_trans, s_pts, t_pts, template_spacing, e_func):
     if e_func == 'balltree':
         errfunc = _point_cloud_error_balltree
         temp_tree = BallTree(t_pts)
-    elif e_func == 'euclidean':
+    else:
+        # e_func == 'euclidean'
         errfunc = _point_cloud_error
         temp_tree = None
 
@@ -216,7 +218,8 @@ def _get_best_trans_matrix(init_trans, s_pts, t_pts, template_spacing, e_func):
 
         if e_func == 'balltree':
             template_pts = temp_tree
-        elif e_func == 'euclidean':
+        else:
+            # e_func == 'euclidean'
             template_pts = t_pts
 
         dist_mean_list.append(np.mean(errfunc(points_to_match[:, :3], template_pts)))
@@ -229,7 +232,8 @@ def _get_best_trans_matrix(init_trans, s_pts, t_pts, template_spacing, e_func):
     dist_mean_arr = np.asarray(dist_mean_list)
 
     # Select the best fitting Transformation-Matrix
-    idx1 = np.argmin(dist_mean_arr)
+    # (casting as int not necessary but avoids warning in pycharm)
+    idx1 = int(np.argmin(dist_mean_arr))
 
     # Collect all values belonging to the optimum solution
     trans = poss_trans[idx1]
@@ -506,23 +510,25 @@ def find_optimum_transformations(init_trans, s_pts, t_pts, template_spacing,
 
         # starting point for finding the transformation matrix trans which
         # minimizes the error between np.dot(s_pts, trans) and t_pts
-        x0 = (tx, ty, tz, rx, ry, rz)
+        x0 = np.array([tx, ty, tz, rx, ry, rz])
 
         def error(x):
-            tx, ty, tz, rx, ry, rz = x
+            tx_, ty_, tz_, rx_, ry_, rz_ = x
             trans0 = np.zeros([4, 4])
-            trans0[:3, :3] = rotation3d(rx, ry, rz) * [sx, sy, sz]
-            trans0[0, 3] = tx
-            trans0[1, 3] = ty
-            trans0[2, 3] = tz
+            trans0[:3, :3] = rotation3d(rx_, ry_, rz_) * [sx, sy, sz]
+            trans0[0, 3] = tx_
+            trans0[1, 3] = ty_
+            trans0[2, 3] = tz_
             # rotate and scale
-            est = np.dot(s_pts, trans0[:3, :3].T)
+            estim = np.dot(s_pts, trans0[:3, :3].T)
             # translate
-            est += trans0[:3, 3]
+            estim += trans0[:3, 3]
             if e_func == 'balltree':
-                err = errfunc(est[:, :3], temp_tree)
-            elif e_func == 'euclidean':
-                err = errfunc(est[:, :3], t_pts)
+                err = errfunc(estim[:, :3], temp_tree)
+            else:
+                # e_func == 'euclidean'
+                err = errfunc(estim[:, :3], t_pts)
+
             return err
 
         est, _, info, msg, _ = leastsq(error, x0, full_output=True)
@@ -595,8 +601,8 @@ def _transform_src_lw(vsrc_subject_from, label_dict_subject_from,
             import sys
             sys.exit(-1)
 
-        label_trans_ID = mat_mak_trans_dict_arr[0]['ID']
-        print('    Reading MatchMaking file %s..' % label_trans_ID)
+        label_trans_id = mat_mak_trans_dict_arr[0]['ID']
+        print('    Reading MatchMaking file %s..' % label_trans_id)
         label_trans_dic = mat_mak_trans_dict_arr[0]['Labeltransformation']
     else:
         label_trans_dic = label_trans_dic
@@ -654,7 +660,7 @@ def set_unwanted_to_zero(vsrc, stc_data, volume_labels, label_dict):
     """
 
     # label of interest
-    LOI_idx = list()
+    loi_idx = list()
 
     for p, labels in enumerate(volume_labels):
 
@@ -662,12 +668,12 @@ def set_unwanted_to_zero(vsrc, stc_data, volume_labels, label_dict):
 
         for i in range(0, label_verts.shape[0]):
 
-            LOI_idx.append(np.where(label_verts[i] == vsrc[0]['vertno']))
+            loi_idx.append(np.where(label_verts[i] == vsrc[0]['vertno']))
 
-    LOI_idx = np.asarray(LOI_idx)
+    loi_idx = np.asarray(loi_idx)
 
     stc_data_mod = np.zeros(stc_data.shape)
-    stc_data_mod[LOI_idx, :] = stc_data[LOI_idx, :]
+    stc_data_mod[loi_idx, :] = stc_data[loi_idx, :]
 
     return stc_data_mod
 
@@ -816,7 +822,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     for i in range(0, ntimes):
 
         loadingBar(i, ntimes, task_part='Time slice: %i' % (i + 1))
-        inter_data[:, i] = griddata((xn, yn, zn), stcdata_ch[:, i], (xt, yt, zt),
+        inter_data[:, i] = griddata(np.array([xn, yn, zn]), stcdata_ch[:, i], (xt, yt, zt),
                                     method=interpolation_method, rescale=True)
 
     if interpolation_method == 'linear':
@@ -945,11 +951,11 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     volume_orig : instance of SourceSpaces
         The original source space that were morphed to the current
         subject.
-    label_dict_from : list
+    label_dict_from : dict
         Equivalent label vertex dict to the original source space
     volume_temp : instance of SourceSpaces
         The template source space that is  morphed on.
-    label_dict_to : list
+    label_dict_to : dict
         Equivalent label vertex dict to the template source space
     volume_labels : list of volume Labels
         List of the volume labels of interest
@@ -1084,11 +1090,11 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     axs = axs.ravel()
     for idx, label in enumerate(volume_labels):
         axs[idx].plot(stc_orig.times, subj_lab_act[label], '#00868B',
-                    linewidth=0.9, label=('%s vol-%.2f'
-                                          % (subject_from, indiv_spacing)))
+                      linewidth=0.9, label=('%s vol-%.2f'
+                                            % (subject_from, indiv_spacing)))
         axs[idx].plot(stc_orig.times, temp_lab_act[label], '#CD7600', ls=':',
-                    linewidth=0.9, label=('%s volume morphed vol-%.2f'
-                                          % (subject_from, temp_spacing)))
+                      linewidth=0.9, label=('%s volume morphed vol-%.2f'
+                                            % (subject_from, temp_spacing)))
         axs[idx].set_title(label, fontsize='medium', loc='right')
         axs[idx].ticklabel_format(style='sci', axis='both')
         axs[idx].set_xlabel('Time [s]')
@@ -1191,8 +1197,6 @@ def make_indiv_spacing(subject, ave_subject, template_spacing, subjects_dir):
     fname_surf_temp = op.join(subjects_dir, ave_subject, 'bem', 'watershed', '%s_inner_skull_surface' % ave_subject)
     surf = mne.read_surface(fname_surf, return_dict=True, verbose='ERROR')[-1]
     surf_temp = mne.read_surface(fname_surf_temp, return_dict=True, verbose='ERROR')[-1]
-    x_sp, y_sp, z_sp = surf['rr'].T / 1e3
-    x_sptemp, y_sptemp, z_sptemp = surf_temp['rr'].T / 1e3
     mins = np.min(surf['rr'], axis=0)
     maxs = np.max(surf['rr'], axis=0)
     mins_temp = np.min(surf_temp['rr'], axis=0)

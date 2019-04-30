@@ -35,9 +35,9 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     coords : arr | None
         None is default for finding the coordinates with the maximal amplitude
         for the given or automatically found time sample
-    figure : matplotlib.figure | None
-        Specify the figure container to plot in. If None, a new
-        matplotlib.figure is created
+    figure : integer | matplotlib.figure | None
+        Specify the figure container to plot in or its number. If None is
+        given, a new figure is created.
     axes : matplotlib.figure.axes | None
         Specify the axes of the given figure to plot in. Only necessary if
         a figure is passed.
