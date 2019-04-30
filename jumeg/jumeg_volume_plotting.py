@@ -58,7 +58,7 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     save : bool | None
         Default is False. If True the plot is forced to close and written to disk
         at fname_save location
-    fname : string
+    fname_save : string
         The path where to save the plot.
 
     Returns
@@ -121,10 +121,9 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
     return vstc_plt
 
 
-def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
-                          display_mode=['x'], cut_coords=6,
-                          cmap='magma', threshold='min',
-                          cbar_range=None, grid=[4, 6],
+def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, cut_coords,
+                          time=None, display_mode='x', cmap='magma',
+                          threshold='min', cbar_range=None, grid=[4, 6],
                           res_save=[1920, 1080], fn_image='plot.png',
                           overwrite=False):
     """
@@ -140,18 +139,15 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
         subject.
     title : str
         Title for the plot.
+    cut_coords : list
+        The MNI coordinates of the points where the cuts are performed
+        For display_mode == 'x', 'y', or 'z', then these are the
+        coordinates of each cut in the corresponding direction.
+        len(cut_coords) has to match grid[0]*grid[1].
     time : float
         Time point for which the image will be created.
     display_mode : 'x', 'y', 'z'
         Direction in which the brain is sliced.
-    cut_coords : None, a tuple of floats, or an integer
-        The MNI coordinates of the point where the cut is performed
-        If display_mode is 'ortho', this should be a 3-tuple: (x, y, z)
-        For display_mode == 'x', 'y', or 'z', then these are the
-        coordinates of each cut in the corresponding direction.
-        If None is given, the cuts is calculated automaticaly.
-        If display_mode is 'x', 'y' or 'z', cut_coords can be an integer,
-        in which case it specifies the number of cuts to perform
     cmap : str
         Name of the matplotlib color map to use.
         See https://matplotlib.org/examples/color/colormaps_reference.html
@@ -180,6 +176,9 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
     if display_mode not in {'x', 'y', 'z'}:
         raise ValueError("display_mode must be one of 'x', 'y', or 'z'.")
 
+    if len(cut_coords) != grid[0]*grid[1]:
+        raise ValueError("len(cut_coords) has to match the size of the grid (length must be grid[0]*grid[1])")
+
     if not op.exists(fn_image) or overwrite:
 
         start_time = time2.time()
@@ -194,6 +193,8 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, time=None,
                                                             cbar_range=cbar_range)
 
         for i, (ax, z) in enumerate(zip(axes, cut_coords)):
+
+            # to get a single slice in plot_vstc_grid_sliced this has to be a list of a single float
             cut_coords_slice = [z]
 
             colorbar = False
@@ -322,14 +323,10 @@ def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6,
         None is default for finding the time sample with the voxel with global
         maximal amplitude. If int, float the given time point is selected and
         plotted.
-    cut_coords : None, a tuple of floats, or an integer
+    cut_coords : list of a single float
         The MNI coordinates of the point where the cut is performed
-        If display_mode is 'ortho', this should be a 3-tuple: (x, y, z)
-        For display_mode == 'x', 'y', or 'z', then these are the
-        coordinates of each cut in the corresponding direction.
-        If None is given, the cuts is calculated automaticaly.
-        If display_mode is 'x', 'y' or 'z', cut_coords can be an integer,
-        in which case it specifies the number of cuts to perform
+        For display_mode == 'x', 'y', or 'z' this is the
+        coordinate of the cut in the corresponding direction.
     display_mode : 'x', 'y', 'z'
         Direction in which the brain is sliced.
     figure : matplotlib.figure | None
@@ -471,7 +468,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
     save : bool | None
         Default is False. If True the plot is forced to close and written to disk
         at fname_save location
-    fname : string
+    fname_save : string
         The path where to save the plot.
 
     Returns
@@ -593,7 +590,7 @@ def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_c
     save : bool | None
         Default is False. If True the plot is forced to close and written to disk
         at fname_save location
-    fname : string
+    fname_save : string
         The path where to save the plot.
 
     Returns
