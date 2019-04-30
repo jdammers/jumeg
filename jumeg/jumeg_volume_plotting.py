@@ -13,7 +13,7 @@ from jumeg_volmorpher import MNI152TEMPLATE
 
 
 def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
-              figure=None, axes=None, cmap='gist_ncar', symmetric_cbar=False,
+              figure=None, axes=None, cmap='magma', symmetric_cbar=False,
               threshold='min', save=False, fname_save=None):
     """ Plot a volume source space estimation.
 
@@ -308,7 +308,7 @@ def get_params_for_grid_slice(vstc, vsrc, tstep, subjects_dir, cbar_range=None, 
 
 
 def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6, display_mode='z',
-                         figure=None, axes=None, colorbar=False, cmap='nipy_spectral', threshold='min',
+                         figure=None, axes=None, colorbar=False, cmap='magma', threshold='min',
                          **kwargs):
     """
     Plot a volume source space estimation for one slice in the grid in
@@ -413,7 +413,7 @@ def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6,
 
 
 def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=6,
-                         display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
+                         display_mode='z', figure=None, axes=None, colorbar=False, cmap='magma',
                          symmetric_cbar=False, threshold='min', cbar_range=None,
                          save=False, fname_save=None):
     """
@@ -534,7 +534,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
 
 
 def plot_vstc_sliced(vstc, vsrc, tstep, subjects_dir, img=None, time=None, cut_coords=6,
-                     display_mode='z', figure=None, axes=None, colorbar=False, cmap='gist_ncar',
+                     display_mode='z', figure=None, axes=None, colorbar=False, cmap='magma',
                      symmetric_cbar=False, cbar_range=None, threshold='min', save=False,
                      fname_save=None):
     """ Plot a volume source space estimation.
@@ -659,7 +659,7 @@ def jumeg_plot_stat_map(stat_map_img, t, bg_img=MNI152TEMPLATE, cut_coords=None,
                         output_file=None, display_mode='ortho', colorbar=True,
                         figure=None, axes=None, title=None, threshold=1e-6,
                         annotate=True, draw_cross=True, black_bg='auto',
-                        cmap='gist_ncar', symmetric_cbar="auto", cbar_range=None,
+                        cmap='magma', symmetric_cbar="auto", cbar_range=None,
                         dim='auto', vmax=None, resampling_interpolation='continuous',
                         **kwargs):
     """
@@ -939,7 +939,7 @@ def plot_VSTCPT(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
                                          annotate=True,
                                          title=title,
                                          cut_coords=None,
-                                         cmap='black_red')
+                                         cmap='magma')
     if save:
         if fname_save is None:
             print('please provide an filepath to save .png')
