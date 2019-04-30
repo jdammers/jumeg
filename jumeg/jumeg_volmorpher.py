@@ -827,13 +827,9 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         inter_data = set_unwanted_to_zero(temp_vol, inter_data, volume_labels, label_dict_subject_to)
 
         # do the same for the original data for normalization purposes (I think)
-        d2 = set_unwanted_to_zero(subj_vol, stc_orig.data, volume_labels, label_dict_subject_from)
+        data_utz = set_unwanted_to_zero(subj_vol, stc_orig.data, volume_labels, label_dict_subject_from)
 
-        if not stc_orig.data.flags["WRITEABLE"]:
-            # stc_orig.data.flags WRITEABLE=False causes crash -> set to True
-            stc_orig.data.setflags(write=1)
-
-        stc_orig.data[:, :] = d2[:, :]
+        stc_orig.data = data_utz
 
     if normalize:
 
@@ -911,15 +907,14 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
                                          volume_labels, subjects_dir=subjects_dir,
                                          cond=cond, run=run, n_iter=n_iter, save=True)
 
-        print('[done]')
-        print('####             Volume Morphing           ####')
-        print('####                  DONE                 ####')
+        print('####            Volume Morphing            ####')
+        print('####                 DONE                  ####')
 
         return stc_morphed
 
-    print('#### Volume morphed stc data NOT saved..\n')
-    print('####             Volume Morphing           ####')
-    print('####                  DONE                 ####')
+    print('####  Volume morphed stc data NOT saved..  ####\n')
+    print('####            Volume Morphing            ####')
+    print('####                 DONE                  ####')
 
     return new_data
 
