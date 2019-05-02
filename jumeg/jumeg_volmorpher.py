@@ -29,7 +29,6 @@ from sklearn.neighbors import BallTree
 from scipy.interpolate import griddata
 
 import nibabel as nib
-from nilearn.plotting.img_plotting import _MNI152Template
 from functools import reduce
 
 
@@ -39,7 +38,6 @@ from jumeg.jumeg_volume_plotting import plot_vstc
 import logging
 logger = logging.getLogger("root")
 
-MNI152TEMPLATE = _MNI152Template()
 
 
 # =============================================================================
@@ -822,7 +820,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
     for i in range(0, ntimes):
 
         loadingBar(i, ntimes, task_part='Time slice: %i' % (i + 1))
-        inter_data[:, i] = griddata(np.array([xn, yn, zn]), stcdata_ch[:, i], (xt, yt, zt),
+        inter_data[:, i] = griddata((xn, yn, zn), stcdata_ch[:, i], (xt, yt, zt),
                                     method=interpolation_method, rescale=True)
 
     if interpolation_method == 'linear':

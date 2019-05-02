@@ -9,7 +9,8 @@ from nibabel.affines import apply_affine
 from nilearn import plotting
 from nilearn.image import index_img
 
-from jumeg_volmorpher import MNI152TEMPLATE
+from nilearn.plotting.img_plotting import _MNI152Template
+MNI152TEMPLATE = _MNI152Template()
 
 
 def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
