@@ -123,8 +123,8 @@ def plot_vstc(vstc, vsrc, tstep, subjects_dir, time_sample=None, coords=None,
 
 def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, cut_coords,
                           time=None, display_mode='x', cmap='magma',
-                          threshold='min', cbar_range=None, grid=[4, 6],
-                          res_save=[1920, 1080], fn_image='plot.png',
+                          threshold='min', cbar_range=None, grid=None,
+                          res_save=None, fn_image='plot.png',
                           overwrite=False):
     """
 
@@ -159,10 +159,12 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, cut_coords,
         magically by analysis of the image.
     cbar_range : None, 2-tuple
         Color range of the plot.
-    grid : 2-tuple
+    grid : None | 2-tuple
         Specifies how many images per row and column are to be depicted.
-    res_save : 2-tuple
-        Resolution of the saved image.
+        If grid is None it defaults to [4, 6]
+    res_save : None | 2-tuple
+        Resolution of the saved image in pixel.
+        If res_save is None it defaults to [1920, 1080]
     fn_image : str
         File name for the saved image.
     overwrite : bool
@@ -172,12 +174,18 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, cut_coords,
     --------
     None
     """
+    if grid is None:
+        grid = [4, 6]
+
+    if res_save is None:
+        res_save = [1920, 1080]
 
     if display_mode not in {'x', 'y', 'z'}:
         raise ValueError("display_mode must be one of 'x', 'y', or 'z'.")
 
     if len(cut_coords) != grid[0]*grid[1]:
-        raise ValueError("len(cut_coords) has to match the size of the grid (length must be grid[0]*grid[1])")
+        raise ValueError("len(cut_coords) has to match the size of the grid (length must be grid[0]*grid[1]=%d)"
+                         % grid[0] * grid[1])
 
     if not op.exists(fn_image) or overwrite:
 
@@ -214,7 +222,7 @@ def plot_vstc_sliced_grid(subjects_dir, vstc, vsrc, title, cut_coords,
 
         DPI = figure.get_dpi()
         figure.set_size_inches(res_save[0] / float(DPI), res_save[1] / float(DPI))
-        # bbox_inches='tight' not usefule for images for videos, see:
+        # bbox_inches='tight' not useful for images for videos, see:
         # https://github.com/matplotlib/matplotlib/issues/8543#issuecomment-400679840
 
         frmt = fn_image.split('.')[-1]
