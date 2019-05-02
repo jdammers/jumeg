@@ -661,19 +661,18 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             print(">>> Number of samples used : %d" % n_samples)
             tc1 = time.clock()
             tw1 = time.time()
-            print((">>> sigrefchn covar-calc took %.1f ms (%.2f s walltime)" %
-                   (1000. * (tc1 - tct), (tw1 - twt))))
+            print(">>> sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
 
         if checkresults:
             if verbose:
                 print("########## Calculated initial signal channel covariance:")
                 # Calculate initial signal channel covariance:
                 # (only used as quality measure)
-                print((">>> initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))))
+                print(">>> initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata)))
                 for i in range(min(5, nsig)):
-                    print((">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
+                    print(">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
                 for i in range(max(0, nsig - 5), nsig):
-                    print((">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
+                    print(">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
                 print(">>>")
 
         U, s, V = np.linalg.svd(rrslope, full_matrices=True)
@@ -743,7 +742,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 raw._data[:, isl] = subrefarr
 
             if (isl % 10000 == 0 or isl + 1 == raw._data.shape[1]) and verbose:
-                print(("\rProcessed slice %6d" % isl), end=" ")
+                print("\rProcessed slice %6d" % isl, end=" ")
                 sys.stdout.flush()
 
         if verbose:
@@ -785,7 +784,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 for i in range(min(5, nsig)):
                     print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
                 # for i in range(min(5,nsig),max(0,nsig-5)):
-                #    print((">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
+                #    print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
                 for i in range(max(0, nsig - 5), nsig):
                     print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
                 tc1 = time.clock()
@@ -805,7 +804,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
         if fnoutloc is not None:
             if verbose:
-                print((">>> Saving '%s'..." % fnoutloc))
+                print(">>> Saving '%s'..." % fnoutloc)
             raw.save(fnoutloc, overwrite=True)
 
         tc1 = time.clock()
@@ -857,8 +856,7 @@ def test_noise_reducer():
     raw = mne.io.Raw(dname, preload=True)
     tc1 = time.clock()
     tw1 = time.time()
-    print(("loading raw data  took %.1f ms (%.2f s walltime)" %
-           (1000. * (tc1 - tc0), (tw1 - tw0))))
+    print("loading raw data  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0)))
 
     # Time window selection
     # weights are calc'd based on [tmin,tmax], but applied to the entire data set.
@@ -1125,7 +1123,7 @@ def test_noise_reducer():
     if nref < 6:
         print("rrslope-entries:")
         for i in range(nref):
-            print((rrslope[i][:]))
+            print(rrslope[i][:])
 
     U, s, V = np.linalg.svd(rrslope, full_matrices=True)
     print(s)
