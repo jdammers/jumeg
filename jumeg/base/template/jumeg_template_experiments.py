@@ -35,7 +35,7 @@ __DEFAULT_EXPERIMENT_TEMPLATE__={
               #"ids"  : [], not used jet
               "scans": [],
               "stages":["${JUMEG_PATH_MNE_IMPORT}/exp","${JUMEG_PATH_MNE_IMPORT2}/exp","${JUMEG_PATH_LOCAL_DATA}/exp"],
-              "bads_list":["MEG 007","MEG 010","MEG 142","MEG 156","RFM 011"],
+              "bads_list":["MEG 010","MEG 142","MEG 156","RFM 011"], # MEG 007,MEG 042
               "segmentation":{
                               "path":{
                                       "mrdata"     : "mrdata",

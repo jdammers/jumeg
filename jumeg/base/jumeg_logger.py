@@ -15,6 +15,7 @@
 # Updates
 #--------------------------------------------
 import sys,os,time
+from distutils.dir_util import mkpath
 import logging
 
 '''
@@ -66,7 +67,136 @@ logger.warning("Start LOG")
 logger.error("Start LOG")
 '''
 
-__version__="2019.04.29.001"
+
+'''
+https://stackoverflow.com/questions/19425736/how-to-redirect-stdout-and-stderr-to-logger-in-python
+
+class LoggerWriter:
+    def __init__(self, level):
+        # self.level is really like using log.debug(message)
+        # at least in my case
+        self.level = level
+
+    def write(self, message):
+        # if statement reduces the amount of newlines that are
+        # printed to the logger
+        if message != '\n':
+            self.level(message)
+
+    def flush(self):
+        # create a flush method so things can be flushed when
+        # the system wants to. Not sure if simply 'printing'
+        # sys.stderr is the correct way to do it, but it seemed
+        # to work properly for me.
+        self.level(sys.stderr)
+
+and this would look something like:
+
+log = logging.getLogger('foobar')
+sys.stdout = LoggerWriter(log.debug)
+sys.stderr = LoggerWriter(log.warning)
+
+
+
+class LoggerWriter:
+    def __init__(self, logger, level):
+        self.logger = logger
+        self.level = level
+
+    def write(self, message):
+        if message != '\n':
+            self.logger.log(self.level, message)
+
+    def flush(self):
+        pass
+        
+class LoggerWriter(object):
+    def __init__(self, writer):
+        self._writer = writer
+        self._msg = ''
+
+    def write(self, message):
+        self._msg = self._msg + message
+        while '\n' in self._msg:
+            pos = self._msg.find('\n')
+            self._writer(self._msg[:pos])
+            self._msg = self._msg[pos+1:]
+
+    def flush(self):
+        if self._msg != '':
+            self._writer(self._msg)
+            self._msg = ''
+            
+            
+import logging
+from contextlib import redirect_stdout
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.write = lambda msg: logging.info(msg) if msg != '\n' else None
+
+with redirect_stdout(logging):
+    print('Test')
+#------
+import logging
+from contextlib import redirect_stdout
+
+
+logger = logging.getLogger('Meow')
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    fmt='[{name}] {asctime} {levelname}: {message}',
+    datefmt='%m/%d/%Y %H:%M:%S',
+    style='{'
+)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
+logger.write = lambda msg: logger.info(msg) if msg != '\n' else None
+
+with redirect_stdout(logger):
+    print('Test')
+'''
+
+__version__="2019.05.02.001"
+
+
+class StreamToLogger(object):
+   """
+   coppy from:
+   https://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
+   Fake file-like stream object that redirects writes to a logger instance.
+   
+   Example
+   -------
+   lgging.basicConfig(
+     level=logging.DEBUG,
+     format='%(asctime)s:%(levelname)s:%(name)s:%(message)s',
+     filename="out.log",
+     filemode='a'
+    )
+   
+   stdout_logger = logging.getLogger('STDOUT')
+   sl = StreamToLogger(stdout_logger, logging.INFO)
+   sys.stdout = sl
+
+   stderr_logger = logging.getLogger('STDERR')
+   sl = StreamToLogger(stderr_logger, logging.ERROR)
+   sys.stderr = sl
+
+   print "Test to standard out"
+   raise Exception('Test to standard error')
+   """
+   def __init__(self, logger, log_level=logging.INFO):
+      self.logger = logger
+      self.log_level = log_level
+      self.linebuf = ''
+
+   def write(self, buf):
+      for line in buf.rstrip().splitlines():
+         self.logger.log(self.log_level, line.rstrip())
+
 
 class JuMEGLogFormatter(logging.Formatter):
     """
@@ -85,7 +215,7 @@ class JuMEGLogFormatter(logging.Formatter):
 
     FORMATS = {
         #logging.info:   "%(levelname)s - (asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n %(message)s",
-        logging.INFO:   "\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
+        logging.INFO:   "\n%(levelname)s - %(asctime)s — %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
         logging.ERROR:  "\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
         logging.WARNING:"\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
         logging.DEBUG:  "\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n"
@@ -156,6 +286,8 @@ class LogFileHandler(logging.FileHandler):
          
         """
         self.filename = self.init_logfile_name(fname=fname,prefix=prefix,name=name,postfix=postfix,extention=extention,path=path)
+       #--- mk log dir if not exists
+        mkpath( os.path.dirname(self.filename) )
         
         super().__init__(self.filename,mode=mode)
         self._level = level if level else logging.NOTSET
@@ -199,7 +331,7 @@ class LogFileHandler(logging.FileHandler):
        """
        if fname:
           if path:
-             return os.path.abspath(path) + "/" + fname
+             return os.path.join( os.path.abspath(path),fname)
           else:
              return fname
        
@@ -286,7 +418,8 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     logging.captureWarnings(captureWarnings)
     
     HStream = LogStreamHandler()
-    HStream.setLevel(logging.INFO)
+    # HStream.setLevel(logging.INFO)
+    HStream.setLevel( logger.getEffectiveLevel() )
     logger.addHandler(HStream)
     
     if fname:
@@ -430,7 +563,7 @@ def getLogger(name="root",captureWarnings=True,level="INFO"):
 
 
 
-
+'''
 #if __name__ == "__main__":
    #init_logger()
 
@@ -512,7 +645,7 @@ class _oldJuMEG_Logger(object):
         self.logger.exception(msg,*args,**kwargs)
 
 
-'''
+
 class bcolors():
   """
   cls for printing in colors

@@ -183,7 +183,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
            fout += self.file_extention              
            pl.savefig(fout, dpi=self.dpi)
            if self.verbose:
-              print("---> done saving plot: " +fout)
+              logger.info("---> done saving plot: " +fout)
         else:
            fout= "no plot saved"
        #---
