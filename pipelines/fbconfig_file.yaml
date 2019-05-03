@@ -9,7 +9,7 @@ info:
 #--- global settings
 global:
     subjects: ['211747']
-    stage: None
+    stage:  "$JUMEG_PATH_LOCAL_DATA/exp/JUMEGTest/FV"
     fif_extention: ["meeg-raw.fif","rfDC-empty.fif"]
 
 ###############################################################################
@@ -28,13 +28,19 @@ noise_reducer:
     # frequencies for notch filter (for power line noise, projector, etc.)
     refnotch: [50., 100., 150., 200., 250., 300., 350., 400.,
                60., 120., 180., 240., 360.]
-
+   #--- file postfix
+    postfix: "nr"
     plot: True
     plot_dir: 'plots'
     save: True
     run:  True
     overwrite: True
+    fif_extention: ["meeg-raw.fif","rfDC-empty.fif"]
 
+#--- interpolate bads
+interpolate_bads:
+    fif_extention: ["meeg,nr-raw.fif","rfDC,nr,-empty.fif"]
+    postfix      : "bbc"
 
 #--- filtering
 filtering:

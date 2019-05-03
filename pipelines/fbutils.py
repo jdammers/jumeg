@@ -1,12 +1,16 @@
 import mne
 import os
-import os.path as op
-import pickle
-import fnmatch
-import errno
+#import os.path as op
+#import pickle
+#import fnmatch
+#import errno
+
 
 from jumeg.jumeg_suggest_bads import suggest_bads
 from jumeg.jumeg_interpolate_bads import interpolate_bads as jumeg_interpolate_bads
+
+
+
 
 
 def reset_directory(path=None):
