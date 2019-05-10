@@ -14,7 +14,8 @@
 #--------------------------------------------
 # Updates
 #--------------------------------------------
-import sys,os,time
+import sys,os,time,re
+import inspect
 from distutils.dir_util import mkpath
 import logging
 
@@ -157,46 +158,175 @@ logger.write = lambda msg: logger.info(msg) if msg != '\n' else None
 
 with redirect_stdout(logger):
     print('Test')
-'''
-
-__version__="2019.05.02.001"
-
+    
+    
+    
+import logging
+import sys
 
 class StreamToLogger(object):
+   """
+   Fake file-like stream object that redirects writes to a logger instance.
+   """
+   def __init__(self, logger, log_level=logging.INFO):
+       self.logger = logger
+       self.log_level = log_level
+       self.linebuf = ''
+
+   def write(self, buf):
+       for line in buf.rstrip().splitlines():
+           self.logger.log(self.log_level, line.rstrip())
+
+logging.basicConfig(
+   level=logging.DEBUG,
+   format='%(asctime)s:%(levelname)s:%(name)s:%(message)s',
+   filename="out.log",
+   filemode='a'
+)
+
+stdout_logger = logging.getLogger('STDOUT')
+sl = StreamToLogger(stdout_logger, logging.INFO)
+sys.stdout = sl
+
+stderr_logger = logging.getLogger('STDERR')
+sl = StreamToLogger(stderr_logger, logging.ERROR)
+sys.stderr = sl
+
+print "Test to standard out"
+raise Exception('Test to standard error')
+'''
+
+__version__="2019.05.10.001"
+
+
+
+#===========================================================
+#=== test logging stdout, stderr
+#===========================================================
+def print_to_logger(raw_fname,raw=None,**cfg):
+  
+   #--- log stdout,stderr
+   jumeg_logger.log_stdout(label=" LOGTEST")
+   jumeg_logger.log_stderr()
+   
+   print("  -> TEST1 print to logger: {}".format(raw_fname) )
+
+  #--- return back stdout/stderr from logger
+   jumeg_logger.log_stdout(reset=True)
+   jumeg_logger.log_stderr(reset=True)
+   
+   return raw_fname,raw
+
+
+class StreamLoggerSTD(object):
    """
    coppy from:
    https://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
    Fake file-like stream object that redirects writes to a logger instance.
    
+   :param logger:  logger obj <None>
+   :param logname:  <"root">
+   :param level:    <logging.info>
+   :param label:    <None>
+   
    Example
    -------
-   lgging.basicConfig(
-     level=logging.DEBUG,
-     format='%(asctime)s:%(levelname)s:%(name)s:%(message)s',
-     filename="out.log",
-     filemode='a'
-    )
+    sys.stdout  = StreamLoggerSTD(logname="root",level=logging.INFO,label="TESTLOG OUT")
+    sys.stderr = StreamLoggerSTD(logname="root",level=logging.INFO,label="TESTLOG ERR")
    
-   stdout_logger = logging.getLogger('STDOUT')
-   sl = StreamToLogger(stdout_logger, logging.INFO)
-   sys.stdout = sl
-
-   stderr_logger = logging.getLogger('STDERR')
-   sl = StreamToLogger(stderr_logger, logging.ERROR)
-   sys.stderr = sl
-
-   print "Test to standard out"
-   raise Exception('Test to standard error')
    """
-   def __init__(self, logger, log_level=logging.INFO):
-      self.logger = logger
-      self.log_level = log_level
-      self.linebuf = ''
+   def __init__(self,logger=None,logname="root",level=logging.INFO,label=None):
+       """
+       
+       :param logger:
+       :param logname:
+       :param level:
+       :param label:
+       """
+   
+       if not logger:
+          self.logger=logging.getLogger(logname)
+       else:
+          self.logger = logger
+       
+       self.loglevel = level
+       self._label   = label
+       
+       #stack = inspect.stack()
+       #self._log_label = stack[0][3]
+       #self.depth = len( stack )+ function_depth
+       #self.loglevel= level
+       #self._save_std = sys.stdout
+       #sys.stdout = self
+   
+   @property
+   def label(self): return self._label
+   @label.setter
+   def label(self,v):
+       self._label=v
+       
+   @staticmethod
+   def __get_call_info():
+       """
+       https://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
+       """
+       stack = inspect.stack()
+    
+       # stack[1] gives previous function ('info' in our case)
+       # stack[2] gives before previous function and so on
+    
+       fn = stack[2][1]
+       ln = stack[2][2]
+       func = stack[2][3]
+    
+       return fn,func,ln
+   
+   def __get_infolevel(self):
+       msg   = []
+       stack = inspect.stack()
+       idx   = len(stack) - 1
+       lnr   = 0
+       while idx > len(stack): # - self.depth:
+           if idx > 0:
+               msg.append(stack[idx][3])
+               lnr = stack[idx][2]
+           idx -= 1
+       msg.append(str(lnr))
+       return( ".".append(msg) )
 
    def write(self, buf):
-      for line in buf.rstrip().splitlines():
-         self.logger.log(self.log_level, line.rstrip())
+       if re.match(r'^\s*$',buf):
+          return
+          
+       if self.label:
+          self.logger.log(self.loglevel,self.label + " : "+ buf.rstrip())
+       else:
+          self.logger.log(self.loglevel, buf.rstrip())
+       
+       #msg="---->>>> " +f
+       #msg += "\n-> " + str(sys._getframe(0)) + "\n"
+       #msg += "-> " + str(sys._getframe(0).f_code.co_filename)
+       #msg += "\n--> " + str(sys._getframe(1)) + "\n"
+       #msg += "--> " + str(sys._getframe(1).f_code.co_filename)
+       #msg += "\n---> " + str(sys._getframe(2)) + "\n"
+       #msg += "---> " + str(sys._getframe(2).f_code.co_filename)
 
+   def flush(self):
+       pass
+
+def log_stdout(reset=False,**kwargs):
+    if reset:
+       sys.stdout = sys.__stdout__
+    else:
+       sys.stdout = StreamLoggerSTD(**kwargs)
+    return sys.stdout
+
+def log_stderr(reset=False,**kwargs):
+    if reset:
+       sys.stderr = sys.__stderr__
+    else:
+       sys.stderr = StreamLoggerSTD(**kwargs)
+    return sys.stderr
 
 class JuMEGLogFormatter(logging.Formatter):
     """
@@ -214,11 +344,12 @@ class JuMEGLogFormatter(logging.Formatter):
     """
 
     FORMATS = {
-        #logging.info:   "%(levelname)s - (asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n %(message)s",
-        logging.INFO:   "\n%(levelname)s - %(asctime)s — %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
+        logging.INFO:   "%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n",
+        #logging.INFO:   "\n%(levelname)s - %(asctime)s — %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
         logging.ERROR:  "\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
         logging.WARNING:"\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
-        logging.DEBUG:  "\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n"
+        logging.DEBUG:  "%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n"
+    
     }
 
     def format(self, record):
@@ -226,7 +357,6 @@ class JuMEGLogFormatter(logging.Formatter):
         fmt_date = "%Y-%m-%d %H:%M:%S"  #'%Y-%m-%dT%T%Z'
         formatter = logging.Formatter(log_fmt,fmt_date)
         return formatter.format(record)
-
 
 class LogStreamHandler(logging.StreamHandler):
     def __init__(self,level=None):
@@ -456,6 +586,7 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
                     "   " + "-" * 40," --> ARGV parameter:"]
              for k,v in sorted(vars(opt).items()):
                  msg.append("  -> {0:<30}: {1}".format(k,v))
+             
        except:
           #logger.error("logfile option <verbose> is not defined: no parameter info")
           pass
@@ -466,7 +597,7 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
        logger.addHandler(HFile)
     
     if msg:
-       logger.info("\n".join(msg))
+       logger.info("\n".join(msg) +"\n")
 
     return logger
 
@@ -496,8 +627,7 @@ def update_filehandler(logger=None,logger_name="root",**kwargs):
     if not logger:
        if logger_name:
            logger=logging.getLogger("root")
-  
-    logger = logging.getLogger()     # root logger - Good to get it only once.
+       logger = logging.getLogger()     # root logger - Good to get it only once.
     
     level=kwargs.get("level")
     

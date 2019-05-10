@@ -27,11 +27,12 @@ from jumeg.base.jumeg_base import jumeg_base as jb
 
 logger = logging.getLogger('root')
 
-__version__="2019.05.02.001"
+__version__="2019.05.10.001"
 
 class JuMEG_PLOT_BASE(object):
     __slots__ = ["picks","fmin","fmax","tmin","tmax","proj","n_fft","color","area_mode","area_alpha","n_jobs","dpi","verbose",
-                 "info","fnout","n_plots","file_extention","name","_fig","_plot_index","_axes","_yoffset","_ylim"]
+                 "check_dead_channels","info","fnout","n_plots","file_extention","name",
+                 "_fig","_plot_index","_axes","_yoffset","_ylim"]
 
     def __init__(self,**kwargs):
         super().__init__()
@@ -64,10 +65,10 @@ class JuMEG_PLOT_BASE(object):
         self.n_plots    = 1
         self.name       = "PLOT"
         self.file_extention = ".pdf"
-       
+        self.check_dead_channels = True
         self._plot_index = 1
         self._axes       = []
-        self._yoffset    = 20
+        self._yoffset    = 10
         
     def get_parameter(self,key=None):
         """
@@ -230,8 +231,12 @@ class JuMEG_PLOT_PSD(JuMEG_PLOT_BASE):
          psd,freq
         """
         self._update_from_kwargs(**kwargs)
-        self.picks = jb.picks.check_dead_channels(raw,picks=self.picks,verbose=self.verbose)
         
+        if self.check_dead_channels:
+           self.picks = jb.picks.check_dead_channels(raw,picks=self.picks,verbose=self.verbose)
+        else:
+           self.picks = jb.picks.meg_and_ref_nobads(raw)
+           
         self.tmax = self.tmax if self.tmax else raw.times[-1]
         self.fmax = self.fmax if self.fmax else raw.info.get("sfreq",1000.0)/2.0
         

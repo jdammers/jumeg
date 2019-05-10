@@ -370,6 +370,27 @@ class JuMEG_Base_Basic(object):
        
         os.chdir(prev_cwd)
 
+
+    def check_file_extention(self,fname=None,file_extention=None):
+        """
+    
+        :param fname         : <None>
+        :param file_extention: string or list <None>
+        :return:
+         True/False
+        """
+        if not fname:
+            return False
+        if file_extention:
+            if not isinstance(file_extention,(list)):
+                file_extention = list(file_extention)
+            for fext in file_extention:
+                if fname.endswith(fext):
+                    return True
+        
+        return False
+
+
 class JuMEG_Base_PickChannels(object):
     """ MNE Wrapper Class for mne.pick_types
     return list of channel index from mne.raw obj e.g. for special groups
@@ -599,7 +620,7 @@ class JuMEG_Base_PickChannels(object):
         '''
         check for dead channels ( min == max )
         e.g.
-            dead channels in Jülich 4D system Magnes3600:
+            dead channels candidates in Jülich 4D system Magnes3600 might be:
             ['MEG 007', 'MEG 010', 'MEG 142', 'MEG 156', 'RFM 011']
         :param raw    : <raw obj>
         :param picks  : channel index list
@@ -618,7 +639,7 @@ class JuMEG_Base_PickChannels(object):
               logger.warning("  -> looking for dead channels -> no picks defined" )
            return picks
        #--- idx array: 0:dead 1:ok
-        idx  = np.where( raw._data[picks,:].min(axis=1) == raw._data[picks,:].max(axis=1),0,1 )
+        idx = np.where( raw._data[picks,:].min(axis=1) == raw._data[picks,:].max(axis=1),0,1 )
        
        #--- update bads in raw, delete doubles, sort
         if update:
@@ -1229,7 +1250,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
    
         return ica_raw,self.get_raw_filename(ica_raw)
             
-    def get_raw_obj(self,fname,raw=None,path=None,preload=True,reload_raw=False):
+    def get_raw_obj(self,fname,raw=None,path=None,preload=True,reload_raw=False,reset_bads=False):
         """
         load file in fif format <*.raw> or brainvision eeg data
         check for filename or raw obj
@@ -1243,7 +1264,8 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                      if raw: return raw and fullfilename of raw
          preload   : True
          reload_raw: reload raw-object via raw.filename <False>
-
+         reset_bads: reset bads <False>
+         
         Results
         ----------
          raw obj
@@ -1253,7 +1275,9 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
         if raw:
            if reload_raw:
-              raw= mne.io.Raw( self.get_raw_filename(raw),preload=preload )
+              raw = mne.io.Raw( self.get_raw_filename(raw),preload=preload )
+           if reset_bads:
+              raw.info["bads"] = []
            return raw,self.get_raw_filename(raw)
         
         if self.verbose:
@@ -1286,7 +1310,10 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                raw = mne.io.Raw(fn,preload=preload)
         except:
             logger.exception("---> could not get raw obj from file:\n ---> FIF name: {}".format(fn))
-   
+        
+        if reset_bads:
+           raw.info["bads"] = []
+           logger.debug("  -> resetting bads in raw")
         return raw,self.get_raw_filename(raw)
 
     def get_files_from_list(self, fin):
@@ -1426,7 +1453,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
 
     def update_and_save_raw(self,raw,fin=None,fout=None,save=False,overwrite=True,postfix=None,separator="-"):
         """
-        renaming filename in raw-obj
+        new filename from fin or fout with postfix
         saving mne raw obj to fif format
 
         Parameters

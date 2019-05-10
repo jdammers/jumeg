@@ -578,12 +578,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                       mag=4e-12,     # T (magnetometers)
                       eeg=40e-6,     # uV (EEG channels)
                       eog=250e-6)    # uV (EOG channels)
-        #--- fb
-        reject = dict(grad=4000e-13, # T / m (gradiometers)
-                      mag=10e-12,     # T (magnetometers)
-                      eeg=40e-6,     # uV (EEG channels)
-                      eog=250e-6)    # uV (EOG channels)
-
+       
         infosig = copy.copy(raw.info)
         infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
         # the below fields are updated automatically when 'chs' is updated
