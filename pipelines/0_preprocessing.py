@@ -90,8 +90,17 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
       
        #--- call noise reduction
         raw_fname,raw = utils.apply_noise_reducer(raw_fname,raw=raw,**jpl.config.get("noise_reducer"))
-    
-       #--- call suggest_bads
+       
+    error filename txt in list pdfs
+
+    INFO - 2019 - 05 - 10
+    15: 31:41 — root - jumeg_pipelines_utils0 - apply_noise_reducer: 194:
+    -> file
+    name: meg94t_meeg.txt
+
+
+
+    #--- call suggest_bads
         raw_fname,raw = utils.apply_suggest_bads(raw_fname,raw=raw,**jpl.config.get("suggest_bads"))
        
        #--- call interploate_bads
