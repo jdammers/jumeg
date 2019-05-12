@@ -187,10 +187,12 @@ def apply_noise_reducer(raw_fname,raw=None,**cfg):
      filename,raw-obj
     '''
     
+    
    #--- init plot
     jplt = None
     logger.debug("  ->noise reducer config parameter:\n{}".format( jb.pp_list2str(cfg) ))
-
+    logger.info("  -> file name: {}".format(raw_fname))
+   
     if not jb.check_file_extention(fname=raw_fname,file_extention=cfg.get("file_extention") ):
        return
 
@@ -274,14 +276,18 @@ def apply_suggest_bads(raw_fname,raw=None,**cfg):
      filename,raw-obj
     """
     logger.info("  ->config parameter:\n{}".format(cfg))
-
+    logger.info("  -> file name: {}".format(raw_fname) )
+  
     if not jb.check_file_extention(fname=raw_fname,file_extention=cfg.get("file_extention")):
-        return
+       return
     
         #--- return raw_fname,raw
     if not cfg.get("run"):
-        return jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=False,
-                                      postfix=cfg.get("postfix","bcc"),overwrite=cfg.get("overwrite",True))
+       return jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=False,
+                                     postfix=cfg.get("postfix","bcc"),overwrite=cfg.get("overwrite",True))
+    
+    logger.info("  -> raw ok : {}".format(raw.info))
+
 
     #--- catch stdout,stderr
     jumeg_logger.log_stdout(label="suggest_bads")
@@ -319,21 +325,25 @@ def apply_interpolate_bads(raw_fname,raw=None,**cfg):
     """
 
     logger.info("  ->config parameter:\n{}".format(cfg))
-
+    logger.info("  -> file name: {}".format(raw_fname) )
+    jb.verbose = cfg.get("verbose")
+    
+    
     if not jb.check_file_extention(fname=raw_fname,file_extention=cfg.get("file_extention")):
-        return
+       return
     #--- return raw_fname,raw
     if not cfg.get("run"):
-        return jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=False,
-                                      postfix=cfg.get("postfix","bcc"),overwrite=cfg.get("overwrite",True))
+       return jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=False,
+                                     postfix=cfg.get("postfix","int"),overwrite=cfg.get("overwrite",True))
 
     #--- catch stdout,stderr
     jumeg_logger.log_stdout(label="suggest_bads")
     jumeg_logger.log_stderr(label="suggest_bads")
 
-    jb.verbose = cfg.get("verbose")
     raw,raw_fname = jb.get_raw_obj(raw_fname,raw=raw)
     
+    logger.info("fname: {}".format(raw_fname) )
+    logger.info( raw.info )
     #--- Interpolate bad channels using jumeg
     raw = jumeg_interpolate_bads(raw) #,**cfg.get("parameter"))  #,origin=cfg.get("origin",None),reset_bads=cfg.get("reset_bads",True) )
     
