@@ -31,6 +31,10 @@ preprocessing function
 0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/JUMEGTest/mne -subj 211747 -c fbconfig_file.yaml -log -v -d -r -rec --logoverwrite
 
 0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -lname=meg94t_meeg.txt -lpath=$JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -c fbconfig_file.yaml -log -v -d -r -rec --logoverwrite
+
+0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -subj 109887 -fpath $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne/101716/MEG94T/121219_1310/1 -fname 101716_MEG94T_test,rfDC-raw.fif -lname meg94t_meeg.txt -lpath $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -c fbconfig_file.yaml -log -v -d -r -rec --logoverwrite
+
+0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -fpath $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne/101716/MEG94T/121219_1310/1 -fname 101716_MEG94T_121219_1310_1_c,rfDC-raw.fif -c fbconfig_file.yaml -log -v -d -r -rec --logoverwrite
 -------------
 
 MAIN
@@ -85,22 +89,14 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
     jumeg_logger.setup_script_logging(name=name,opt=opt,logger=logger)
  
     jpl = JuMEG_PipelineLooper(options=opt,defaults=defaults)
+    jpl.ExitOnError=True
     
     for raw_fname,subject_id,dir in jpl.file_list():
       
        #--- call noise reduction
         raw_fname,raw = utils.apply_noise_reducer(raw_fname,raw=raw,**jpl.config.get("noise_reducer"))
-       
-    error filename txt in list pdfs
 
-    INFO - 2019 - 05 - 10
-    15: 31:41 — root - jumeg_pipelines_utils0 - apply_noise_reducer: 194:
-    -> file
-    name: meg94t_meeg.txt
-
-
-
-    #--- call suggest_bads
+       #--- call suggest_bads
         raw_fname,raw = utils.apply_suggest_bads(raw_fname,raw=raw,**jpl.config.get("suggest_bads"))
        
        #--- call interploate_bads
