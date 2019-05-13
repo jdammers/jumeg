@@ -622,7 +622,7 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         else:
            opt = {}
 
-         #--- set flags
+       #--- set flags
         self.verbose = get_value("verbose",[opt,defaults] )
         self.debug   = get_value("debug",  [opt,defaults] )
     
