@@ -17,53 +17,66 @@
 """
 JuMEG preprcessing script frame work
 
-Head
 - setup defaults
 
+- apply; do your stuff
+
+Main
+  get args, set up parameter, call apply
 -------------
 
-preprocessing function
+Examples:
+----------
+call script with parameter or -h for help
 
-0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/JUMEGTest/FV -subj 211747 -c fbconfig_file.yaml -log -v -d -r
+#--- run for id(s)
+0_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 211747 -c config0.yaml -log -v -d -r
 
-0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/JUMEGTest/mne -subj 211890,211747 -c fbconfig_file.yaml -log -v -d -r -rec
+#--- run for id, recursive looking into subdirs, overwrite logfile
+0_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 211747 -c config0.yaml -log -v -d -r -rec --logoverwrite
 
-0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/JUMEGTest/mne -subj 211747 -c fbconfig_file.yaml -log -v -d -r -rec --logoverwrite
+#--- run for ids, recursive looking into subdirs, overwrite logfile
+0_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 211747,211890 config0.yaml -log -v -d -r -rec --logoverwrite
 
-0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -lname=meg94t_meeg.txt -lpath=$JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -c fbconfig_file.yaml -log -v -d -r -rec --logoverwrite
+#--- run for files in list, overwrite logfile
+0_preprocessing.py -s $JUMEG_TEST_DATA/mne -lname=list_test.txt -lpath=$JUMEG_TEST_DATA/mne -c config0.yaml -log -v -d -r --logoverwrite
 
-0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -subj 109887 -fpath $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne/101716/MEG94T/121219_1310/1 -fname 101716_MEG94T_test,rfDC-raw.fif -lname meg94t_meeg.txt -lpath $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -c fbconfig_file.yaml -log -v -d -r -rec --logoverwrite
-
-0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -fpath $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne/101716/MEG94T/121219_1310/1 -fname 101716_MEG94T_121219_1310_1_c,rfDC-raw.fif -c fbconfig_file.yaml -log -v -d -r -rec --logoverwrite
--------------
-
-MAIN
+#--- run for one file, overwrite logfile
+0_preprocessing.py -s $JUMEG_TEST_DATA/mne -fpath $JUMEG_TEST_DATA/mne/211747/FREEVIEW01/180109_1049/1 -fname 211747_FREEVIEW01_180109_1049_1_c,rfDC,meeg-raw.fif-c config0.yaml -log -v -d -r --logoverwrite
 
 """
 
 import os,sys,logging
 
-
 from jumeg.base import jumeg_logger
-import jumeg.base.pipelines.jumeg_pipelines_utils0 as utils
 from jumeg.base.pipelines.jumeg_pipeline_looper import JuMEG_PipelineLooper
+
+import jumeg.base.pipelines.jumeg_pipelines_utils0 as utils
 
 logger = logging.getLogger("root")
 
-__version__= "2019.05.10.001"
+__version__= "2019.05.13.001"
 
+#--- parameter / argparser defaults
 defaults={
           "stage"          : ".",
           "fif_extention"  : ["meeg-raw.fif","rfDC-empty.fif"],
           "config"         : "config_file.yaml",
+    
           "subjects"       : None,
+          "list_path"      : None,
+          "list_file"      : None,
+          "fpath"          : None,
+          "fname"          : None,
+          "overwrite"      : False,
+          "recursive"      : True,
+      
           "log2file"       : True,
           "logprefix"      : "preproc0",
           "logoverwrite"   : False,
-          "overwrite"      : False,
+      
           "verbose"        : False,
-          "debug"          : False,
-          "recursive"      : True
+          "debug"          : False
          }
 
 #-----------------------------------------------------------
@@ -114,7 +127,7 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
 #=========================================================================================
 def main(argv):
    
-    opt, parser = utils.get_args(argv,defaults=defaults)
+    opt, parser = utils.get_args(argv,defaults=defaults,version=__version__)
     if len(argv) < 2:
        parser.print_help()
        sys.exit(-1)
