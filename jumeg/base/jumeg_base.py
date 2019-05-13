@@ -1300,7 +1300,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            return
         try:
             if not os.path.isfile(fn):
-               raise FileNotFoundError("ERROR no file found:{}".format(fn))
+               raise FileNotFoundError("ERROR no file found: {}".format(fn))
             
             if ( fn.endswith(self.brainvision_extention) ):
                raw = mne.io.read_raw_brainvision(fn,response_trig_shift=self.brainvision_response_shift,preload=preload)
@@ -1309,7 +1309,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
             else:
                raw = mne.io.Raw(fn,preload=preload)
         except:
-            logger.exception("---> could not get raw obj from file:\n ---> FIF name: {}".format(fn))
+            logger.exception("---> could not get raw obj from file:\n --> FIF name: {}\n  -> file not exist".format(fn))
         
         if reset_bads:
            raw.info["bads"] = []
@@ -1451,7 +1451,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
 
           # channel_type = mne.io.pick.channel_type(raw.info, 75)
 
-    def update_and_save_raw(self,raw,fin=None,fout=None,save=False,overwrite=True,postfix=None,separator="-"):
+    def update_and_save_raw(self,raw,fin=None,fout=None,save=False,overwrite=True,postfix=None,separator="-",update_raw_filenname=False):
         """
         new filename from fin or fout with postfix
         saving mne raw obj to fif format
@@ -1463,9 +1463,10 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
          fin       : input file name <None>
          postfix   : used to generate <output filename> from <input file name> and <postfix>
                      e.g.:
-         separator : split to generate output filename with postfix  <->
+         separator : split to generate output filename with postfix  <"-">
          save      : save raw to disk
          overwrite : <True>
+         update_raw_filenname: <False>
 
         Returns
         --------
@@ -1474,14 +1475,14 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         from distutils.dir_util import mkpath
         #--- use full filname
         if fout:
-            fname = fname = os.path.expandvars(os.path.expanduser(fout))
+           fname = os.path.expandvars(os.path.expanduser(fout))
         #--- make output file name
         else:
             fname = fin if fin else raw.filenames[0]
             fname = os.path.expandvars(os.path.expanduser(fname))  # expand envs
             if postfix:
-                fpre,fext = fname.rsplit(separator)
-                fname = fpre + "," + postfix + separator + fext
+               fpre,fext = fname.rsplit(separator)
+               fname = fpre + "," + postfix + separator + fext
     
         if save:
             try:
@@ -1495,6 +1496,8 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
             except:
                 logger.exception("---> error in saving raw object:\n  -> file: {}".format(fname))
     
+        if update_raw_filenname:
+           self.set_raw_filename(raw,fname)
         return fname,raw
 
     def apply_save_mne_data(self,raw,fname=None,overwrite=True):

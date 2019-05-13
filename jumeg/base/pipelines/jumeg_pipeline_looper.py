@@ -648,11 +648,6 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         self._PDFFile.path           = get_value("fpath",    [opt,defaults,cfg_global])
         self._PDFFile.name           = get_value("fname",    [opt,defaults,cfg_global])
         
-        logger.info("PDF file: {}".format(self._PDFFile.name) )
-        logger.info("PDF path: {}".format(self._PDFFile.path))
-        logger.info("PDF     : {}".format(self._PDFFile.GetFullFileName()))
-        
-        
     def init_logfile(self,fname=None,mode="a"):
         if self.logoverwrite:
            mode="w"

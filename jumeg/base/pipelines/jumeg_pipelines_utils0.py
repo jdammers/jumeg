@@ -91,10 +91,10 @@ def apply_noise_reducer(raw_fname,raw=None,**cfg):
     
     
    #--- init plot
-    jplt = None
-    logger.debug("  ->noise reducer config parameter:\n{}".format( jb.pp_list2str(cfg) ))
-    logger.info("  -> file name: {}".format(raw_fname))
-   
+    fname_out = None
+    logger.info("  -> apply_noise_reducer file name: {}".format(raw_fname))
+    logger.debug("  -> config parameter:\n{}".format( cfg ))
+    
     if not jb.check_file_extention(fname=raw_fname,file_extention=cfg.get("file_extention") ):
        return
 
@@ -115,7 +115,7 @@ def apply_noise_reducer(raw_fname,raw=None,**cfg):
     # !!! overwrite raw-obj !!!
     save        = False
     raw_changed = False
-    
+  
     jb.verbose = cfg.get("verbose")
    
    #--- load raw, reset bads
@@ -149,7 +149,9 @@ def apply_noise_reducer(raw_fname,raw=None,**cfg):
    #--- save and update filename in raw
     if cfg.get("save"):
        save = raw_changed
-    fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=save,
+       
+    #--- update filename in raw and save if save
+    fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=save,update_raw_filenname=True,
                                            postfix=cfg.get("postfix","nr"),overwrite=cfg.get("overwrite",True))
     
     #--- plot results, avoid reloading raw data
@@ -163,7 +165,11 @@ def apply_noise_reducer(raw_fname,raw=None,**cfg):
     jumeg_logger.log_stdout(reset=True)
     jumeg_logger.log_stderr(reset=True)
 
-    return fname_out,raw
+    if fname_out:
+        return fname_out,raw
+    else:
+        raise Exception("---> ERROR file name not defined !!!")
+
 
 #---------------------------------------------------
 #--- apply_suggest_bads
@@ -177,8 +183,10 @@ def apply_suggest_bads(raw_fname,raw=None,**cfg):
     :return:
      filename,raw-obj
     """
-    logger.info("  ->config parameter:\n{}".format(cfg))
-    logger.info("  -> file name: {}".format(raw_fname) )
+    fname_out = None
+    logger.info("  -> apply_suggest_bads file name: {}".format(raw_fname))
+    logger.debug("  -> config parameter:\n{}".format(cfg))
+    
   
     if not jb.check_file_extention(fname=raw_fname,file_extention=cfg.get("file_extention")):
        return
@@ -188,9 +196,6 @@ def apply_suggest_bads(raw_fname,raw=None,**cfg):
        return jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=False,
                                      postfix=cfg.get("postfix","bcc"),overwrite=cfg.get("overwrite",True))
     
-    logger.info("  -> raw ok : {}".format(raw.info))
-
-
     #--- catch stdout,stderr
     jumeg_logger.log_stdout(label="suggest_bads")
     jumeg_logger.log_stderr(label="suggest_bads")
@@ -198,20 +203,30 @@ def apply_suggest_bads(raw_fname,raw=None,**cfg):
     raw_changed   = True
     jb.verbose    = cfg.get("verbose")
     raw,raw_fname = jb.get_raw_obj(raw_fname,raw=raw)
-   #---
     
-    marked,raw = suggest_bads(raw) #,**cfg["parameter"]) #show_raw=cfg.get("show_raw") )
+    if raw:
+       marked,raw = suggest_bads(raw) #,**cfg["parameter"]) #show_raw=cfg.get("show_raw") )
 
-   #--- save and update filename in raw
-    if raw_changed:
-        fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=cfg.get("save"),
-                                               postfix=cfg.get("postfix","bcc"),overwrite=cfg.get("overwrite",True))
+    fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=cfg.get("save"),update_raw_filenname=True,
+                                           postfix=cfg.get("postfix","bcc"),overwrite=cfg.get("overwrite",True))
 
-   #--- return back stdout/stderr from logger
+    #--- update filename in raw and save if save
+    #print("================")
+    #print(raw.filenames)
+    #print(raw_fname)
+    #print(fname_out)
+
+    #print("================")
+
+    #--- return back stdout/stderr from logger
     jumeg_logger.log_stdout(reset=True)
     jumeg_logger.log_stderr(reset=True)
-
-    return fname_out,raw
+ 
+    if fname_out:
+       return fname_out,raw
+    else:
+       raise Exception( "---> ERROR file name not defined !!!" )
+      
 
 #---------------------------------------------------
 #--- apply_interpolate_bads
@@ -225,17 +240,16 @@ def apply_interpolate_bads(raw_fname,raw=None,**cfg):
     :return:
      filename,raw-obj
     """
-
-    logger.info("  ->config parameter:\n{}".format(cfg))
-    logger.info("  -> file name: {}".format(raw_fname) )
+    fname_out = None
+    logger.info("  -> apply_interpolate_bad file name: {}".format(raw_fname))
+    logger.debug("  -> config parameter:\n{}".format(cfg))
     jb.verbose = cfg.get("verbose")
-    
     
     if not jb.check_file_extention(fname=raw_fname,file_extention=cfg.get("file_extention")):
        return
     #--- return raw_fname,raw
     if not cfg.get("run"):
-       return jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=False,
+       return jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=False,update_raw_filenname=True,
                                      postfix=cfg.get("postfix","int"),overwrite=cfg.get("overwrite",True))
 
     #--- catch stdout,stderr
@@ -244,26 +258,29 @@ def apply_interpolate_bads(raw_fname,raw=None,**cfg):
 
     raw,raw_fname = jb.get_raw_obj(raw_fname,raw=raw)
     
-    logger.info("fname: {}".format(raw_fname) )
-    logger.info( raw.info )
-    #--- Interpolate bad channels using jumeg
-    raw = jumeg_interpolate_bads(raw) #,**cfg.get("parameter"))  #,origin=cfg.get("origin",None),reset_bads=cfg.get("reset_bads",True) )
+    if raw:
+       logger.info("fname: {}".format(raw_fname) )
+      #--- Interpolate bad channels using jumeg
+       raw = jumeg_interpolate_bads(raw) #,**cfg.get("parameter"))  #,origin=cfg.get("origin",None),reset_bads=cfg.get("reset_bads",True) )
     
     #-- check results
-    if cfg.get("plot_block"):
-       raw.plot(block=cfg.get("plot_block"))
+       if cfg.get("plot_block"):
+          raw.plot(block=cfg.get("plot_block"))
     
-    #--- save and update filename in raw
-    if raw:
-       fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=cfg.get("save"),
-                                              postfix=cfg.get("postfix","int"),overwrite=cfg.get("overwrite",True))
+    #--- update filename in raw and save if save
+    fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=cfg.get("save"),
+                                           postfix=cfg.get("postfix","int"),overwrite=cfg.get("overwrite",True))
 
-   #--- return back stdout/stderr from logger
+    #--- return back stdout/stderr from logger
     jumeg_logger.log_stdout(reset=True)
     jumeg_logger.log_stderr(reset=True)
-
     
-    return fname_out,raw
+    if fname_out:
+       return fname_out,raw
+    else:
+       raise Exception( "---> ERROR file name not defined !!!" )
+       
+    
 
 #---------------------------------------------------
 #--- apply_filter
@@ -278,7 +295,8 @@ def apply_filter(raw_fname,raw=None,**cfg):
      filename,raw-obj
     """
     return
-    logger.info("  ->config parameter:\n{}".format(cfg))
+    logger.info("  -> apply_filter file name: {}".format(raw_fname))
+    logger.debug("  -> config parameter:\n{}".format(cfg))
 
     if not jb.check_file_extention(fname=raw_fname,file_extention=cfg.get("file_extention")):
         return
@@ -300,7 +318,7 @@ def apply_filter(raw_fname,raw=None,**cfg):
     
     #--- save and update filename in raw
     #if raw_changed:
-    #    fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=cfg.get("save"),
+    #    fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=cfg.get("save"),update_raw_filenname=True,
     #                                           postfix=cfg.get("postfix","bcc"),overwrite=cfg.get("overwrite",True))
 
    #--- return back stdout/stderr from logger
@@ -323,7 +341,8 @@ def apply_resample(raw_fname,raw=None,**cfg):
      filename,raw-obj
     """
     return
-    logger.info("  ->config parameter:\n{}".format(cfg))
+    logger.info("  -> apply_resample file name: {}".format(raw_fname))
+    logger.debug("  -> config parameter:\n{}".format(cfg))
     
     if not jb.check_file_extention(fname=raw_fname,file_extention=cfg.get("file_extention")):
        return
@@ -345,7 +364,7 @@ def apply_resample(raw_fname,raw=None,**cfg):
     
     #--- save and update filename in raw
     #if raw_changed:
-    #    fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=cfg.get("save"),
+    #    fname_out,raw = jb.update_and_save_raw(raw,fin=raw_fname,fout=None,save=cfg.get("save"),update_raw_filenname=True,
     #                                          postfix=cfg.get("postfix","bcc"),overwrite=cfg.get("overwrite",True))
 
    #--- return back stdout/stderr from logger

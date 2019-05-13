@@ -66,150 +66,26 @@ logger.debug("Start LOG")
 logger.info("Start LOG")
 logger.warning("Start LOG")
 logger.error("Start LOG")
-'''
 
 
-'''
 https://stackoverflow.com/questions/19425736/how-to-redirect-stdout-and-stderr-to-logger-in-python
 
-class LoggerWriter:
-    def __init__(self, level):
-        # self.level is really like using log.debug(message)
-        # at least in my case
-        self.level = level
-
-    def write(self, message):
-        # if statement reduces the amount of newlines that are
-        # printed to the logger
-        if message != '\n':
-            self.level(message)
-
-    def flush(self):
-        # create a flush method so things can be flushed when
-        # the system wants to. Not sure if simply 'printing'
-        # sys.stderr is the correct way to do it, but it seemed
-        # to work properly for me.
-        self.level(sys.stderr)
-
-and this would look something like:
-
-log = logging.getLogger('foobar')
-sys.stdout = LoggerWriter(log.debug)
-sys.stderr = LoggerWriter(log.warning)
-
-
-
-class LoggerWriter:
-    def __init__(self, logger, level):
-        self.logger = logger
-        self.level = level
-
-    def write(self, message):
-        if message != '\n':
-            self.logger.log(self.level, message)
-
-    def flush(self):
-        pass
-        
-class LoggerWriter(object):
-    def __init__(self, writer):
-        self._writer = writer
-        self._msg = ''
-
-    def write(self, message):
-        self._msg = self._msg + message
-        while '\n' in self._msg:
-            pos = self._msg.find('\n')
-            self._writer(self._msg[:pos])
-            self._msg = self._msg[pos+1:]
-
-    def flush(self):
-        if self._msg != '':
-            self._writer(self._msg)
-            self._msg = ''
-            
-            
-import logging
-from contextlib import redirect_stdout
-
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-logging.write = lambda msg: logging.info(msg) if msg != '\n' else None
-
-with redirect_stdout(logging):
-    print('Test')
-#------
-import logging
-from contextlib import redirect_stdout
-
-
-logger = logging.getLogger('Meow')
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter(
-    fmt='[{name}] {asctime} {levelname}: {message}',
-    datefmt='%m/%d/%Y %H:%M:%S',
-    style='{'
-)
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-
-logger.write = lambda msg: logger.info(msg) if msg != '\n' else None
-
-with redirect_stdout(logger):
-    print('Test')
-    
-    
-    
-import logging
-import sys
-
-class StreamToLogger(object):
-   """
-   Fake file-like stream object that redirects writes to a logger instance.
-   """
-   def __init__(self, logger, log_level=logging.INFO):
-       self.logger = logger
-       self.log_level = log_level
-       self.linebuf = ''
-
-   def write(self, buf):
-       for line in buf.rstrip().splitlines():
-           self.logger.log(self.log_level, line.rstrip())
-
-logging.basicConfig(
-   level=logging.DEBUG,
-   format='%(asctime)s:%(levelname)s:%(name)s:%(message)s',
-   filename="out.log",
-   filemode='a'
-)
-
-stdout_logger = logging.getLogger('STDOUT')
-sl = StreamToLogger(stdout_logger, logging.INFO)
-sys.stdout = sl
-
-stderr_logger = logging.getLogger('STDERR')
-sl = StreamToLogger(stderr_logger, logging.ERROR)
-sys.stderr = sl
-
-print "Test to standard out"
-raise Exception('Test to standard error')
 '''
 
-__version__="2019.05.10.001"
+__version__="2019.05.13.001"
 
 
 
 #===========================================================
 #=== test logging stdout, stderr
 #===========================================================
-def print_to_logger(raw_fname,raw=None,**cfg):
+def test_log_std(txt):
   
    #--- log stdout,stderr
    jumeg_logger.log_stdout(label=" LOGTEST")
    jumeg_logger.log_stderr()
    
-   print("  -> TEST1 print to logger: {}".format(raw_fname) )
+   print("  -> TEST print to logger: {}".format(txt) )
 
   #--- return back stdout/stderr from logger
    jumeg_logger.log_stdout(reset=True)
@@ -691,104 +567,3 @@ def getLogger(name="root",captureWarnings=True,level="INFO"):
     
     return logger
 
-
-
-'''
-#if __name__ == "__main__":
-   #init_logger()
-
-
-class _oldJuMEG_Logger(object):
-    """
-     logger cls
-     :param: app_name => logger name <None>
-     :param: level    => logging level  <10>
-        level values:
-         CRITICAL 50
-         ERROR 	 40
-         WARNING  30
-         INFO 	 20
-         DEBUG 	 10
-         NOTSET 	 0
-
-     https://realpython.com/python-logging/
-     https://docs.python.org/3/howto/logging-cookbook.html
-     https://stackoverflow.com/questions/44522676/including-the-current-method-name-when-printing-in-python
-
-     Example:
-     ---------
-     from jumeg.jumeg_base import JuMEG_Logger
-     myLog=JuMEG_Logger(app_name="MYLOG",level=logging.DEBUG)
-     myLog.info( "test logging info instead of using <print> ")
-
-     from jumeg.jumeg_base import JuMEG_Base_Basic as JB
-     jb=JB()
-     jb.Log.info("test logging info instead of using <print>")
-
-     https://stackoverflow.com/questions/10973362/python-logging-function-name-file-name-line-number-using-a-single-file
-     import logging
-     logger = logging.getLogger('root')
-     FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
-     logging.basicConfig(format=FORMAT)
-     logger.setLevel(logging.DEBUG)
-
-    """
-    
-    def __init__(self,app_name=None,level=10,**kwargs):
-        super(JuMEG_Logger,self).__init__(**kwargs)
-        import logging
-        self.verbose = False
-        self.logger = logging.getLogger(app_name or __name__)
-        self.logger.setLevel(logging.DEBUG)
-        self.fmt_info = 'JuMEG LOG %(asctime)s %(message)s'
-        logging.basicConfig(format=self.fmt_info,datefmt='%Y/%m/%d %I:%M:%S')
-        
-        #self.fmt_debug   = '%(asctime)-15s] %(levelname) %(funcName)s %(message)s'
-        #self.fmt_error   = '[%(asctime)-15s] [%(levelname)08s] (%(funcName)s %(message)s'
-        #formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
-    
-    def list2str(self,msg):
-        if isinstance(msg,(list)):
-            return "\n" + "\n".join(msg)
-        return msg
-    
-    def info(self,msg):
-        #self.logger.setFormatter()
-        self.logger.info(self.list2str(msg))
-    
-    def warning(self,msg):
-        self.logger.warning(self.list2str(msg))
-    
-    def error(self,msg):
-        if isinstance(msg,(list)):
-            self.logger.error("\nERROR:\n" + self.list2str(msg) + "\n",exc_info=True)
-        else:
-            self.logger.error("\nERROR: " + msg + "\n",exc_info=True,)
-    
-    # if self.verbose:
-    #    traceback.print_exc()
-    
-    def debug(self,msg):
-        self.logger.debug(self.list2str(msg),exc_info=True)
-    
-    def exception(self,msg,*args,**kwargs):
-        self.logger.exception(msg,*args,**kwargs)
-
-
-
-class bcolors():
-  """
-  cls for printing in colors
-  https://stackoverflow.com/questions/287871/print-in-terminal-with-colors
-  """
-  def __init__ (self):
-      super(bcolors, self).__init__()
-      HEADER = '\033[95m'
-      OKBLUE = '\033[94m'
-      OKGREEN = '\033[92m'
-      WARNING = '\033[93m'
-      ERROR = '\033[91m'
-      ENDC = '\033[0m'
-      BOLD = '\033[1m'
-      UNDERLINE = '\033[4m'
-'''
