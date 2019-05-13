@@ -2,14 +2,14 @@
 
 #--- auto generated or by experts
 info:
-    time: "2019-01-17 08:44:21"
-    user: "test"
-    version: "2019-01-17-0.001"
+    time: "2019-05-13 00:00:00"
+    user: "meg"
+    version: "2019-05-13-0.001"
 
 #--- global settings
 global:
     subjects: ['211747']
-    stage:  "$JUMEG_PATH_LOCAL_DATA/exp/JUMEGTest/FV"
+    stage:  "$JUMEG_TEST_DATA/mne"
     fif_extention: ["meeg-raw.fif","rfDC-empty.fif"]
     recursive: True
 
@@ -34,16 +34,16 @@ noise_reducer:
     plot: True
     plot_dir: 'plots'
     plot_show : False
-    save: True
-    run:  False
+    save: False
+    run:  True
     overwrite: True
     file_extention: ["meeg-raw.fif","rfDC-empty.fif"]
 
 #--- suggest bads
 suggest_bads:
     postfix: "bcc"
-    save: True
-    run:  False
+    save: False
+    run:  True
     plot_show : False
     overwrite: True
     file_extention: ["meeg,nr-raw.fif","rfDC,nr-empty.fif"]
@@ -61,7 +61,7 @@ suggest_bads:
 interpolate_bads:
     postfix: "int"
     save: True
-    run:  False
+    run:  True
     overwrite: True
     file_extention: ["meeg,nr,bcc-raw.fif","rfDC,nr,bcc-empty.fif"]
 

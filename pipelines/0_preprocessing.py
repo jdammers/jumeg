@@ -42,7 +42,7 @@ call script with parameter or -h for help
 0_preprocessing.py -s $JUMEG_TEST_DATA/mne -lname=list_test.txt -lpath=$JUMEG_TEST_DATA/mne -c config0.yaml -log -v -d -r --logoverwrite
 
 #--- run for one file, overwrite logfile
-0_preprocessing.py -s $JUMEG_TEST_DATA/mne -fpath $JUMEG_TEST_DATA/mne/211747/FREEVIEW01/180109_1049/1 -fname 211747_FREEVIEW01_180109_1049_1_c,rfDC,meeg-raw.fif-c config0.yaml -log -v -d -r --logoverwrite
+0_preprocessing.py -s $JUMEG_TEST_DATA/mne -fpath $JUMEG_TEST_DATA/mne/211747/FREEVIEW01/180109_0955/1 -fname 211747_FREEVIEW01_180109_0955_1_c,rfDC,meeg-raw.fif-c config0.yaml -log -v -d -r --logoverwrite
 
 """
 
@@ -121,7 +121,8 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
        #--- call resample
        # raw_fname,raw = utils.apply_resample(raw_fname,raw=raw,**jpl.config.get("resampling"))
 
-
+        logger.info(" --> DONE raw file output: {}\n".format(raw_fname))
+        
 #=========================================================================================
 #==== MAIN
 #=========================================================================================
