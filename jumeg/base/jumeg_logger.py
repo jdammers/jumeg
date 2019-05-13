@@ -346,7 +346,7 @@ class JuMEGLogFormatter(logging.Formatter):
     FORMATS = {
         logging.INFO:   "%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n",
         #logging.INFO:   "\n%(levelname)s - %(asctime)s — %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
-        logging.ERROR:  "\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
+        logging.ERROR:  "\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n\n",
         logging.WARNING:"\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
         logging.DEBUG:  "%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n"
     

@@ -16,7 +16,7 @@
 #--------------------------------------------
 
 
-import os,logging,yaml,argparse,glob
+import os,sys,logging,yaml,argparse,glob
 from jumeg.base            import jumeg_logger
 from jumeg.base.jumeg_base import jumeg_base as jb
 
@@ -28,9 +28,18 @@ class JuMEG_PDF_BASE(object):
    def __init__(self,**kwargs):
        self._stage  = "."
        self._pdfs   = None
+       self._exit_on_error = False
        self.verbose = False
        self.debug   = False
+       
        self._file_extention = ["meeg-raw.fif","rfDC-empty.fif"]
+
+   @property
+   def ExitOnError(self):
+       return self._exit_on_error
+   @ExitOnError.setter
+   def ExitOnError(self,v):
+       self._exit_on_error = v
 
    @property
    def file_extention(self): return self._file_extention
@@ -65,7 +74,8 @@ class JuMEG_PDF_BASE(object):
        self.stage          = kwargs.get("stage",self.stage)
        self.verbose        = kwargs.get("verbose",self.verbose)
        self.debug          = kwargs.get("debug",self.debug)
-   
+       self.ExitOnError    = kwargs.get("ExitOnError",self.ExitOnError)
+       
    def get_fullpath(self,v):
        if v:
           return os.path.expandvars(os.path.expanduser(v))
@@ -81,7 +91,26 @@ class JuMEG_PDF_BASE(object):
        logger.info("  -> PDFs:\n  -> " + "\n".join(self.pdfs) )
        if self.debug:
           logger.debug( jb.pp_list2str(self.__dict__) )
-       
+   
+   def check_file_extention(self,fname=None,file_extention=None):
+       """
+       :param fname:          <None>
+       :param file_extention: <None>
+              if set overwrites the <file_extention> property
+       :return:
+              True/False
+       """
+       if not fname:
+          return False
+       if file_extention:
+          self.fif_extention = file_extention
+    
+       if self.file_extention:
+          for fext in self.file_extention:
+              if fname.endswith(fext):
+                 return True
+       return False
+    
 class JuMEG_PDF_IDS(JuMEG_PDF_BASE):
    '''
    cls to find files in stage/subject-id subfolder matching one file-extention in <file extention list>
@@ -192,7 +221,7 @@ class JuMEG_PDF_IDS(JuMEG_PDF_BASE):
                                        )
                            
                       for f in glob.glob(fpatt + fext,recursive=self.recursive):
-                          self._pdfs.append( os.path.join(recordings_dir,f) )
+                          self._pdfs.append( os.path.abspath( os.path.join(recordings_dir,f) ) )
           except:
               logger.exception("---> error subject : {}\n".format(subj) +
                                "  -> recordings dir: {}\n".format(recordings_dir) )
@@ -282,12 +311,27 @@ class JuMEG_PDF_LIST(JuMEG_PDF_BASE):
                     if line:
                         if (line[0] == '#'): continue
                         fname = line.split()[0]
+                        if not self.check_file_extention(fname):
+                           msg = ["---> error wrong file extention: skip file !!!",
+                                  "  -> filename                  : {}".format(fname),
+                                  "  -> file extention expected   : {}".format(self.file_extention),
+                                  "  -> Exit On Error:            : {}\n".format( self.ExitOnError)]
+                           if self.ExitOnError:
+                              found_list.append(fname)
+                              raise Exception("\n" + "\n".join(msg))
+                           else:
+                              logger.error("\n" + "\n".join(msg))
+                              continue
+
                         if self.stage:
-                           fname = os.path.join( self.stage+ "/" + fname )
+                           fname = os.path.abspath( os.path.join( self.stage+ "/" + fname ) )
                         if os.path.isfile(fname):
                            found_list.append(fname)
        except :
+           msg=" --> error in file list; found files:\n  -> "+"\n  -> ".join(found_list)
+           logger.error(msg)
            logger.exception(" error in reading list file: {}".format( self.GetFullListFileName() ) )
+           return False
         
        if self.debug:
           logger.debug(" --> PDF in list file: {}\n".format(self.GetFullListFileName() )+
@@ -333,7 +377,7 @@ class JuMEG_PDF_FILE(object):
     
     def GetFullFileName(self):
         if self.path:
-            return os.path.join(self.path,self.name)
+           return os.path.abspath( os.path.join(self.path,self.name) )
         return self.name
     
     def _update_from_kwargs(self,**kwargs):
@@ -418,13 +462,24 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         self.log2file     = False
         self.logprefix    = "pipeline_looper"
         self.logoverwrite = False
-    
+        
     #--- config file
         self._config_file = None
         self._config      = None
-       
+        
+        self._exit_on_error = False
         self.update(**kwargs)
         self.init( **kwargs )
+   
+    @property
+    def ExitOnError(self):
+        return self._exit_on_error
+    @ExitOnError.setter
+    def ExitOnError(self,v):
+        self._exit_on_error = v
+        self._PDFList.ExitOnError = v
+        self._PDFIDS.ExitOnError  = v
+        self._PDFFile.ExitOnError = v
         
     @property
     def Hlog(self): return self._Hlog
@@ -471,27 +526,40 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         self._PDFIDS._update_from_kwargs(**kwargs)
         self._PDFList._update_from_kwargs(**kwargs)
         self._PDFFile._update_from_kwargs(**kwargs)
-
-    def clear(self):
+        self.ExitOnError = kwargs.get(exit_on_error,self.ExitOnError)
+    
+    def clear_all(self):
+        self.clear_list()
+        self.clear_file()
+        
+    def clear_list(self):
         self._PDFIDS.clear()
         self._PDFList.clear()
-        self._PDFFile.clear()
-
+       
+    def clear_file(self):
+        self._PDFFile.clear() # needs to set path and name again
+        
     def update(self,**kwargs):
-        self.clear()
+        self.clear_list()
         self._PDFIDS.update(**kwargs)
         self._PDFList.update(**kwargs)
         self._PDFFile.update(**kwargs)
      
     def _update_pdf_list(self):
-        self.pdf.pdfs = []
-        if self._PDFIDS.pdfs:
-           self.pdf.pdfs.extend(self._PDFIDS.pdfs)
-        if self._PDFList.pdfs:
-           self.pdf.pdfs.extend(self._PDFList.pdfs)
-        if self._PDFFile.pdf:
-           self.pdf.pdfs.append(self._PDFFile.pdf)
-
+        try:
+            self.pdf.pdfs = []
+            if self._PDFIDS.pdfs:
+               self.pdf.pdfs.extend(self._PDFIDS.pdfs)
+            if self._PDFList.pdfs:
+               self.pdf.pdfs.extend(self._PDFList.pdfs)
+            if self._PDFFile.pdf:
+               self.pdf.pdfs.append(self._PDFFile.pdf)
+        except:
+            raise Exception("\n" + "\n ---> error in updateing PDFs")
+            return False
+        return True
+        
+           
     def load_config(self,config=None):
         """
         :param config: <None>
@@ -543,6 +611,8 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
                       return dicts[i].get(v)
             return None
     
+        self.clear() # clear all pdf lists
+        
         if not defaults:
            defaults = {}
         cfg_global = defaults # if no config file
@@ -577,6 +647,10 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         self._PDFList.list_file_name = get_value("list_name",[opt,defaults,cfg_global])
         self._PDFFile.path           = get_value("fpath",    [opt,defaults,cfg_global])
         self._PDFFile.name           = get_value("fname",    [opt,defaults,cfg_global])
+        
+        logger.info("PDF file: {}".format(self._PDFFile.name) )
+        logger.info("PDF path: {}".format(self._PDFFile.path))
+        logger.info("PDF     : {}".format(self._PDFFile.GetFullFileName()))
         
         
     def init_logfile(self,fname=None,mode="a"):
@@ -636,7 +710,10 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
              
         """
         self.update(**kwargs)
-        self._update_pdf_list()
+        if not self._update_pdf_list():
+           return
+        
+        # logger.debug( "\n".join(self.pdf.pdfs) )
         
         for self.pdf.idx in range( len( self.pdf.pdfs ) ):
             try:
@@ -646,7 +723,15 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
                             "  -> raw file name    : {}".format(self.pdf.name),
                             "  -> stage            : {}".format(self.stage),
                             "  -> working dir      : {}".format(os.getcwd())]
-
+                     
+                     if not self.check_file_extention(self.pdf.name):
+                        msg.append("  -> Exit On Error:   : {}".format( self.ExitOnError) )
+                        msg.append("  -> error wrong file extention should be: {}".format( self.file_extention) )
+                        logger.error("\n".join(msg))
+                      
+                        if self.ExitOnError:
+                          raise Exception("\n"+"\n".join(msg))
+                        
                      if self.log2file:
                         if self.logoverwrite:
                            self.init_logfile( fname=os.path.splitext( self.pdf.name)[0] +".log" )
@@ -671,7 +756,10 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
                    self._Hlog = None
             except:
                 logger.exception("---> error subject : {}\n".format(self.pdf.id) )
-
+                if self.ExitOnError:
+                    logger.error("\nExit On Error")
+                    break
+                    
 
 #=========================================================================================
 #==== MAIN
