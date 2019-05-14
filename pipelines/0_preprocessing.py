@@ -42,7 +42,11 @@ call script with parameter or -h for help
 0_preprocessing.py -s $JUMEG_TEST_DATA/mne -lname=list_test.txt -lpath=$JUMEG_TEST_DATA/mne -c config0.yaml -log -v -d -r --logoverwrite
 
 #--- run for one file, overwrite logfile
-0_preprocessing.py -s $JUMEG_TEST_DATA/mne -fpath $JUMEG_TEST_DATA/mne/211747/FREEVIEW01/180109_0955/1 -fname 211747_FREEVIEW01_180109_0955_1_c,rfDC,meeg-raw.fif-c config0.yaml -log -v -d -r --logoverwrite
+0_preprocessing.py -s $JUMEG_TEST_DATA/mne -fpath $JUMEG_TEST_DATA/mne/211747/FREEVIEW01/180109_0955/1 -fname 211747_FREEVIEW01_180109_0955_1_c,rfDC,meeg-raw.fif -c config0.yaml -log -v -d -r --logoverwrite
+
+#--- run for MEG94T
+0_preprocessing.py -s $JUMEG_PATH_LOCAL_DATA/exp/MEG94T/mne -lpath $JUMEG_LOCAL_DATA/exp/MEG94T/mne -fname test01.txt -log -v -d -r --logoverwrite
+
 
 """
 
@@ -53,7 +57,7 @@ from jumeg.base.pipelines.jumeg_pipeline_looper import JuMEG_PipelineLooper
 
 import jumeg.base.pipelines.jumeg_pipelines_utils0 as utils
 
-logger = logging.getLogger("root")
+logger = logging.getLogger("jumeg")
 
 __version__= "2019.05.13.001"
 

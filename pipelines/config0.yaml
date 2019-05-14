@@ -34,7 +34,7 @@ noise_reducer:
     plot: True
     plot_dir: 'plots'
     plot_show : False
-    save: False
+    save: True
     run:  True
     overwrite: True
     file_extention: ["meeg-raw.fif","rfDC-empty.fif"]
@@ -42,7 +42,7 @@ noise_reducer:
 #--- suggest bads
 suggest_bads:
     postfix: "bcc"
-    save: False
+    save: True
     run:  True
     plot_show : False
     overwrite: True
