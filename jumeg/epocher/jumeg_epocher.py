@@ -91,8 +91,8 @@ if DO_EPOCHS:
 import os,sys,logging,argparse
 from jumeg.epocher.jumeg_epocher_epochs import JuMEG_Epocher_Epochs
 
-logger = logging.getLogger("root")
-__version__= "2019.04.18.001"
+logger = logging.getLogger("jumeg")
+__version__= "2019.05.14.001"
 
 class JuMEG_Epocher(JuMEG_Epocher_Epochs):
     def __init__ (self,template_path=None,template_name="DEFAULT",verbose=False):

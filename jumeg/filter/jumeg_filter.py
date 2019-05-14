@@ -10,8 +10,8 @@ from jumeg.base                    import jumeg_logger
 from jumeg.filter.jumeg_filter_bw  import JuMEG_Filter_Bw
 from jumeg.filter.jumeg_filter_mne import JuMEG_Filter_MNE
 
-logger = logging.getLogger('root')
-__version__= '2019.04.18.001'
+logger = logging.getLogger('jumeg')
+__version__= '2019.05.14.001'
 
 '''
 ----------------------------------------------------------------------

@@ -20,7 +20,7 @@ import os,sys,logging,yaml,argparse,glob
 from jumeg.base            import jumeg_logger
 from jumeg.base.jumeg_base import jumeg_base as jb
 
-logger = logging.getLogger('root')
+logger = logging.getLogger('jumeg')
 
 __version__="2019.05.10.001"
 
@@ -268,6 +268,9 @@ class JuMEG_PDF_LIST(JuMEG_PDF_BASE):
        self._list_file_path=self.get_fullpath(v)
 
    def GetFullListFileName(self):
+       if not self.list_file_name:
+          logger.warning("  -> list file name is not defined for reading PDFs from list, if needed set option <list_name> <list_path>")
+          return None
        if self.list_file_path:
           return os.path.join(self.list_file_path,self.list_file_name)
        return self.list_file_name
@@ -293,50 +296,59 @@ class JuMEG_PDF_LIST(JuMEG_PDF_BASE):
        found_list = []
        try:
            if not self.GetFullListFileName():
-              if self.verbose:
-                 logger.warning("list file not found: {}".format(self.GetFullListFileName()))
               return None
            
            if not os.path.isfile( self.GetFullListFileName() ):
-              logger.exception("list file not found: {}".format(self.GetFullListFileName()))
+              logger.exception("---> <list file> is not a file:\n -> path: {}\n  -> file: {}".format(self.list_file_path,self.list_file_name))
               return None
             
            # if self.debug:
            #    logger.info("  -> list file: {}".format( self.GetFullListFileName() ) )
-            
+           files_to_exclude = []
            with open(self.GetFullListFileName(),'r') as f:
                 for line in f:
                     line = line.strip()
                     fname = None
                     if line:
-                        if (line[0] == '#'): continue
-                        fname = line.split()[0]
-                        if not self.check_file_extention(fname):
-                           msg = ["---> error wrong file extention: skip file !!!",
-                                  "  -> filename                  : {}".format(fname),
-                                  "  -> file extention expected   : {}".format(self.file_extention),
-                                  "  -> Exit On Error:            : {}\n".format( self.ExitOnError)]
+                       if (line[0] == '#'): continue
+                       fname = line.split()[0]
+                       try:
+                           if not self.check_file_extention(fname):
+                              raise FileNotFoundError("---> error wrong file extention: skip file !!!")
+                           if self.stage:
+                              fname = os.path.abspath( os.path.join( self.stage+ "/" + fname ) )
+                           if not os.path.isfile(fname):
+                              raise FileNotFoundError("---> error file is not a real file: skip file !!!")
+                              continue
+                           
+                           found_list.append(fname)
+                           
+                       except FileNotFoundError as e:
+                           msg = "\n".join([ e.args[0],
+                                            "  -> filename                  : {}".format(fname),
+                                            "  -> file extention expected   : {}".format(self.file_extention),
+                                            "  -> Exit On Error:            : {}\n".format(self.ExitOnError)])
+    
                            if self.ExitOnError:
                               found_list.append(fname)
-                              raise Exception("\n" + "\n".join(msg))
+                              logger.exception(msg)
                            else:
-                              logger.error("\n" + "\n".join(msg))
-                              continue
-
-                        if self.stage:
-                           fname = os.path.abspath( os.path.join( self.stage+ "/" + fname ) )
-                        if os.path.isfile(fname):
-                           found_list.append(fname)
+                              logger.warning(msg)
+                              
        except :
            msg=" --> error in file list; found files:\n  -> "+"\n  -> ".join(found_list)
            logger.error(msg)
-           logger.exception(" error in reading list file: {}".format( self.GetFullListFileName() ) )
+           
+           logger.exception(" --> error in reading list file:\n  -> path: {}\n  -> file: {}\n".format( self.list_file_path,self.list_file_name ) )
+           if self.ExitOnError:
+              sys.exit()
            return False
         
        if self.debug:
           logger.debug(" --> PDF in list file: {}\n".format(self.GetFullListFileName() )+
                        "  -> counts : {}\n".format( len(found_list) )+
                        "  -> files  :\n    "+ "\n    ".join(found_list) )
+       
            
        return found_list
 
@@ -376,6 +388,8 @@ class JuMEG_PDF_FILE(object):
             self._path = v
     
     def GetFullFileName(self):
+        if not self.name:
+           return None
         if self.path:
            return os.path.abspath( os.path.join(self.path,self.name) )
         return self.name
@@ -555,9 +569,9 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
             if self._PDFFile.pdf:
                self.pdf.pdfs.append(self._PDFFile.pdf)
         except:
-            raise Exception("\n" + "\n ---> error in updateing PDFs")
+            raise Exception("\n" + "\n ---> error in update  PDFs list")
             return False
-        return True
+        return len( self.pdf.pdfs )
         
            
     def load_config(self,config=None):
@@ -705,10 +719,12 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
              
         """
         self.update(**kwargs)
+       
         if not self._update_pdf_list():
+           logger.info("---> No files in list, stop process")
            return
         
-        # logger.debug( "\n".join(self.pdf.pdfs) )
+        logger.debug("---> PDF files to process: \n".join(self.pdf.pdfs) )
         
         for self.pdf.idx in range( len( self.pdf.pdfs ) ):
             try:

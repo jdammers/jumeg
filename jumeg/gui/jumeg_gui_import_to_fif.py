@@ -34,7 +34,7 @@ from jumeg.gui.jumeg_gui_wx_argparser                     import JuMEG_GUI_wxArg
 from jumeg.base.jumeg_base                                import jumeg_base as jb
 from jumeg.base.ioutils.jumeg_ioutils_subprocess          import JuMEG_IoUtils_SubProcess
 
-__version__="2019-04-18-001"
+__version__="2019.05.14-001"
 
 class JuMEG_wxImport_BTiCtrlGrid(wx.Panel):
     def __init__(self,parent,*kargs,**kwargs):

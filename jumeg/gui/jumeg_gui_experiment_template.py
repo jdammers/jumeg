@@ -33,7 +33,7 @@ from jumeg.gui.wxlib.jumeg_gui_wxlib_experiment_template  import JuMEG_wxExpTemp
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls      import JuMEG_wxMultiChoiceDialog,JuMEG_wxControlButtonPanel,JuMEG_wxControls
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_property_grid import JuMEG_wxPropertyGridPageBase,JuMEG_wxPropertyGridPageNotebookBase,JuMEG_wxPropertyGridSubProperty
 
-__version__='2019-04-18.001'
+__version__='2019.05.14.001'
 
 class JuMEG_wxTMPMakeDirDialog(JuMEG_wxMultiChoiceDialog):
     """

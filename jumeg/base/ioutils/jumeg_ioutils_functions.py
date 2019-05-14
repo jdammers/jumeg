@@ -20,8 +20,10 @@
 
 import os,sys
 
+# logging
+# logger = logging.getLogger('jumeg')
 
-__version__ = "2019-04-18-001"
+__version__ = "2019.05.14.001"
 
 class JuMEG_IOUtils(object):
     """

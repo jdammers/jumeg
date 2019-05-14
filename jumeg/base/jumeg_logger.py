@@ -72,8 +72,7 @@ https://stackoverflow.com/questions/19425736/how-to-redirect-stdout-and-stderr-t
 
 '''
 
-__version__="2019.05.13.001"
-
+__version__="2019.05.14.001"
 
 
 #===========================================================
@@ -93,8 +92,7 @@ def test_log_std(txt):
    
    return raw_fname,raw
 
-
-class StreamLoggerSTD(object):
+class StreamLogger(object):
    """
    coppy from:
    https://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
@@ -107,19 +105,22 @@ class StreamLoggerSTD(object):
    
    Example
    -------
-    sys.stdout  = StreamLoggerSTD(logname="root",level=logging.INFO,label="TESTLOG OUT")
-    sys.stderr = StreamLoggerSTD(logname="root",level=logging.INFO,label="TESTLOG ERR")
+    sys.stdout  = StreamLogger(logname="root",level=logging.INFO,label="TESTLOG OUT")
+    sys.stderr = StreamLoggerS(logname="root",level=logging.INFO,label="TESTLOG ERR")
    
    """
-   def __init__(self,logger=None,logname="root",level=logging.INFO,label=None):
+   def __init__(self,logger=None,logname="jumeg",level=logging.INFO,label=None):
+   #def __init__(self,logger=None,logname="jumeg",level=logging.INFO,label=None,logstdout=False,logstderr=False):
+      
        """
        
-       :param logger:
-       :param logname:
-       :param level:
+       :param logger:  logger obj
+       :param logname: logger obj name <jumeg>
+       :param level:   <logging.INFO>
        :param label:
        """
-   
+       
+       
        if not logger:
           self.logger=logging.getLogger(logname)
        else:
@@ -134,6 +135,13 @@ class StreamLoggerSTD(object):
        #self.loglevel= level
        #self._save_std = sys.stdout
        #sys.stdout = self
+  
+  # ToDo add as context manager using enter, exit
+  # def __enter__(self):
+  
+  # def __exit__(selfself):
+  #     sys.stdout = sys.__stdout__
+   
    
    @property
    def label(self): return self._label
@@ -190,19 +198,94 @@ class StreamLoggerSTD(object):
    def flush(self):
        pass
 
+
+class StreamLoggerSTD(object):
+   """
+   Example
+   -------
+    LogSTD = StreamLoggerSTD(logname="jumeg",level=logging.INFO,label=None)
+    
+    #--- log STDOUT and STDERR stream with jumeg_logger
+     LogSTD.log_stdout()
+     LogSTD.log_stderr()
+   
+    #--- unlog/reset stream
+    
+    LogSTD.unlog_stdout()
+    LogSTD.unlog_stderr()
+   
+   """
+   def __init__(self,**kwargs):
+       self._log_stdout = True
+       self._log_stderr = True
+       self._is_stdout  = False
+       self._is_stderr  = False
+
+       self._update_kwargs(**kwargs)
+   
+   @property
+   def IsSTDOUTlogged(self): return self._is_stdout
+
+   @property
+   def IsSTDERRlogged(self):
+       return self._is_stderr
+
+   def _update_kwargs(self,**kwargs):
+       self._log_stdout = kwargs.get("logstdout",self._log_stdout)
+       self._log_stderr = kwargs.get("logstderr",self._log_stderr)
+       
+   def log_stdout(self,**kwargs):
+       sys.stdout = StreamLogger(**kwargs)
+       self._is_stdout = True
+
+   def unlog_stdout(self):
+       sys.stdout = sys.__stdout__
+       self._is_stdout = False
+
+   def log_stderr(self,**kwargs):
+       sys.stderr = StreamLogger(**kwargs)
+       self._is_stderr =True
+       
+   def unlog_stderr(self):
+       sys.stderr = sys.__stderr__
+       self._is_stderr = False
+
+  #--- contextmanager part  with block
+   def __enter__(self,**kwargs):
+       if self._log_stdout:
+          self.log_stdout(**kwargs)
+      
+       if self._log_stderr:
+          self.log_stderr(**kwargs)
+       
+   def __exit__(self,exc_type, exc_value, exc_traceback):
+       """
+       https://alysivji.github.io/managing-resources-with-context-managers-pythonic.html
+       
+       :param exc_type:
+       :param exc_value:
+       :param exc_traceback:
+       :return:
+       """
+       self.unlog_stdout()
+       self.unlog_stderr()
+
+
+ 
 def log_stdout(reset=False,**kwargs):
     if reset:
        sys.stdout = sys.__stdout__
     else:
-       sys.stdout = StreamLoggerSTD(**kwargs)
+       sys.stdout = StreamLogger(**kwargs)
     return sys.stdout
 
 def log_stderr(reset=False,**kwargs):
     if reset:
        sys.stderr = sys.__stderr__
     else:
-       sys.stderr = StreamLoggerSTD(**kwargs)
+       sys.stderr = StreamLogger(**kwargs)
     return sys.stderr
+
 
 class JuMEGLogFormatter(logging.Formatter):
     """
@@ -223,9 +306,8 @@ class JuMEGLogFormatter(logging.Formatter):
         logging.INFO:   "%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n",
         #logging.INFO:   "\n%(levelname)s - %(asctime)s — %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
         logging.ERROR:  "\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n\n",
-        logging.WARNING:"\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s",
+        logging.WARNING:"\n%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n",
         logging.DEBUG:  "%(levelname)s - %(asctime)s — %(name)s - %(module)s - %(funcName)s:%(lineno)d :\n%(message)s\n"
-    
     }
 
     def format(self, record):
@@ -255,7 +337,7 @@ class LogStreamHandler(logging.StreamHandler):
     
 class LogFileHandler(logging.FileHandler):
     
-    def __init__(self,fname=None,prefix=None,name="root_logger",postfix="001",extention=".log",path=None,level=None,mode="a"):
+    def __init__(self,fname=None,prefix=None,name="jumeg_logger",postfix="001",extention=".log",path=None,level=None,mode="a"):
         """
         LogFileHandler : for writing log messages into a file
       
@@ -392,7 +474,8 @@ class LoggingContext(object):
             self.handler.close()
         # implicit return of None => don't swallow exceptions
         
-def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None,path=None,version=None,logfile=False,mode="a",captureWarnings=True):
+def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None,path=None,version=None,logfile=False,
+                         mode="a",captureWarnings=True,logname="jumeg"):
     """
     setup logger :
      loging level, log handler, logs information e.g input parameter
@@ -403,12 +486,14 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     :param opt    : option obj from argpraser
                     opt, parser = get_args(argv)
     
-    :param level  : logging level <DEBUG>
-    :param logger : logger <root logger obj> if <None> get new logger obj
-    :param version: version  e.g.__version__
-    :param logfile: flag log to logfile, will overwrite opt.logfile
-    :param path   : logfile path <None> :
-    :param mode   : logfile mode <a>  [a,w]  append or write
+    :param logger     : logger <logger obj> if <None> get new logger obj
+    :param logname    : logger obj name <jumeg>
+    :param level      : logging level <DEBUG>
+    :param logfile    : flag log to logfile, will overwrite opt.logfile
+    
+    :param path       : logfile path <None> :
+    :param mode       : logfile mode <a>  [a,w]  append or write
+    :param version    : version  e.g.__version__
     :param captureWarnings: capture Warnings form wranings module <True>
     
     :return:
@@ -416,7 +501,7 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     
     """
     if not logger:
-       logger=logging.getLogger("root")
+       logger=logging.getLogger(logname)
    #----
     name = name if name else "jumeg_logfile"
     
@@ -478,13 +563,13 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     return logger
 
     
-def update_filehandler(logger=None,logger_name="root",**kwargs):
+def update_filehandler(logger=None,logname="jumeg",**kwargs):
     """
     close all filehandlers first and add a new filehandler to the logger
     https://stackoverflow.com/questions/13839554/how-to-change-filehandle-with-python-logging-on-the-fly-with-different-classes-a
     
-    :param logger      : the logger obj <None>
-    :param logger_name : logger name <root>, used if logger is None
+    :param logger  : the logger obj <None>
+    :param logname : logger obj  name <jumeg>, used if logger is None
     
     parameter for LogFileHandler
     :param fname:
@@ -497,14 +582,10 @@ def update_filehandler(logger=None,logger_name="root",**kwargs):
     
     :return:
     new filehandler
-    
     """
-    
     if not logger:
-       if logger_name:
-           logger=logging.getLogger("root")
-       logger = logging.getLogger()     # root logger - Good to get it only once.
-    
+       logger=logging.getLogger(logname)
+      
     level=kwargs.get("level")
     
     for hdlr in logger.handlers[:]:  # remove the existing file handlers
@@ -522,14 +603,14 @@ def update_filehandler(logger=None,logger_name="root",**kwargs):
 #=========================================================================================
 #==== MAIN
 #=========================================================================================
-def getLogger(name="root",captureWarnings=True,level="INFO"):
+def getLogger(logname="jumeg",captureWarnings=True,level="INFO"):
     """
     get a logger, calls logging.getLogger(), add a Stream- and a FileHandler to the logger
     
-    :param name:             logger name <root>
+    :param logname:  logger obj name <jumeg>
+    :param level  :  log level <INFO>
+                     [NOTSET,INFO,DEBUG,WARNINGS/WARN,ERROR,CRITICAL] or logging.XYZ or [0,10,20,30,40,50]
     :param captureWarnings: capture and log printed warning messages <True>
-    :param level:           log level <INFO>
-     [NOTSET,INFO,DEBUG,WARNINGS/WARN,ERROR,CRITICAL] or logging.XYZ or [0,10,20,30,40,50]
     :return:
     logger obj
     
@@ -559,7 +640,7 @@ def getLogger(name="root",captureWarnings=True,level="INFO"):
       
     """
     
-    logger = logging.getLogger(name)
+    logger = logging.getLogger(loger_name)
     logger.setLevel(level)
     logger.addHandler(LogStreamHandler())
     logger.addHandler(LogFileHandler())

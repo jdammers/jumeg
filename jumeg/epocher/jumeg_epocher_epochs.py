@@ -20,8 +20,8 @@ from jumeg.epocher.jumeg_epocher_events  import JuMEG_Epocher_Events,JuMEG_Epoch
 from jumeg.epocher.jumeg_epocher_plot    import jumeg_epocher_plot as jplt
 
 #--- setup logger
-logger = logging.getLogger('root')
-__version__="2019.04.18.001"
+logger = logging.getLogger('jumeg')
+__version__="2019.05.14.001"
 
 class JuMEG_Epocher_Marker(JuMEG_Epocher_Events_Channel):
     '''

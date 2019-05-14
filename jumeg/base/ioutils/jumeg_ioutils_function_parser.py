@@ -15,13 +15,13 @@ from glob import glob
 import numpy as np
 
 import logging
-logger = logging.getLogger('root')
+logger = logging.getLogger('jumeg')
 
 from jumeg.base.jumeg_base import JuMEG_Base_Basic
 jb = JuMEG_Base_Basic()
 
 
-__version__="2019-04-18-001"
+__version__="2019.05.14.001"
 
 
 class JuMEG_IoUtils_FunctionParserBase(object):

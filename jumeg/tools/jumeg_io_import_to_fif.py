@@ -25,9 +25,9 @@ import mne
 
 from jumeg.base.jumeg_base  import jumeg_base as jb
 from jumeg.base import jumeg_logger
-logger = logging.getLogger('root') # init a logger
+logger = logging.getLogger('jumeg') # init a logger
 
-__version__= "2019.04.18.001"
+__version__= "2019.05.14.001"
 
 #=========================================================================================
 #==== script part

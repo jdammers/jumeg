@@ -25,9 +25,9 @@ from mne.time_frequency import psd_welch
 
 from jumeg.base.jumeg_base import jumeg_base as jb
 
-logger = logging.getLogger('root')
+logger = logging.getLogger('jumeg')
 
-__version__="2019.05.10.001"
+__version__="2019.05.14.001"
 
 class JuMEG_PLOT_BASE(object):
     __slots__ = ["picks","fmin","fmax","tmin","tmax","proj","n_fft","color","area_mode","area_alpha","n_jobs","dpi","verbose",

@@ -13,8 +13,8 @@ from   matplotlib.backends.backend_pdf import PdfPages
 import mne
 from jumeg.base.jumeg_base import JuMEG_Base_IO
 
-logger = logging.getLogger('root')
-__version__="2019.04.18.001"
+logger = logging.getLogger('jumeg')
+__version__="2019.05.14.001"
 
 #--- A4 landscape
 pl.rc('figure', figsize=(11.69,8.27))

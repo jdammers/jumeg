@@ -26,8 +26,8 @@ from jumeg.base.jumeg_base          import jumeg_base_basic as jb
 from jumeg.filter.jumeg_filter_base import JuMEG_Filter_Base
 
 
-logger = logging.getLogger('root')
-__version__= '2019.04.18.001'
+logger = logging.getLogger('jumeg')
+__version__= '2019.05.14.001'
 
 class JuMEG_Filter_Bw(JuMEG_Filter_Base):
     """  Filter FIR FFT butterworth implementation""" 

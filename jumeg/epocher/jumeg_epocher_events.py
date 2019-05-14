@@ -72,8 +72,8 @@ from copy import deepcopy
 from jumeg.base.jumeg_base           import jumeg_base,JuMEG_Base_Basic
 from jumeg.epocher.jumeg_epocher_hdf import JuMEG_Epocher_HDF
 
-logger = logging.getLogger('root')
-__version__="2019.04.18.001"
+logger = logging.getLogger('jumeg')
+__version__="2019.05.14.001"
 
 class JuMEG_Epocher_Channel_Baseline(object):
     """ 

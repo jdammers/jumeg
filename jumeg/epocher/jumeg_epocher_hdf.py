@@ -17,8 +17,8 @@ import pandas as pd
 from jumeg.base.jumeg_base import jumeg_base
 from jumeg.base.template.jumeg_template import JuMEG_Template
 
-logger = logging.getLogger('root')
-__version__="2019.04.18.001"
+logger = logging.getLogger('jumeg')
+__version__="2019.05.14.001"
 
 class JuMEG_Epocher_Template(JuMEG_Template):
     def __init__ (self):

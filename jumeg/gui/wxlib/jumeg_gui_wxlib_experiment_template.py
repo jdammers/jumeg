@@ -16,7 +16,7 @@ from jumeg.base.template.jumeg_template_experiments  import JuMEG_ExpTemplate
 from jumeg.base.ioutils.jumeg_ioutils_functions      import JuMEG_IOUtils
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxControlGrid
 
-__version__= "2019-04-18-001"
+__version__= "2019.05.14.001"
 
 class JuMEG_wxExpTemplate(wx.Panel):
     """

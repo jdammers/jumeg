@@ -20,9 +20,9 @@ from pubsub                             import pub
 from jumeg.base.template.jumeg_template import JuMEG_Template
 
 import logging
-logger = logging.getLogger('root')
+logger = logging.getLogger("jumeg")
 
-__version__="2019-04-18.001"
+__version__="2019.05.14.001"
 
 __DEFAULT_EXPERIMENT_TEMPLATE__={
 "info":{

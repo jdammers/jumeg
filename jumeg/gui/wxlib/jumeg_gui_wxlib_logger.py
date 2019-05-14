@@ -2,7 +2,7 @@ import wx,sys,io
 from pubsub import pub
 #from jumeg.base.jumeg_base  import jumeg_base as jb
 
-__version__= "2019-04-18-001"
+__version__= "2019-05.14.001"
 
 # change formatter
 #log_fh = logging.FileHandler("error.log")

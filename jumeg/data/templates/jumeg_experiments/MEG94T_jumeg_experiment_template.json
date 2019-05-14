@@ -1,10 +1,10 @@
 {
     "info": {
-        "time": "2019-01-16 12:34:49",
-        "user": "test",
-        "version": "2019-01-16-0.001",
-        "jumeg_template_version": "2018-12-13.001",
-        "jumeg_gui_version": "2019-01-04.001"
+        "time": "2019-05-14 10:10:06",
+        "user": "fboers",
+        "version": "2019-05-14-0.001",
+        "jumeg_template_version": "2019.05.14.001",
+        "jumeg_gui_version": "2019.05.14.001"
     },
     "experiment": {
         "name": "MEG94T",
@@ -19,13 +19,7 @@
             "MEG94T0T",
             "MEG94T0T2"
         ],
-        "bads_list": [
-            "MEG 007",
-            "MEG 010",
-            "MEG 142",
-            "MEG 156",
-            "RFM 011"
-        ],
+        "bads_list": [],
         "path": {
             "mne": "mne",
             "eeg": "eeg",
@@ -46,7 +40,7 @@
         "bti_path": [
             "${JUMEG_PATH_BTI_EXPORT}",
             "${JUMEG_PATH_LOCAL_DATA}/megdaw_data21"
-           ],
+        ],
         "pdf_name": "c,rfDC",
         "config_fname": "config",
         "head_shape_fname": "hs_file",

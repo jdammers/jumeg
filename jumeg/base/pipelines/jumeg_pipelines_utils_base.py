@@ -23,7 +23,7 @@ import mne
 from jumeg.base.jumeg_base         import jumeg_base as jb
 from jumeg.base                    import jumeg_logger
 
-logger = logging.getLogger("root")
+logger = logging.getLogger("jumeg")
 
 __version__= "2019.05.10.001"
 

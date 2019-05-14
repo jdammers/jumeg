@@ -26,9 +26,9 @@ from jumeg.base.jumeg_base import jumeg_base as jb
 from jumeg.gui.wxlib.jumeg_gui_wxlib_pbshost  import JuMEG_PBSHostsParameter
 
 import logging
-logger = logging.getLogger('root')
+logger = logging.getLogger('jumeg')
 
-__version__="2010-11-18-001"
+__version__="2019.05.14.001"
 
 
 '''

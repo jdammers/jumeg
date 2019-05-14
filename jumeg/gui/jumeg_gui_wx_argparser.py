@@ -36,8 +36,8 @@ from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxControl
 from jumeg.base.ioutils.jumeg_ioutils_function_parser     import JuMEG_IoUtils_FunctionParser,JuMEG_IoUtils_FunctionParserBase,JuMEG_IoUtils_JuMEGModule
 from jumeg.base.ioutils.jumeg_ioutils_subprocess          import JuMEG_IoUtils_SubProcess
 
-logger = logging.getLogger("root")
-__version__='2019-04-18-001'
+logger = logging.getLogger("jumeg")
+__version__='2019.05.14.001'
 
 class JuMEG_ArgParserBase(JuMEG_IoUtils_FunctionParserBase):
     """

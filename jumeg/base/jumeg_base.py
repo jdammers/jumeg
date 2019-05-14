@@ -54,7 +54,7 @@ with warnings.catch_warnings():
 from pprint import PrettyPrinter #,pprint,pformat
 
 import logging
-logger = logging.getLogger("root")
+logger = logging.getLogger("jumeg")
 #logger.setLevel('DEBUG')
 
 __version__="2019.05.02.001"

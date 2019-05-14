@@ -68,14 +68,14 @@ with warnings.catch_warnings():
      import mne
 
 import logging
-logger = logging.getLogger('root')
 
 from jumeg.base.jumeg_base     import JuMEG_Base_IO
 from jumeg.base.jumeg_base     import jumeg_base as jb
 from jumeg.base                import jumeg_logger
 from jumeg.filter.jumeg_filter import jumeg_filter
 
-__version__= '2019.04.18.001'
+logger = logging.getLogger('jumeg')
+__version__= '2019.05.148.001'
 
 class JuMEG_MergeMEEG_HiLoRate(object):
     """

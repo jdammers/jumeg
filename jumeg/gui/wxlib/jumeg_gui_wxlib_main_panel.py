@@ -13,7 +13,7 @@ from jumeg.gui.wxlib.jumeg_gui_wxlib_logger               import JuMEG_wxLogger
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxSplitterWindow,JuMEG_wxCMDButtons
 
 
-__version__= '2019-04-18-001'
+__version__= '2019.05.14.001'
 
 class JuMEG_wxMainPanelBase(wx.Panel):
     '''
