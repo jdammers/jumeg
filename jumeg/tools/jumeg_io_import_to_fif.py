@@ -23,12 +23,11 @@ import numpy as np
 import logging
 import mne
 
-from jumeg.jumeg_base  import jumeg_base as jb
+from jumeg.base.jumeg_base  import jumeg_base as jb
+from jumeg.base import jumeg_logger
+logger = logging.getLogger('jumeg') # init a logger
 
-from jumeg import jumeg_logger
-logger = logging.getLogger('root')
-
-__version__= "2019.04.02.001"
+__version__= "2019.05.14.001"
 
 #=========================================================================================
 #==== script part
@@ -56,7 +55,6 @@ def apply_import_to_fif(opt):
     return mne.io.Raw instance
     """
    # --- ck file fullpath
-   # opt.pdf_fname+="LAAL"
     fpdf = jb.isFile(opt.pdf_fname,path=opt.pdf_stage,head="apply_import_to_fif => file check: 4D/BTI <raw>",exit_on_error=True)
     if not fpdf: return
     fcfg = jb.isFile(opt.config_fname,path=opt.pdf_stage,head="apply_import_to_fif:=> file check: 4D/BTI <config>",exit_on_error=True)
@@ -105,14 +103,17 @@ def apply_import_to_fif(opt):
        # defaults mne017
        # pdf_fname, config_fname='config', head_shape_fname='hs_file', rotation_x=0.0, translation=(0.0, 0.02, 0.11), convert=True,
        # rename_channels=True, sort_by_ch_name=True, ecg_ch='E31', eog_ch=('E63', 'E64'), preload=False, verbose=None
-       raw = mne.io.read_raw_bti(fpdf,config_fname=opt.config_fname,head_shape_fname=opt.head_shape_fname,preload=opt.preload,
-                                 convert=opt.convert,rename_channels=opt.rename_channels,sort_by_ch_name=opt.sort_by_ch_name,
-                                 verbose=opt.verbose,**kwargs)
+       try:
+           raw = mne.io.read_raw_bti(fpdf,config_fname=opt.config_fname,head_shape_fname=opt.head_shape_fname,preload=opt.preload,
+                                     convert=opt.convert,rename_channels=opt.rename_channels,sort_by_ch_name=opt.sort_by_ch_name,
+                                     verbose=opt.verbose,**kwargs)
+       except:
+           logger.exception("---> error in mne.io.read_raw_bti:\n   -> file: {}".format(fpdf))
 
       #--- make output filename and save
        if opt.save:
           fif_out = jb.apply_save_mne_data(raw,fname=fif_out,overwrite=opt.overwrite)
-       
+          
           if opt.verbose:
              logger.info(
                 "===> 4D/BTI file   : {}\n".format(fpdf)+
@@ -212,7 +213,7 @@ def get_args(argv):
                if vars( opt ).get(obj.dest):
                   opt.__dict__[obj.dest] = False
                   for flg in argv:
-                      if flg.startswith("-"+obj.dest) or flg.startswith("--"+obj.dest):
+                      if flg in obj.option_strings:
                          opt.__dict__[obj.dest] = True
                          break
   
@@ -227,7 +228,8 @@ def main(argv):
     if len(argv) < 2:
        parser.print_help()
        sys.exit(-1)
-  
+       
+  #--- init/update logger
     jumeg_logger.setup_script_logging(name=argv[0],opt=opt,logger=logger)
     
     if opt.run: apply_import_to_fif(opt)

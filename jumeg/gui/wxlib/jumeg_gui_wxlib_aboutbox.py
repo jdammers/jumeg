@@ -7,7 +7,7 @@ Created on Tue Jul 10 09:51:01 2018
 """
 import wx
 
-__version__='2019-04-03.001'
+__version__='2019.05.1403.001'
 
 class JuMEG_wxAboutBox(object):
     def __init__(self):

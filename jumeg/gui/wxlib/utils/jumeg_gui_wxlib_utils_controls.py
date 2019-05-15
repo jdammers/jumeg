@@ -15,7 +15,7 @@ from pubsub import pub
 
 import wx.lib.agw.floatspin as FS
 
-__version__='2019-01-04.001'
+__version__='2019.05.14.001'
 
 class JuMEG_wxMultiChoiceDialog(wx.Dialog):
     """

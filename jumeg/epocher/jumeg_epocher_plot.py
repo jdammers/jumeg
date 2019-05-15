@@ -5,23 +5,16 @@ Created on 08.06.2018
 @author: fboers
 """
 
-import os,os.path
-#from distutils.dir_util import mkpath
-
+import os,os.path,logging
 import numpy as np
-#import matplotlib.pylab as pl
-import mne
-
-from jumeg.jumeg_base import JuMEG_Base_IO
-
 import matplotlib.pyplot as pl
-from matplotlib.backends.backend_pdf import PdfPages
+from   matplotlib.backends.backend_pdf import PdfPages
 
+import mne
+from jumeg.base.jumeg_base import JuMEG_Base_IO
 
-import logging
-logger = logging.getLogger('root')
-
-__version__="2019.04.09.001"
+logger = logging.getLogger('jumeg')
+__version__="2019.05.14.001"
 
 #--- A4 landscape
 pl.rc('figure', figsize=(11.69,8.27))
@@ -190,7 +183,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
            fout += self.file_extention              
            pl.savefig(fout, dpi=self.dpi)
            if self.verbose:
-              print("---> done saving plot: " +fout)
+              logger.info("---> done saving plot: " +fout)
         else:
            fout= "no plot saved"
        #---

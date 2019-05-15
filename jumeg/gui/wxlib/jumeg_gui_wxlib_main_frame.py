@@ -27,7 +27,7 @@ try:
 except:
    from wx import AboutBox,AboutDialogInfo
    
-__version__= '2019.04.02.001'
+__version__= '2019.05.14.001'
 
 class JuMEG_wxAboutBox(object):
     def __init__(self):
@@ -149,7 +149,6 @@ class JuMEG_wxMainFrame(wx.Frame):
            msgtxt= "\n".join(data)
         wx.MessageBox("Info: "+data,caption="Info  " +self.Name,style=wx.ICON_INFORMATION|wx.OK)
    #---
-  
     def init_toolbar(self,**kwargs):
         """
         overwrite  e.g.

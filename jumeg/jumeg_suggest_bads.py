@@ -259,6 +259,7 @@ def plot_autosuggest_summary(afp_nearest_neighbour, psd_nearest_neighbour,
     minimap, x_afp, y_afp, x_psd, y_psd, x_both, y_both = \
         make_minimap(picks, afp_suspects, psd_suspects)
 
+  
     # calculate validation markers if necessary (for testing purposes only)
     if validation:
         x_miss, y_miss, x_hit, y_hit, x_fp, y_fp = \

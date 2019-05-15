@@ -63,23 +63,17 @@ jumeg_epocher.apply_epochs(fname=fname,raw=raw,**ep_param)
 
 
 '''
-import sys
-from copy import deepcopy
-
-import logging
-logger = logging.getLogger('root')
-
-#from jumeg import jumeg_logger
-#logger = jumeg_logger.getLogger(name="epocher-events",level="DEBUG")
-
-import numpy as np
+import sys,logging
+import numpy  as np
 import pandas as pd
-
 import mne
-from jumeg.jumeg_base                import jumeg_base,JuMEG_Base_Basic #,JuMEG_Base_PickChannels
+
+from copy import deepcopy
+from jumeg.base.jumeg_base           import jumeg_base,JuMEG_Base_Basic
 from jumeg.epocher.jumeg_epocher_hdf import JuMEG_Epocher_HDF
 
-__version__="2019.04.09.001"
+logger = logging.getLogger('jumeg')
+__version__="2019.05.14.001"
 
 class JuMEG_Epocher_Channel_Baseline(object):
     """ 

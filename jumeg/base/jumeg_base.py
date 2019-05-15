@@ -9,27 +9,21 @@ Authors:
 License: BSD 3 clause
 
 ---> update 23.06.2016 FB
-
 ---> update 20.12.2016 FB
  --> add eeg pick-cls
  --> eeg BrainVision IO support
-
 ---> update 23.12.2016 FB
  --> add opt feeg in get_filename_list_from_file
  --> to merge eeg BrainVision with meg in jumeg_processing_batch
-
 ---> update 04.01.2017 FB
  --> add neww CLS JuMEG_Base_FIF_IO
  --> to merge eeg BrainVision with meg in jumeg_processing_batch
-
 ---> update 05.09.2017 FB
  --> update get_empty_room_fif
  --> use CLS function to read <empty room fif file> instead of mne.io stuff
- 
 ---> update 05.04.2018 FB
  --> update JuMEG_Base_PickChannels.picks2label
  --> get lable list from index picks
-
 ---> update 13.04.2018 FB
  --> add pprint.PrettyPrinter(indent=4) as pp
   -> prints formated dict self.pp( my-dict)
@@ -38,13 +32,13 @@ License: BSD 3 clause
 ---> update 05.07.2018 FB
  --> add update_bad_channels
   -> returns only unique bads
-  
 ---> update 24.08.2018 FB
  --> update print()
   -> add isEmptyString,isNumber
-
 ---> update 03.04.2019 FB
  --> user logger from logging avoid print
+---> update 02.05.2019 FB
+ --> JuMEG_BasePickChannels add def check_dead_channels
 '''
 
 import os,sys,six,contextlib,re,numbers
@@ -59,15 +53,11 @@ with warnings.catch_warnings():
 
 from pprint import PrettyPrinter #,pprint,pformat
 
-
-#from jumeg import jumeg_logger
-#logger = logging.getLogger(__name__)
-#logger = jumeg_logger.getLogger(name="jumeg_base",level="DEBUG")
-
 import logging
-logger = logging.getLogger("root")
+logger = logging.getLogger("jumeg")
+#logger.setLevel('DEBUG')
 
-__version__="2019.04.09.001"
+__version__="2019.05.02.001"
 
 '''
 class AccessorType(type):
@@ -380,6 +370,27 @@ class JuMEG_Base_Basic(object):
        
         os.chdir(prev_cwd)
 
+
+    def check_file_extention(self,fname=None,file_extention=None):
+        """
+    
+        :param fname         : <None>
+        :param file_extention: string or list <None>
+        :return:
+         True/False
+        """
+        if not fname:
+            return False
+        if file_extention:
+            if not isinstance(file_extention,(list)):
+                file_extention = list(file_extention)
+            for fext in file_extention:
+                if fname.endswith(fext):
+                    return True
+        
+        return False
+
+
 class JuMEG_Base_PickChannels(object):
     """ MNE Wrapper Class for mne.pick_types
     return list of channel index from mne.raw obj e.g. for special groups
@@ -424,21 +435,41 @@ class JuMEG_Base_PickChannels(object):
 
        #--- mne version 0.17
         self._pick_type_set={'eeg', 'mag', 'grad', 'ref_meg', 'misc', 'stim', 'eog', 'ecg', 'emg', 'seeg', 'bio', 'ecog', 'hbo', 'hbr'}
-
+        self.verbose = False
+        self.debug   = False
+        
     @property
     def pick_type_set(self): return self._pick_type_set
 
     def picks2labels(self,raw,picks):
-        """ get channel labels from picks
+        '''
+        get channel labels from picks
+        
         Parameter
         ---------
          raw obj
-         picks as numpy array int64
-
+         
+         picks <numpy array int64>
+        
         Result
         -------
          return label list
-        """
+       
+        Example
+        --------
+         from jumeg.base.jumeg_base import jumeg_base as jb
+         
+         fraw = "test.fif"
+         
+         raw,fnraw = jb.get_raw_obj(fraw)
+         
+         picks = jb.picks.meg_and_ref_nobads(raw)
+         
+         labels= jb.picks.picks2labels( raw,picks )
+         
+         print(labels)
+         
+        '''
         if isinstance(picks,(int,np.int64)):
            return raw.ch_names[picks] 
         return ([raw.ch_names[i] for i in picks]) 
@@ -556,6 +587,75 @@ class JuMEG_Base_PickChannels(object):
     def bads(self,raw):
         """ return raw.info[bads] """
         return raw.info['bads']
+ 
+    def update_bads(self,raw,bads=None,clear=False):
+        """
+        update bads in raw, delete doubles, sort
+        
+        :param raw  : raw obj
+        :param bads : list of bads <None>
+        :param clear: clear bads list in raw first <False>
+        
+        :return:
+        
+        Return
+        -------
+         raw.info[bads]
+        """
+        if clear:
+           raw.info["bads"]=[]
+        if bads:
+           if isinstance(bads,(list)):
+              raw.info["bads"].extend( bads )
+           else:
+              raw.info["bads"].append(bads)
+        if raw.info['bads']:
+           b = list(set(raw.info['bads']))
+           b.sort()  # inplace !!!
+           raw.info['bads'] = b
+        
+        return raw.info['bads']
+
+    def check_dead_channels(self,raw,picks=None,update=True,verbose=False):
+        '''
+        check for dead channels ( min == max )
+        e.g.
+            dead channels candidates in Jülich 4D system Magnes3600 might be:
+            ['MEG 007', 'MEG 010', 'MEG 142', 'MEG 156', 'RFM 011']
+        :param raw    : <raw obj>
+        :param picks  : channel index list
+                        if None use  meg,ref,exclude bads, call <meg_and_ref_nobads(raw)>
+        :param update : update bads in raw.info <True>
+        :param verbose: update bads in raw.info <True>
+        
+        :return:
+         picks without bads
+        '''
+        if picks is None:
+           picks = self.meg_and_ref_nobads(raw)
+       #--- if empty list
+        if not picks.any():
+           if self.verbose or verbose:
+              logger.warning("  -> looking for dead channels -> no picks defined" )
+           return picks
+       #--- idx array: 0:dead 1:ok
+        idx = np.where( raw._data[picks,:].min(axis=1) == raw._data[picks,:].max(axis=1),0,1 )
+       
+       #--- update bads in raw, delete doubles, sort
+        if update:
+           self.update_bads(raw,bads=self.picks2labels(raw,picks[np.where(idx < 1)[0]]) )
+           
+        if self.verbose or verbose:
+          # logger.setLevel("DEBUG")
+           bads_idx = np.where(idx < 1)[0]
+           logger.info("  -> looking for dead channels\n"+
+                       "  -> dead channels :  {}\n".format(self.picks2labels(raw,picks[bads_idx]))+
+                       "  ->      index    :  {}\n".format(bads_idx)+
+                       "  -> update bads in raw.info: {}".format(update)
+                       )
+        logger.info("  -> bads: {}\n".format(self.bads(raw) ))
+        
+        return picks[ np.where(idx)[0] ]
 
 class JuMEG_Base_StringHelper(JuMEG_Base_Basic):
     """ Helper Class to work with strings """
@@ -1076,9 +1176,10 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
 
         if not append:
            raw.info['bads']=[]
-
-        if not isinstance(bads,list):
-           bads = bads.split(',')
+        
+        if bads:
+           if not isinstance(bads,list):
+              bads = bads.split(',')
 
         if not bads:
            if not append:
@@ -1098,23 +1199,20 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                      raw.info['bads'].append(bad_ch)
         
      #--- only unique channel names sorted
-        if raw.info['bads']:
-           b = list( set( raw.info['bads'] ) )
-           b.sort() # inplace !!!
-           raw.info['bads'] = b
+        self.picks.update_bads(raw,bads=raw.info.get('bads'))
         
         fif_out = self.get_fif_name(raw=raw,postfix=postfix)
 
         if self.verbose:
-           logger.info(self.pp_list2str([
-                       " --> FIF in  :" + self.get_raw_filename(raw),
-                       " --> FIF out :" + fif_out,
-                       raw.info['bads'],"\n"],head=" --> Update bad-channels"))
+           logger.info(" --> Update bad-channels\n"+
+                       " --> FIF in  : {}\n".format(self.get_raw_filename(raw))+
+                       " --> FIF out : {}\n".format(fif_out)+
+                       " --> bads    : {}\n".format(raw.info['bads']))
               
         if ( interpolate and raw.info['bads'] ) :
            logger.info( self.pp_list2str(
-              [" --> Update BAD channels => interpolating: " + raw.info['filename'],
-               " --> BADs : ",raw.info['bads'],"\n"]))
+              [" --> Update BAD channels => interpolating: {}".format(raw.info['filename']),
+               " --> BADs : {}".format(raw.info['bads'])]))
            raw.interpolate_bads()
      
       #--- save raw as bads-raw.fif
@@ -1152,7 +1250,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
    
         return ica_raw,self.get_raw_filename(ica_raw)
             
-    def get_raw_obj(self,fname_raw,raw=None,path=None,preload=True):
+    def get_raw_obj(self,fname,raw=None,path=None,preload=True,reload_raw=False,reset_bads=False):
         """
         load file in fif format <*.raw> or brainvision eeg data
         check for filename or raw obj
@@ -1161,34 +1259,62 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
         Parameters
         ----------
-         fname_raw: name of raw-file 
-         raw      : raw obj <None>
-        
+         fname     : name of raw-file
+         raw       : raw obj <None>
+                     if raw: return raw and fullfilename of raw
+         preload   : True
+         reload_raw: reload raw-object via raw.filename <False>
+         reset_bads: reset bads <False>
+         
         Results
         ----------
          raw obj
          
          fname from raw obj 
         """
-        if raw is None:
-           assert(fname_raw),"---> ERROR no file foumd!!\n"
-           if self.verbose:
-              logger.info("<<<< Reading raw data ...")
-           fn = fname_raw
+        
+        if raw:
+           if reload_raw:
+              raw = mne.io.Raw( self.get_raw_filename(raw),preload=preload )
+           if reset_bads:
+              raw.info["bads"] = []
+           return raw,self.get_raw_filename(raw)
+        
+        if self.verbose:
+           logger.info("<<<< Reading raw data ...")
+        if self.debug:
+           logger.debug(" --> reading raw data:\n"+
+                        "  -> raw : {}\n".format(raw)+
+                        "  -> file: {}\n".format(fname)+
+                        "  -> path: {}\n".format(path))
+        if fname:
+           fn = self.expandvars( fname )
            if path:
-              fn = path+"/"+fname_raw
-           if ( fn.endswith(self.brainvision_extention) ):
+              path = self.expandvars(path)
+              fn   = os.path.join(path,fn)
+        else:
+           fn = self.get_raw_filename(raw)
+        
+        if not fn:
+           logger.error("ERROR no such file or raw-object:\n  -> raw obj: {}\n  -> fname: {}\n  -> path : {}".format(raw,fname,path))
+           return
+        try:
+            if not os.path.isfile(fn):
+               raise FileNotFoundError("ERROR no file found: {}".format(fn))
+            
+            if ( fn.endswith(self.brainvision_extention) ):
                raw = mne.io.read_raw_brainvision(fn,response_trig_shift=self.brainvision_response_shift,preload=preload)
-               raw.info['bads'] = []
-               #--- ToDo may decide for eeg-name .eeg or.vhdr
-           else:
+               #raw.info['bads'] = []
+          #--- ToDo may decide for eeg-name .eeg or.vhdr
+            else:
                raw = mne.io.Raw(fn,preload=preload)
-       
-        assert(raw), "---> ERROR in jumeg.jumeg_base.get_raw_obj => could not get raw obj:\n ---> FIF name: " + fname_raw
-   
+        except:
+            logger.exception("---> could not get raw obj from file:\n --> FIF name: {}\n  -> file not exist".format(fn))
+        
+        if reset_bads:
+           raw.info["bads"] = []
+           logger.debug("  -> resetting bads in raw")
         return raw,self.get_raw_filename(raw)
-
-
 
     def get_files_from_list(self, fin):
         """ get filename or filenames from a list
@@ -1325,6 +1451,55 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
 
           # channel_type = mne.io.pick.channel_type(raw.info, 75)
 
+    def update_and_save_raw(self,raw,fin=None,fout=None,save=False,overwrite=True,postfix=None,separator="-",update_raw_filenname=False):
+        """
+        new filename from fin or fout with postfix
+        saving mne raw obj to fif format
+
+        Parameters
+        ----------
+         raw       : raw obj
+         fout      : full output filename if set use this
+         fin       : input file name <None>
+         postfix   : used to generate <output filename> from <input file name> and <postfix>
+                     e.g.:
+         separator : split to generate output filename with postfix  <"-">
+         save      : save raw to disk
+         overwrite : <True>
+         update_raw_filenname: <False>
+
+        Returns
+        --------
+         filename,raw-obj
+        """
+        from distutils.dir_util import mkpath
+        #--- use full filname
+        if fout:
+           fname = os.path.expandvars(os.path.expanduser(fout))
+        #--- make output file name
+        else:
+            fname = fin if fin else raw.filenames[0]
+            fname = os.path.expandvars(os.path.expanduser(fname))  # expand envs
+            if postfix:
+               fpre,fext = fname.rsplit(separator)
+               fname = fpre + "," + postfix + separator + fext
+    
+        if save:
+            try:
+                if (os.path.isfile(fname) and (not overwrite)):
+                    logger.info(" --> File exist => skip saving data to : " + fname)
+                else:
+                    logger.info(">>>> writing data to disk...\n --> saving: " + fname)
+                    mkpath(os.path.dirname(fname))
+                    raw.save(fname,overwrite=True)
+                    logger.info(' --> Bads:' + str(raw.info['bads']) + "\n --> Done writing data to disk...")
+            except:
+                logger.exception("---> error in saving raw object:\n  -> file: {}".format(fname))
+    
+        if update_raw_filenname:
+           self.set_raw_filename(raw,fname)
+        return fname,raw
+
     def apply_save_mne_data(self,raw,fname=None,overwrite=True):
         """saving mne raw obj to fif format
         
@@ -1343,14 +1518,17 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            fname = raw.filenames[0]
         
         fname = os.path.expandvars(fname)  # expand envs
-        if ( os.path.isfile(fname) and ( not overwrite) ) :
-           logger.info(" --> File exist => skip saving data to : " + fname)
-        else:
-           logger.info(">>>> writing filtered data to disk...\n --> saving: "+ fname)
-           mkpath( os.path.dirname(fname) )
-           raw.save(fname,overwrite=True)
-           logger.info(' --> Bads:' + str( raw.info['bads'] ) +"\n --> Done writing data to disk...")
-        
+        try:
+           if ( os.path.isfile(fname) and ( not overwrite) ) :
+              logger.info(" --> File exist => skip saving data to : " + fname)
+           else:
+              logger.info(">>>> writing data to disk...\n --> saving: "+ fname)
+              mkpath( os.path.dirname(fname) )
+              raw.save(fname,overwrite=True)
+              logger.info(' --> Bads:' + str( raw.info['bads'] ) +"\n --> Done writing data to disk...")
+        except:
+           logger.exception("---> error in saving raw object:\n  -> file: {}".format(fname))
+           
         return fname
 
     def get_empty_room_fif(self,fname=None,raw=None, preload=True):

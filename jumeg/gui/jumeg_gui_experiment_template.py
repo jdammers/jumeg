@@ -16,30 +16,24 @@ JuMEG GUI to setup an experiment template
 # Updates
 #--------------------------------------------
 
-import os,sys #path,fnmatch
-import numpy as np
+import os
 import json
 import wx
 from   pubsub import pub
-from   wx.lib.scrolledpanel import ScrolledPanel
 
 import wx.propgrid as wxpg
-from   wx.propgrid import PropertyGridManager as wxpgm
-
-#--- jumeg the base
-from jumeg.jumeg_base                                     import jumeg_base as jb
+#---
+from jumeg.base.jumeg_base                                import jumeg_base as jb
 #--- jumeg wx main stuff
 from jumeg.gui.wxlib.jumeg_gui_wxlib_main_frame           import JuMEG_wxMainFrame
 from jumeg.gui.wxlib.jumeg_gui_wxlib_main_panel           import JuMEG_wxMainPanel
-#--- experiment template panel and exp template stuff
+#--- experiment template panel and exp template
 from jumeg.gui.wxlib.jumeg_gui_wxlib_experiment_template  import JuMEG_wxExpTemplate
 #--- parameter/properties
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls      import JuMEG_wxMultiChoiceDialog,JuMEG_wxControlButtonPanel,JuMEG_wxControls
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_property_grid import JuMEG_wxPropertyGridPageBase,JuMEG_wxPropertyGridPageNotebookBase,JuMEG_wxPropertyGridSubProperty
 
-
-__version__='2019-02-07.001'
-
+__version__='2019.05.14.001'
 
 class JuMEG_wxTMPMakeDirDialog(JuMEG_wxMultiChoiceDialog):
     """
@@ -337,7 +331,7 @@ class JuMEG_wxTemplatePanel(JuMEG_wxMainPanel):
        data = self.PropertyGridNoteBoook.GetData()
      #--- make file name
        self.Template.TMP.template_name = self.GetDataName(data)
-       fjson  = self.Template.TMP.template_full_filename
+       #fjson  = self.Template.TMP.template_full_filename
        SaveDLG= wx.FileDialog(self, message='Save Template data.',
                               wildcard='template (*.'+self.Template.TMP.template_extention+')|*.json|All Files|*',
                               style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT|wx.FD_PREVIEW)
@@ -349,14 +343,14 @@ class JuMEG_wxTemplatePanel(JuMEG_wxMainPanel):
          #--- update templatev info
           data["info"] = self.Template.TMP.update_template_info(gui_version=__version__)
           
-          fout = SaveDLG.GetDirectory() + "/" + SaveDLG.GetFilename()
+          fout = os.path.join( SaveDLG.GetDirectory(),SaveDLG.GetFilename() )
           if self.verbose:
              wx.LogMessage(" ---> experiment template             : " + data["experiment"]["name"])
              wx.LogMessage("  --> saving experiment template file : " + fout)
              if self.debug:
                 wx.LogDebug("   -> experiment template data: \n" + json.dumps(data,indent=4))
           try:
-              with open(fjson, "w") as f:
+              with open(fout, "w") as f:
                    f.write(json.dumps(data,indent=4))
                    os.fsync(f.fileno()) # make to disk
               f.close()
