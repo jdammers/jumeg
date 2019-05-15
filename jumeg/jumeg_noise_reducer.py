@@ -1,11 +1,11 @@
-'''
+"""
 ----------------------------------------------------------------------
 --- jumeg.jumeg_noise_reducer --------------------------------
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 31.01.2017
- version    : 1.9
+ last update: 02.05.2019
+ version    : 1.14
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -38,14 +38,23 @@ jumeg_noise_reducer.noise_reducer(fname_raw)
 
 --> for further comments we refer directly to the functions
 ----------------------------------------------------------------------
-'''
+"""
 # Author: EE
 #   150203/EE/
 #   150619/EE/ fix for tmin/tmax-arg
 #   170131/EE/ modified handling of refnotch-arg (no auto-harmonics)
+#   180629/EE/ explicit spec. for reference-filter ('firwin','hann')
+#   190103/EE/ fixed infosig-arg for _is_good()
+#   190208/EE/ prep. f. transition to Python3
+#   190502/EE/ Python3-version
 #
 # License: BSD (3-clause)
+# cf. https://www.johndcook.com/blog/2019/01/09/projecting-unicode-to-ascii/
+#     for a ruggedized version of channel_indices_by_type()?
 
+from builtins import str
+from builtins import range
+import sys  # for sys.stdout.flush()
 import os
 import numpy as np
 import time
@@ -57,7 +66,7 @@ import mne
 from mne.utils import logger
 from mne.epochs import _is_good
 from mne.io.pick import channel_indices_by_type
-from .jumeg_utils import get_files_from_list
+from jumeg.jumeg_utils import get_files_from_list
 
 TINY = 1.e-38
 SVD_RELCUTOFF = 1.e-08
@@ -328,8 +337,8 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                   tmin=None, tmax=None, reflp=None, refhp=None, refnotch=None,
                   exclude_artifacts=True, checkresults=True, return_raw=False,
                   complementary_signal=False, fnout=None, verbose=False):
-
-    """Apply noise reduction to signal channels using reference channels.
+    """
+    Apply noise reduction to signal channels using reference channels.
 
     Parameters
     ----------
@@ -402,7 +411,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                          'Please pass one file at a time.')
 
     # handle error if Raw object is passed with detrending option
-    #TODO include perform_detrending for Raw objects
+    # TODO include perform_detrending for Raw objects
     if raw and detrending:
         raise ValueError('Please perform detrending on the raw file directly.'
                          'Cannot perform detrending on the raw object')
@@ -451,7 +460,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         tw1 = time.time()
 
         if verbose:
-            print(">>> loading raw data took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0)))
+            print(">>> loading raw data took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tc0)), (tw1 - tw0)))
 
         # Time window selection
         # weights are calc'd based on [tmin,tmax], but applied to the entire data set.
@@ -520,13 +529,13 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                                      "reference filter together")
                 nyquist = (0.5 * raw.info['sfreq'])
                 if isinstance(refnotch, list):
-                  notchfrqs = refnotch
+                    notchfrqs = refnotch
                 else:
-                  notchfrqs = [ refnotch ]
+                    notchfrqs = [refnotch]
                 notchfrqscln = []
                 for nfrq in notchfrqs:
-                    if not isinstance(nfrq,float) and not isinstance(nfrq,int):
-                        raise ValueError("Illegal entry for notch-frequency (",nfrq,")")
+                    if not isinstance(nfrq, float) and not isinstance(nfrq, int):
+                        raise ValueError("Illegal entry for notch-frequency (", nfrq, ")")
                     if nfrq >= nyquist:
                         warnings.warn('Ignoring notch frequency > 0.5*sample_rate=%.1fHz' % nyquist)
                     else:
@@ -535,7 +544,8 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                     raise ValueError("Notch frequency list is (now) empty")
                 use_refantinotch = True
                 if verbose:
-                    print(">>> notches at freq ", notchfrqscln)
+                    print(">>> notches at freq ", end=' ')
+                    print(notchfrqscln)
             else:
                 if verbose:
                     if reflp is not None:
@@ -550,15 +560,21 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             fltref = raw.copy().drop_channels(droplist)
             if use_refantinotch:
                 rawref = raw.copy().drop_channels(droplist)
-                fltref.notch_filter(notchfrqscln,
-                                    picks=np.array(range(nref)), method='fft')
+                fltref.notch_filter(notchfrqscln, fir_design='firwin',
+                                    fir_window='hann', phase='zero',
+                                    picks=np.array(list(range(nref))),
+                                    method='fir')
                 fltref._data = (rawref._data - fltref._data)
             else:
-                fltref.filter(refhp, reflp, picks=np.array(range(nref)), method='fft')
+                fltref.filter(refhp, reflp, fir_design='firwin',
+                              fir_window='hann', phase='zero',
+                              picks=np.array(list(range(nref))),
+                              method='fir')
             tc1 = time.clock()
             tw1 = time.time()
             if verbose:
-                print(">>> filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+                print(">>> filtering ref-chans  took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tct)),
+                                                                                           (tw1 - twt)))
 
         if verbose:
             print("########## Calculating sig-ref/ref-ref-channel covariances:")
@@ -574,16 +590,16 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         # _is_good() from mne-0.9.git-py2.7.egg/mne/epochs.py seems to
         # ignore ref-channels (not covered by dict) and checks individual
         # data segments - artifacts across a buffer boundary are not found.
-        reject = dict(grad=4000e-13, # T / m (gradiometers)
-                      mag=4e-12,     # T (magnetometers)
-                      eeg=40e-6,     # uV (EEG channels)
-                      eog=250e-6)    # uV (EOG channels)
-       
+        reject = dict(grad=4000e-13,  # T / m (gradiometers)
+                      mag=4e-12,  # T (magnetometers)
+                      eeg=40e-6,  # uV (EEG channels)
+                      eog=250e-6)  # uV (EOG channels)
+
         infosig = copy.copy(raw.info)
         infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-        # the below fields are updated automatically when 'chs' is updated
-        # infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-        # infosig['nchan'] = len(sigpick)
+        # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
+        infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
+        infosig['nchan'] = len(sigpick)
         idx_by_typesig = channel_indices_by_type(infosig)
 
         # Read data in chunks:
@@ -607,8 +623,8 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 raw_segmentref, times = raw[refpick, first:last]
 
             if not exclude_artifacts or \
-               _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
-                        ignore_chs=raw.info['bads']):
+                    _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
+                             ignore_chs=raw.info['bads']):
                 sigmean += raw_segmentsig.sum(axis=1)
                 refmean += raw_segmentref.sum(axis=1)
                 sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
@@ -653,7 +669,9 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 # Calculate initial signal channel covariance:
                 # (only used as quality measure)
                 print(">>> initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata)))
-                for i in range(min(5,nsig)):
+                for i in range(min(5, nsig)):
+                    print(">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+                for i in range(max(0, nsig - 5), nsig):
                     print(">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
                 print(">>>")
 
@@ -697,7 +715,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         weights = np.zeros((raw._data.shape[0], nref))
         for isig in range(nsig):
             for iref in range(nref):
-                weights[sigpick[isig],iref] = np.dot(srcovdata[isig,:], RRinv[:,iref])
+                weights[sigpick[isig], iref] = np.dot(srcovdata[isig, :], RRinv[:, iref])
 
         if verbose:
             print("########## Compensating signal channels:")
@@ -723,14 +741,15 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             else:
                 raw._data[:, isl] = subrefarr
 
-            if (isl % 10000 == 0) and verbose:
-                print("\rProcessed slice %6d" % isl)
+            if (isl % 10000 == 0 or isl + 1 == raw._data.shape[1]) and verbose:
+                print("\rProcessed slice %6d" % isl, end=" ")
+                sys.stdout.flush()
 
         if verbose:
             print("\nDone.")
             tc1 = time.clock()
             tw1 = time.time()
-            print(">>> compensation loop took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+            print(">>> compensation loop took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tct)), (tw1 - twt)))
 
         if checkresults:
             if verbose:
@@ -749,8 +768,8 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 raw_segmentsig, times = raw[sigpick, first:last]
                 # Artifacts found here will probably differ from pre-noisered artifacts!
                 if not exclude_artifacts or \
-                   _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
-                            flat=None, ignore_chs=raw.info['bads']):
+                        _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
+                                 flat=None, ignore_chs=raw.info['bads']):
                     sigmean += raw_segmentsig.sum(axis=1)
                     sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
                     n_samples += raw_segmentsig.shape[1]
@@ -760,13 +779,18 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             sscovdata -= n_samples * sigmean[:] * sigmean[:]
             sscovdata /= (n_samples - 1)
             if verbose:
-                print(">>> no channel got worse: ", np.all(np.less_equal(sscovdata, sscovinit)))
+                print(">>> no channel got worse: %s" % str(np.all(np.less_equal(sscovdata, sscovinit))))
                 print(">>> final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata)))
-                for i in range(min(5,nsig)):
+                for i in range(min(5, nsig)):
+                    print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+                # for i in range(min(5,nsig),max(0,nsig-5)):
+                #    print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+                for i in range(max(0, nsig - 5), nsig):
                     print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
                 tc1 = time.clock()
                 tw1 = time.time()
-                print(">>> signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+                print(">>> signal covar-calc took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tct)),
+                                                                                        (tw1 - twt)))
                 print(">>>")
 
         if fnout is not None:
@@ -786,12 +810,13 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         tc1 = time.clock()
         tw1 = time.time()
         if verbose:
-            print(">>> Total run took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0)))
+            print(">>> Total run took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tc0)), (tw1 - tw0)))
 
         if return_raw:
             if verbose:
                 print(">>> Returning raw object...")
             return raw
+
 
 ##################################################
 #
@@ -800,9 +825,8 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 #
 ##################################################
 def test_noise_reducer():
-
     data_path = os.environ['SUBJECTS_DIR']
-    subject   = os.environ['SUBJECT']
+    subject = os.environ['SUBJECT']
 
     dname = data_path + '/' + 'empty_room_files' + '/109925_empty_room_file-raw.fif'
     subjects_dir = data_path + '/subjects'
@@ -885,7 +909,7 @@ def test_noise_reducer():
         fltref = raw.copy().drop_channels(droplist)
         tct = time.clock()
         twt = time.time()
-        fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(range(nref)), method='fft')
+        fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(list(range(nref))), method='fft')
         tc1 = time.clock()
         tw1 = time.time()
         print("filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
@@ -903,14 +927,16 @@ def test_noise_reducer():
     # _is_good() from mne-0.9.git-py2.7.egg/mne/epochs.py seems to
     # ignore ref-channels (not covered by dict) and checks individual
     # data segments - artifacts across a buffer boundary are not found.
-    reject = dict(grad=4000e-13, # T / m (gradiometers)
-                  mag=4e-12,     # T (magnetometers)
-                  eeg=40e-6,     # uV (EEG channels)
-                  eog=250e-6)    # uV (EOG channels)
+    reject = dict(grad=4000e-13,  # T / m (gradiometers)
+                  mag=4e-12,  # T (magnetometers)
+                  eeg=40e-6,  # uV (EEG channels)
+                  eog=250e-6)  # uV (EOG channels)
 
     infosig = copy.copy(raw.info)
     infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
+    # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
+    infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
+    infosig['nchan'] = len(sigpick)
     idx_by_typesig = channel_indices_by_type(infosig)
 
     # inforef not good w/ filtering, but anyway useless
@@ -941,8 +967,8 @@ def test_noise_reducer():
         #              inforef['ch_names'], idx_by_typeref, reject, flat=None,
         #                ignore_chs=raw.info['bads']):
         if not exclart or \
-           _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
-                    flat=None, ignore_chs=raw.info['bads']):
+                _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
+                         flat=None, ignore_chs=raw.info['bads']):
             sigmean += raw_segmentsig.sum(axis=1)
             refmean += raw_segmentref.sum(axis=1)
             sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
@@ -952,7 +978,7 @@ def test_noise_reducer():
         else:
             logger.info("Artefact detected in [%d, %d]" % (first, last))
 
-    #_check_n_samples(n_samples, len(picks))
+    # _check_n_samples(n_samples, len(picks))
     if n_samples <= 1:
         raise ValueError('Too few samples to calculate covariances')
     sigmean /= n_samples
@@ -998,14 +1024,16 @@ def test_noise_reducer():
     # _is_good() from mne-0.9.git-py2.7.egg/mne/epochs.py seems to
     # ignore ref-channels (not covered by dict) and checks individual
     # data segments - artifacts across a buffer boundary are not found.
-    reject = dict(grad=4000e-13, # T / m (gradiometers)
-                  mag=4e-12,     # T (magnetometers)
-                  eeg=40e-6,     # uV (EEG channels)
-                  eog=250e-6)    # uV (EOG channels)
+    reject = dict(grad=4000e-13,  # T / m (gradiometers)
+                  mag=4e-12,  # T (magnetometers)
+                  eeg=40e-6,  # uV (EEG channels)
+                  eog=250e-6)  # uV (EOG channels)
 
     infosig = copy.copy(raw.info)
     infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
+    # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
+    infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
+    infosig['nchan'] = len(sigpick)
     idx_by_typesig = channel_indices_by_type(infosig)
 
     # inforef not good w/ filtering, but anyway useless
@@ -1039,15 +1067,15 @@ def test_noise_reducer():
         #              inforef['ch_names'], idx_by_typeref, reject, flat=None,
         #                ignore_chs=raw.info['bads']):
         if not exclart or \
-           _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
-                    flat=None, ignore_chs=raw.info['bads']):
+                _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
+                         flat=None, ignore_chs=raw.info['bads']):
             for isl in range(raw_segmentsig.shape[1]):
                 nsl = isl + n_samples + 1
                 cnslm1dnsl = float((nsl - 1)) / float(nsl)
                 sslsubmean = (raw_segmentsig[:, isl] - smold)
                 rslsubmean = (raw_segmentref[:, isl] - rmold)
-                smean = smold + sslsubmean / nsl
-                rmean = rmold + rslsubmean / nsl
+                smean = smold + sslsubmean / float(nsl)
+                rmean = rmold + rslsubmean / float(nsl)
                 sscov += sslsubmean * (raw_segmentsig[:, isl] - smean)
                 srcov += cnslm1dnsl * np.dot(sslsubmean.reshape((nsig, 1)), rslsubmean.reshape((1, nref)))
                 rrcov += cnslm1dnsl * np.dot(rslsubmean.reshape((nref, 1)), rslsubmean.reshape((1, nref)))
@@ -1057,7 +1085,7 @@ def test_noise_reducer():
         else:
             logger.info("Artefact detected in [%d, %d]" % (first, last))
 
-    #_check_n_samples(n_samples, len(picks))
+    # _check_n_samples(n_samples, len(picks))
     if n_samples <= 1:
         raise ValueError('Too few samples to calculate covariances')
     sscov /= (n_samples - 1)
@@ -1089,7 +1117,7 @@ def test_noise_reducer():
         # Calculate initial signal channel covariance:
         # (only used as quality measure)
         print("initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscov)))
-        for i in range(min(5,nsig)):
+        for i in range(min(5, nsig)):
             print("initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscov.flatten()[i])))
         print(" ")
     if nref < 6:
@@ -1121,8 +1149,8 @@ def test_noise_reducer():
     RRinvtr = np.zeros((nref, nref))
     RRinvtr = np.dot(U, np.dot(np.diag(sinv), V))
     if checkresults:
-        # print ">>> RRinvtr-result:"
-        # print RRinvtr
+        # print(">>> RRinvtr-result:")
+        # print(RRinvtr)
         stat = np.allclose(np.identity(nref), np.dot(rrslope.transpose(), RRinvtr))
         if stat:
             print(">>> Testing RRinvtr-result (shld be unit-matrix): ok")
@@ -1146,14 +1174,13 @@ def test_noise_reducer():
         print(">>> largest weight %12.5e" % np.max(np.abs(weights)))
         wlrg = np.where(np.abs(weights) >= 0.99 * np.max(np.abs(weights)))
         for iwlrg in range(len(wlrg[0])):
-            print(">>> weights[%3d,%2d] = %12.5e" % \
-                  (wlrg[0][iwlrg], wlrg[1][iwlrg], weights[wlrg[0][iwlrg], wlrg[1][iwlrg]]))
+            print(">>> weights[%3d,%2d] = %12.5e" % (wlrg[0][iwlrg], wlrg[1][iwlrg],
+                                                     weights[wlrg[0][iwlrg], wlrg[1][iwlrg]]))
 
     if nref < 5:
         print("weights-entries for first sigchans:")
-        for i in range(min(5,nsig)):
-            print('weights[sp(%2d)][r]=[' % i + ' '.join([' %+10.7f' %
-                             val for val in weights[sigpick[i]][:]]) + ']')
+        for i in range(min(5, nsig)):
+            print('weights[sp(%2d)][r]=[' % i + ' '.join([' %+10.7f' % val for val in weights[sigpick[i]][:]]) + ']')
 
     print("########## Compensating signal channels:")
     tct = time.clock()
@@ -1171,7 +1198,7 @@ def test_noise_reducer():
         subrefarr = np.dot(weights[:], refarr)
         # data[:,isl] -= subrefarr   will not modify raw._data?
         raw._data[:, isl] -= subrefarr
-        if isl%10000 == 0:
+        if isl % 10000 == 0:
             print("\rProcessed slice %6d" % isl)
     print("\nDone.")
     tc1 = time.clock()
@@ -1194,8 +1221,8 @@ def test_noise_reducer():
             raw_segmentsig, times = raw[sigpick, first:last]
             # Artifacts found here will probably differ from pre-noisered artifacts!
             if not exclart or \
-               _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
-                        flat=None, ignore_chs=raw.info['bads']):
+                    _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
+                             flat=None, ignore_chs=raw.info['bads']):
                 sigmean += raw_segmentsig.sum(axis=1)
                 sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
                 n_samples += raw_segmentsig.shape[1]
@@ -1206,7 +1233,7 @@ def test_noise_reducer():
         sscovdata /= (n_samples - 1)
         print(">>> no channel got worse: ", np.all(np.less_equal(sscovdata, sscovinit)))
         print("final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata)))
-        for i in range(min(5,nsig)):
+        for i in range(min(5, nsig)):
             print("final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
         tc1 = time.clock()
         tw1 = time.time()

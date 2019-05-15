@@ -23,4 +23,5 @@ setup(name='jumeg',
       author_email='pravsripad@gmail.com',
       license='BSD (3-clause)',
       packages=package_tree('jumeg'),
+      package_data={'jumeg': [op.join('data', '*')]},
       zip_safe=False)

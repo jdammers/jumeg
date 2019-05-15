@@ -62,7 +62,7 @@ def find_files(rootdir='.', pattern='*'):
     return files
 
 
-def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fname):
+def noise_reduction(dirname, raw_fname, denoised_fname, nr_cfg, state_space_fname):
     """
     Apply the noise reducer to the raw file and save the result.
 
@@ -74,8 +74,9 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fn
         File name of the raw file.
     denoised_fname : str
         File name under which the denoised raw file is saved.
-    refnotch : list
-        List of frequencies for which a notch filter is applied.
+    nr_cfg: dict
+        Dict containing the noise reducer specific settings from
+        the config file.
     state_space_fname : str
         Second half of the name under which the state space dict is to
         be saved, e.g., subj + state_space_name.
@@ -84,10 +85,10 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fn
     --------
     None
     """
-
-    reflp = 5.
-    refhp = 0.1
-    noiseref_hp = ['RFG ...']
+    refnotch = nr_cfg['refnotch']
+    reflp = nr_cfg['reflp']
+    refhp = nr_cfg['refhp']
+    noiseref_hp = nr_cfg['noiseref_hp']
 
     from jumeg.jumeg_noise_reducer import noise_reducer, plot_denoising
 
@@ -119,17 +120,15 @@ def noise_reduction(dirname, raw_fname, denoised_fname, refnotch, state_space_fn
                    n_jobs=1, fnout=op.join(dirname, plot_name), show=False)
 
     # save config file
-    nr_dict = dict()
-    nr_dict['reflp'] = reflp
-    nr_dict['refhp'] = refhp
-    nr_dict['refnotch'] = refnotch
-    nr_dict['output_file'] = denoised_fname
+    nr_dict = nr_cfg.copy()
+    nr_dict['input_file'] = op.join(dirname, raw_fname)
+    nr_dict['process'] = 'noise_reducer'
+    nr_dict['output_file'] = op.join(dirname, denoised_fname)
 
-    save_state_space_file(ss_dict_fname, process='noise_reducer',
-                          input_fname=raw_fname, process_config_dict=nr_dict)
+    save_state_space_file(ss_dict_fname, process_config_dict=nr_dict)
 
 
-def save_state_space_file(config_dict_fname, process, input_fname, process_config_dict):
+def save_state_space_file(config_dict_fname, process_config_dict):
     """
 
     Parameters:
@@ -150,12 +149,9 @@ def save_state_space_file(config_dict_fname, process, input_fname, process_confi
 
     config_dict = init_dict(config_dict_fname)
 
-    try:
-        config_dict[process][input_fname] = process_config_dict
-    except KeyError:
-        # dict does not exist create first
-        config_dict[process] = dict()
-        config_dict[process][input_fname] = process_config_dict
+    output_file = process_config_dict['output_file']
+
+    config_dict[output_file] = process_config_dict
 
     save_dict(config_dict, config_dict_fname)
 
@@ -233,10 +229,11 @@ def interpolate_bads(raw_fname, bcc_fname, dirname, state_space_fname):
         raw_bcc.plot(block=True)
         raw_bcc.save(bcc_fname, overwrite=True)
 
+        ib_dict['input_file'] = raw_fname
+        ib_dict['process'] = 'interpolate_bads'
         ib_dict['output_file'] = bcc_fname
 
-        save_state_space_file(ss_dict_fname, process='interpolate_bads',
-                              input_fname=raw_fname, process_config_dict=ib_dict)
+        save_state_space_file(ss_dict_fname, process_config_dict=ib_dict)
 
 
 def mksubjdirs(subjects_dir, subj):
