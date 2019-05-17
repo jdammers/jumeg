@@ -16,13 +16,13 @@
 #--------------------------------------------
 
 import os,sys,copy
-from pubsub                        import pub
-from jumeg.template.jumeg_template import JuMEG_Template
+from pubsub                             import pub
+from jumeg.base.template.jumeg_template import JuMEG_Template
 
 import logging
-logger = logging.getLogger('root')
+logger = logging.getLogger("jumeg")
 
-__version__="2019-02-05.001"
+__version__="2019.05.14.001"
 
 __DEFAULT_EXPERIMENT_TEMPLATE__={
 "info":{
@@ -35,7 +35,7 @@ __DEFAULT_EXPERIMENT_TEMPLATE__={
               #"ids"  : [], not used jet
               "scans": [],
               "stages":["${JUMEG_PATH_MNE_IMPORT}/exp","${JUMEG_PATH_MNE_IMPORT2}/exp","${JUMEG_PATH_LOCAL_DATA}/exp"],
-              "bads_list":["MEG 007","MEG 010","MEG 142","MEG 156","RFM 011"],
+              "bads_list":["MEG 010","MEG 142","MEG 156","RFM 011"], # MEG 007,MEG 042
               "segmentation":{
                               "path":{
                                       "mrdata"     : "mrdata",
@@ -121,6 +121,11 @@ class JuMEG_ExpTemplate(JuMEG_Template_Experiments):
        
    @property
    def data(self): return self.template_data['experiment']
+
+ #--- tmp path default
+   @property
+   def template_path_default(self):
+       return os.getenv("JUMEG_PATH_TEMPLATE_EXPERIMENTS",os.getenv("JUMEG_PATH") + '/data/templates/jumeg_experiments')
 
    @property
    def bti_data(self):

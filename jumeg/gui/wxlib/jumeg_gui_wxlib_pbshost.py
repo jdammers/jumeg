@@ -11,7 +11,7 @@ import wx
 from pubsub  import pub
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxControls,JuMEG_wxControlGrid,JuMEG_wxControlButtonPanel
 
-__version__="2019-04-03-001"
+__version__="2019.05.14.001"
 
 class JuMEG_PBSHostsParameter(object):
    """

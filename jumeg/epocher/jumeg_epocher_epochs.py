@@ -10,26 +10,18 @@ baseline correction:
 check in confidence intervall for non artifac intervall e.g. non-eyeblink 
 
 """
-import os,sys
+import os,sys,logging
 from copy import deepcopy
 import numpy as np
 import mne
 
-from jumeg.jumeg_base                           import jumeg_base
-from jumeg.epocher.jumeg_epocher_events         import JuMEG_Epocher_Events,JuMEG_Epocher_Events_Channel,JuMEG_Epocher_Channel_Baseline
-from jumeg.epocher.jumeg_epocher_plot           import jumeg_epocher_plot as jplt
+from jumeg.base.jumeg_base               import jumeg_base
+from jumeg.epocher.jumeg_epocher_events  import JuMEG_Epocher_Events,JuMEG_Epocher_Events_Channel,JuMEG_Epocher_Channel_Baseline
+from jumeg.epocher.jumeg_epocher_plot    import jumeg_epocher_plot as jplt
 
-from jumeg import jumeg_logger
-#logger = logging.getLogger(__name__)
-#logger = jumeg_logger.getLogger(name="epocher-events",level="DEBUG")
-
-#logger = logging.getLogger(__name__)
-
-import logging
-logger = logging.getLogger('root')
-
-__version__="2019.04.09.001"
-
+#--- setup logger
+logger = logging.getLogger('jumeg')
+__version__="2019.05.14.001"
 
 class JuMEG_Epocher_Marker(JuMEG_Epocher_Events_Channel):
     '''

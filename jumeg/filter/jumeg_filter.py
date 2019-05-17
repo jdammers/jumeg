@@ -2,18 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import os,sys,argparse
+import logging
 import numpy as np
 
-from jumeg.jumeg_base  import jumeg_base as jb
+from jumeg.base.jumeg_base         import jumeg_base as jb
+from jumeg.base                    import jumeg_logger
 from jumeg.filter.jumeg_filter_bw  import JuMEG_Filter_Bw
 from jumeg.filter.jumeg_filter_mne import JuMEG_Filter_MNE
 
-import logging
-from jumeg import jumeg_logger
-logger = logging.getLogger('root')
-
-__version__= '2019.04.03.001'
-
+logger = logging.getLogger('jumeg')
+__version__= '2019.05.14.001'
 
 '''
 ----------------------------------------------------------------------
@@ -282,7 +280,7 @@ def get_args(self):
                    if vars( opt ).get(obj.dest):
                       opt.__dict__[obj.dest] = False
                       for flg in argv:
-                          if flg.startswith("-"+obj.dest) or flg.startswith("--"+obj.dest):
+                          if flg in obj.option_strings:
                              opt.__dict__[obj.dest] = True
                              break
   

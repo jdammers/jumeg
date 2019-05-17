@@ -7,7 +7,7 @@ import mne
 
 from .jumeg_utils import (get_files_from_list, thresholded_arr,
                                triu_indices, check_read_raw)
-from .jumeg_base import jumeg_base
+from .base.jumeg_base import jumeg_base
 from .jumeg_math import (calc_performance,
                          calc_frequency_correlation)
 

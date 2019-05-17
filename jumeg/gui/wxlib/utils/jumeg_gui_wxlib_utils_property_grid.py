@@ -21,7 +21,7 @@ import wx.propgrid as wxpg
 from   wx.propgrid import PropertyGridManager as wxpgm
 from   pubsub      import pub
 
-__version__='2019-01-04-001'
+__version__='2019.05-14.001'
 
 class JuMEG_wxPropertyGridManagerPanel(ScrolledPanel):
     """

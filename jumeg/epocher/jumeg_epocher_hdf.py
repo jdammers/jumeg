@@ -11,20 +11,14 @@ Created on Tue Jun  2 13:38:32 2015
   -> epocher rebuild new properties
 """
 
-import os
+import os,logging
 import pandas as pd
 
-import logging
-logger = logging.getLogger('root')
+from jumeg.base.jumeg_base import jumeg_base
+from jumeg.base.template.jumeg_template import JuMEG_Template
 
-#from jumeg import jumeg_logger
-#logger = jumeg_logger.getLogger(name="epocher-hdf",level="DEBUG")
-
-
-from jumeg.jumeg_base import jumeg_base
-from jumeg.template.jumeg_template import JuMEG_Template
-
-__version__="2019.04.09.001"
+logger = logging.getLogger('jumeg')
+__version__="2019.05.14.001"
 
 class JuMEG_Epocher_Template(JuMEG_Template):
     def __init__ (self):

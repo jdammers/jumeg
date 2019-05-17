@@ -41,7 +41,7 @@ from jumeg.gui.jumeg_gui_experiment_template              import JuMEG_wxTemplat
 from jumeg.gui.jumeg_gui_import_to_fif                    import JuMEG_wxImportToFIFPanel
 from jumeg.gui.jumeg_gui_meeg_merger                      import JuMEG_wxMEEGMergerPanel
 
-__version__="2019-02-07-001"
+__version__="2019.05.14.001"
 
 class JuMEG_wxPreProcPanel(JuMEG_wxMainPanel):
     """
