@@ -714,7 +714,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         Dictionary containing transformation matrices for all labels (acquired
         by auto_match_labels function). If label_trans_dic is None the method
         will attempt to read the file from disc.
-    run : int | None
+    run : int | str | None
         Specifies the run if multiple measurements for the same condition
         were performed.
     n_iter : int | None
@@ -748,6 +748,8 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
         str_cond = ' | Cond.: %s' % cond
     if run is None:
         str_run = ''
+    elif type(run) is str:
+        str_run = ' | Run: %s' % run
     else:
         str_run = ' | Run: %d' % run
     if n_iter is None:
@@ -956,7 +958,7 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
         Path to SUBJECTS_DIR if it is not set in the environment.
     cond : str
         Evoked condition as a string to give the plot more intel.
-    run : int | None
+    run : int | str | None
         Specifies the run if multiple measurements for the same condition
         were performed.
     n_iter : int | None
@@ -973,6 +975,9 @@ def _volumemorphing_plot_results(stc_orig, stc_morphed,
     if run is None:
         run_title = ''
         run_fname = ''
+    elif type(run) is str:
+        run_title = ' | Run: %s' % run
+        run_fname = ',%s' % run
     else:
         run_title = ' | Run: %d' % run
         run_fname = ',run%d' % run
