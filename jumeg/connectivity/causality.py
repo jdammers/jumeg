@@ -269,15 +269,17 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
     '''
     import scot
     print('starting checks and MVAR fitting...')
-    A, SIG, E = _tsdata_to_var(X, morder)
+    # tsdata_to_var from MVGC requires sources x samples x trials
+    # X is of shape trials x sources x samples (which is what ScoT uses)
+    A, SIG, E = _tsdata_to_var(X.transpose(1, 2, 0), morder)
     whi = False
-    dw, pval = _whiteness(X, E)
+    dw, pval = _whiteness(X.transpose(1, 2, 0), E)
     if np.all(dw < whit_max) and np.all(dw > whit_min):
         whi = True
-    cons = _consistency(X, E)
+    cons = _consistency(X.transpose(1, 2, 0), E)
 
     mvar = scot.var.VAR(morder)
-    mvar.fit(X)
+    mvar.fit(X)  # scot func which requires shape trials x sources x samples
     is_st = mvar.is_stable()
     if cons < thr_cons or is_st is False or whi is False:
         print('ERROR: Model order not ideal - check parameters !!')
