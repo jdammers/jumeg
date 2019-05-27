@@ -54,7 +54,7 @@ if compute_empty_cov:
             raw = mne.io.Raw(empty_fpath)
 
             # create and save covariance matrix
-            cov = mne.compute_raw_covariance(raw)
+            cov = mne.compute_raw_covariance(raw, method='shrunk')
             cov_fpath = empty_fpath.rsplit('-empty.fif')[0] + ',empty-cov.fif'
             cov.save(cov_fpath)
 
@@ -90,7 +90,7 @@ if compute_epo_cov:
                 epochs_fpath = op.join(recordings_dir, subj, epochs_fname)
 
                 epochs = mne.read_epochs(epochs_fpath)
-                noise_cov_reg = mne.compute_covariance(epochs, tmin=None, tmax=0., method='empirical', n_jobs=2)
+                noise_cov_reg = mne.compute_covariance(epochs, tmin=None, tmax=0., method='shrunk', n_jobs=2)
                 cov_fpath = epochs_fpath.split('-epo.fif')[0] + '-cov.fif'
                 noise_cov_reg.save(cov_fpath)
 
