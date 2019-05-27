@@ -418,7 +418,7 @@ def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6,
     return vstc_plt
 
 
-def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=6,
+def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, title=None, cut_coords=6,
                          display_mode='z', figure=None, axes=None, colorbar=False, cmap='magma',
                          symmetric_cbar=False, threshold='min', cbar_range=None,
                          save=False, fname_save=None):
@@ -440,6 +440,8 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
         None is default for finding the time sample with the voxel with global
         maximal amplitude. If int, float the given time point is selected and
         plotted.
+    title : string, optional
+        The title displayed on the figure.
     display_mode : 'x', 'y', 'z'
         Direction in which the brain is sliced.
     cut_coords : None, a tuple of floats, or an integer
@@ -524,7 +526,7 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, cut_coords=
                                    figure=figure, axes=axes,
                                    display_mode=display_mode,
                                    threshold=threshold,
-                                   annotate=True, title=None,
+                                   annotate=True, title=title,
                                    cut_coords=cut_coords,
                                    cmap=cmap, colorbar=colorbar,
                                    symmetric_cbar=symmetric_cbar,
