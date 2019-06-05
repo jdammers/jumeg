@@ -91,7 +91,7 @@ def calc_cdm_w_cut(cdv, cdvcut):
     or -1 in case of error
     """
     if len(cdv.shape) == 1:
-        cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
+        cdvecs = np.reshape(cdv, (cdv.shape[0] // 3, 3))
     elif len(cdv.shape) == 2 and cdv.shape[1] == 3:
         cdvecs = cdv
     else:
@@ -143,7 +143,7 @@ def fit_cdm_w_cut(cdv, cdvcut):
     or -1 in case of error
     """
     if len(cdv.shape) == 1:
-        cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
+        cdvecs = np.reshape(cdv, (cdv.shape[0] // 3, 3))
     elif len(cdv.shape) == 2 and cdv.shape[1] == 3:
         cdvecs = cdv
     else:
@@ -205,7 +205,7 @@ def scan_cdm_w_cut(cdv, cdvcut):
     or -1 in case of error
     """
     if len(cdv.shape) == 1:
-        cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
+        cdvecs = np.reshape(cdv, (cdv.shape[0] // 3, 3))
     elif len(cdv.shape) == 2 and cdv.shape[1] == 3:
         cdvecs = cdv
     else:
@@ -258,7 +258,7 @@ def calc_jtotal_w_cut(cdv, cdvcut):
     or -1 in case of error
     """
     if len(cdv.shape) == 1:
-        cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
+        cdvecs = np.reshape(cdv, (cdv.shape[0] // 3, 3))
     elif len(cdv.shape) == 2 and cdv.shape[1] == 3:
         cdvecs = cdv
     else:
@@ -382,8 +382,8 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         prbcnt = np.array([0.0, 0.0, 0.0], ndmin=2)
         prbdhw = np.array([0.0, 0.0, 0.0], ndmin=2)
     else:
-        prbcnt = np.reshape(mftparm['prbcnt'], (len(mftparm['prbcnt'].flatten()) / 3, 3))
-        prbdhw = np.reshape(mftparm['prbhw'], (len(mftparm['prbhw'].flatten()) / 3, 3))
+        prbcnt = np.reshape(mftparm['prbcnt'], (len(mftparm['prbcnt'].flatten()) // 3, 3))
+        prbdhw = np.reshape(mftparm['prbhw'], (len(mftparm['prbhw'].flatten()) // 3, 3))
     if prbcnt.shape != prbdhw.shape:
         raise ValueError(">>>>> mftpar['prbcnt'] and mftpar['prbhw'] must have same size")
 
@@ -658,7 +658,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     tw0 = time.time()
     tc0 = time.clock()
     if mftparm['prbfct'] == 'gauss':
-        wtmp = np.zeros(n_loc / 3)
+        wtmp = np.zeros(n_loc // 3)
         for icnt in range(prbcnt.shape[0]):
             testdiff = fwdmag['source_rr'] - prbcnt[icnt, :]
             if mftparm['prbxfm'] is not None:
@@ -694,7 +694,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         wdisttabfile.write("# Initial probabillty distribution in head-CS\n")
         wdisttabfile.write("#\n")
         wdisttabfile.write("# index  x/mm    y/mm    z/mm     prob\n")
-        for ipos in range(n_loc / 3):
+        for ipos in range(n_loc // 3):
             copnt = 1000. * fwdmag['source_rr'][ipos, :]
             wdisttabfile.write(" %5d  %7.2f %7.2f %7.2f  %12.5e\n" % \
                                (ipos, copnt[0], copnt[1], copnt[2], wdist0[ipos]))
@@ -718,7 +718,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     ilastseg = n_loc - n_loc % ibsize
     lfw = lfmag[:, ilastseg:] * rtwd3[ilastseg:]
     pmat0 = np.einsum('ik,jk->ij', lfw, lfw)
-    for iseg in range(n_loc / ibsize):
+    for iseg in range(n_loc // ibsize):
         lfw = lfmag[:, iseg * ibsize:iseg * ibsize + ibsize] * rtwd3[iseg * ibsize:iseg * ibsize + ibsize]
         pmat0 += np.einsum('ik,jk->ij', lfw, lfw)
     # lfw = lfmag*np.repeat(np.sqrt(wdist0),3)
@@ -844,9 +844,9 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     if isinstance(iterlist, list) and len(iterlist) > 0:
         stcdatalist = []
         for i in range(len(iterlist)):
-            stcdatalist.append(np.zeros([n_loc / 3, data.shape[1]]))
+            stcdatalist.append(np.zeros([n_loc // 3, data.shape[1]]))
     else:
-        stcdatalist = [np.zeros([n_loc / 3, data.shape[1]])]
+        stcdatalist = [np.zeros([n_loc // 3, data.shape[1]])]
 
     if verbosity >= 2:
         print("Reading %d slices of data to calc. cdv:" % data.shape[1])
@@ -877,15 +877,15 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
             acoeff = scipy.linalg.lu_solve((LU, P), mtilde)
 
         cdv = np.zeros(n_loc)
-        cdvnorms = np.zeros(n_loc / 3)
+        cdvnorms = np.zeros(n_loc // 3)
         for krow in range(lfmag.shape[0]):
             lfwtmp = lfmag[krow, :] * wdist3
             cdv += acoeff[krow] * lfwtmp
         if isinstance(iterlist, list) and len(iterlist) > 0 and 0 in iterlist:
             iil = iterlist.index(0)
-            cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
+            cdvecs = np.reshape(cdv, (cdv.shape[0] // 3, 3))
             cdvnorms = np.sqrt(np.sum(cdvecs ** 2, axis=1))
-            for iloc in range(n_loc / 3):
+            for iloc in range(n_loc // 3):
                 stcdatalist[iil][iloc, islice] = cdvnorms[iloc]
 
         tlw0 = time.time()
@@ -893,7 +893,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         for mftiter in range(mftparm['iter']):
             # MFT iteration loop:
 
-            cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
+            cdvecs = np.reshape(cdv, (cdv.shape[0] // 3, 3))
             cdvnorms = np.sqrt(np.sum(cdvecs ** 2, axis=1))
 
             if LOG_ITERWDIST:
@@ -911,7 +911,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
             ilastseg = n_loc - n_loc % ibsize
             lfw = lfmag[:, ilastseg:] * rtwd3[ilastseg:]
             pmat = np.einsum('ik,jk->ij', lfw, lfw)
-            for iseg in range(n_loc / ibsize):
+            for iseg in range(n_loc // ibsize):
                 lfw = lfmag[:, iseg * ibsize:iseg * ibsize + ibsize] * rtwd3[iseg * ibsize:iseg * ibsize + ibsize]
                 pmat += np.einsum('ik,jk->ij', lfw, lfw)
             # lfw = lfmag*np.repeat(np.sqrt(pscalefct*wdist),3)
@@ -946,9 +946,9 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
 
             if isinstance(iterlist, list) and len(iterlist) > 0 and mftiter + 1 in iterlist:
                 iil = iterlist.index(mftiter + 1)
-                cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
+                cdvecs = np.reshape(cdv, (cdv.shape[0] // 3, 3))
                 cdvnorms = np.sqrt(np.sum(cdvecs ** 2, axis=1))
-                for iloc in range(n_loc / 3):
+                for iloc in range(n_loc // 3):
                     stcdatalist[iil][iloc, islice] = cdvnorms[iloc]
 
         tc1 = time.clock()
@@ -956,7 +956,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         tltotwall += (tw1 - tlw0)
         tltotcpu += (tc1 - tlc0)
         nltotcall += 1
-        cdvecs = np.reshape(cdv, (cdv.shape[0] / 3, 3))
+        cdvecs = np.reshape(cdv, (cdv.shape[0] // 3, 3))
         cdvnorms = np.sqrt(np.sum(cdvecs ** 2, axis=1))
         # (relerr,rdmerr,mag) = compare_est_exp(ptilde,acoeff,mtilde)
         (relerr, rdmerr, mag) = compare_est_exp(pmat, acoeff, slice)
@@ -988,7 +988,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
 
         # Write final cdv to the stcdatalist:
         if not isinstance(iterlist, list) or len(iterlist) == 0:
-            for iloc in range(n_loc / 3):
+            for iloc in range(n_loc // 3):
                 stcdatalist[0][iloc, islice] = cdvnorms[iloc]
         del wdist
         del pmat
