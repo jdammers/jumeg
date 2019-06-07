@@ -19,7 +19,7 @@ con_fname = get_jumeg_path() + '/data/sample,aparc-con.npy'
 # real connectivity
 con = np.load(con_fname)
 con = con[0, :, :, 2] + con[0, :, :, 2].T
-degrees = mne.connectivity.degree(con, threshold=0.2)
+degrees = mne.connectivity.degree(con, threshold_prop=0.2)
 
 import bct
 eigenvec_centrality = bct.eigenvector_centrality_und(con)

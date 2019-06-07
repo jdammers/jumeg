@@ -21,6 +21,6 @@ con = np.load(con_fname)
 con_ = con[0, :, :, 2] + con[0, :, :, 2].T
 
 # compute the degree
-degrees = mne.connectivity.degree(con_, threshold=0.2)
+degrees = mne.connectivity.degree(con_, threshold_prop=0.2)
 
 fig, ax = plot_degree_circle(degrees, yaml_fname, orig_labels_fname)
