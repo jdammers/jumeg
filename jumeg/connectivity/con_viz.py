@@ -433,6 +433,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
 
 def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
+                                     replacer_dict,
                                      labels_mode=None,
                                      node_order_size=68, indices=None,
                                      out_fname='circle.png', title=None,
@@ -477,8 +478,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         # label_names.extend(labels[lab])
         label_names += list(lab.values())[0]  # yaml order fix
 
-    lh_labels = [name + '-lh' for name in label_names]
-    rh_labels = [name + '-rh' for name in label_names]
+    lh_labels = [name + '-lh' for name in label_names if name + '-lh' in orig_labels]
+    rh_labels = [name + '-rh' for name in label_names if name + '-rh' in orig_labels]
 
     # Save the plot order and create a circular layout
     node_order = list()
@@ -487,10 +488,25 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
 
     assert len(node_order) == node_order_size, 'Node order length is correct.'
 
+    group_bound = [0]
+    # left first in reverse order, then right hemi labels
+    for i in range(len(labels))[::-1]:
+        cortical_region = list(labels[i].keys())[0]
+        actual_num_lh = [rlab for rlab in labels[i][cortical_region] if rlab + '-lh' in lh_labels]
+        # print(cortical_region, len(actual_num_lh))
+        group_bound.append(len(actual_num_lh))
+
+    for i in range(len(labels)):
+        cortical_region = list(labels[i].keys())[0]
+        actual_num_rh = [rlab for rlab in labels[i][cortical_region] if rlab + '-rh' in rh_labels]
+        # print(cortical_region, len(actual_num_rh))
+        group_bound.append(len(actual_num_rh))
+
+    assert np.sum(group_bound) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
+
     # the respective no. of regions in each cortex
-    # group_bound = [len(labels[key]) for key in labels.keys()]
-    group_bound = [len(list(key.values())[0]) for key in labels]  # yaml order fix
-    group_bound = [0] + group_bound[::-1] + group_bound
+    # group_bound = [len(list(key.values())[0]) for key in labels]  # yaml order fix
+    # group_bound = [0] + group_bound[::-1] + group_bound
     group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
 
     # remove the first element of group_bound
@@ -507,21 +523,24 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     node_angles = circular_layout(orig_labels, node_order, start_pos=90,
                                   group_boundaries=group_boundaries)
 
+    # print(node_angles)
+
     # the order of the node_colors must match that of orig_labels
     # therefore below reordering is necessary
     reordered_colors = [label_colors[node_order.index(orig)]
                         for orig in orig_labels]
 
     # labels mode decides the labels printed for each of the nodes
-    if labels_mode is 'blank':
+    if labels_mode == 'blank':
         # show nothing, only the empty circle plot
         my_labels = ['' for orig in orig_labels]
-    elif labels_mode is 'cortex_only':
-        # show only the names of cortex areas on one representative node
-        replacer = dict({'caudalanteriorcingulate': 'cingulate',
-                         'insula': 'insula', 'parstriangularis': 'frontal',
-                         'precuneus': 'parietal', 'lingual': 'occipital',
-                         'transversetemporal': 'temporal'})
+    elif labels_mode == 'cortex_only':
+        if isinstance(replacer_dict, dict):
+            # show only the names of cortex areas on one representative node
+            replacer = replacer_dict
+        else:
+            raise RuntimeError('Replacer dict with cortex names not set, \
+                                cannot choose cortex_only labels_mode.')
 
         replaced_labels = []
         for myl in orig_labels:
@@ -543,7 +562,6 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                          node_angles=node_angles, colormap=colormap,
                                          node_colors=reordered_colors,
                                          node_edgecolor='white', fig=fig,
-                                         fontsize_title=12,
                                          vmax=vmax, vmin=vmin, colorbar_size=0.2,
                                          colorbar_pos=colorbar_pos,
                                          colorbar=colorbar, show=show,
@@ -829,23 +847,31 @@ def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
 
 
 def plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
+                         replacer_dict,
                          node_order_size=68, fig=None, subplot=111,
                          color='b', cmap='Blues', tight_layout=False,
                          alpha=0.5, fontsize_groups=6, textcolor_groups='k',
-                         radsize=1., degsize=1, show_group_labels=True,
+                         radsize=1., degsize=1, labels_mode=None,
                          linewidth=1.5, n_lines=50, node_width=None,
                          arrow=False, out_fname='lines_and_blobs.png',
                          vmin=None, vmax=None, figsize=None,
-                         show_node_labels=False,
-                         show=True):
+                         fontsize_colorbar=8, textcolor='black',
+                         fontsize_title=12, title=None, fontsize_names=6,
+                         show_node_labels=False, colorbar=True,
+                         colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
+                         show=True, **kwargs):
     '''
     Plot connectivity circle plot with a centrality index per node shown as
     blobs along the circulference of the circle, hence the lines and the blobs.
     '''
 
     import yaml
-    with open(orig_labels_fname, 'r') as f:
-        orig_labels = yaml.load(f)['label_names']
+
+    if isinstance(orig_labels_fname, str):
+        with open(orig_labels_fname, 'r') as f:
+            orig_labels = yaml.load(f)['label_names']
+    else:
+        orig_labels = orig_labels_fname
 
     n_nodes = len(degrees)
 
@@ -864,19 +890,33 @@ def plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
     label_names = [list(lab.values())[0] for lab in labels]
     label_names = [la for l in label_names for la in l]
 
-    lh_labels = [name + '-lh' for name in label_names]
-    rh_labels = [name + '-rh' for name in label_names]
+    lh_labels = [name + '-lh' for name in label_names if name + '-lh' in orig_labels]
+    rh_labels = [name + '-rh' for name in label_names if name + '-rh' in orig_labels]
 
-    # save the plot order
+    # Save the plot order and create a circular layout
     node_order = list()
     node_order.extend(lh_labels[::-1])  # reverse the order
     node_order.extend(rh_labels)
+
     assert len(node_order) == node_order_size, 'Node order length is correct.'
 
+    group_bound = [0]
+    # left first in reverse order, then right hemi labels
+    for i in range(len(labels))[::-1]:
+        cortical_region = list(labels[i].keys())[0]
+        actual_num_lh = [rlab for rlab in labels[i][cortical_region] if rlab + '-lh' in lh_labels]
+        group_bound.append(len(actual_num_lh))
+
+    for i in range(len(labels)):
+        cortical_region = list(labels[i].keys())[0]
+        actual_num_rh = [rlab for rlab in labels[i][cortical_region] if rlab + '-rh' in rh_labels]
+        group_bound.append(len(actual_num_rh))
+
+    assert np.sum(group_bound) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
+
     # the respective no. of regions in each cortex
-    # yaml fix order change
-    group_bound = [len(list(key.values())[0]) for key in labels]
-    group_bound = [0] + group_bound[::-1] + group_bound
+    # group_bound = [len(list(key.values())[0]) for key in labels]  # yaml order fix
+    # group_bound = [0] + group_bound[::-1] + group_bound
     group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
 
     # remove the first element of group_bound
@@ -1027,17 +1067,18 @@ def plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
 
     # convert to radians for below code
     node_angles = node_angles * np.pi / 180
+
     # Finally, we draw the connections
     for pos, (i, j) in enumerate(zip(indices[0], indices[1])):
         # Start point
-        t0, r0 = node_angles[i], radsize
+        t0, r0 = node_angles[i], radsize - 0.05
 
         # End point
         if arrow:
             # make shorter to accomodate arrowhead
             t1, r1 = node_angles[j], radsize - 1.
         else:
-            t1, r1 = node_angles[j], radsize
+            t1, r1 = node_angles[j], radsize - 0.05
 
         # Some noise in start and end point
         t0 += start_noise[pos]
@@ -1063,10 +1104,35 @@ def plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
 
         ax.add_patch(patch)
 
+    # labels mode decides the labels printed for each of the nodes
+    if labels_mode == 'blank':
+        # show nothing, only the empty circle plot
+        my_labels = ['' for orig in orig_labels]
+    elif labels_mode == 'cortex_only':
+        if isinstance(replacer_dict, dict):
+            # show only the names of cortex areas on one representative node
+            replacer = replacer_dict
+        else:
+            raise RuntimeError('Replacer dict with cortex names not set, \
+                                cannot choose cortex_only labels_mode.')
+
+        replaced_labels = []
+        for myl in orig_labels:
+            if myl.split('-lh')[0] in list(replacer.keys()):
+                replaced_labels.append(replacer[myl.split('-lh')[0]] + '-lh')
+            elif myl.split('-rh')[0] in list(replacer.keys()):
+                replaced_labels.append(replacer[myl.split('-rh')[0]] + '-rh')
+            else:
+                replaced_labels.append('')
+        my_labels = replaced_labels
+    else:
+        # show all the node labels as originally given
+        my_labels = orig_labels
+
     # draw node labels
     if show_node_labels:
         angles_deg = 180 * node_angles / np.pi
-        for name, angle_rad, angle_deg in zip(orig_labels, node_angles,
+        for name, angle_rad, angle_deg in zip(my_labels, node_angles,
                                               angles_deg):
             if angle_deg >= 270:
                 ha = 'left'
@@ -1075,29 +1141,44 @@ def plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
                 angle_deg += 180
                 ha = 'right'
 
-            ax.text(angle_rad, radsize + 0.2, name, size=8,
+            ax.text(angle_rad, radsize + 0.2, name, size=fontsize_names,
                     rotation=angle_deg, rotation_mode='anchor',
                     horizontalalignment=ha, verticalalignment='center',
                     color='k')
 
-    # add group labels
-    if show_group_labels:
-        for i in range(group_node_angles.size):
-            # to modify the position of the labels
-            theta = group_node_angles[i] + np.pi/n_groups
-            ax.text(np.deg2rad(theta), radsize + radsize/5., group_node_order[i],
-                    rotation=theta-90.,
-                    size=fontsize_groups, horizontalalignment='center',
-                    verticalalignment='center', color=textcolor_groups)
+    # # add group labels
+    # if show_group_labels:
+    #     for i in range(group_node_angles.size):
+    #         # to modify the position of the labels
+    #         theta = group_node_angles[i] + np.pi/n_groups
+    #         ax.text(np.deg2rad(theta), radsize + radsize/5., group_node_order[i],
+    #                 rotation=theta-90.,
+    #                 size=fontsize_groups, horizontalalignment='center',
+    #                 verticalalignment='center', color=textcolor_groups)
+
+    if colorbar:
+        sm = plt.cm.ScalarMappable(cmap=colormap,
+                                   norm=plt.Normalize(vmin, vmax))
+        sm.set_array(np.linspace(vmin, vmax))
+        cb = plt.colorbar(sm, ax=ax, use_gridspec=False,
+                          shrink=colorbar_size,
+                          anchor=colorbar_pos)
+        cb_yticks = plt.getp(cb.ax.axes, 'yticklabels')
+        cb.ax.tick_params(labelsize=fontsize_colorbar)
+        plt.setp(cb_yticks, color=textcolor)
+
+    if title is not None:
+        plt.title(title, color=textcolor, fontsize=fontsize_title,
+                  axes=ax)
 
     if show:
         plt.show()
 
-    if tight_layout:
-        fig.tight_layout()
+    # if tight_layout:
+    #     fig.tight_layout()
 
-    if out_fname:
-        fig.savefig(out_fname, dpi=300.)
+    # if out_fname:
+    #     fig.savefig(out_fname, dpi=300.)
 
     return fig, ax
 
