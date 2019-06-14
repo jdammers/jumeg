@@ -761,7 +761,7 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
     print(string)
     print('\n#### Reading essential data files..')
-    # STC 
+    # STC
     stc_orig = mne.read_source_estimate(fname_stc_orig)
     stcdata = stc_orig.data
     nvert, ntimes = stc_orig.shape
@@ -878,7 +878,9 @@ def volume_morph_stc(fname_stc_orig, subject_from, fname_vsrc_subject_from,
 
             afabs = np.sum(np.fabs(stc_orig.data[subj_vert_idx]), axis=0)
             bfabs = np.sum(np.fabs(inter_data[temp_vert_idx]), axis=0)
-            norm_m_score = afabs / bfabs
+
+            # set NaNs to zero in case of division by 0
+            norm_m_score = np.nan_to_num(afabs / bfabs, 0)
 
             normalized_new_data[temp_vert_idx] *= norm_m_score
 
