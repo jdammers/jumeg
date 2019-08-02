@@ -439,6 +439,12 @@ def compute_causal_outflow_inflow(caus):
     the function returns the normalized causal outflow and inflow across the
     nodes.
 
+    Outflow: c_out(i) is the normalized sum of all outgoing connections c_1i + c_2i + ... + cji
+    Inflow: c_in(i) is the normalized sum of all incoming connections c_i1 + c_i2 + ... + cij
+
+    In our framework of causality, the columns always drives the rows, i.e. given c_ij,
+    region j causally drives region i. 
+
     Input
     caus: ndarray | shape (n_bands, n_nodes, n_nodes)
 
@@ -455,9 +461,9 @@ def compute_causal_outflow_inflow(caus):
     for band in range(n_bands):
         band_ = caus[band]
         # causal outflow per ROI
-        c_out_sums = band_.sum(axis=1)  # sum across columns (j's)
+        c_out_sums = band_.sum(axis=0)  # sum across columns (i's)
         c_outflow[band] = c_out_sums / np.max(c_out_sums)
         # causal inflow per ROI
-        c_in_sums = band_.sum(axis=0)  # sum across rows (i's)
+        c_in_sums = band_.sum(axis=1)  # sum across columns (j's)
         c_inflow[band] = c_in_sums / np.max(c_in_sums)
     return c_outflow, c_inflow
