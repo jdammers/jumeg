@@ -1,21 +1,21 @@
 {
     "info": {
-        "time": "2019-07-03 08:58:05",
+        "time": "2019-07-03 12:58:48",
         "user": "fboers",
         "version": "2019-07-03-0.001",
         "jumeg_template_version": "2019.05.14.001",
         "jumeg_gui_version": "2019.05.14.001"
     },
     "experiment": {
-        "name": "JUMEGTest",
+        "name": "RST",
         "stages": [
+            "${JUMEG_PATH_MNE_IMPORT}",
             "${JUMEG_PATH_MNE_IMPORT2}",
             "${JUMEG_PATH_LOCAL_DATA}/exp"
         ],
         "scans": [
-            "CAU01A",
-            "INTEXT01",
-            "FREEVIEW01",
+            "RST01",
+            "RST02",
             "RST03"
         ],
         "bads_list": [],

@@ -16,6 +16,8 @@ from jumeg.base.jumeg_base import JuMEG_Base_IO
 logger = logging.getLogger('jumeg')
 __version__="2019.05.14.001"
 
+
+
 #--- A4 landscape
 pl.rc('figure', figsize=(11.69,8.27))
 pl.rcParams.update({'font.size': 8})
@@ -27,16 +29,96 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
         self.raw = raw
         self.dpi = 100
         self.file_extention = '.png'
-    
+        self.colors = ['r','b','g','c','m','y','k']
+        
     def minmax(self,d):
         ymin, ymax = d.min(),d.max()
         ymin -= np.abs(ymin) * 0.1 #factor * 1.1
         ymax += np.abs(ymax) * 0.1 #factor * 1.1
       
         return ymin,ymax
+    
+    def _set_colors(self):
+        for i,j in enumerate(pl.gca().lines):
+            j.set_color(self.colors[i % len(self.colors)])
+       
+    def plot_group(self,ep,group="meg",picks=None,info=None,show_evt=False,show_labels=True):
+        """
         
+        :param ep:
+        :param group:
+        :param picks:
+        :param info:
+        :param show_evt:
+        :param show_labels:
+        :return:
+        """
+        if picks.any():
+           labels = [ ep.info['ch_names'][x] for x in picks ]
+           avg    = ep.average(picks=picks)
+           if info:
+              avg.data *= info.get('scale',1.0)
+              pl.ylabel('[' + info.get('unit','au') + ']')
+           d = pl.plot(avg.times, avg.data.T)
+           self._set_colors()
+           
+           if show_evt:
+            #--- change legend
+               idx0 = np.where(avg.times == 0)
+               labels = [ep.info['ch_names'][x] for x in picks]
+               if idx0:
+                  for idx in range(len(labels)):
+                      labels[idx] += " evt: {} ".format(int(avg.data[idx,idx0].flatten()))
+           
+           if show_labels:
+              pl.legend(d, labels, loc=2,prop={'size':8})
+           pl.ylim(self.minmax(avg.data))
+           
+
+        pl.xlim(ep.tmin,ep.tmax)
+        pl.xlabel('[s]')
+        pl.grid(True)
+        return avg.data
+    
+    def plot_stim(self,ep,group="stim",picks=None,info=None,show_evt=False,show_labels=True):
+        """
+        
+        :param ep:
+        :param group:
+        :param picks:
+        :param info:
+        :param show_evt:
+        :param show_labels:
+        :return:
+        """
+        if picks.any():
+           labels = [ ep.info['ch_names'][x] for x in picks ]
+           avg    = ep.average(picks=picks)
+           if info:
+              avg.data *= info.get('scale',1.0)
+              pl.ylabel('[' + info.get('unit','au') + ']')
+           d = pl.plot(avg.times, avg.data.T)
+           self._set_colors()
+           
+           if show_evt:
+            #--- change legend
+               idx0 = np.where(avg.times == 0)
+               labels = [ep.info['ch_names'][x] for x in picks]
+               if idx0:
+                  for idx in range(len(labels)):
+                      labels[idx] += " evt: {} ".format(int(avg.data[idx,idx0].flatten()))
+           
+           if show_labels:
+              pl.legend(d, labels, loc=2,prop={'size':8})
+           pl.ylim(self.minmax(avg.data))
+           
+
+        pl.xlim(ep.tmin,ep.tmax)
+        pl.xlabel('[s]')
+        pl.grid(True)
+ 
     def plot_evoked(self,evt,fname=None,save_plot=True,show_plot=False,condition=None,plot_dir=None,
-                    info={'meg':{'scale':1e15,'unit':'fT'},'eeg':{'scale':1e3,'unit':'mV'}}):
+                    info={'meg':{'scale':1e15,'unit':'fT'},'eeg':{'scale':1e3,'unit':'mV'},'emg':{'scale':1e3,'unit':'mV'},}):
         '''
         
         :param evt:
@@ -64,7 +146,6 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
         
         :return:
         '''
-      
         if not evt: return
         ep   = evt["epochs"]
         name = 'test'
@@ -88,79 +169,68 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
                return
             
           # mkpath( fout_path )
-        fout =fout_path +'/'+ name   
-           
+        fout = fout_path +'/'+ name
+        
         #pl.ioff()  # switch  off (interactive) plot visualisation
         pl.figure(name)
         pl.clf()
         #fig = pl.figure(name,figsize=(10, 8), dpi=100))
         
         pl.title(name)
-        
-       #---ck if channels exist
-        nplt  = 3
-        t0,t1 = ep.tmin,ep.tmax
-        
-      #--- meg  
-        pl.subplot(nplt,1,1)
-        picks = self.picks.meg_nobads(ep)
-        if picks.any():
-           avg   = ep.average(picks=picks)
-           avg.data *= info['meg']['scale']
-           pl.plot(avg.times, avg.data.T,color='black')
-           pl.ylim(self.minmax(avg.data))
-           pl.ylabel('['+ info['meg']['unit']+ ']')
-      
-        pl.xlim(t0,t1)
-        pl.grid(True)
-       
-        t = subject_id +' Evoked '
+    
+       #--- make title
+        t = subject_id + ' Evoked '
         if condition:
-           t +=' '+condition
-        if ep.info['bads']:         
-           s = ','. join( ep.info['bads'] )
-           pl.title(t +' bads: ' + s)
+           t += ' ' + condition
+        t += ' Id: {} counts: {}'.format(ep.events[0,2],ep.events.shape[0])
+        if ep.info['bads']:
+           t = t + "bads: " + ','.join(ep.info['bads'])
+           
+       #---ck if emg channels exist
+        picks = self.picks.emg_nobads(ep)
+        if picks.any():
+           nplt  = 4
         else:
-           pl.title(t)
-                
-       #--- ecg eog        
+           nplt = 3
+        
+      #--- meg
+        pl.subplot(nplt,1,1)
+        pl.title(t)
+        self.plot_group(ep,group="meg",picks=self.picks.meg_nobads(ep),info=info.get('meg'),show_labels=False)
+        
+      #--- ecg eog
         pl.subplot(nplt,1,2)
-        picks  = self.picks.ecg_eog(ep)
-        
-        if picks.any():
-           labels =[ ep.info['ch_names'][x] for x in picks]
-           avg    = ep.average(picks=picks) 
-           avg.data *= info['eeg']['scale']
-           d = pl.plot(avg.times, avg.data.T)
-           pl.legend(d, labels, loc=2,prop={'size':8})
-           pl.ylim(self.minmax(avg.data))
-           pl.ylabel('['+ info['eeg']['unit']+ ']')
-        
-        pl.xlim(t0,t1)
-        pl.grid(True)
-     
-       #--- stim        
+        self.plot_group(ep,group="ecg eog",picks=self.picks.ecg_eog(ep),info=info.get('eeg'))
+   
+      #--- stim
         pl.subplot(nplt,1,3)
-        picks = self.picks.stim_response(ep) 
-        if picks.any():
-           labels =[ ep.info['ch_names'][x] for x in picks]    
-           labels[0] += '  Evts: %d Id: %d' %(ep.events.shape[0],ep.events[0,2]) 
-           avg   = ep.average(picks=picks) 
-           pl.ylim(self.minmax(avg.data))
-           d = pl.plot(avg.times, avg.data.T)
-           pl.legend(d, labels, loc=2,prop={'size':8},)            
-      
-        pl.xlim(t0,t1)
-        pl.xlabel('[s]')
-        pl.grid(True)
+        self.plot_group(ep,group="stim",picks=self.picks.stim_response(ep),info=info.get('stim'),show_evt=True)
+       
+        '''
+        ax = pl.gca()
         
+        ax.set_ylabel('Stim', color=self.colors[0])
+        ax.tick_params(axis='y', labelcolor=self.colors[0])
+        ax.set_ylim(0,data[0].max() +10)
+        
+        ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+        ax2.set_ylabel('RES', color=self.colors[1])
+        ax2.tick_params(axis='y', labelcolor=self.colors[1])
+        ax2.set_ylim( 0,data[1].max()+10 )
+        
+        #fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        '''
+        
+      #--- emg
+        if nplt > 3:
+           pl.subplot(nplt,1,4)
+           self.plot_group(ep,group="emg",picks=self.picks.emg_nobads(ep),info=info.get('emg'))
+      
       #--- plt event_id table
         cols = ('EvtId', 'Counts')
-      #--- get ids and counts
+       #--- get ids and counts
         ids,cnts = np.unique( evt["events"][:,-1],return_counts=True)
         
-        #ids=np.arange(80)
-        #cnts=ids+11
         data = np.zeros((len(ids),2),dtype=np.int)
         data[:,0] += ids
         data[:,1] += cnts
@@ -178,6 +248,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
         #    for j in range(1,len(ids)+1):
         #        cellDict[(j,i)].set_height(.02)
         tab.set_fontsize(9)
+        
       #---
         if save_plot:
            fout += self.file_extention              

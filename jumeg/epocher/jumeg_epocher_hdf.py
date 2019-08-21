@@ -132,7 +132,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         return key.replace(self.hdf_key_space_alias," ")
     
    #---
-    def _update_hdf_name_from_path(self,hdf_path=hdf_path,fname=None):
+    def _update_hdf_name_from_path(self,hdf_path=None,fname=None):
         """
         if fname is not None set HDF filename to fname and then
         update <hdf path> in the HDF file name

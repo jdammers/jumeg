@@ -15,7 +15,73 @@ from pubsub import pub
 
 import wx.lib.agw.floatspin as FS
 
-__version__='2019.05.14.001'
+__version__='2019.07.01.001'
+
+
+class JuMEG_wxPopUpCkBox(wx.PopupTransientWindow):
+   """
+   
+   Example:
+   --------
+   from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxPopUpCkBox
+   
+   
+   """
+   def __init__(self,parent,**kwargs):
+       super().__init__(parent)
+       self._choices = []
+       self._gap  = 4
+     
+       self._init(**kwargs)
+ 
+   def SetSelection(self,idx,status=True):
+       """
+       
+       :param idx: idx or list of idx
+       :param status: <True>
+       :return:
+       """
+       if not isinstance(idx,(list)):
+          self._clb.Check(idx)
+       else:
+          for i in idx:
+              self._clb.Check(i,status)
+   
+   def clear(self):
+       self._clb.clear()
+   
+   def update_from_kwargs(self,**kwargs):
+       self._choices = kwargs.get("choices",self._choices)
+       self.SetName( kwargs.get("name",self.GetName()) )
+       
+   def _init(self,**kwargs):
+       self.update_from_kwargs(**kwargs)
+       self._wx_init()
+       self._ApplyLayout()
+       
+   def _wx_init(self):
+       self._clb = wx.CheckListBox(self,-1,choices=self._choices)
+       self.Bind(wx.EVT_LISTBOX,self.ClickOnListBox,self._clb)
+       
+   def ClickOnListBox(self, evt):
+       #print("TEST ClickOnListBox")
+       #print(self._clb.GetSelections())
+       evt.Skip()
+       #pass
+       # idx = evt.GetSelection()
+       #label = self._lb.GetString(index)
+       
+   def _ApplyLayout(self):
+       LEA = wx.LEFT | wx.EXPAND | wx.ALL
+       vbox = wx.BoxSizer(wx.VERTICAL)
+       vbox.Add(self._clb,1,LEA,self._gap)
+       self.SetSizer(vbox)
+       self.SetAutoLayout(True)
+       self.Fit()
+       self.Update()
+       self.Refresh()
+
+
 
 class JuMEG_wxMultiChoiceDialog(wx.Dialog):
     """
@@ -52,7 +118,7 @@ class JuMEG_wxMultiChoiceDialog(wx.Dialog):
         self.SetTitle(caption)
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.message = wx.StaticText(self, -1, message)
-        self.clb = wx.CheckListBox(self, -1, choices = choices)
+        self.clb = wx.CheckListBox(self, -1,style=wx.LB_EXTENDED,choices = choices)
         
         self.tgbt = wx.ToggleButton(self, -1,label='De/Select All',name="BT.DESELECT_ALL")
         self.tgbt.SetValue(False)
