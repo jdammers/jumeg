@@ -43,6 +43,7 @@ License: BSD 3 clause
 
 import os,sys,six,contextlib,re,numbers
 import numpy as np
+import glob
 
 # py3 obj from pathlib import Path
 
@@ -261,7 +262,7 @@ class JuMEG_Base_Basic(object):
             return v
     
         return os.path.expandvars(os.path.expanduser( str(v) ))
-      
+
     def isFile(self,fin,path=None,extention=None,head="check file exist",exit_on_error=False,logmsg=False):
         """
         check if file exist
@@ -369,8 +370,149 @@ class JuMEG_Base_Basic(object):
         yield
        
         os.chdir(prev_cwd)
+    
+    def find_file(self,start_dir=None,pattern="*",file_extention="*.fif",recursive=True,debug=False,abspath=False,ignore_case=False):
+        """
+        generator
+        search for files in <start_dir> or subdirs matching <pattern> and <file extention[s]> using <glob.glob>
+        
+        :param start_dir     : start dir to search for files
+        :param pattern       : pattern to look for e.g.: <*>
+        :param file_extention: list of filee extentions <*.fif>
+        :param recursive     : find files in subdirs <True>
+        :param ignore_case   : file pattern matching case insensitive <False>
+        :param debug         : <False>
+        :param abspath       : add absolute path to found files <False>
+        :return:
+          
+          file name ; generator
+        
+        Example:
+        --------
+         from jumeg.base.jumeg_base import JuMEG_Base_Basic
+         jb = JuMEG_Base_Basic()
+         
+         pattern = "**/"
+         pdfs    = dict()
+         
+         for id in id_list:
+             sdir = os.path.join(start_dir,id)
+             for fpdf in jb.find_file(start_dir=sdir,pattern=pattern,file_extention=file_extention):
+                 if fpdf:
+                    if not pdfs.get(id):
+                       pdfs[id]=[]
+                    pdfs[id].append( {"pdf": fpdf,"selected":False} )
+                    npdfs+=1
+                  
+        """
+        pattern = self.update_pattern(pattern,ignore_case=ignore_case)
+        if not isinstance(file_extention,(list)):
+           s = file_extention
+           file_extention = list()
+           file_extention.append(s)
+    
+    
+        if debug or self.debug:
+            logging.debug("  -> start dir      : {}\n".format(start_dir) +
+                          "  -> glob pattern   : {}\n".format(pattern) +
+                          "  -> file extention : {}\n".format(file_extention) +
+                          "  -> glob recursive : {}\n".format(recursive) +
+                          "  -> adding abs path: {}\n".format(abspath)
+                          )
 
+        with self.working_directory(start_dir):
+             for fext in file_extention:
+                 for f in glob.glob(pattern + fext,recursive=recursive):
+                     if abspath:
+                        yield os.path.abspath(os.path.join(start_dir,f))
+                     else:
+                         yield f
 
+    def find_files(self,start_dir=None,pattern="*",file_extention="*.fif",recursive=True,debug=False,abspath=False,
+                   ignore_case=False):
+        """
+        search for files in <start_dir> or subdirs matching <pattern> and <file extention[s]> using <glob.glob>
+
+        :param start_dir     : start dir to search for files
+        :param pattern       : pattern to look for e.g.: <*>
+        :param file_extention: list of filee extentions <*.fif>
+        :param recursive     : find files in subdirs <True>
+        :param ignore_case   : file pattern matching case insensitive <False>
+        :param debug         : <False>
+        :param abspath       : add absolute path to found files <False>
+        :return:
+            file list
+            
+        Example:
+        --------
+         from jumeg.base.jumeg_base import JuMEG_Base_Basic
+         jb = JuMEG_Base_Basic()
+
+         pattern = "**/"
+         pdfs    = dict()
+
+         for id in id_list:
+             sdir = os.path.join(start_dir,id)
+             flist=jb.find_files(start_dir=sdir,pattern=pattern,file_extention=file_extention):
+             for f in flist:
+                 print(f)
+
+        """
+        pattern = self.update_pattern(pattern,ignore_case=ignore_case)
+        
+        if not isinstance(file_extention,(list)):
+           s = file_extention
+           file_extention = list()
+           file_extention.append(s)
+    
+        if debug or self.debug:
+            logging.debug("  -> start dir      : {}\n".format(start_dir) +
+                          "  -> glob pattern   : {}\n".format(pattern) +
+                          "  -> file extention : {}\n".format(file_extention) +
+                          "  -> glob recursive : {}\n".format(recursive) +
+                          "  -> adding abs path: {}\n".format(abspath)
+                          )
+        files_found = []
+        with self.working_directory(start_dir):
+            for fext in file_extention:
+                for f in glob.iglob(pattern + fext,recursive=recursive):
+                    if abspath:
+                       files_found.append( os.path.abspath(os.path.join(start_dir,f)) )
+                    else:
+                       files_found.append(f)
+        
+        files_found.sort()
+        return files_found
+
+    def update_pattern(self,pat,ignore_case=False):
+        """
+        update pattern if <ignore_case>
+        
+        :param pat:
+        :param ignore_case: <False>
+        :return:
+          pattern
+        """
+        pat = re.sub('\*\*+','**',pat)
+       
+        if pat.find("**") < 0:  # search in subdir
+            d = pat.split("/")
+            d[-1] = "**/" + d[-1]
+            #d[0] = "**/" + d[0]
+            pat = "/".join(d)
+            
+            
+        if ignore_case:
+            pat_ic = ""
+            for c in pat:
+                if c.isalpha():
+                   pat_ic += '[%s%s]' % (c.lower(),c.upper())
+                else:
+                   pat_ic += c
+            return pat_ic
+        return pat
+    
+        
     def check_file_extention(self,fname=None,file_extention=None):
         """
     
@@ -563,6 +705,13 @@ class JuMEG_Base_PickChannels(object):
     def eeg_ecg_eog_nobads(self, raw):
         ''' meg=False,ref_meg=False,ecg=True,eog=True,eeg=True '''
         return mne.pick_types(raw.info, meg=False, ref_meg=False, ecg=True, eog=True, eeg=True, exclude='bads')
+    
+    def emg(self,raw):
+        ''' meg=False,ref_meg=False,ecg=False,eog=False '''
+        return mne.pick_types(raw.info,meg=False,ref_meg=False,ecg=False,eog=False,eeg=False,emg=True)
+    def emg_nobads(self, raw):
+        ''' meg=False,ref_meg=False,ecg=False,eog=False '''
+        return mne.pick_types(raw.info, meg=False, ref_meg=False, ecg=False, eog=False, eeg=False,emg=True,exclude='bads')
 
     def stim(self,raw):
         ''' call with meg=False,stim=True '''
@@ -1303,7 +1452,9 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                raise FileNotFoundError("ERROR no file found: {}".format(fn))
             
             if ( fn.endswith(self.brainvision_extention) ):
-               raw = mne.io.read_raw_brainvision(fn,response_trig_shift=self.brainvision_response_shift,preload=preload)
+               # --- changed in mne version 019.dev
+               # raw = mne.io.read_raw_brainvision(fn,response_trig_shift=self.brainvision_response_shift,preload=preload)
+               raw = mne.io.read_raw_brainvision(fn,preload=preload)
                #raw.info['bads'] = []
           #--- ToDo may decide for eeg-name .eeg or.vhdr
             else:
@@ -1465,7 +1616,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                      e.g.:
          separator : split to generate output filename with postfix  <"-">
          save      : save raw to disk
-         overwrite : <True>
+         overwrite : if overwrite  save <raw obj> to existing <raw file>  <True>
          update_raw_filenname: <False>
 
         Returns
@@ -1483,7 +1634,10 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
             if postfix:
                fpre,fext = fname.rsplit(separator)
                fname = fpre + "," + postfix + separator + fext
-    
+      
+        if not raw:
+           return fname,raw
+        
         if save:
             try:
                 if (os.path.isfile(fname) and (not overwrite)):
