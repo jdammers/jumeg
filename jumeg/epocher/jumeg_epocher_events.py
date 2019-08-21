@@ -73,7 +73,7 @@ from jumeg.base.jumeg_base           import jumeg_base,JuMEG_Base_Basic
 from jumeg.epocher.jumeg_epocher_hdf import JuMEG_Epocher_HDF
 
 logger = logging.getLogger('jumeg')
-__version__="2019.05.14.001"
+__version__="2019.08.15.001"
 
 class JuMEG_Epocher_Channel_Baseline(object):
     """ 
@@ -1231,7 +1231,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
             if marker_data_frame.empty : 
                logger.info("  -> MARKER CHANNEL -> find events => condition: "+ condi +"\n ---> marker channel: "+ self.marker.channel)
                if self.verbose:
-                  logger.info(self.pp( self.marker.parameter,head="  -> Marker Channel parameter:"))
+                  logger.info(self.pp_list2str( self.marker.parameter,head="  -> Marker Channel parameter:"))
                marker_data_frame,marker_info = self.events_find_events(self.raw,prefix=self.marker.prefix,**self.marker.channel_parameter)
            #---
             if marker_data_frame.empty: continue
