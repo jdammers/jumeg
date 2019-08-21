@@ -28,7 +28,7 @@ from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxSplitte
 #--- Experiment Template
 from jumeg.gui.wxlib.jumeg_gui_wxlib_experiment_template  import JuMEG_wxExpTemplate
 #---Merger CTRLs
-from jumeg.gui.wxlib.jumeg_gui_wxlib_psel                 import JuMEG_wxPselMEEG
+from jumeg.gui.wxlib.jumeg_gui_wxlib_psel_meeg            import JuMEG_wxPselMEEG
 #---
 from jumeg.gui.wxlib.jumeg_gui_wxlib_pbshost              import JuMEG_wxPBSHosts
 from jumeg.gui.jumeg_gui_wx_argparser                     import JuMEG_GUI_wxArgvParser
@@ -106,7 +106,7 @@ class JuMEG_wxMEEGMergerPanel(JuMEG_wxMainPanel):
            scan:      name of scan
            data_type: mne / eeg
           """
-          self.PDFBox.update(stage=stage,scan=scan,reset=True)
+          self.PDFBox.update(stage=stage,scan=scan,reset=True,verbose=self.verbose,debug=self.debug)
           self.update_argparser_parameter()
           
       def init_pubsub(self, **kwargs):
