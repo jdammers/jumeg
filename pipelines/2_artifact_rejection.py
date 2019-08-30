@@ -5,7 +5,7 @@ import yaml
 from chop_and_apply_ica import chop_and_apply_ica
 
 with open('config_file.yaml', 'r') as f:
-    config = yaml.load(f)
+    config = yaml.safe_load(f)
 
 ###############################################################################
 # Get settings from config

@@ -17,7 +17,7 @@ from mne.minimum_norm import (make_inverse_operator, write_inverse_operator,
 import yaml
 
 with open('config_file.yaml', 'r') as f:
-    config = yaml.load(f)
+    config = yaml.safe_load(f)
 
 ###############################################################################
 # Get settings from config

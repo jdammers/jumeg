@@ -11,7 +11,7 @@ from utils import find_files, set_directory
 import yaml
 
 with open('config_file.yaml', 'r') as f:
-    config = yaml.load(f)
+    config = yaml.safe_load(f)
 
 ###############################################################################
 # Get settings from config
