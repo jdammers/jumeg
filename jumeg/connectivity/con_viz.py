@@ -464,7 +464,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
-            labels = yaml.load(f)
+            labels = yaml.safe_load(f)
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()
@@ -611,7 +611,7 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
-            labels = yaml.load(f)
+            labels = yaml.safe_load(f)
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()
@@ -730,14 +730,14 @@ def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
     n_nodes = len(degrees)
 
     with open(orig_labels_fname, 'r') as f:
-        orig_labels = yaml.load(f)['label_names']
+        orig_labels = yaml.safe_load(f)['label_names']
 
     assert n_nodes == len(orig_labels), 'Mismatch in node names and number.'
 
     # read the yaml file with grouping of the various nodes
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
-            labels = yaml.load(f)
+            labels = yaml.safe_load(f)
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()
@@ -869,7 +869,7 @@ def plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
 
     if isinstance(orig_labels_fname, str):
         with open(orig_labels_fname, 'r') as f:
-            orig_labels = yaml.load(f)['label_names']
+            orig_labels = yaml.safe_load(f)['label_names']
     else:
         orig_labels = orig_labels_fname
 
@@ -881,7 +881,7 @@ def plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
     # read the yaml file with grouping of the various nodes
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
-            labels = yaml.load(f)
+            labels = yaml.safe_load(f)
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()
@@ -1534,7 +1534,7 @@ def plot_labelled_group_connectivity_circle(yaml_fname, con, orig_labels,
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
-            labels = yaml.load(f)
+            labels = yaml.safe_load(f)
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()
@@ -1640,7 +1640,7 @@ def plot_fica_grouped_circle(yaml_fname, con, orig_labels, node_order_size,
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
-            labels = yaml.load(f)
+            labels = yaml.safe_load(f)
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()

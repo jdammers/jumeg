@@ -88,7 +88,7 @@ yaml_fname = get_jumeg_path() + '/data/standard_garces_rsns_grouping.yaml'
 
 import yaml
 with open(yaml_fname, 'r') as f:
-    xlabels = yaml.load(f)
+    xlabels = yaml.safe_load(f)
 
 # the yaml file has been hand curated to follow the same order as label_names
 # if not the node order has to be changed appropriately

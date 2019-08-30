@@ -17,7 +17,7 @@ grouping_yaml_fname = get_jumeg_path() + '/data/destriux_aparc_cortex_based_grou
 label_names_yaml_fname = get_jumeg_path() + '/data/destriux_label_names.yaml'
 
 with open(label_names_yaml_fname, 'r') as f:
-    label_names = yaml.load(f)['label_names']
+    label_names = yaml.safe_load(f)['label_names']
 
 # make a random matrix with 68 nodes
 # use simple seed for reproducibility

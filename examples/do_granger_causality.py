@@ -137,7 +137,7 @@ print(('Shape of causality matrix: ', caus.shape))
 #     label_names = pickle.load(f)
 
 with open(labels_fname, 'r') as f:
-    label_names = yaml.load(f)['label_names']
+    label_names = yaml.safe_load(f)['label_names']
 
 plot_grouped_causality_circle(caus[0], yaml_fname, label_names, n_lines=10,
                               labels_mode='cortex_only',
