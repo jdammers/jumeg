@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 '''
 Example exposing the plot_labelled_group_connectivity_circle function.

@@ -37,30 +37,30 @@ if plot_things:
                                          shflchanlist)
     procdperm = mne.io.Raw(permname, preload=True)
 
-    figraw = rawraw.plot_psd(fmin=0., fmax=300., tmin=0., tmax=None, color=(1,0,0), picks=shflpick)
+    figraw = rawraw.plot_psd(fmin=0., fmax=300., tmin=0., color=(1,0,0), picks=shflpick)
     axisraw = figraw.gca()
     axisraw.set_ylim([-300., -250.])
     # procdnr.plot_psd(fmin=0.,fmax=300., color=(0,0,1), picks=shflpick)
-    figshfl = procdperm.plot_psd(fmin=0., fmax=300., tmin=0., tmax=None, color=(1,0,0), picks=shflpick)
+    figshfl = procdperm.plot_psd(fmin=0., fmax=300., tmin=0., color=(1,0,0), picks=shflpick)
     axisshfl = figshfl.gca()
     axisshfl.set_ylim([-300., -250.])
 
     megpick = mne.pick_types(rawraw.info, meg=True, ref_meg=False, eeg=False, eog=False, stim=False)
 
-    figraw1 = rawraw.plot_psd(fmin=0., fmax=300., tmin=0., tmax=None, color=(0,0,1), picks=megpick)
+    figraw1 = rawraw.plot_psd(fmin=0., fmax=300., tmin=0., color=(0,0,1), picks=megpick)
     axisraw1 = figraw1.gca()
     axisraw1.set_ylim([-300., -250.])
 
-    figshfl1 = procdperm.plot_psd(fmin=0., fmax=300., tmin=0., tmax=None, color=(0,0,1), picks=megpick)
+    figshfl1 = procdperm.plot_psd(fmin=0., fmax=300., tmin=0., color=(0,0,1), picks=megpick)
     axisshfl1 = figshfl1.gca()
     axisshfl1.set_ylim([-300., -250.])
 
     megnochgpick = np.setdiff1d(megpick, shflpick)
 
-    figraw2 = rawraw.plot_psd(fmin=0., fmax=300., tmin=0., tmax=None, color=(0,1,0), picks=megnochgpick)
+    figraw2 = rawraw.plot_psd(fmin=0., fmax=300., tmin=0., color=(0,1,0), picks=megnochgpick)
     axisraw2 = figraw2.gca()
     axisraw2.set_ylim([-300., -250.])
 
-    figshfl2 = procdperm.plot_psd(fmin=0., fmax=300., tmin=0., tmax=None, color=(0,1,0), picks=megnochgpick)
+    figshfl2 = procdperm.plot_psd(fmin=0., fmax=300., tmin=0., color=(0,1,0), picks=megnochgpick)
     axisshfl2 = figshfl2.gca()
     axisshfl2.set_ylim([-300., -250.])
