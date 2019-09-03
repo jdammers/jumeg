@@ -21,11 +21,11 @@ def _tsdata_to_var(X, p):
     SIG:array, recovariance of this model
     E:  array, noise covariance of this model
     """
+
+    assert p >= 1, "The model order must be greater or equal to 1."
+
     n, m, N = X.shape
     p1 = p + 1
-    A = np.nan
-    SIG = np.nan
-    E = np.nan
     q1n = p1 * n
     I = np.eye(n)
     XX = np.zeros((n, p1, m + p, N))
