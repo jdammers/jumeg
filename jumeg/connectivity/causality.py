@@ -386,7 +386,8 @@ def make_frequency_bands(cau, freqs, sfreq):
 
 
 def compute_order(X, m_max, verbose=True):
-    """Estimate AR order with BIC
+    """
+    Estimate VAR order with the Bayesian Information Criterion (BIC).
 
     Parameters
     ----------
@@ -411,20 +412,22 @@ def compute_order(X, m_max, verbose=True):
     -------
     o_m : int
         Estimated order
-    bic : ndarray, shape (m_max + 1,)
-        The BIC for the orders from 1 to m_max.
+    bic : list
+        List with the BICs for the orders from 1 to m_max.
     """
     import scot
+    from scot.var import VAR
     from scipy import linalg
 
     N, p, n = X.shape
     bic = []
     for m in range(m_max):
+        VAR(m+1)
         mvar = scot.var.VAR(m+1)
         mvar.fit(X)
         sigma = mvar.rescov
         m_bic = np.log(linalg.det(sigma))
-        m_bic += (p ** 2) * m * np.log(N*n) / (N*n)
+        m_bic += (p ** 2) * (m + 1) * np.log(N*n) / (N*n)
         bic.append(m_bic)
         if verbose:
             print(('model order: %d, BIC value: %.2f' %(m+1, bic[m])))
