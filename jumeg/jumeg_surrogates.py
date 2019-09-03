@@ -30,7 +30,7 @@ def check_power_spectrum(orig, surr):
     assert orig.shape == surr.shape, 'Shape mismatch.'
     # the first sample point and the Nyquist central point of the FFT always
     # differ between the real and the surrogate data
-    check_length = orig.shape[-1] / 2 - 1
+    check_length = int(orig.shape[-1] / 2 - 1)
     orig_ps = np.round(np.abs(np.fft.fft(orig, axis=1))[:, 1:check_length],
                        decimals=3)
     surr_ps = np.round(np.abs(np.fft.fft(surr, axis=1))[:, 1:check_length],
