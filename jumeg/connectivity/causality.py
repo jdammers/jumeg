@@ -44,16 +44,31 @@ def _tsdata_to_var(X, p):
     CXB = np.linalg.cholesky(XB.dot(XB.T)).T
     AF[:, kf] = np.linalg.solve(CXF.T, I)
     AB[:, kb] = np.linalg.solve(CXB.T, I)
+
+    del p1, XF, XB, CXF, CXB
+
     while k <= p:
+
+        print('morder', k)
+
         tempF = np.reshape(XX[:, 0:k, k:m, :], (kn, M), order='F')
         af = AF[:, kf]
         EF = af.dot(tempF)
+
+        del af, tempF
+
         tempB = np.reshape(XX[:, 0:k, k - 1:m - 1, :], (kn, M), order='F')
         ab = AB[:, kb]
         EB = ab.dot(tempB)
+
+        del ab, tempB
+
         CEF = np.linalg.cholesky(EF.dot(EF.T)).T
         CEB = np.linalg.cholesky(EB.dot(EB.T)).T
         R = np.dot(np.linalg.solve(CEF.T, EF.dot(EB.T)), np.linalg.inv(CEB))
+
+        del EB, CEF, CEB
+
         RF = np.linalg.cholesky(I - R.dot(R.T)).T
         RB = np.linalg.cholesky(I - (R.T).dot(R)).T
         k = k + 1
@@ -65,10 +80,18 @@ def _tsdata_to_var(X, p):
         ABPREV = AB[:, kb]
         AF[:, kf] = np.linalg.solve(RF.T, AFPREV - R.dot(ABPREV))
         AB[:, kb] = np.linalg.solve(RB.T, ABPREV - R.T.dot(AFPREV))
+
+        del RF, RB, ABPREV
     E = np.linalg.solve(AFPREV[:, :n], EF)
+
+    del EF, AFPREV
+
     SIG = (E.dot(E.T)) / (M - 1)
     E = np.reshape(E, (n, m - p, N), order='F')
     temp = np.linalg.solve(-AF[:, :n], AF[:, n:])
+
+    del AF
+
     A = np.reshape(temp, (n, n, p), order='F')
     return A, SIG, E
 
@@ -146,7 +169,8 @@ def _whiteness(X, E):
 
 def _consistency(X, E):
     '''
-    Consistency test
+    Consistency test. [1]
+
     Parameters
     -----------
     X: array
@@ -157,6 +181,11 @@ def _consistency(X, E):
     -------
     cons: float
     consistency test measurement.
+
+    [1] Ding, M. et al "Short-window spectral analysis of cortical
+        event-related potentials by adaptive multivariate autoregressive
+        modeling: data preprocessing, model validation, and variability
+        assessment." (2000), Biol. Cybern., vol. 83, 35-45
     '''
     n, m, N = X.shape
     p = m - E.shape[1]
@@ -267,18 +296,21 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
     Returns:
     (is_white, consistency, is_stable)
     '''
-    import scot
     print('starting checks and MVAR fitting...')
     # tsdata_to_var from MVGC requires sources x samples x trials
     # X is of shape trials x sources x samples (which is what ScoT uses)
     A, SIG, E = _tsdata_to_var(X.transpose(1, 2, 0), morder)
+    del A, SIG
+
     whi = False
     dw, pval = _whiteness(X.transpose(1, 2, 0), E)
     if np.all(dw < whit_max) and np.all(dw > whit_min):
         whi = True
     cons = _consistency(X.transpose(1, 2, 0), E)
+    del dw, pval, E
 
-    mvar = scot.var.VAR(morder)
+    from scot.var import VAR
+    mvar = VAR(morder)
     mvar.fit(X)  # scot func which requires shape trials x sources x samples
     is_st = mvar.is_stable()
     if cons < thr_cons or is_st is False or whi is False:
