@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 '''
 Perform Granger based causality analysis using Generalized Parital Directed
@@ -140,9 +140,10 @@ with open(labels_fname, 'r') as f:
     label_names = yaml.safe_load(f)['label_names']
 
 plot_grouped_causality_circle(caus[0], yaml_fname, label_names, n_lines=10,
-                              labels_mode='cortex_only',
+                              labels_mode=None, replacer_dict=None,
                               out_fname='causality_sample.png',
                               colormap='Blues', colorbar=True,
+                              arrowstyle='->,head_length=1,head_width=1',
                               figsize=(10, 6), show=False)
 
 t_end = time.time()
