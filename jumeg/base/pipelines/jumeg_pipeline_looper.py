@@ -22,7 +22,7 @@ from jumeg.base.jumeg_base import jumeg_base as jb
 
 logger = logging.getLogger('jumeg')
 
-__version__="2019.05.10.001"
+__version__="2019.08.07.001"
 
 class JuMEG_PDF_BASE(object):
    def __init__(self,**kwargs):
@@ -45,7 +45,9 @@ class JuMEG_PDF_BASE(object):
    def file_extention(self): return self._file_extention
    @file_extention.setter
    def file_extention(self,v):
-       if not isinstance(v,(list)):
+       if not v:
+          self._file_extention = []
+       elif not isinstance(v,(list)):
           self._file_extention = list(v)
        else:
           self._file_extention = v
@@ -103,7 +105,7 @@ class JuMEG_PDF_BASE(object):
        if not fname:
           return False
        if file_extention:
-          self.fif_extention = file_extention
+          self.file_extention = file_extention
     
        if self.file_extention:
           for fext in self.file_extention:
@@ -207,24 +209,24 @@ class JuMEG_PDF_IDS(JuMEG_PDF_BASE):
       for subj in self.subjects:
           try:
          #--- check if its a dir
-             recordings_dir = os.path.join(self.stage,subj)
-             if not os.path.isdir( recordings_dir ):
+             start_dir = os.path.join(self.stage,subj)
+             if not os.path.isdir( start_dir ):
                 continue
-             
-             with jb.working_directory(recordings_dir):
+             # def find_files(start_dir=None,pattern=None,file_extention=None,debug=False)
+             with jb.working_directory(start_dir):
                   for fext in self.file_extention:
                       if self.debug:
-                         logging.debug( "  -> recordings dir: {}\n".format(recordings_dir)+
+                         logging.debug( "  -> start dir     : {}\n".format(start_dir)+
                                         "  -> extention     : {}\n".format(fext)+
                                         "  -> glob recursive: {}\n".format(self.recursive) +
                                         "  -> glob pattern  : {}".format(fpatt)
                                        )
                            
                       for f in glob.glob(fpatt + fext,recursive=self.recursive):
-                          self._pdfs.append( os.path.abspath( os.path.join(recordings_dir,f) ) )
+                          self._pdfs.append( os.path.abspath( os.path.join(start_dir,f) ) )
           except:
               logger.exception("---> error subject : {}\n".format(subj) +
-                               "  -> recordings dir: {}\n".format(recordings_dir) )
+                               "  -> start dir     : {}\n".format(start_dir) )
       self._pdfs.sort()
       
       if self.debug:
@@ -299,7 +301,7 @@ class JuMEG_PDF_LIST(JuMEG_PDF_BASE):
               return None
            
            if not os.path.isfile( self.GetFullListFileName() ):
-              logger.exception("---> <list file> is not a file:\n -> path: {}\n  -> file: {}".format(self.list_file_path,self.list_file_name))
+              logger.exception("---> <list file> is not a file:\n  -> path: {}\n  -> file: {}".format(self.list_file_path,self.list_file_name))
               return None
             
            # if self.debug:
@@ -314,7 +316,8 @@ class JuMEG_PDF_LIST(JuMEG_PDF_BASE):
                        fname = line.split()[0]
                        try:
                            if not self.check_file_extention(fname):
-                              raise FileNotFoundError("---> error wrong file extention: skip file !!!")
+                              msg= "\n---> error wrong file extention: skip file !!!\n  -> file extention list: {}\n".format(self.file_extention)
+                              raise FileNotFoundError(msg)
                            if self.stage:
                               fname = os.path.abspath( os.path.join( self.stage+ "/" + fname ) )
                            if not os.path.isfile(fname):
@@ -480,7 +483,7 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
     #--- config file
         self._config_file = None
         self._config      = None
-        
+        #self.overwrite    = True
         self._exit_on_error = False
         self.update(**kwargs)
         self.init( **kwargs )
@@ -568,6 +571,7 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
                self.pdf.pdfs.extend(self._PDFList.pdfs)
             if self._PDFFile.pdf:
                self.pdf.pdfs.append(self._PDFFile.pdf)
+            self.pdf.pdfs.sort()
         except:
             raise Exception("\n" + "\n ---> error in update  PDFs list")
             return False
@@ -588,6 +592,14 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
              self._config_data = yaml.load(f)
         if self.debug:
             logger.info("  -> DONE loading config file")
+
+    def _update_config_values(self):
+        """
+        overwriting in congfig: stage
+        :return:
+        """
+        for k in self.config.keys():
+            self.config[k]["stage"] = self.stage
             
     def init(self,options=None,defaults=None):
         """
@@ -610,20 +622,35 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         :return:
         """
         
-        def get_value(v,dicts):
+        def get_value(k,d):
             """
             check if key is in dict of dicts
+            da > dd > dc
+            args > defaults > config
+            problem in order and None,False
             
-            :param v:
+            :param k: key in dict
             :param dicts:
             :return: value of first match
             """
+            #v = None
+            if d[0].get(k):
+               v = d[0].get(k)
+            # elif k in d[1].keys():  gets None too
+            elif d[1].get(k):
+               v = d[1].get(k)
+            else:
+               v= d[-1].get(k)
             
-            for i in range(len(dicts)):
-                if dicts[i]:
-                   if v in dicts[i]:
-                      return dicts[i].get(v)
-            return None
+            #for i in range(len(dicts)):
+            #    if dicts[i]:
+            #       if v in dicts[i]:
+            #          logger.info(" ---> update: dict: {} key: {} value: {}".format(i,v,dicts[i].get(v)) )
+            #          return dicts[i].get(v)
+            
+            logger.debug(" ---> update: key: {} value:{} ".format(k,v))
+            return v
+    
     
         self.clear() # clear all pdf lists
         
@@ -646,21 +673,26 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
        #--- get global parameter from cfg ToDo in CLS
         if self.config:
            cfg_global = self.config.get("global")
-      
+        
+        logger.debug(" ---> config global parameter: {} ".format(cfg_global))
+        
        #--- logfile
         self.log2file      = get_value("log2file",     [opt,defaults,cfg_global])
         self.logprefix     = get_value("logprefix",    [opt,defaults,cfg_global])
         self.logoverwrite  = get_value("logoverwrite", [opt,defaults,cfg_global])
         
-        self.recursive     = get_value("recursive",    [opt,defaults,cfg_global])
-        self.subjects      = get_value("subjects",     [opt,defaults,cfg_global])
-        self.stage         = get_value("stage",        [opt,defaults,cfg_global])
-        self.fif_extention = get_value("fif_extention",[opt,defaults,cfg_global])
-
+        self.recursive      = get_value("recursive",    [opt,defaults,cfg_global])
+        self.subjects       = get_value("subjects",     [opt,defaults,cfg_global])
+        self.stage          = get_value("stage",        [opt,defaults,cfg_global])
+        self.file_extention = get_value("file_extention",[opt,defaults,cfg_global])
+        #self.overwrite      = get_value("overwrite"    ,[opt,defaults,cfg_global])
+        
         self._PDFList.list_file_path = get_value("list_path",[opt,defaults,cfg_global])
         self._PDFList.list_file_name = get_value("list_name",[opt,defaults,cfg_global])
         self._PDFFile.path           = get_value("fpath",    [opt,defaults,cfg_global])
         self._PDFFile.name           = get_value("fname",    [opt,defaults,cfg_global])
+        
+        self._update_config_values()
         
     def init_logfile(self,fname=None,mode="a"):
         if self.logoverwrite:
@@ -721,10 +753,10 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         self.update(**kwargs)
        
         if not self._update_pdf_list():
-           logger.info("---> No files in list, stop process")
+           logger.info("\n---> No files in list, stop process")
            return
         
-        logger.debug("---> PDF files to process: \n".join(self.pdf.pdfs) )
+        logger.debug("---> PDF files to process: \n"+"\n".join(self.pdf.pdfs) )
         
         for self.pdf.idx in range( len( self.pdf.pdfs ) ):
             try:
@@ -752,6 +784,7 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
                         msg.append("  -> writing log to   : {}".format(self.Hlog.filename))
                      
                      logger.info( "\n".join(msg) )
+                     
                      try:
                          yield self.pdf.name,self.pdf.id,self.pdf.dir
                      except:
@@ -782,7 +815,7 @@ def test1():
     subject_ids = "211890","211747"
 
     PDF = JuMEG_PDF_IDS()
-    PDF.updatet(stage=stage,subject_ids=subject_ids,separator= ",",recursive=True,verbose=True,debug=True)
+    PDF.update(stage=stage,subject_ids=subject_ids,separator= ",",recursive=True,verbose=True,debug=True)
     
 def test2():
     logger.info("Start test2 get full file")

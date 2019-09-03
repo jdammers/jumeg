@@ -26,13 +26,19 @@ from jumeg.gui.wxlib.jumeg_gui_wxlib_main_panel           import JuMEG_wxMainPan
 from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxControlGrid
 #--- Merger CTRLs
 from jumeg.gui.wxlib.jumeg_gui_wxlib_experiment_template  import JuMEG_wxExpTemplate
-from jumeg.gui.wxlib.jumeg_gui_wxlib_psel                 import JuMEG_wxPselBTi
+from jumeg.gui.wxlib.jumeg_gui_wxlib_psel_bti             import JuMEG_wxPselBTi
 #---
 from jumeg.gui.wxlib.jumeg_gui_wxlib_pbshost              import JuMEG_wxPBSHosts
 from jumeg.gui.jumeg_gui_wx_argparser                     import JuMEG_GUI_wxArgvParser
 #---
 from jumeg.base.jumeg_base                                import jumeg_base as jb
 from jumeg.base.ioutils.jumeg_ioutils_subprocess          import JuMEG_IoUtils_SubProcess
+
+
+import logging
+from jumeg.base import jumeg_logger
+jumeg_logger.setup_script_logging()
+logger = logging.getLogger('jumeg') # init a logger
 
 __version__="2019.05.14-001"
 
@@ -244,6 +250,9 @@ class JuMEG_wxImportToFIFPanel(JuMEG_wxMainPanel):
               #print(k)
               #print(self.ExpTemplate.TMP.bti_data.get(k))
               self.AP.update_parameter(k,self.ExpTemplate.TMP.bti_data.get(k))
+        
+         #--- search box pattern matching
+          self.PDFBox.SearchBox.SetValue("PDF",self.ExpTemplate.TMP.bti_data.get("pdf_name","c,rfDC"))
           
           self.BtiCtrl.BtiPath          = self.ExpTemplate.IOUtils.expandvars(self.ExpTemplate.TMP.bti_data.get("bti_path"))
           self.BtiCtrl.BtiPath          = self.ExpTemplate.TMP.bti_data.get("bti_path")[0]

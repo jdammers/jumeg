@@ -32,7 +32,7 @@ class JuMEG_Utils_PDFsBase(object):
     -----------
     stage,scan,session,run,prefix,postfix,pdf_name,seperator,data_type,verbose,debug
     """
-    __slots__ =["experiment","id","scan","session","run","prefix","postfix","pdf_name","seperator","pattern","data_type",
+    __slots__ =["experiment","id","scan","session","run","prefix","postfix","pdf_name","eeg_name","seperator","pattern","recursive","ignore_case","data_type",
                 "id_list","verbose","debug","_stage","_start_path","_number_of_pdfs","_total_filesize"]
     
     def __init__(self,**kwargs):
@@ -43,7 +43,7 @@ class JuMEG_Utils_PDFsBase(object):
         for k in self.__slots__:
             self.__setattr__(k,None)
 
-        self.seperator       = "/"  # for glob.glob
+        self.seperator       = "/"  # for glob.glob match  subdirs
         self.verbose         = False
         self._pdfs           = dict()
         self._total_filesize = 0
@@ -141,8 +141,8 @@ class JuMEG_Utils_PDFsBase(object):
            self.stage_path_offset = self.stage_path_offset.replace("/","",1)
         return  self.stage_path_offset
 
-    def update(self,**kwargs):
-        self._update_from_kwargs(**kwargs)
+    #def update(self,**kwargs):
+    #    self._update_from_kwargs(**kwargs)
         
     def update_pattern(self,*args,**kwargs):
         """
@@ -153,7 +153,7 @@ class JuMEG_Utils_PDFsBase(object):
          pattern
         """
         self._update_from_kwargs(**kwargs)
-      
+        
         l = []
         if self.id:
             l.append(self.id)
@@ -171,16 +171,33 @@ class JuMEG_Utils_PDFsBase(object):
            if self.postfix:d+=self.postfix
            if d: l.append(d)
         if len(l):
-           self.pattern = self.seperator.join(l)
+           pat = self.seperator.join(l)
         else:
-           self.pattern = self.pdf_name
-        
-       #--- glob.glob
-        if self.pattern.find("/**/") < 0:
-           d = self.pattern.split("/")
+           pat = self.pdf_name
+
+        #if pat.find("**") < 0:
+        #    d = pat.split(self.seperator)
+        #    d[-1] = "**" + self.seperator + d[-1]
+        #    pat = self.seperator.join(d)
+
+        #--- glob.glob
+        if pat.find("/**/") < 0:
+           d = pat.split("/")
            d[-1]= "**/" + d[-1]
-           self.pattern = "/".join(d)
+           pat = "/".join(d)
+
        
+        if self.ignore_case:
+           pat_ic = ""
+           for c in pat:
+               if c.isalpha():
+                  pat_ic += '[%s%s]' % (c.lower(),c.upper())
+               else:
+                  pat_ic += c
+           self.pattern = pat_ic
+           return self.pattern
+        
+        self.pattern = pat
         return self.pattern
   
     def info(self,debug=False):
@@ -221,121 +238,27 @@ class JuMEG_Utils_PDFsBase(object):
         self._total_filesize = 0.0
         self.get_stage_path_offset()
         
+        #print("PATTERN: " + self.pattern)
+        #print("Start path: " + self.start_path)
         with jb.working_directory(self.start_path):
-             for id in os.listdir( "." ):
-                 if not os.path.isdir(id): continue
+             for id in os.scandir(path="."):
+                 if not id.is_dir(): continue    #os.path.isdir(id): continue
                  lpdfs = []
-                 for f in glob.iglob(self.update_pattern(id=id),recursive=True):
+                 for f in glob.iglob(self.update_pattern(id=id.name),recursive=self.recursive):
                      lpdfs.append(f)
                      lpdfs.sort()
                  if not lpdfs: continue
                  if not self._pdfs.get(id):
-                    self._pdfs[id] = []
+                    self._pdfs[id.name] = []
                  for f in lpdfs:
-                     self._update_pdfs(id,f)
+                     self._update_pdfs(id.name,f)
                      
-                 self._number_of_pdfs+=len(self._pdfs[id])
-          
-class JuMEG_Utils_PDFsBTi(JuMEG_Utils_PDFsBase):
-    """
-     CLS find BTi IDs in <stage>
-     for bti [meg] data along directory structure:
-     <stage/id/scan/session/run/
-     check for  <c,rfDC>,<config> and <hs_file>
-     and if it is a <empty room> the for id and scan the last run in the last session of a day
-    
-     Example:
-     --------
-      from jumeg import jumeg_base as jb
-      from jumeg.gui.utils.jumeg_gui_utils_pdfs import JuMEG_Utils_PDFsBTi
-      stage = os.getenv("JUMEG_PATH_BTI_EXPORT",default="~/data/export")
-      PDFs = JuMEG_Utils_PDFsBTi(stage=stage,verbose=True,debug=True)
-      PDFs.scan = "TEST01"
-     
-      PDFs.update()
-      PDFs.get_parameter()
-      PDFs.info()
-      print("\n---> DONE PDFs: "+PDFs.data_type)
-     """
-    def __init__(self,**kwargs):
-        super().__init__(**kwargs)
+                 self._number_of_pdfs+=len(self._pdfs[id.name])
+      
+       # print(self._pdfs)
+       # print(self.ignore_case)
+       # print(self.update_pattern(id=id.name))
         
-    @property
-    def start_path(self): return self.stage
-
-    #@property
-    #def FIFEmptyRoomPostfixTxtCtrl(self):return self.FindWindowByName( self.GetName().upper() +"."+ self._fif_emptyroom_postfix_name )
-    #@property
-    #def FIFEmptyRoomPostfixCkBox(self):  return self.FindWindowByName( self.GetName().upper() +"."+ self._fif_emptyroom_postfix_ck_name )
-
-    def _init_defaults(self):
-        self.data_type       = "bti"
-        self.pdf_name        = "c,rfDC"
-        self.hs_filename     = "hs_file"
-        self.config_filename = "config"
-
-    def _info_special(self):
-        return["hs filename         : {}".format(self.hs_filename),\
-               "config filename     : {}".format(self.config_filename),"-"*50]
-
-    def check_config_hs(self,fbti):
-        """
-        check filesize of hs_file and config file
-        :param full filename
-        
-        :return:
-        size of headshape file
-        size of config file
-        """
-        try:
-           size_hs=os.stat(os.path.dirname(fbti)+"/"+self.hs_filename).st_size
-        except:
-           size_hs=0
-        try:
-           size_cfg = os.stat(os.path.dirname(fbti) + "/" + self.config_filename).st_size
-        except:
-           size_cfg = 0
-     
-        return size_hs,size_cfg
-    
-    #def check_emptyroom(self):
-    #    for subject_id in (self._pdfs):
-    
-    
-    def _update_pdfs(self,id,f):
-        size_hs,size_cfg = self.check_config_hs(f)
-        self._pdfs[id].append({"pdf":f,"size":os.stat(f).st_size,"hs_file":size_hs,"config":size_cfg}) #"selected":False,"emptyroom":False })
-        self._total_filesize += size_hs + size_cfg + self._pdfs[id][-1]["size"]
-    
-    def update(self,**kwargs):
-        """
-        :param kwargs:
-        :return:
-        [
-         {'pdf': '0815/M100/18-04-18@10:03/1/c,rfDC', 'size': 47256224, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
-         {'pdf': '0815/M100/18-04-18@10:10/1/c,rfDC', 'size': 542447912, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
-         {'pdf': '0815/M100/18-04-18@10:10/2/c,rfDC', 'size': 526327504, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
-         {'pdf': '0815/M100/18-04-18@10:10/3/c,rfDC', 'size': 547783544, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
-         {'pdf': '0815/M100/18-04-18@10:10/4/c,rfDC', 'size': 531322560, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
-         {'pdf': '0815/M100/18-04-18@11:15/1/c,rfDC', 'size': 343326816, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': True} ]
-        """
-        super().update(**kwargs)
-        
-      #--- ck emptyroom , pdfs is sorted
-        for subject_id in self._pdfs:
-            pdfs = {}
-            for idx,x in enumerate(self._pdfs[subject_id] ):
-                l= x["pdf"].replace('@',self.seperator).replace("-","").replace(":","").split(self.seperator)
-               #--- mk scan key
-                if not pdfs.get( l[1] ): pdfs[ l[1] ] = {}
-               #-- mk  scan.date key
-                pdfs[ l[1] ][ l[2] ] = idx
- 
-            for scan in pdfs.keys():
-                for date in pdfs[scan]:
-                    self._pdfs[subject_id][ pdfs[scan][date] ]["emptyroom"] = True
-        
-
 class JuMEG_Utils_PDFsMNE(JuMEG_Utils_PDFsBase):
     """
      CLS find MEG IDs in <stage>
@@ -402,7 +325,7 @@ class JuMEG_Utils_PDFsEEG(JuMEG_Utils_PDFsBase):
         self.data_type = "eeg"
         self.prefix    = '*'
         self.postfix   = '.vhdr'
-        self.seperator = "*"
+        self.seperator = "_"
         
     def _info_special(self):
         return ["experiment          : {}".format(self.experiment),
@@ -422,7 +345,7 @@ class JuMEG_Utils_PDFsEEG(JuMEG_Utils_PDFsBase):
         """
         self._update_from_kwargs(**kwargs)
         
-        l = ["**"]
+        l = []
         if self.id:
             l.append(self.id)
         if self.scan:
@@ -431,26 +354,38 @@ class JuMEG_Utils_PDFsEEG(JuMEG_Utils_PDFsBase):
             l.append(self.session)
         if self.run:
             l.append(self.run)
-        if self.pdf_name:
-           l.append(self.pdf_name)
+        if self.eeg_name:
+           l.append(self.eeg_name)
         else:
            d=""
            if self.prefix: d+=self.prefix
            if self.postfix:d+=self.postfix
            if d: l.append(d)
+        
         if len(l):
-           self.pattern = self.seperator.join(l)
+           pat = self.seperator.join(l)
         else:
-           self.pattern = self.pdf_name
+           pat = self.eeg_name
         
        #--- glob.glob
-        if self.pattern.find("/**/") < 0:
-           d = self.pattern.split("/")
+        if pat.find("**/") < 0:
+           d = pat.split("/")
            d[-1]= "**/" + d[-1]
-           self.pattern = "/".join(d)
-       
+           pat = "/".join(d)
+        
+        if self.ignore_case:
+           pat_ic = ""
+           for c in pat:
+               if c.isalpha():
+                  pat_ic += '[%s%s]' % (c.lower(),c.upper())
+               else:
+                  pat_ic += c
+           self.pattern = pat_ic
+           return self.pattern
+
+        self.pattern = pat
         return self.pattern
-      
+        
     def check_files(self,fhdr):
         """
         check filesize of vmrk,data
@@ -504,8 +439,9 @@ class JuMEG_Utils_PDFsEEG(JuMEG_Utils_PDFsBase):
                         self._update_pdfs(id,f)
             
                     self._number_of_pdfs += len(self._pdfs[id])
-    
-
+        #print(self._pdfs)
+        #print("EEG path: {}".format(self.start_path))
+        #print("EEG pat: {}".format(self.pattern))
 
 #=====================================================================
 class JuMEG_Utils_PDFsMEEG(object):
@@ -560,6 +496,10 @@ class JuMEG_Utils_PDFsMEEG(object):
         self._pdfs      = dict()
         self._eeg_index = dict()
         self.__NO_MATCH = -1
+        self.pattern    = None
+        #self.recursive  = True
+        #self.ignorecase = False
+        
         self._update_from_kwargs(**kwargs)
         
     @property
@@ -669,6 +609,7 @@ class JuMEG_Utils_PDFsMEEG(object):
             :param postfix_mne:
             :param prefix_eeg:
             :param postfix_eeg:
+            :param pattern:
             :return:
         """
         #for k in kwargs:
@@ -695,6 +636,9 @@ class JuMEG_Utils_PDFsMEEG(object):
     
         self.verbose     = kwargs.get("verbose",self.verbose)
         self.debug       = kwargs.get("debug",self.debug)
+        self.pattern     = kwargs.get("pattern")
+        #self.recursive   = kwargs.get("recursive",self.recursive)
+        #self.ignorecase  = kwargs.get("ignorecase",self.ignorecase)
         
     def GetTotalFileSize(self):
         return self._total_filesize
@@ -761,8 +705,8 @@ class JuMEG_Utils_PDFsMEEG(object):
         self._update_from_kwargs(**kwargs)
         self._eeg_index = dict()
     
-        self.MNE.update()
-        self.EEG.update(id_list=self.MNE.GetIDs())
+        self.MNE.update(**kwargs) #pattern=self.pattern,recursive=self.recursive)
+        self.EEG.update(id_list=self.MNE.GetIDs(),**kwargs)
       
     #--- search for matching scan and run
         for id_item in self.MNE.GetIDs():
@@ -904,3 +848,107 @@ class JuMEG_Utils_PDFsMEEG(object):
            logger.debug("\n".join(msg) )
            
         return found_list
+
+
+'''
+class JuMEG_Utils_PDFsBTi(JuMEG_Utils_PDFsBase):
+    """
+     CLS find BTi IDs in <stage>
+     for bti [meg] data along directory structure:
+     <stage/id/scan/session/run/
+     check for  <c,rfDC>,<config> and <hs_file>
+     and if it is a <empty room> the for id and scan the last run in the last session of a day
+    
+     Example:
+     --------
+      from jumeg import jumeg_base as jb
+      from jumeg.gui.utils.jumeg_gui_utils_pdfs import JuMEG_Utils_PDFsBTi
+      stage = os.getenv("JUMEG_PATH_BTI_EXPORT",default="~/data/export")
+      PDFs = JuMEG_Utils_PDFsBTi(stage=stage,verbose=True,debug=True)
+      PDFs.scan = "TEST01"
+     
+      PDFs.update()
+      PDFs.get_parameter()
+      PDFs.info()
+      print("\n---> DONE PDFs: "+PDFs.data_type)
+     """
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        
+    @property
+    def start_path(self): return self.stage
+
+    #@property
+    #def FIFEmptyRoomPostfixTxtCtrl(self):return self.FindWindowByName( self.GetName().upper() +"."+ self._fif_emptyroom_postfix_name )
+    #@property
+    #def FIFEmptyRoomPostfixCkBox(self):  return self.FindWindowByName( self.GetName().upper() +"."+ self._fif_emptyroom_postfix_ck_name )
+
+    def _init_defaults(self):
+        self.data_type       = "bti"
+        self.pdf_name        = "c,rfDC"
+        self.hs_filename     = "hs_file"
+        self.config_filename = "config"
+
+    def _info_special(self):
+        return["hs filename         : {}".format(self.hs_filename),\
+               "config filename     : {}".format(self.config_filename),"-"*50]
+
+    def check_config_hs(self,fbti):
+        """
+        check filesize of hs_file and config file
+        :param full filename
+        
+        :return:
+        size of headshape file
+        size of config file
+        """
+        try:
+           size_hs=os.stat(os.path.dirname(fbti)+"/"+self.hs_filename).st_size
+        except:
+           size_hs=0
+        try:
+           size_cfg = os.stat(os.path.dirname(fbti) + "/" + self.config_filename).st_size
+        except:
+           size_cfg = 0
+     
+        return size_hs,size_cfg
+    
+    #def check_emptyroom(self):
+    #    for subject_id in (self._pdfs):
+    
+    
+    def _update_pdfs(self,id,f):
+        size_hs,size_cfg = self.check_config_hs(f)
+        self._pdfs[id].append({"pdf":f,"size":os.stat(f).st_size,"hs_file":size_hs,"config":size_cfg}) #"selected":False,"emptyroom":False })
+        self._total_filesize += size_hs + size_cfg + self._pdfs[id][-1]["size"]
+    
+    def update(self,**kwargs):
+        """
+        :param kwargs:
+        :return:
+        [
+         {'pdf': '0815/M100/18-04-18@10:03/1/c,rfDC', 'size': 47256224, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
+         {'pdf': '0815/M100/18-04-18@10:10/1/c,rfDC', 'size': 542447912, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
+         {'pdf': '0815/M100/18-04-18@10:10/2/c,rfDC', 'size': 526327504, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
+         {'pdf': '0815/M100/18-04-18@10:10/3/c,rfDC', 'size': 547783544, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
+         {'pdf': '0815/M100/18-04-18@10:10/4/c,rfDC', 'size': 531322560, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': False},
+         {'pdf': '0815/M100/18-04-18@11:15/1/c,rfDC', 'size': 343326816, 'hs_file': 135472, 'config': 193616, 'selected': False, 'emptyroom': True} ]
+        """
+        super().update(**kwargs)
+        
+      #--- ck emptyroom , pdfs is sorted
+        for subject_id in self._pdfs:
+            pdfs = {}
+            for idx,x in enumerate(self._pdfs[subject_id] ):
+                l= x["pdf"].replace('@',self.seperator).replace("-","").replace(":","").split(self.seperator)
+               #--- mk scan key
+                if not pdfs.get( l[1] ): pdfs[ l[1] ] = {}
+               #-- mk  scan.date key
+                pdfs[ l[1] ][ l[2] ] = idx
+ 
+            for scan in pdfs.keys():
+                for date in pdfs[scan]:
+                    self._pdfs[subject_id][ pdfs[scan][date] ]["emptyroom"] = True
+       
+
+'''
