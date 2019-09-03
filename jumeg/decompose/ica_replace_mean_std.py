@@ -293,7 +293,7 @@ def pre_whiten(data, info, picks, pre_whitener=None):
         info = pick_info(info, picks)
 
         pre_whitener = np.empty([len(data), 1])
-        for ch_type in _DATA_CH_TYPES_SPLIT + ['eog']:
+        for ch_type in _DATA_CH_TYPES_SPLIT + ('eog', "ref_meg"):
             if _contains_ch_type(info, ch_type):
                 if ch_type == 'seeg':
                     this_picks = pick_types(info, meg=False, seeg=True)
@@ -307,9 +307,11 @@ def pre_whiten(data, info, picks, pre_whitener=None):
                     this_picks = pick_types(info, meg=False, eog=True)
                 elif ch_type in ('hbo', 'hbr'):
                     this_picks = pick_types(info, meg=False, fnirs=ch_type)
+                elif ch_type == 'ref_meg':
+                    this_picks = pick_types(info, meg=False, ref_meg=True)
                 else:
                     raise RuntimeError('Should not be reached.'
-                                       'Unsupported channel {0}'
+                                       'Unsupported channel {}'
                                        .format(ch_type))
                 pre_whitener[this_picks] = np.std(data[this_picks], axis=1)[:, None]
 
