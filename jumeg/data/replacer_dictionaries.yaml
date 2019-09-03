@@ -1,0 +1,7 @@
+# replacer_dict necessary for connectivity circle plotting
+
+replacer_dict_aparc_sub:
+    {'posteriorcingulate_1': 'cingulate', 'insula_5': 'insula', 'parsorbitalis_2': 'frontal', 'precuneus_10': 'parietal', 'lingual_5': 'occipital', 'middletemporal_7': 'temporal'}
+
+replacer_dict_aparc:
+    {'caudalanteriorcingulate': 'cingulate', 'insula': 'insula', 'parstriangularis': 'frontal', 'precuneus': 'parietal', 'lingual': 'occipital', 'transversetemporal': 'temporal'}

@@ -1101,7 +1101,7 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
     """
     chnpick = []
     for ir in range(len(findlist)):
-        if findlist[ir].translate(None, ' ').isalnum():
+        if findlist[ir].translate(str.maketrans('', '')).isalnum():
             try:
                 chnpicktmp = ([fulllist.index(findlist[ir])])
                 chnpick = np.array(np.concatenate((chnpick, chnpicktmp), axis=0),
