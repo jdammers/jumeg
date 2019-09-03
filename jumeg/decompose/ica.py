@@ -285,7 +285,7 @@ def whitening(data, dim_reduction='',
     # -------------------------------------------
     # import necessary modules
     # -------------------------------------------
-    from sklearn.decomposition import RandomizedPCA
+    from sklearn.decomposition import PCA
     from . import dimension_selection as dim_sel
 
 
@@ -307,8 +307,7 @@ def whitening(data, dim_reduction='',
     stddev = np.std(X, axis=0)
     X = (X - dmean[np.newaxis, :]) / stddev[np.newaxis, :]
 
-    pca = RandomizedPCA(n_components=None, whiten=whiten,
-                        copy=True)
+    pca = PCA(n_components=None, whiten=whiten, svd_solver='randomized', copy=True)
 
     # -------------------------------------------
     # perform whitening
