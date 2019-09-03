@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -99,5 +99,5 @@ cmap = ListedColormap(['m', 'k', 'b', 'y', 'r', 'c', 'g'])
 yaml_fname = get_jumeg_path() + '/data/desikan_aparc_cortex_based_grouping.yaml'
 plot_grouped_connectivity_circle(yaml_fname, con, aparc_names, n_lines=12,
                                  labels_mode=None, node_order_size=68,
-                                 colormap=cmap, colorbar=True,
+                                 colormap=cmap, colorbar=True, replacer_dict=None,
                                  indices=None, out_fname='rsn_circle_plot.png')
