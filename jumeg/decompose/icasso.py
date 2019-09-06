@@ -1642,7 +1642,7 @@ class JuMEG_icasso(object):
             # import some modules
             from .complex_ica import cov
             from scipy.linalg import eigh
-            from .dimension_selection import aic_mdl, mibs, gap
+            from .dimension_selection import aic, mdl, mibs, bic, gap
 
             # concatenate STFT for consecutive windows in each channel
             fftsize, nwindows, nchan = meg_data.shape
@@ -1657,15 +1657,15 @@ class JuMEG_icasso(object):
 
 
             if self.dim_reduction == 'AIC':
-                pca_dim, _ = aic_mdl(Dc)
+                pca_dim, _ = aic(Dc)
             elif self.dim_reduction == 'BIC':
-                pca_dim = mibs(Dc, ntsl, use_bic=True)
+                pca_dim = bic(Dc, ntsl)
             elif self.dim_reduction == 'MIBS':
                 pca_dim = mibs(Dc, ntsl)
             elif self.dim_reduction =='GAP':
                 pca_dim = gap(Dc)
             else:  # self.dim_reduction == 'MDL'
-                _, pca_dim = aic_mdl(Dc)
+                _, pca_dim = mdl(Dc)
 
 
             if pca_dim > 60:

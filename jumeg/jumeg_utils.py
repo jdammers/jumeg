@@ -1348,7 +1348,7 @@ def rank_estimation(data):
     Function to estimate the rank of the data using different rank estimators.
     '''
     from jumeg.decompose.ica import whitening
-    from jumeg.decompose.dimension_selection import mibs, gap, aic_mdl
+    from jumeg.decompose.dimension_selection import mibs, gap, aic, mdl, bic
 
     nchan, ntsl = data.shape
 
@@ -1358,9 +1358,10 @@ def rank_estimation(data):
     # apply different rank estimators
     # MIBS, BIC, GAP, AIC, MDL, pct95, pct99
     rank1 = mibs(pca.explained_variance_, ntsl)  # MIBS
-    rank2 = mibs(pca.explained_variance_, ntsl, use_bic=True)  # BIC
+    rank2 = bic(pca.explained_variance_, ntsl)   # BIC
     rank3 = gap(pca.explained_variance_)  # GAP
-    rank4, rank5 = aic_mdl(pca.explained_variance_)  # AIC, MDL
+    rank4 = aic(pca.explained_variance_)  # AIC
+    rank5 = mdl(pca.explained_variance_)  # MDL
     rank6 = np.where(pca.explained_variance_ratio_.cumsum() <= 0.95)[0].size
     rank7 = np.where(pca.explained_variance_ratio_.cumsum() <= 0.99)[0].size
     rank_all = np.array([rank1, rank2, rank3, rank4, rank5, rank6, rank7])
