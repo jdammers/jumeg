@@ -167,8 +167,8 @@ def _whiteness(X, E):
     return dw, pval
 
 
-def _consistency(X, E):
-    '''
+def _consistency(X_orig, E):
+    """
     Consistency test. [1]
 
     Parameters
@@ -186,7 +186,8 @@ def _consistency(X, E):
         event-related potentials by adaptive multivariate autoregressive
         modeling: data preprocessing, model validation, and variability
         assessment." (2000), Biol. Cybern., vol. 83, 35-45
-    '''
+    """
+    X = X_orig.copy()
     n, m, N = X.shape
     p = m - E.shape[1]
     X = X[:, p:m, :]
@@ -299,14 +300,17 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
     print('starting checks and MVAR fitting...')
     # tsdata_to_var from MVGC requires sources x samples x trials
     # X is of shape trials x sources x samples (which is what ScoT uses)
-    A, SIG, E = _tsdata_to_var(X.transpose(1, 2, 0), morder)
+
+    X_trans = X.transpose(1, 2, 0)
+
+    A, SIG, E = _tsdata_to_var(X_trans, morder)
     del A, SIG
 
     whi = False
-    dw, pval = _whiteness(X.transpose(1, 2, 0), E)
+    dw, pval = _whiteness(X_trans, E)
     if np.all(dw < whit_max) and np.all(dw > whit_min):
         whi = True
-    cons = _consistency(X.transpose(1, 2, 0), E)
+    cons = _consistency(X_trans, E)
     del dw, pval, E
 
     from scot.var import VAR
@@ -317,6 +321,141 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
         print('ERROR: Model order not ideal - check parameters !!')
 
     return str(whi), cons, str(is_st)
+
+
+def check_whiteness_and_consistency(X, E, whit_min=1.0, whit_max=3.0):
+    """
+    Check the whiteness and consistency of the MVAR model.
+
+    Paramters:
+    ----------
+    X : np.array of shape (n_sources, n_times, n_epochs)
+        The data array.
+    E : np.array
+        Serially uncorrelated residuals.
+    whit_min : float
+        Durbin-Watson minimum value
+    whit_max : float
+        Durbin-Watson maximum value. If the whiteness value lies
+        outside of the interval given by whit_min and whit_max
+        the residuals are considered to be non-white.
+
+    Returns:
+    --------
+    whi : bool
+        Whiteness
+    cons: float
+        Result of the consistency test.
+    """
+
+    from jumeg.connectivity.causality import _whiteness, _consistency
+
+    whi = False
+    dw, pval = _whiteness(X, E)
+    if np.all(dw < whit_max) and np.all(dw > whit_min):
+        whi = True
+    cons = _consistency(X, E)
+
+    return whi, cons
+
+
+def check_model_order(X, p, whit_min, whit_max):
+    """
+    Check whiteness, consistency, and stability for all model
+    orders k <= p.
+
+    Computationally intensive but for high model orders probably
+    faster than do_mvar_evaluation().
+
+    Parameters:
+    -----------
+    X: narray, shape (n_epochs, n_sources, n_times)
+        The data to estimate the model order for.
+    p: int
+        The maximum model order.
+    Returns:
+    --------
+    A: array, coefficients of the specified model
+    SIG:array, recovariance of this model
+    E:  array, noise covariance of this model
+    """
+
+    assert p >= 1, "The model order must be greater or equal to 1."
+
+    from scot.var import VAR
+
+    X_orig = X.copy()
+    X = X.transpose(1, 2, 0)
+
+    n, m, N = X.shape
+    p1 = p + 1
+    q1n = p1 * n
+    I = np.eye(n)
+    XX = np.zeros((n, p1, m + p, N))
+    for k in range(p1):
+        XX[:, k, k:k + m, :] = X
+    AF = np.zeros((n, q1n))
+    AB = np.zeros((n, q1n))
+    k = 1
+    kn = k * n
+    M = N * (m - k)
+    kf = list(range(0, kn))
+    kb = list(range(q1n - kn, q1n))
+    XF = np.reshape(XX[:, 0:k, k:m, :], (kn, M), order='F')
+    XB = np.reshape(XX[:, 0:k, k - 1:m - 1, :], (kn, M), order='F')
+    CXF = np.linalg.cholesky(XF.dot(XF.T)).T
+    CXB = np.linalg.cholesky(XB.dot(XB.T)).T
+    AF[:, kf] = np.linalg.solve(CXF.T, I)
+    AB[:, kb] = np.linalg.solve(CXB.T, I)
+
+    del p1, XF, XB, CXF, CXB
+
+    while k <= p:
+
+        tempF = np.reshape(XX[:, 0:k, k:m, :], (kn, M), order='F')
+        af = AF[:, kf]
+        EF = af.dot(tempF)
+
+        del af, tempF
+
+        tempB = np.reshape(XX[:, 0:k, k - 1:m - 1, :], (kn, M), order='F')
+        ab = AB[:, kb]
+        EB = ab.dot(tempB)
+
+        del ab, tempB
+
+        CEF = np.linalg.cholesky(EF.dot(EF.T)).T
+        CEB = np.linalg.cholesky(EB.dot(EB.T)).T
+        R = np.dot(np.linalg.solve(CEF.T, EF.dot(EB.T)), np.linalg.inv(CEB))
+
+        del EB, CEF, CEB
+
+        RF = np.linalg.cholesky(I - R.dot(R.T)).T
+        RB = np.linalg.cholesky(I - (R.T).dot(R)).T
+        k = k + 1
+        kn = k * n
+        M = N * (m - k)
+        kf = np.arange(kn)
+        kb = list(range(q1n - kn, q1n))
+        AFPREV = AF[:, kf]
+        ABPREV = AB[:, kb]
+        AF[:, kf] = np.linalg.solve(RF.T, AFPREV - R.dot(ABPREV))
+        AB[:, kb] = np.linalg.solve(RB.T, ABPREV - R.T.dot(AFPREV))
+
+        del RF, RB, ABPREV
+
+        # check MVAR model properties
+
+        E = np.linalg.solve(AFPREV[:, :n], EF)
+        E = np.reshape(E, (n, m - k + 1, N), order='F')
+
+        whi, cons = check_whiteness_and_consistency(X, E, whit_min, whit_max)
+
+        mvar = VAR((k-1))
+        mvar.fit(X_orig)  # scot func which requires shape trials x sources x samples
+        is_st = mvar.is_stable()
+
+        print('morder %d:' % (k-1), 'white: ' + str(whi) + ';', cons, 'stable: ' + str(is_st))
 
 
 def prepare_causality_matrix(cau, surr, freqs, nfft, sfreq, surr_thresh=95):
