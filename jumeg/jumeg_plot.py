@@ -811,14 +811,14 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     import matplotlib.pyplot as pl
     from scipy import stats
 
+    # data will be flattened
+    print('Data of shape %s will be flattened.' % (data.shape,))
+
     data = orig_data.flatten()
     if zscore:
         data -= data.mean()
         data /= data.std()
 
-    print('Data of shape %s will be flattened.' % (data.shape,))
-
-    # data will be flattened
     mu, sigma = stats.norm.fit(data)  # get mu and sigma from the data
 
     # plot histogram of the data
@@ -831,6 +831,8 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     # plot Gaussian fit
     fig = pl.plot(bins, yfit, linecol, linewidth=2)
     pl.title(title)
+    pl.ylabel('Counts')
+    pl.xlabel('Data')
 
     if show:
         pl.show()
