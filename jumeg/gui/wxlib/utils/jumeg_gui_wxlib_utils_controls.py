@@ -491,7 +491,7 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
                  ("BT","START","Start","press start to start",ClickOnButtton)
        
        CheckBox: ( control type,name,label,value,help.callback) 
-                 ("CB","VERBOSE","verbose",True,'tell me more',ClickOnCheckBox)
+                 ("CK","VERBOSE","verbose",True,'tell me more',ClickOnCheckBox)
        
        ComboBox: ( control type,name,value,choices,help,callback) 
                  ("COMBO","COLOR","red",['red','green'],'select a color',ClickOnComboBox)
@@ -579,8 +579,25 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
                      self.FSG.AddGrowableRow(r)
            else:
               if self.AddGrowableRow < self.rows: self.GS.AddGrowableRow(self.AddGrowableRow)
-
-    def gs_add_empty_cell(self):
+    
+    def _gs_add_ctrl(self,d):
+        self.GS.Add(d[1],0,self.LE,self.gap)
+        
+    def _gs_add_BitmapButton(self,d):
+        """ adds  BitmapButton
+         ctrls.append( ["BTBMP","MY_COLOR",bmp,(w,w),wx.NO_BORDER|wx.BU_NOTEXT,wx.BLUE ] )
+         type,name,bitmap,size,style,color
+        """
+        self._obj.append( wx.BitmapButton(self, -1, bitmap=d[2], size=d[3], style=d[4]) )
+        if len(d)>5:
+           self._obj[-1].SetBackgroundColour(d[5])
+        
+        # self.GS.Add(self._obj[-1],0,self.LE,self.gap)
+        self._gs_add_init_last_obj(d,evt=wx.EVT_BUTTON)
+        
+        #self._gs_add_init_last_obj(d)
+    
+    def _gs_add_empty_cell(self):
         """ adds  empty cell / space """
         self.GS.Add( (0,0),0,self.LE,self.gap)          
      
@@ -634,8 +651,17 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
         
     def _gs_add_ComboBox(self,d):
         """ add wx.ComboBox """
+        #if len(d)>4:
+        #   print(type(d[4]))
+          # if isinstance( d[4],(list,tuple) ):
+        #   s = d[4]
+        #else:
+        #   s=(-1,-1)
+        
+        # self._obj.append(wx.ComboBox(self,wx.ID_ANY,choices=d[3],size=s,style=wx.CB_READONLY))
         self._obj.append(wx.ComboBox(self,wx.ID_ANY,choices=d[3],style=wx.CB_READONLY))
         self._obj[-1].SetValue(d[2])
+        
         self._gs_add_init_last_obj(d,evt=wx.EVT_COMBOBOX)
         
     def _gs_add_TextCtrl(self,d):
@@ -751,6 +777,9 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
             elif d[0] == 'TXT'  : self._gs_add_TextCtrl(d)
            #---wx.StaticText     
             elif d[0] == 'STXT' : self._gs_add_StaticText(d)
+          #--- wx BitmapButton
+            elif d[0] == 'BTBMP': self._gs_add_BitmapButton(d)
+         
            #---  MIN/MAXSpin Buttons
             elif d[0].startswith('SP'):
            #--- min button 
@@ -763,7 +792,7 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
                  self._gs_add_min_max_button(">|","MAX")
            
             else:
-               self.gs_add_empty_cell()
+               self._gs_add_empty_cell()
                #self.GS.Add(wx.StaticText(self,-1,label="NOT A CONTROLL"),wx.EXPAND,self.gap)
                #self.gs_add_empty_cell()
           # print(self._obj[-1].GetName())
