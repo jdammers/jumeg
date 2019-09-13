@@ -167,8 +167,8 @@ def _whiteness(X, E):
     return dw, pval
 
 
-def _consistency(X, E):
-    '''
+def _consistency(X_orig, E):
+    """
     Consistency test. [1]
 
     Parameters
@@ -186,7 +186,8 @@ def _consistency(X, E):
         event-related potentials by adaptive multivariate autoregressive
         modeling: data preprocessing, model validation, and variability
         assessment." (2000), Biol. Cybern., vol. 83, 35-45
-    '''
+    """
+    X = X_orig.copy()
     n, m, N = X.shape
     p = m - E.shape[1]
     X = X[:, p:m, :]
