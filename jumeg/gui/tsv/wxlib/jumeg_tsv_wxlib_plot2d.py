@@ -267,7 +267,6 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         self._glplot2d = JuMEG_TSV_OGLPlot2D()
         self.plot.size_in_pixel = size = self.GetClientSize()
         self._isInitGL = self.plot.initGL()
-        
         return self.isInitGL
  
     def OnDraw(self,size_mm=None):
@@ -299,9 +298,7 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         
     
         if not self.isInitGL:
-            w,h = size = self.GetClientSize()
-            self.plot.GLPlot.size_in_pixel = [w,h]
-            self.InitGL()
+           self.InitGL()
         else:
            self.SetCurrent(self.context)
         
@@ -309,12 +306,10 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         
         self.plot.update(**kwargs)
        
-        #if self.plot.data.opt.do_scroll_channels:
-        
         if self.plot.data.opt.do_scroll:
            self.Refresh()
            if self.plot.data.opt.time.do_scroll:
-              self.GetParent().OnScroll(tmin=self.plot.timepoints[0],tmax=self.plot.timepoints[-1])
+              self.GetParent().OnScroll(tmin=self.plot.timepoints[0],tmax=self.plot.timepoints[-1],n_cols=self.plot.data.opt.n_cols)
     
     def OnMouseRightDown(self,evt):
         try: # self.CaptureMouse() !!! finaly release
@@ -344,8 +339,9 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         self.verbose      = False
         self.debug        = False
         self._wxPlot2D    = None
-        self._wxTimeScale = None
-   
+        self._wxTimeScale = []#None
+       # self._pnl_time_scale = None
+        
         self._update_from_kwargs(**kwargs)
         self._wx_init(**kwargs)
         self._ApplyLayout()
@@ -355,10 +351,6 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
     @property
     def TimeScale(self): return self._wxTimeScale
     
-    def OnScroll(self,tmin=None,tmax=None):
-        #logger.info("  -> scroll t: {} {}".format(tmin,tmax))
-        self._wxTimeScale.SetRange(tmin,tmax)
-        
     def GetPlotOptions(self):
         return self.plot.plot.data.opt
     
@@ -370,8 +362,34 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         self.SetBackgroundColour(kwargs.get("bg",wx.BLUE))
         self.verbose = kwargs.get("verbose",self.verbose)
         self.debug   = kwargs.get("debug",self.debug)
+
+
+#--TODO foreach col add ruler
+    # for ruler in ruler-list -> destroy child
+    # add ruler to ruler-panel
     
+    def OnScroll(self,tmin=None,tmax=None,n_cols=1):
+        #logger.info("  -> scroll t: {} {}".format(tmin,tmax))
+        self._wxTimeScale.SetRange(tmin,tmax)
+
+
+    # for child in wxctrl.GetChildren():
+   #     child.Destroy()
+   # self.Layout()
+   # self.Fit()
+   # def _wxUpdateTimeScale(self,items=1):
+   #     while len(self._wxTimeScale):
+   #           obj = pop(self._wxTimeScale)
+   #           obj.Destroy()
+   #     self._wxTimeScale = []
+
+    #    for i in range(items):
+    #        self._wxTimeScale.append(RC.RulerCtrl(self,-1,orient=wx.HORIZONTAL,style=wx.SUNKEN_BORDER))
+    #        self._wxTimeScale[-1].TickMinor(tick=False)
+     #       self._wxTimeScale[-1].SetTimeFormat(3)
+
     def _wx_init(self,**kwargs):
+        #self._wxUpdateTimeScale()
         self._wxTimeScale = RC.RulerCtrl(self,-1,orient=wx.HORIZONTAL,style=wx.SUNKEN_BORDER)
         self._wxTimeScale.TickMinor(tick=False)
         self._wxTimeScale.SetTimeFormat(3)
@@ -388,9 +406,8 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         if self.plot:
            try:
                self.plot.update(raw=raw,**kwargs) # if raw reset data
-               
            except:
-               logger.exception("Error in updating plot")
+               logger.exception("Error in update plot")
                
         #---
    

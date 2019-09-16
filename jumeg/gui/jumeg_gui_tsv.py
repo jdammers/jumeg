@@ -41,7 +41,7 @@ from copy import deepcopy
 
 from pubsub import pub
 
-# import wx.lib.agw.pybusyinfo as PBI
+import wx.lib.agw.pybusyinfo as PBI
 
 #--- jumeg cls
 
@@ -57,7 +57,6 @@ from jumeg.gui.tsv.wxutils.jumeg_tsv_wxutils_dlg_options import GroupDLG # Chann
 import logging
 from jumeg.base import jumeg_logger
 logger = logging.getLogger('jumeg')
-
 
 
 __version__="2019-09-13-001"
@@ -121,7 +120,7 @@ class JuMEG_wxTSVPanel(wx.Panel):
 
    #--- data update
     def update_data(self,**kwargs):
-    
+        pub.sendMessage("MAIN_FRAME.BUSY",value=True)
         if kwargs:
            self.IOdata.update(**kwargs)
            pub.sendMessage("MAIN_FRAME.UPDATE_BADS",value="LOADED")
@@ -130,6 +129,8 @@ class JuMEG_wxTSVPanel(wx.Panel):
            self.PlotPanel.update(raw=self.IOdata.raw) #,**kwargs)
            self.GetParent().StatusBar.SetStatusText(self.IOdata.path,1)
            self.GetParent().StatusBar.SetStatusText(self.IOdata.fname,2)
+
+        pub.sendMessage("MAIN_FRAME.BUSY",value=False)
         
     def update_on_display(self):
         #self.SplitterAB.SetSashPosition(self.GetSize()[0] / 2.0,redraw=True)
@@ -545,12 +546,17 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
        #---
         pub.subscribe(self.SetStatusBarMSG, "MAIN_FRAME.STB.MSG")
         pub.subscribe(self.ClickOnClose, "MAIN_FRAME.CLICK_ON_CLOSE")
+       #---
+        pub.subscribe(self.wxUpdateBusy,"MAIN_FRAME.BUSY")
        # --- BADS
         pub.subscribe(self.wxUpdateBads,"MAIN_FRAME.UPDATE_BADS")
        #--- verbose debug
         pub.sendMessage('MAIN_FRAME.VERBOSE', value=self.verbose)
         pub.sendMessage('MAIN_FRAME.DEBUG', value=self.debug)
-     
+    
+    def wxUpdateBusy(self,value=False):
+        pass
+        
     def wxUpdateBads(self,value=""):
          '''
          call from pubsub "MAIN_FRAME.UPDATE_BADS"
@@ -639,7 +645,7 @@ def DisplayInfo():
     pp = wx.GetDisplayPPI()
     size_pix = wx.GetDisplaySize()
     size_mm = wx.DisplaySizeMM()
-    logger.info("display info: pix: {} mm: {} pp: {}".format(size_pix,size_mm,pp))
+    logger.info("---> Display Info: pixel size: {} mm: ~{} ? pp: {}".format(size_pix,size_mm,pp))
     
 
 #---
@@ -650,12 +656,12 @@ def run(opt):
     #    opt.path = "./data/"
     #    opt.fname =  '007_test_10_raw.fif'
     elif opt.dd:
-        opt.path    = "./data/"
+        opt.path    = "$JUMEG_TEST_DATA/data/"
         opt.fname   = '007_test_60_raw.fif'
         opt.verbose = True
         opt.debug   = True
     elif opt.ddd:
-        opt.path    = "./data/"
+        opt.path    = "$JUMEG_TEST_DATA/data/"
         opt.fname   = "007_test_c,rfDC,meeg,nr,bcc-raw.fif"
         opt.verbose = True
         opt.debug   = True
@@ -675,16 +681,11 @@ def run(opt):
 if __name__ == "__main__":
     opt,parser = get_args(sys.argv)
     
-   #--- select 2.graphic card AMD
+   #--- select 2.graphic card e.g. notebook
     os.putenv("DRI_PRIME",str(opt.dri_prime))
 
-    
-
-    opt.debug=True
-    opt.verbose=True
     jumeg_logger.setup_script_logging(name=sys.argv[0],opt=opt,logger=logger)
     
-    #if opt.run:
     run(opt)
 
 

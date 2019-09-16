@@ -214,7 +214,37 @@ class STATUS(object):
         self.dcoffset = 8
         self.update   = 255
       
-   
+class SCALE_MODE(object):
+    """
+    helper cls for scale mod: scale/div, scale on MIMAX, window or global
+    """
+    __slots__=["_division","_global","_window"]
+    def __init__(self):
+        self._division = 0
+        self._global   = 1
+        self._window   = 2
+    @property
+    def division(self): return self._division
+    @property
+    def minmax_on_global(self): return self._global
+    @property
+    def minmax_on_window(self): return self._window
+
+class DCOFFSET_MODE(object):
+    """
+    helper cls for scale mod: scale/div, scale on MIMAX, window or global
+    """
+    __slots__=["_none","_global","_window"]
+    def __init__(self):
+        self._none   = 0
+        self._global = 1
+        self._window = 2
+    @property
+    def dc_none(self): return self._none
+    @property
+    def dc_global(self): return self._global
+    @property
+    def dc_window(self): return self._window
 
 class GroupSettingsBase(object):
       """
@@ -240,8 +270,8 @@ class GroupSettingsBase(object):
       """
       def __init__(self,**kwargs):
   
-          self.Status = STATUS()
-          self._labels = ['grad','mag','ref_meg','eog','emg','ecg','stim','resp','eeg'] #,'resp'] #,'exci','ias','syst','misc','seeg','chpi']
+          self.Status  = STATUS()
+          self._labels = [] #['grad','mag','ref_meg','eog','emg','ecg','stim','resp','eeg'] #,'resp'] #,'exci','ias','syst','misc','seeg','chpi']
           
           #---ToDo get groups/channel_types from mne
           '''
@@ -250,34 +280,49 @@ class GroupSettingsBase(object):
          # dict_keys(['grad', 'mag', 'ref_meg', 'eeg', 'stim', 'eog', 'emg', 'ecg', 'resp', 'misc', 'exci', 'ias', 'syst', 'seeg', 'bio', 'chpi', 'dipole', 'gof', 'ecog', 'hbo', 'hbr'])
           
           '''
-          self._grp={
-                       'mag':    {"index":0,"selected":True,"colour":"RED",         "prescale":500,"unit":"fT",  "DCoffset":True},
-                       'grad':   {"index":0,"selected":True,"colour":"BLUE",        "prescale":500,"unit":"fT",  "DCoffset":True},
-                       'ref_meg':{"index":0,"selected":True,"colour":"DARKGREEN",   "prescale":4,  "unit":"pT",  "DCoffset":True},
-                       'eeg':    {"index":0,"selected":True,"colour":"MIDNIGHTBLUE","prescale":1,  "unit":"uV",  "DCoffset":True},
-                       'eog':    {"index":0,"selected":True,"colour":"PURPLE",      "prescale":100,"unit":"uV",  "DCoffset":True},
-                       'emg':    {"index":0,"selected":True,"colour":"DARKORANGE",  "prescale":100,"unit":"uV",  "DCoffset":True},
-                       'ecg':    {"index":0,"selected":True,"colour":"MAROON",      "prescale":1,  "unit":"mV",  "DCoffset":True},
-                       'stim':   {"index":0,"selected":True,"colour":"MAGENTA",     "prescale":10, "unit":"bits","DCoffset":False},
-                       'resp':   {"index":0,"selected":True,"colour":"NAVYBLUE",    "prescale":10, "unit":"bits","DCoffset":False},
-        
+          self._grp = {}
+          self._default_grp={
+                       'mag':    {"selected":True,"colour":"RED",         "prescale":500,"unit":"fT",  "DCoffset":True},
+                       'grad':   {"selected":True,"colour":"BLUE",        "prescale":500,"unit":"fT",  "DCoffset":True},
+                       'ref_meg':{"selected":True,"colour":"DARKGREEN",   "prescale":4,  "unit":"pT",  "DCoffset":True},
+                       'eeg':    {"selected":True,"colour":"MIDNIGHTBLUE","prescale":1,  "unit":"uV",  "DCoffset":True},
+                       'eog':    {"selected":True,"colour":"PURPLE",      "prescale":100,"unit":"uV",  "DCoffset":True},
+                       'emg':    {"selected":True,"colour":"DARKORANGE",  "prescale":100,"unit":"uV",  "DCoffset":True},
+                       'ecg':    {"selected":True,"colour":"MAROON",      "prescale":1,  "unit":"mV",  "DCoffset":True},
+                       'stim':   {"selected":True,"colour":"MAGENTA",     "prescale":10, "unit":"bits","DCoffset":False},
+                       'resp':   {"selected":True,"colour":"NAVYBLUE",    "prescale":10, "unit":"bits","DCoffset":False},
+                       'default':{"selected":True,"colour":"PURPLE",      "prescale":1,  "unit":"AU",  "DCoffset":False}
               }
-          for g in self._labels:
-            # self._grp[g]["bads"]       = None
-              self._grp[g]["status"]     = 0
-              self._grp[g]["scale_mode"] = 0
-              
-          self._default_grp = self._grp["stim"].copy()
-          self._default_grp["unit"] = "AU"
-          
-   
+          for g in self._default_grp.keys():
+              self._default_grp[g]["status"]     = 0
+              self._default_grp[g]["scale_mode"] = 0
+              self._default_grp[g]["bads"]       = []
+
       @property
       def labels(self): return self._labels
       @labels.setter
       def labels(self,v):
           self._labels=v
       
-        
+      def DeleteNonExistingGroup(self,grps):
+          """
+          
+          :param grps:  label or list of labels
+          :return:
+          """
+          if not isinstance(grps,(list)):
+             grps=[grps]
+          grps=list( set(grps) )
+          grps2delete = [ item for item in grps if item not in self.labels ]
+          
+          for grp in grps2delete:
+              if self._grp.pop(grp,None):
+                 try:
+                      idx = self.labels.index( grp )
+                      self.labels.pop(idx)
+                 except:
+                      pass
+                      
       def GetStatus(self):
           """
           check for each group if parameter changed
@@ -311,7 +356,7 @@ class GroupSettingsBase(object):
       def SetGroup(self,grp,v):
           if grp:
              self._grp[grp]=v
-             self._grp[g]["status"] = self.Status.allkeys
+             self._grp[grp]["status"] = self.Status.allkeys
           if grp not in self._labels:
              self._labels.append(grp)
 
@@ -323,12 +368,14 @@ class GroupSettingsBase(object):
       def GetStatusSelected(self,grp):
           return self._grp[grp]["status"] & self.Status.selected
       
-      def GetGroupIndex(self,idx):
+      def GetGroupNameFromIndex(self,idx):
           return self._labels[idx]
+      
       def GetIndex(self,grp):
-          return self._get_grp_key(grp,"index")
-      def SetIndex(self,grp,v):
-          self._set_grp_key(grp,"index",v)
+          # return self._get_grp_key(grp,"index")
+          return self._labels.index(grp)
+      #def SetIndex(self,grp,v):
+      #    self._set_grp_key(grp,"index",v)
           
       def GetColour(self,grp):
           return self._get_grp_key(grp,"colour")
@@ -380,7 +427,7 @@ class GroupSettingsBase(object):
 class GroupSettings(GroupSettingsBase):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
-        self._defaults = GroupSettingsBase(**kwargs)
+       # self._defaults = GroupSettingsBase(**kwargs)
         self.Colour    = ColourSettings()
         self.Unit      = UnitSettings()
         
@@ -391,13 +438,10 @@ class GroupSettings(GroupSettingsBase):
         
     @property
     def ScaleModes(self): return self._scale_modes
-    
-    @property
-    def defaults(self): return self._defaults
-
+   
     def GetScaling(self,grp):
         return self.Unit.GetScale(prescale=self._grp[grp]["prescale"],unit=self._grp[grp]["unit"] )
-    
+        
     def SetColour(self,grp,c):
         if not isinstance(c,(str)):
            idx = self.Colour.colour2index(c)
@@ -437,25 +481,16 @@ class GroupSettings(GroupSettingsBase):
         
         if grp not in self._labels:
            self._labels.append(grp)
-           # logger.info("---> Add group: {}\n  -> groups: {}".format(grp,self.labels))
-           
-        #if kwargs:
-        #   self._grp[grp]={"selected": kwargs.get("selected",True),
-        #                   "colour"  : kwargs.get("colour",self._default_grp["colour"]),
-        #                   "prescale": kwargs.get("prescal",1),
-        #                   "unit"    : kwargs.get("unit","AU"),
-        #                   "index"   : kwargs.get("index",None)
-        ##                 }
-        #else:
-        if grp in self._defaults._labels:
-           self._grp[grp] = self._defaults._grp[grp].copy()
+         
+        if self._grp.get(grp,None):
+           return
+        elif self._default_grp.get(grp,None):
+             self._grp[grp] = self._default_grp[grp].copy()
         else:
-           self._grp[grp] = self._defaults._default_grp.copy()
+             self._grp[grp] = self._default_grp["default"].copy()
              
-        self._grp[grp]["index"]         = self._labels.index(grp)
         self._grp[grp]["channels"]      = []
         self._grp[grp]["channel_index"] = np.array([],dtype=np.uint32)
-        self._grp[grp]["scale_mode"]    = self.__SCALE_MODE_DIVISION
         
         #self._grp[grp]["bads"]          = None
 
@@ -476,13 +511,16 @@ class GroupSettings(GroupSettingsBase):
 
 class ChannelSettings(object):
     __slots__ = ["colour_index","colour","selected","scale","group_index","bads","labels","verbose","debug","_colour_bads","scale_mode",
-                 "dcoffset","mean","delta_minmax_global","delta_minmax_window"]
+                 "dcoffset","mean","delta_minmax_global","delta_minmax_window","_ScaleMode"]
     
     def __init__(self,**kwargs):
         self._init(**kwargs)
     
     def _init(self,**kwargs):
         raw = kwargs.get("raw",None)
+        
+        self._ScaleMode = SCALE_MODE()
+        
         if raw:
            self.labels = raw.info['ch_names']
            n_chan = self.n_channels
@@ -520,6 +558,7 @@ class ChannelSettings(object):
         
     
     def GetDCoffset(self):
+        
         fac= float( self.dcoffset )
         return  self.mean * fac
     
@@ -661,21 +700,48 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
           self._update_from_kwargs(**kwargs)
           self.update()
    
-      def init_group_info(self):
-          self.Group.reset()
-          self.Channel.reset( raw=self.raw )
-
-          for idx in range( self.Channel.n_channels ):
-             #--- get group for idx meg eeg ... 
+      def _remove_obsolete_groups(self):
+          old_grps = self.Group.labels.copy()
+          self.Group.labels = []
+         #--- find obsolete grp labels
+          raw_grps = dict()
+          for g in old_grps:
+              raw_grps[g] = False
+    
+          #--- set group in new raw true
+          for idx in range(self.Channel.n_channels):
               g = mne.io.pick.channel_type(self.raw.info,idx)
-              if g not in self.Group.labels:
-                 logger.info("  -> adding new group to group list: {}".format(g))
-                 self.Group.Add(g)
-            #---  numpy arrays in ChannelOption class
+              raw_grps[g] = True
+         #--- delete obsolete groups not in new raw
+          grps2del = []
+          labels   = []
+          for k,v in raw_grps.items():
+              if v:
+                 labels.append(k)
+              else:
+                 grps2del.append(k)
+                 
+          self.Group.DeleteNonExistingGroup(grps2del)
+          self.Group.labels = list( set(labels) )
+          # self.Group.labels.sort()
+
+      def init_group_info(self):
+          
+          self.Channel.reset( raw=self.raw )
+          
+          self._remove_obsolete_groups()
+          
+          for idx in range(self.Channel.n_channels):
+             #--- get group for idx meg eeg ...
+              g = mne.io.pick.channel_type(self.raw.info,idx)
+             #--- add new grps
+             # if g not in self.Group.labels:
+             #    logger.info("  -> adding new group to group list: {}".format(g))
+              self.Group.Add(g)
+             #---  numpy arrays in ChannelOption class
               self.Channel.group_index[idx] = self.Group.GetIndex(g)
-          
-          
-         # logger.info("RAW BADS: {} ".format(self.raw.info['bads']))
+        
+        # logger.info("RAW BADS: {} ".format(self.raw.info['bads']))
           
           bads_idx = jb.picks.bads2picks(self.raw)
           
@@ -689,11 +755,11 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
               # self.Channel.SetBadsColour(colour=colour_bads,index=colour_idx )
              
           for grp in self.Group.labels:
-              
               idx  = self.Group.GetIndex(grp)
               cidx = np.array(np.where(self.Channel.group_index == idx),dtype=np.uint32).flatten()
               self.Group.SetChannelIndex(grp,cidx)
               self.Group.SetStatus(grp,self.Group.Status.update)
+              
               
       def update_channel_options(self,**kwargs):
         
@@ -711,6 +777,7 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
                     in plot set trafo matrix
                     
                     """
+                    logger.info( "GRP:{}".format(grp))
                     self.Channel.scale[picks] = self.Group.GetScaling(grp)
                     self.Channel.scale_mode   = self.Group.GetScaleMode(grp)
                     
@@ -745,8 +812,8 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
          
     
       def GetInfo(self):
-          #self.Group.GetInfo()
-          #self.Channel.GetInfo()
+          self.Group.GetInfo()
+          self.Channel.GetInfo()
           pass
       #---
       def ToggleBads(self,idx):
@@ -762,8 +829,7 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
              self.Channel.SetBadsColour(idx)
           
           self.update_bads_in_raw()
-        #---toDo make
-          #logger.info("TGbads: idx: {} => {}  raw bads:".format(idx,self.Channel.bads[idx],self.raw.info["bads"] ))
+         #logger.info("TGbads: idx: {} => {}  raw bads:".format(idx,self.Channel.bads[idx],self.raw.info["bads"] ))
       
       def update_bads_in_raw(self):
           self.raw.info["bads"] = self.Channel.GetBadsLabels()

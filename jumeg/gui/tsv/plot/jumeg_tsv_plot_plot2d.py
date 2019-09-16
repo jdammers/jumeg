@@ -137,6 +137,7 @@ class JuMEG_TSV_OGL_Data(object):
         :param kwargs:
         :return:
         """
+      #--- defaults
         tw=self.opt.time.window
         tsp=self.opt.time.scroll_step
         nc=self.opt.n_cols
@@ -159,19 +160,20 @@ class JuMEG_TSV_OGL_Data(object):
            self.opt.n_cols           = nc
            self.opt.channels.channels_to_display=c2d
            
-           self.opt.time.window      = kwargs.get("window",self.opt.time.window)
-           self.opt.time.scroll_step = kwargs.get("scroll_step",self.opt.time.scroll_step)
-           self.opt.n_cols           = kwargs.get("n_cols",self.opt.n_cols)
-           self.opt.channels.channels_to_display = kwargs.get("channels_to_display",self.opt.channels.channels_to_display)
+           self.opt.time.window      = kwargs.get("window",tw)
+           self.opt.time.scroll_step = kwargs.get("scroll_step",tsp)
+           self.opt.n_cols           = kwargs.get("n_cols",nc)
+           self.opt.channels.channels_to_display = kwargs.get("channels_to_display",c2d)
            self.opt.isInit = True
            
         else:
-           self.opt.time.window      = 1.0
-           self.opt.time.scroll_step = 0.5
+           self.opt.time.window      = np.divmod(self.opt.time.timepoints[-1],4.0)[0]
+           self.opt.time.scroll_step = np.divmod(self.opt.time.window,2.0)[0]
            self.opt.n_cols           = 1
-           self.opt.channels.channels_to_display = 10
+           self.opt.channels.channels_to_display = 20
            self.opt.n_cols           = 1
-        
+           self.opt.isInit           = True
+           
         self.opt.GetInfo()
         
         self.settings.update(raw=self.raw)

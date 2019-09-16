@@ -39,6 +39,8 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
     #def bads(self): return self._raw.info.get('bads')
     
     def GetBads(self):
+        if not self.isLoaded:
+           return []
         bads = list( set(self._raw.info.get('bads')) )
         bads.sort()
         return bads
@@ -105,6 +107,10 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
         """
         
         self._isLoaded    = False
+        self._path = None
+        self._fname = None
+        self.bads = []
+
         try:
             self._raw,self._fname = self.get_raw_obj(fname,raw=raw,path=path,preload=True)
         except:
@@ -114,7 +120,8 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
             return None
         
         if not self._raw:
-           return
+           
+           return None
         self._path,self._fname = os.path.split( self.fname )
         self.bads            = self._raw.info.get('bads')
         self.dtype_original  = self._raw._data.dtype

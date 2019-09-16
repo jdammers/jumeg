@@ -58,9 +58,6 @@ def jumeg_tsv_wxutils_openfile(w,path=None):
 
     if dlg.ShowModal() == wx.ID_OK:
        fout = dlg.GetPath()
-       print("DLG: " + fout)
-       #path = os.path.dirname(dlg.GetPath())
-       #fout = os.path.basename(dlg.GetPath())
     dlg.Destroy()
     return fout
 
