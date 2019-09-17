@@ -323,6 +323,71 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         evt.Skip()
         
 
+        
+class TIME_SCALER(wx.Panel):
+    """TODO test multi TBs"""
+    __slots__=["_n_cols","_tstart","_tend","_tbars"]
+    def __init__(self,parent=None,**kwargs):
+        super().__init__(parent)
+        self._n_cols = 1
+        self._tstart = 0.0
+        self._tend   = 1.0
+        self._tbars  = []
+        
+        self.SetBackgroundColour(wx.WHITE)
+        
+        #hbox = wx.BoxSizer(wx.HORIZONTAL)
+        #self.SetSizer(hbox)
+        #self.Fit()
+        #self.SetAutoLayout(1)
+        
+        self.update(**kwargs)
+        
+    
+    @property
+    def n_cols(self): return self._n_cols
+    @n_cols.setter
+    def n_cols(self,v):
+        self._n_cols = v
+        self.update()
+            
+    def _delete_tbars(self):
+        for c in self.GetChildren():
+            c.delete()
+        self._tbars=[]
+        
+    def _update_from_kwargs(self,**kwargs):
+        self._n_cols = kwargs.get("n_cols",self._n_cols)
+        self._tstart = kwargs.get("tstart",self._tstart)
+        self._tend   = kwargs.get("tend",self._tend)
+    
+    def UpdateRange(self,tstart,tend):
+        for tb in self._tbars:
+            tb.SetRange(tstart,tend)
+        
+    def update(self,**kwargs):
+        
+        self._update_from_kwargs(**kwargs)
+        #self._delete_tbars()
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+       # for idx in range(self._n_cols):
+            
+        tb = RC.RulerCtrl(self,-1,orient=wx.HORIZONTAL,style=wx.SUNKEN_BORDER)
+        tb.SetRange(self._tstart,self._tend)
+        tb.TickMinor(tick=False)
+        tb.SetTimeFormat(3)
+        hbox.Add(tb,0,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
+        self._tbars.append(tb)
+       
+        #self.Update()
+        self.SetSizer(hbox)
+        self.Fit()
+        self.SetAutoLayout(1)
+        self.GetParent().Layout()
+       
+        
+        
+    
 class JuMEG_TSV_wxPlot2D(wx.Panel):
     """
        CLS container:
@@ -339,8 +404,7 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         self.verbose      = False
         self.debug        = False
         self._wxPlot2D    = None
-        self._wxTimeScale = []#None
-       # self._pnl_time_scale = None
+        self._wxTimeScaler = None
         
         self._update_from_kwargs(**kwargs)
         self._wx_init(**kwargs)
@@ -349,7 +413,7 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
     @property
     def plot(self): return self._wxPlot2D
     @property
-    def TimeScale(self): return self._wxTimeScale
+    def TimeScaler(self): return self._wxTimeScaler
     
     def GetPlotOptions(self):
         return self.plot.plot.data.opt
@@ -370,7 +434,7 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
     
     def OnScroll(self,tmin=None,tmax=None,n_cols=1):
         #logger.info("  -> scroll t: {} {}".format(tmin,tmax))
-        self._wxTimeScale.SetRange(tmin,tmax)
+        self._wxTimeScaler.UpdateRange(tmin,tmax)
 
 
     # for child in wxctrl.GetChildren():
@@ -389,11 +453,12 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
      #       self._wxTimeScale[-1].SetTimeFormat(3)
 
     def _wx_init(self,**kwargs):
-        #self._wxUpdateTimeScale()
-        self._wxTimeScale = RC.RulerCtrl(self,-1,orient=wx.HORIZONTAL,style=wx.SUNKEN_BORDER)
-        self._wxTimeScale.TickMinor(tick=False)
-        self._wxTimeScale.SetTimeFormat(3)
-        self._wxPlot2D    = JuMEG_TSV_wxCanvas2D(self,**kwargs)
+        self._wxUpdateTimeScale()
+       # self._wxTimeScale = RC.RulerCtrl(self,-1,orient=wx.HORIZONTAL,style=wx.SUNKEN_BORDER)
+       # self._wxTimeScale.TickMinor(tick=False)
+       # self._wxTimeScale.SetTimeFormat(3)
+        self._wxTimeScaler = TIME_SCALER(self)
+        self._wxPlot2D     = JuMEG_TSV_wxCanvas2D(self,**kwargs)
 
     def update(self,raw=None,**kwargs):
         """
@@ -421,7 +486,16 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         vbox = wx.BoxSizer(wx.VERTICAL)
         if self.plot:
            vbox.Add(self.plot,1,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
-        vbox.Add(self.TimeScale,0,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
+
+        vbox.Add(self.TimeScaler,0,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
+
+        #tb = RC.RulerCtrl(self,-1,orient=wx.HORIZONTAL,style=wx.SUNKEN_BORDER)
+        #tb.SetRange(0.0,1.0)
+        #tb.TickMinor(tick=False)
+        #tb.SetTimeFormat(3)
+        
+        #vbox.Add(tb,0,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
+      
         self.SetSizer(vbox)
         self.Fit()
         self.SetAutoLayout(1)

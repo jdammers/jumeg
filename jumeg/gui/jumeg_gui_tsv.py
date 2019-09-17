@@ -106,31 +106,26 @@ class JuMEG_wxTSVPanel(wx.Panel):
     def _wx_init(self,**kwargs):
         self._update_from_kwargs(**kwargs)
         self._PNL_PLOT = JuMEG_TSV_wxPlot2D(self,**kwargs)
-        self.update_parameter(**kwargs)
-       
-   #---
-    def update_parameter(self,**kwargs):
-        """
-        update argparser default parameter from template
-        set choices in BTiCTLs, set value to first item
-        """
-        self.IOdata.update(**kwargs)
+        # self.update_parameter(**kwargs)
+        self.update_data(**kwargs)
         
-        #self.update_data(**kwargs)  #raw=fname=self.fname,n_channels=self.n_channels,cols=self.n_cols)
-
    #--- data update
     def update_data(self,**kwargs):
-        pub.sendMessage("MAIN_FRAME.BUSY",value=True)
+        
+        #pub.sendMessage("MAIN_FRAME.BUSY",value=True)
+        #msg = "Please wait ..."
+        #busy = PBI.PyBusyInfo(msg, parent=self.GetParent(), title="JuMEG TSV loading data")
+  
         if kwargs:
            self.IOdata.update(**kwargs)
            pub.sendMessage("MAIN_FRAME.UPDATE_BADS",value="LOADED")
-           
         if self.IOdata.isLoaded:
-           self.PlotPanel.update(raw=self.IOdata.raw) #,**kwargs)
-           self.GetParent().StatusBar.SetStatusText(self.IOdata.path,1)
-           self.GetParent().StatusBar.SetStatusText(self.IOdata.fname,2)
-
-        pub.sendMessage("MAIN_FRAME.BUSY",value=False)
+            l = [None]
+            l.extend( self.IOdata.GetDataInfo() )
+            pub.sendMessage("MAIN_FRAME.STB.MSG",data=l)
+            self.PlotPanel.update(raw=self.IOdata.raw)
+        #pub.sendMessage("MAIN_FRAME.BUSY",value=False)
+        #del busy
         
     def update_on_display(self):
         #self.SplitterAB.SetSashPosition(self.GetSize()[0] / 2.0,redraw=True)
@@ -302,7 +297,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         
         self._update_from_kwargs(**kwargs)
         self._wx_init_menu()
-        self._wxInitStatusBar(fields=5) #  msg,path ,fname , n_bads, status
+        self._wxInitStatusBar() #  msg,path ,fname , n_bads, status
         self._wxInitToolBar()
         self._PLT = JuMEG_wxTSVPanel(self,**kwargs)
        
@@ -411,7 +406,14 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
     def ClickOnAbout(self,evt):
         self.AboutBox.show(self)
 
-    def _wxInitStatusBar(self,fields=5,w=[80,-2,-1.5,-1,100],status_style=wx.SB_SUNKEN):
+    def _wxInitStatusBar(self,fields=8,w=[80,-1.6,-1.0,-1.9,60,100,150,80],status_style=wx.SB_SUNKEN):
+        """
+        
+        :param fields: 8 Status,path,fname,bads,n-bads,time,size,nn
+        :param w:
+        :param status_style:
+        :return:
+        """
         if self._STB:
            self._STB.Destroy()
         self._STB = self.CreateStatusBar(fields,style=wx.STB_DEFAULT_STYLE)
@@ -430,11 +432,12 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         if not data: return
         if not isinstance(data,(list)): data = list(data)
         if data:
-            for s in data:
+           for s in data:
                 #self.msg_info("STB: "+s +"  "+str(idx))
-                self._STB.SetStatusText(s,i=idx)
-                idx += 1
-                if idx >= self._STB.GetFieldsCount(): break
+               if s:
+                  self._STB.SetStatusText(str(s),i=idx)
+               idx += 1
+               if idx >= self._STB.GetFieldsCount(): break
 
     def OnExitApp(self,evt):
         self.ClickOnClose(evt)
@@ -566,6 +569,8 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
          self._STB.SetStatusText(str( len(bads) ),i=4)
          if bads:
             self._STB.SetStatusText(",".join(bads),i=3)
+         else:
+            self._STB.SetStatusText("",i=3)
             
          if value=="CHANGED":
             self._STB.SetBackgroundColour('YELLOW')

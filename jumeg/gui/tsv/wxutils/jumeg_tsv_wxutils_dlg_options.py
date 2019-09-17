@@ -126,7 +126,7 @@ class GroupDLG(wx.Dialog):
     def _wx_init(self,**kwargs):
         w = kwargs.get("w",24)
         self.SetBackgroundColour(kwargs.get("bg","GREY90"))
-        # self.SetMinSize(( 520,400) )
+        self.SetMinSize(( 620,400) )
         # self._bt=wx.Button(self,-1,"TEST")
         
         bmp   = wx.Bitmap()
@@ -148,11 +148,13 @@ class GroupDLG(wx.Dialog):
             ctrls.append(["COMBO",g+".UNIT",self._GRP.Unit.unit,self._GRP.Unit.GetUnits(),'set scaling unit',self.ClickOnCtrls])
           #--- grp scale mode
             m = self._GRP.ScaleModes[ self._GRP.GetScaleMode(grp) ]
-            ctrls.append( ["COMBO",g.upper() + ".SCALEMODUS",m,self._GRP.ScaleModes,'scale on Custom or MinMax',self.ClickOnScaleMode])
-          #--- ckbutton select DCoffset
-            ctrls.append( ["CK",  g+".DCOFFSET","",self._GRP.GetDCoffset(grp),'DC Offset',self.ClickOnCtrls] )
-      
-        self._pnl_groups = JuMEG_wxControlGrid(self,label="Group Parameter",control_list=ctrls,cols=n_cols,set_ctrl_prefix=False,AddGrowableCol=[2,3,4])
+            ctrls.append( ["COMBO",g.upper() + ".SCALE",m,self._GRP.ScaleModes,'scale on Custom or MinMax',self.ClickOnScaleMode])
+          #--- combo select DCoffset
+           # ctrls.append( ["CK",  g+".DCOFFSET","",self._GRP.GetDCoffset(grp),'DC Offset',self.ClickOnCtrls] )
+            m = self._GRP.DCOffsetModes[ self._GRP.GetDCOffsetMode(grp) ]
+            ctrls.append( ["COMBO",g.upper() + ".DCOFFSET",m,self._GRP.DCOffsetModes,'DC Offset Modes e.g.: [None,Global,Time Window]',self.ClickOnCtrls])
+          
+        self._pnl_groups = JuMEG_wxControlGrid(self,label="Group Parameter",control_list=ctrls,cols=n_cols,set_ctrl_prefix=False,AddGrowableCol=[2,3,4,5])
      
         #self._bt.Bind(wx.EVT_BUTTON,self.ClickOnButton)
    
@@ -213,7 +215,7 @@ class GroupDLG(wx.Dialog):
         elif key == "unit":
             self._GRP.SetUnit(grp,v)
         elif key =="dcoffset":
-            self._GRP.SetDCoffset(grp,v)
+            self._GRP.SetDCOffsetMode(grp,obj.GetSelection())
     
     def ClickOnButton(self,evt):
         pass

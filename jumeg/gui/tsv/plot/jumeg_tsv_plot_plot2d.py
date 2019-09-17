@@ -313,15 +313,7 @@ class JuMEG_TSV_OGLPlot2D(object):
         self.GLPlot.plot()
         return True
 
-    def _update_plot_settings(self):
-        """
-        set scaling,colour,dcoffset
-        :return:
-        """
-        self.GLPlot.signals.scale    = self.data.settings.Channel.scale
-        self.GLPlot.signals.colours  = self.data.settings.Channel.colour
-        self.GLPlot.signals.dcoffset = self.data.settings.Channel.GetDCoffset()
-    
+  
     def update_plot_data(self,init=False,**kwargs):
         tsl0,tsl1 = self.data.opt.time.index_range()
         self.GLPlot.n_cols = self.data.opt.n_cols
@@ -344,7 +336,8 @@ class JuMEG_TSV_OGLPlot2D(object):
         if self.data.opt.time.do_scroll:
             self.GLPlot.signals.data       = self.data.GetChannelData(tsl0=tsl0,tsl1=tsl1)
             self.GLPlot.signals.timepoints = self.data.GetTimeRange(tsl0,tsl1)
-       
+            self.GLPlot.signals.dcoffset   = self.data.settings.Channel.GetDCoffset(raw=self.data.raw,tsls=self.data.opt.time.index_range())
+            
         #--- toDo data vbo in cls
         if self.data.opt.channels.do_scroll:
             picks_selected = self.data.settings.Channel.GetSelected()
@@ -355,14 +348,15 @@ class JuMEG_TSV_OGLPlot2D(object):
            #--- get selected picks
             self.GLPlot.signals.picks = picks_selected[ch_start:ch_end_range]
           
-        #--- set flag only if changed
-        self._update_plot_settings()
-        
+       #--- set the rest
+        self.GLPlot.signals.scale    = self.data.settings.Channel.scale
+        self.GLPlot.signals.colours  = self.data.settings.Channel.colour
+     
 
     def display(self):
         #self.data.info.GetInfo()
         if self.data.isInit:
-           self.update_plot_data()
+          # self.update_plot_data()
            self.GLPlot.plot()
     '''
     ToDo move to ogl plt
