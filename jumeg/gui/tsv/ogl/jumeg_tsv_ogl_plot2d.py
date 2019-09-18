@@ -151,8 +151,8 @@ def viewport_matrix(n_cols,n_plts,w,h,bw,bh):
     
     n_rows = int(n_plts / n_cols)
     #n_rows = n_plts * n_cols
-    plt_w = (w / n_cols) - 2.0 * bw
-    plt_h = (h / n_rows) - 2.0 * bh
+    plt_w = (w / n_cols) - bw
+    plt_h = (h / n_rows) - bh
     
     if plt_h < 1.0:
         plt_h = (h / n_rows)

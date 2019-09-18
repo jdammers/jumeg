@@ -74,3 +74,4 @@ def MsgDlg(w, string, caption = "JuMEG TSV", style=wx.YES_NO|wx.CANCEL):
     result = dlg.ShowModal()
     dlg.Destroy()
     return result
+

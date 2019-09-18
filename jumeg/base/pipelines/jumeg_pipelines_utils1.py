@@ -37,6 +37,9 @@ from jumeg.jumeg_noise_reducer     import noise_reducer
 from jumeg.jumeg_suggest_bads      import suggest_bads
 from jumeg.jumeg_interpolate_bads  import interpolate_bads as jumeg_interpolate_bads
 
+
+from apply_ica import chop_and_apply_ica
+
 logger = logging.getLogger("jumeg")
 
 __version__= "2019.08.07.001"
@@ -175,6 +178,64 @@ def apply_interpolate_bads(raw_fname=None,raw=None,config=None,label="interpolat
 
     return fname_out,raw,True
 
+
+#---------------------------------------------------
+#--- apply_ica
+#---------------------------------------------------
+@JuMEG_PipelineFrame
+def apply_ica(raw_fname=None,raw=None,config=None,label="ica",fname_out=None):
+    """
+
+    :param raw_fname:
+    :param raw:
+    :param cfg:
+    :return:
+     filename,raw-obj
+    """
+   #--- Interpolate bad channels using jumeg
+    with jumeg_logger.StreamLoggerSTD(label=label):
+       
+         clean_filt,clean_unfilt = chop_and_apply_ica(raw_fname,config,raw_unfilt=raw)
+
+         clean_filt.save(clean_filt_fname)
+
+         if config.get("unfiltered"):
+            clean_unfilt.save(clean_unfilt_fname)
+         
+         
+       #-- check results
+         if config.get("plot_block"):
+            raw.plot(block=config.get("plot_block"))
+
+    return fname_out,raw,True
+
+
+
+
+'''
+for raw_fname in sub_file_list:
+
+,nr,bcc,fibp,rs'
+        if raw_fname.endswith(pre_proc_ext + '-raw.fif'):
+
+            raw_filt_fname = op.join(dirname, raw_fname)
+
+            if raw_fname.endswith('-raw.fif'):
+                clean_filt_fname = raw_filt_fname.rsplit('-raw.fif')[0] + ',ar-raw.fif'
+
+            clean_unfilt_fname = clean_filt_fname.replace(',fibp', '')
+
+            if not op.exists(clean_filt_fname) or (unfiltered and not op.exists(clean_unfilt_fname)):
+
+                # creates list of small, cleaned chops
+                clean_filt, clean_unfilt = chop_and_apply_ica(raw_filt_fname, ica_cfg)
+
+                clean_filt.save(clean_filt_fname)
+
+                if unfiltered:
+                    clean_unfilt.save(clean_unfilt_fname)
+
+
 #---------------------------------------------------
 #--- apply_filter
 #---------------------------------------------------
@@ -207,3 +268,6 @@ def apply_resample(raw_fname,raw=None,config=None,label="resample",fname_out=Non
     return fname_out,raw,True
 
 
+
+
+'''

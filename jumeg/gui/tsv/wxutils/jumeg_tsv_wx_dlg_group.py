@@ -2,7 +2,7 @@ import sys,os
 import wx
 import wx.lib.scrolledpanel as scrolled
 
-from jumeg.gui.tsv.wxutils.jumeg_tsv_wxutils import DLGButtonPanel,colourComboBoxDialog
+from jumeg.gui.tsv.wxutils.jumeg_tsv_wxutils import DLGButtonPanel #,colourComboBoxDialog
 
 
 try:
@@ -10,7 +10,7 @@ try:
 except ImportError: # if it's not there locally, try the wxPython lib.
     import wx.lib.agw.floatspin as FS
 
-__version__ = "2019-09-13-001"
+__version__ = "2019-09-18-001"
 
 """
  self.mvp[:,0] = dborder
