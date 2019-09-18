@@ -51,6 +51,9 @@ find | grep empty.fif > empty_filelist.txt
 #--- call preproc 1 for empty-room data
 1_preprocessing.py -c preproc_config01.yaml -lname empty_filelist.txt -lpath ${MNE_DATA_PATH} -v -r
 
+
+#--- INTEXT
+1_preprocessing.py -c intext_config01.yaml -subj 201772,203404 -v -r
 """
 
 import os,sys,logging
@@ -126,6 +129,10 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
 
        #--- call resample
        # raw_fname,raw = utils.apply_resample(raw_fname,raw=raw,config=jpl.config.get("resampling"))
+
+       #--- call interploate_bads
+        raw_fname,raw = utils.apply_ica(raw_fname=raw_fname,raw=raw,config=jpl.config.get("ica") )
+      
 
         logger.info(" --> DONE preproc subject id: {}\n".format(subject_id)+
                     "  -> input  file: {}\n".format(fname)+
