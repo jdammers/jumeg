@@ -41,7 +41,7 @@ from copy import deepcopy
 
 from pubsub import pub
 
-import wx.lib.agw.pybusyinfo as PBI
+import wx.adv
 
 #--- jumeg cls
 
@@ -61,7 +61,6 @@ logger = logging.getLogger('jumeg')
 
 __version__="2019-09-13-001"
 
-#class JuMEG_wxTSVPanel(JuMEG_wxMainPanel):
 class JuMEG_wxTSVPanel(wx.Panel):
     
     """
@@ -71,6 +70,7 @@ class JuMEG_wxTSVPanel(wx.Panel):
         super().__init__(parent,name="JUMEG_TSV_PNL") #,ShowTitleB=False)
         self._IO_DATA  = JuMEG_TSV_Utils_IO_Data()
         self._PNL_PLOT = None
+        self.Splash    = None
         self._wx_init(**kwargs)
         self._ApplyLayout()
     
@@ -91,41 +91,10 @@ class JuMEG_wxTSVPanel(wx.Panel):
         
         if self.PlotPanel:
            self.PlotPanel._update_from_kwargs(**kwargs)
-        
-    def __load_data(self,**kwargs):
-        msg = "Please wait ... loading file: {}\n path: {}".format(kwargs.get("fname"),path=kwargs.get("path") )
-        
-        msg = "Please wait ..."
-        busy = PBI.PyBusyInfo(msg, parent=None, title="JuMEG TSV loading data")
-  
-       # self.IOdata.update(**kwargs)
-
-       
-        del busy
-
+   
     def _wx_init(self,**kwargs):
         self._update_from_kwargs(**kwargs)
         self._PNL_PLOT = JuMEG_TSV_wxPlot2D(self,**kwargs)
-        # self.update_parameter(**kwargs)
-        self.update_data(**kwargs)
-        
-   #--- data update
-    def update_data(self,**kwargs):
-        
-        #pub.sendMessage("MAIN_FRAME.BUSY",value=True)
-        #msg = "Please wait ..."
-        #busy = PBI.PyBusyInfo(msg, parent=self.GetParent(), title="JuMEG TSV loading data")
-  
-        if kwargs:
-           self.IOdata.update(**kwargs)
-           pub.sendMessage("MAIN_FRAME.UPDATE_BADS",value="LOADED")
-        if self.IOdata.isLoaded:
-            l = [None]
-            l.extend( self.IOdata.GetDataInfo() )
-            pub.sendMessage("MAIN_FRAME.STB.MSG",data=l)
-            self.PlotPanel.update(raw=self.IOdata.raw)
-        #pub.sendMessage("MAIN_FRAME.BUSY",value=False)
-        #del busy
         
     def update_on_display(self):
         #self.SplitterAB.SetSashPosition(self.GetSize()[0] / 2.0,redraw=True)
@@ -157,10 +126,6 @@ class JuMEG_wxTSVPanel(wx.Panel):
     
     def ShowGroupSettings(self,evt=None):
         '''
-        ok=ShowGroupDialog( self.PlotPanel.GetGroupParameter() )
-        if ok:
-          self.PlotPanel.SetGroupParameter( ShowGroupDialog.GetGroupParameter() )
-          self.PlotPanel.update_group_option(raw_is_loaded=self.IOdata.raw_is_loaded)
         :param evt:
         :return:
         '''
@@ -170,18 +135,7 @@ class JuMEG_wxTSVPanel(wx.Panel):
         out = dlg.ShowModal()
         if out == wx.ID_APPLY:
            self.PlotPanel.update(settings=grp)
-           
-           #grp = dlg.Group.GetGroup(None)
-           #for g in grp.keys():
-           #    logger.info("OUTPUT: {} => {} \n {}".format(g,dlg.Group.GetScaling(g),grp.get(g)))
-           #    dlg.Destroy()
-        
-        #opt = self.PlotPanel.GetSettings()
-        # self.PlotPanel.update_group_option(raw_is_loaded=self.IOdata.raw_is_loaded)
-        #param = self.PlotPanel.plot.plot.data.info
-        # self.PlotPanel.plot.plot.data.info.GetInfo()
-        #param = jumeg_tsv_wxutils_dlg_group_settings(opt=param)
-    
+      
     def ClickOnCancel(self,evt):
         wx.LogMessage("Click <Cancel> button")
         #wx.CallAfter(pub.sendMessage,"MAIN_FRAME.MSG.INFO",data="<Cancel> button is no in use")
@@ -202,18 +156,47 @@ class JuMEG_wxTSVPanel(wx.Panel):
         if fname:
            path  = os.path.dirname(fname)
            fname = os.path.basename(fname)
+          # self.ShowSplash()
            self.update_data(fname=fname,path=path,reload=False)
-    
+           #self.Splash.Destroy()
+           
     def ShowSaveFileDialog(self):
         pass
         # fname = jumeg_tsv_wxutils_savefile(self,path=self.IOdata.path,)
         
     def SaveBads(self):
-         if self.IOdata.save():
-            pub.sendMessage("MAIN_FRAME.UPDATE_BADS",value="SAVED")
-         else:
-            pub.sendMessage("MAIN_FRAME.UPDATE_BADS",value="UPDATE")
+        txt = ["Saving ..."]
+        pub.sendMessage("MAIN_FRAME.BUSY",status=False,txt=txt)
     
+        if self.IOdata.save():
+           txt = ["SAVED"]
+           txt.extend(self.IOdata.GetDataInfo())
+           pub.sendMessage("MAIN_FRAME.BUSY",status=True,txt=txt)
+        else:
+           txt = ["ERROR"]
+           pub.sendMessage("MAIN_FRAME.BUSY",status=False,txt=txt)
+        
+    def update_data(self,**kwargs):
+        #---
+        txt = ["Loading","Please wait ..."]
+        for idx in range(5):
+            txt.append(". . . . . .")
+    
+        pub.sendMessage("MAIN_FRAME.BUSY",status=False,txt=txt)
+    
+        if kwargs:
+            self.IOdata.update(**kwargs)
+    
+        if self.IOdata.isLoaded:
+            txt = ["LOADED"]
+            txt.extend(self.IOdata.GetDataInfo())
+            self.PlotPanel.update(raw=self.IOdata.raw)
+        else:
+            txt = ["No File","Please select a file"]
+            for idx in range(5):
+                txt.append(". . . . . .")
+        pub.sendMessage("MAIN_FRAME.BUSY",status=True,txt=txt)
+
     def _ApplyLayout(self):
         LEA = wx.LEFT|wx.EXPAND|wx.ALL
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -249,6 +232,9 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
        #--- flags
         self._debug   = False
         self._verbose = False
+        
+        self._STB_STATUS = True
+        self._TB_STATUS  = True
         
         self._wx_init(**kwargs)
         self._init_pubsub()
@@ -301,6 +287,22 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         self._wxInitToolBar()
         self._PLT = JuMEG_wxTSVPanel(self,**kwargs)
        
+        self.Bind(wx.EVT_CLOSE,   self.ClickOnClose)
+        self.Bind(wx.EVT_CHAR,    self.ClickOnKeyDown)
+        self.Bind(wx.EVT_KEY_DOWN,self.ClickOnKeyDown)
+        self.Bind(wx.EVT_KEY_UP,self.ClickOnKeyDown)
+
+        #ID_CLICK_ON_KEY = wx.NewId()
+        #self.Bind(wx.EVT_MENU, self.ClickOnKeyDown, id=ID_CLICK_ON_KEY)
+        #entry_one = wx.AcceleratorEntry(wx.ACCEL_NORMAL,ord('N'),
+        #                                ID_CLICK_ON_KEY,None)
+        #entry_two = wx.AcceleratorEntry(wx.ACCEL_NORMAL,ord('A'),
+        # #                               ID_CLICK_ON_KEY,None)
+        #entries = [entry_one,entry_two]
+
+        #accel_tbl = wx.AcceleratorTable(entries)
+        #self.SetAcceleratorTable(accel_tbl)
+
         return self._PLT
     
     def _wxInitToolBar(self,**kwargs):
@@ -343,12 +345,14 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
          #btn = wx.BitmapButton(tb, wx.ID_ANY, make_bitmap(wx.Bitmap(gifpath)), wx.DefaultPosition, (32, 32), wx.BU_AUTODRAW|wx.RAISED_BORDER)
       
       #---
+        '''
         ctrls=[
                ["Load List","Load File List",wx.ART_FOLDER_OPEN,self.ClickOnLoadFilesFromList],
               ]
         self._wx_file_combobox = wx.ComboBox(tb,-1,"File List",choices=["","This","is a","wx.ComboBox"],size=(-1,-1),style=wx.CB_DROPDOWN|wx.EXPAND )
         tb.AddSeparator()
         tb.AddControl(self._wx_file_combobox)
+        '''
         
         for ctrl in ctrls:
             if len(ctrl):
@@ -406,7 +410,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
     def ClickOnAbout(self,evt):
         self.AboutBox.show(self)
 
-    def _wxInitStatusBar(self,fields=8,w=[80,-1.6,-1.0,-1.9,60,100,150,80],status_style=wx.SB_SUNKEN):
+    def _wxInitStatusBar(self,fields=8,w=[80,-1.6,-1.0,-1.9,40,80,150,80],status_style=wx.SB_SUNKEN):
         """
         
         :param fields: 8 Status,path,fname,bads,n-bads,time,size,nn
@@ -423,16 +427,16 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
             st.append(status_style)
         self._STB.SetStatusStyles(st)
 
-    def SetStatusBarMSG(self,data):
+    def SetStatusBarMSG(self,msg):
         '''
          call from pubsub
          "MAIN_FRAME.STB.MSG", value=["RUN", self._args[0], "PID", str(self.__proc.pid)]
         '''
         idx = 0
-        if not data: return
-        if not isinstance(data,(list)): data = list(data)
-        if data:
-           for s in data:
+        if not msg: return
+        if not isinstance(msg,(list)): msg = list(msg)
+        if msg:
+           for s in msg:
                 #self.msg_info("STB: "+s +"  "+str(idx))
                if s:
                   self._STB.SetStatusText(str(s),i=idx)
@@ -472,15 +476,24 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
 
         else:
           evt.Skip()
+
+    def ShowSplash(self):
+        d = os.path.dirname(__file__)
+        img = os.path.abspath(d + "/tsv/tsv.png/")
+        bitmap = wx.Bitmap(img,wx.BITMAP_TYPE_PNG)
+        self.Splash = wx.adv.SplashScreen(
+            bitmap,wx.adv.SPLASH_CENTER_ON_SCREEN | wx.adv.SPLASH_NO_TIMEOUT,-1,self)
+        self.Splash.Show()
         
     def Show(self,show=True):
        #--- make sure  Frame is on screen and OGL is init
+        self.ShowSplash()
         super().Show(show=show)
-        
+        self.Splash.Destroy()
         try:
-            self.PlotPanel.update_data()
+           self.PlotPanel.update_data()
         except:
-            pass
+           pass
         
         
     def AboutBox(self):
@@ -499,9 +512,11 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
     def ClickOnSaveFile(self,evt):
         cl = self.BtSave.GetBackgroundColour()
         self.BtSave.SetBackgroundColour(wx.YELLOW)
+        self.ShowSplash()
         self.PlotPanel.SaveBads()
         self.BtSave.SetBackgroundColour(cl)
-        
+        self.Splash.Destroy()
+   
     def ClickOnLoadFilesFromList(self,evt):
         pass
   
@@ -551,15 +566,22 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         pub.subscribe(self.ClickOnClose, "MAIN_FRAME.CLICK_ON_CLOSE")
        #---
         pub.subscribe(self.wxUpdateBusy,"MAIN_FRAME.BUSY")
-       # --- BADS
+       #--- BADS
         pub.subscribe(self.wxUpdateBads,"MAIN_FRAME.UPDATE_BADS")
+       #--- handle KEY events
+        pub.subscribe(self.OnKeyDown,"EVENT_KEY_DOWN")
        #--- verbose debug
         pub.sendMessage('MAIN_FRAME.VERBOSE', value=self.verbose)
         pub.sendMessage('MAIN_FRAME.DEBUG', value=self.debug)
     
-    def wxUpdateBusy(self,value=False):
-        pass
-        
+    def wxUpdateBusy(self,status=True,txt=None):
+        if status:
+            self._STB.SetBackgroundColour('#E0E2EB')
+        else:
+            self._STB.SetBackgroundColour('YELLOW')
+        if txt:
+            self.SetStatusBarMSG(txt)
+    
     def wxUpdateBads(self,value=""):
          '''
          call from pubsub "MAIN_FRAME.UPDATE_BADS"
@@ -573,12 +595,34 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
             self._STB.SetStatusText("",i=3)
             
          if value=="CHANGED":
-            self._STB.SetBackgroundColour('YELLOW')
+            self._STB.SetBackgroundColour('ORANGE')
          else:
             self._STB.SetBackgroundColour('#E0E2EB')
             
          self._STB.Refresh()
-         
+    
+    def ClickOnKeyDown(self,evt):
+        self.OnkeyDown(event=evt)
+ 
+    def OnKeyDown(self,event=None):
+        if event:
+           keycode = event.GetKeyCode()
+           #logger.info("MAIN KEY : {}".format(keycode))
+        
+           if keycode == wx.WXK_ESCAPE:
+              self.Close()
+           elif keycode ==wx.WXK_F1:
+            #  show help
+              event.Skip()
+              
+           elif keycode == wx.WXK_F2:
+              self._TB_STATUS =  not self._TB_STATUS
+              self._TB.Show( self._TB_STATUS )
+           elif keycode == wx.WXK_F3:
+               self._STB_STATUS = not self._STB_STATUS
+               self._STB.Show(self._STB_STATUS)
+           else:
+               event.Skip()
         
 #----
 def get_args(argv):
@@ -693,4 +737,40 @@ if __name__ == "__main__":
     
     run(opt)
 
+'''
+  self.g2 = wx.Gauge(self, -1, 75, (110, 95), (250, -1))
 
+        if 'wxMac' not in wx.PlatformInfo:
+            self.g3 = wx.Gauge(self, -1, 100, (110, 135), (-1, 100), wx.GA_VERTICAL)
+
+        self.Bind(wx.EVT_TIMER, self.TimerHandler)
+        self.timer = wx.Timer(self)
+        self.timer.Start(100)
+
+    def __del__(self):
+        self.timer.Stop()
+
+    def TimerHandler(self, event):
+        self.count = self.count + 1
+
+        if self.count >= 50:
+            self.count = 0
+
+        self.g1.SetValue(self.count)
+        self.g2.Pulse()
+        if 'wxMac' not in wx.PlatformInfo:
+            self.g3.Pulse()
+            
+https://stackoverflow.com/questions/35270871/dynamic-text-on-top-of-wx-splashscreen
+def _draw_bmp(bmp, txt_lst):
+    dc = wx.MemoryDC()
+    dc.SelectObject(bmp)
+    dc.Clear()
+    gc = wx.GraphicsContext.Create(dc)
+    font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+    gc.SetFont(font)
+    for i, line in enumerate(txt_lst):
+        dc.DrawText(line, 10, i * 20 + 15)
+    dc.SelectObject(wx.NullBitmap)
+
+'''

@@ -146,11 +146,13 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
             return None
         
         if not self._raw:
-           
            return None
+        
         self._path,self._fname = os.path.split( self.fname )
         self.bads            = self._raw.info.get('bads')
         self.dtype_original  = self._raw._data.dtype
+        self._raw._data      = self._raw._data.astype(self.dtype_plot)
+
         self._isLoaded   = True
         
         if self.verbose:
@@ -170,7 +172,10 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
                           "  -> FIF in raw : {}\n".format(self.get_raw_filename(self.raw)) +
                           "  -> FIF out    : {}\n".format(fout) +
                           "  -> bads       : {}\n".format(self.raw.info['bads']))
+           
+           self._raw._data = self._raw._data.astype(self.dtype_original)
            self.raw.save(fout,overwrite=True)
+           
            if self.verbose:
               logger.info(" --> DONE save bad-channels")
            

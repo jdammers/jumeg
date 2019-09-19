@@ -186,6 +186,8 @@ class JuMEG_TSV_OGL_Data(object):
     
     def update(self,**kwargs):
         self._update_from_kwargs(**kwargs)
+        if not self.raw:
+           return None
         
         if not self._isInit:
            self._update(**kwargs)

@@ -130,29 +130,30 @@ class JuMEG_TSV_wxGLCanvasBase(glcanvas.GLCanvas):
     def OnDraw(self):
         """ OnDraw do your drawing,paintinf,plotting here"""
     
-    def OnKeyDown(self,e):
+    def OnKeyDown(self,evt):
         """   press <ESC> to exit pgr """
-        key = e.GetKeyCode()
+        #key = e.GetKeyCode()
         #---escape to quit
-        if key == wx.WXK_ESCAPE:
-           pub.sendMessage("MAIN_FRAME.CLICK_ON_CLOSE")
+       # if key == wx.WXK_ESCAPE:
+       #    pub.sendMessage("MAIN_FRAME.CLICK_ON_CLOSE")
            #self.click_on_exit(e)
+        evt.Skip()
     
     def OnMouseLeftDown(self,evt):
-        pass
+        evt.Skip()
  
     def OnMouseUp(self,evt):
-        pass
+        evt.Skip()
 
     def OnMouseWheel(selfself,evt):
-        pass
+        evt.Skip()
 
     def OnMouseRightDown(self,evt):
-        pass
+        evt.Skip()
     def OnMouseRightUp(self,evt):
-        pass
+        evt.Skip()
     def OnMouseMotion(self,evt):
-        pass
+        evt.Skip()
 
 
 class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
@@ -206,11 +207,19 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
     def OnKeyDown(self,evt):
         action = None
         type   = None
-        if not self.isInitGL:
-           evt.skip()  #---escape to quit
-        
         key = evt.GetKeyCode()
         
+        if not self.isInitGL:
+           pub.sendMessage("EVENT_KEY_DOWN",event=evt)
+           return
+     
+        #key_list    = [wx.WXK_LEFT,wx.WXK_RIGHT,wx.WXK_HOME,wx.WXK_END,wx.WXK_UP,wx.WXK_DOWN,wx.WXK_PAGEUP,wx.WXK_PAGEDOWN]
+        #action_ctrl = ["FAST_REWIND","FAST_FORWARD","START","END"]
+   
+        #if key in key_list:
+        #   evt.Skip()
+        #   return
+           
         #--- scroll time fast by window
         if (wx.GetKeyState(wx.WXK_CONTROL) == True):
             
@@ -247,13 +256,14 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
             action = "TOP"
         elif key == wx.WXK_END:
             action = "BOTTOM"
-       #---
+      #---
         if action:
            self.plot.data.opt.action(action)
            self.update()
         
         else:
-            evt.Skip()
+            pub.sendMessage("EVENT_KEY_DOWN",event=evt)
+            #evt.Skip()
     
     def InitGL(self):
         self._isInitGL = False
@@ -303,10 +313,10 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         self.plot.update(**kwargs)
        
         if self.plot.data.opt.do_scroll:
-           self.Refresh()
            if self.plot.data.opt.time.do_scroll:
               self.GetParent().OnScroll(start=self.plot.timepoints[0],end=self.plot.timepoints[-1]) #,n_cols=self.plot.data.opt.n_cols)
-    
+        self.Refresh()
+        
     def OnMouseRightDown(self,evt):
         try: # self.CaptureMouse() !!! finaly release
            if self.plot.ToggleBadsFromPosition(evt.GetPosition()):
@@ -317,6 +327,9 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
             logger.exception("---> ERROR in Mouse Right Down")
         
         evt.Skip()
+        
+    def GetNumberOfCols(self):
+        return self.plot.data.opt.n_cols
  
 class JuMEG_TSV_wxPlot2D(wx.Panel):
     """
@@ -378,7 +391,11 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
     def _wx_init(self,**kwargs):
         self._wxTimeScaler = TimeScaler(self)
         self._wxPlot2D     = JuMEG_TSV_wxCanvas2D(self,**kwargs)
-         
+        self.Bind(wx.EVT_CHAR,self.ClickOnKeyDown)
+    
+    def ClickOnKeyDown(self,evt):
+        evt.Skip()
+       
     def update(self,raw=None,**kwargs):
         """
 
@@ -392,13 +409,10 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         if self.plot:
            try:
                self.plot.update(raw=raw,**kwargs) # if raw reset data
-               n_cols = kwargs.get("plot").get("n_cols",self.n_cols)
-               
+               self.n_cols = self.plot.GetNumberOfCols() # update TimeScalers via n_cols property
            except:
-               logger.exception("Error in update plot")
-               return
-           self.n_cols = n_cols
-        
+               logger.exception("Error in update plot => kwargs:\n {}\n".format(kwargs))
+               
     def ClickOnCtrls(self,evt):
         """ pass to parent event handlers """
         evt.Skip()
