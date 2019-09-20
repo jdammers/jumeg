@@ -165,37 +165,37 @@ class JuMEG_wxTSVPanel(wx.Panel):
         # fname = jumeg_tsv_wxutils_savefile(self,path=self.IOdata.path,)
         
     def SaveBads(self):
-        txt = ["Saving ..."]
-        pub.sendMessage("MAIN_FRAME.BUSY",status=False,txt=txt)
+        msg = ["Saving ..."]
+        pub.sendMessage("MAIN_FRAME.BUSY",status="BUSY",msg=msg)
     
         if self.IOdata.save():
-           txt = ["SAVED"]
-           txt.extend(self.IOdata.GetDataInfo())
-           pub.sendMessage("MAIN_FRAME.BUSY",status=True,txt=txt)
+           msg = ["SAVED"]
+           msg.extend(self.IOdata.GetDataInfo())
+           pub.sendMessage("MAIN_FRAME.BUSY",status="OK",msg=msg)
         else:
-           txt = ["ERROR"]
-           pub.sendMessage("MAIN_FRAME.BUSY",status=False,txt=txt)
+           msg = ["ERROR"]
+           pub.sendMessage("MAIN_FRAME.BUSY",status="ERROR",msg=msg)
         
     def update_data(self,**kwargs):
         #---
-        txt = ["Loading","Please wait ..."]
+        msg = ["Loading","Please wait ..."]
         for idx in range(5):
-            txt.append(". . . . . .")
+            msg.append(". . . . . .")
     
-        pub.sendMessage("MAIN_FRAME.BUSY",status=False,txt=txt)
+        pub.sendMessage("MAIN_FRAME.BUSY",status="BUSY",msg=msg)
     
         if kwargs:
             self.IOdata.update(**kwargs)
     
         if self.IOdata.isLoaded:
-            txt = ["LOADED"]
-            txt.extend(self.IOdata.GetDataInfo())
+            msg = ["LOADED"]
+            msg.extend(self.IOdata.GetDataInfo())
             self.PlotPanel.update(raw=self.IOdata.raw)
         else:
-            txt = ["No File","Please select a file"]
+            msg = ["No File","Please select a file"]
             for idx in range(5):
-                txt.append(". . . . . .")
-        pub.sendMessage("MAIN_FRAME.BUSY",status=True,txt=txt)
+                msg.append(". . . . . .")
+        pub.sendMessage("MAIN_FRAME.BUSY",status="OK",msg=msg)
 
     def _ApplyLayout(self):
         LEA = wx.LEFT|wx.EXPAND|wx.ALL
@@ -214,6 +214,74 @@ class JuMEG_wxTSVPanel(wx.Panel):
         self.Fit()
         self.Layout()
 
+class StatusBar(object):
+    __slots__=[ "colour","_STB","_STATUS","_parent"]
+    def __init__(self,parent,**kwargs):
+        super().__init__()
+        self._parent = parent
+        self.colour  = {"ok":'#E0E2EB',"busy":"YELLOW","changed":"ORANGE","error":"RED"}
+        self._STB    = None
+        self._STATUS = True # show/hide
+        self._wx_init(**kwargs)
+    
+    @property
+    def STB (self): return self._STB
+
+    def _wx_init(self,fields=8,width=[80,-1.6,-1.0,-1.9,40,80,150,80],status_style=wx.SB_SUNKEN):
+        """
+        
+        :param fields: 8 Status,path,fname,bads,n-bads,time,size,nn
+        :param w:
+        :param status_style:
+        :return:
+        """
+        if self._STB:
+           self._STB.Destroy()
+        self._STB = self._parent.CreateStatusBar(fields,style=wx.STB_DEFAULT_STYLE)
+        self._STB.SetStatusWidths(width)
+        st=[]
+        for i in range( len(width)):
+            st.append(status_style)
+        self._STB.SetStatusStyles(st)
+
+    def SetMSG(self,msg):
+        '''
+         call from pubsub
+         "MAIN_FRAME.STB.MSG", value=["RUN", self._args[0], "PID", str(self.__proc.pid)]
+        '''
+        idx = 0
+        if not msg: return
+        if not isinstance(msg,(list)): msg = list(msg)
+        if msg:
+           for s in msg:
+               if s:
+                  self._STB.SetStatusText(str(s),i=idx)
+               idx += 1
+               if idx >= self._STB.GetFieldsCount(): break
+
+    def UpdateMSG(self,status="OK",msg=None):
+        """
+        
+        :param status:
+        :param msg:
+        :return:
+        """
+        cl = self.colour.get(status.lower(),"error")
+        self._STB.SetBackgroundColour(cl)
+        if msg:
+           self.SetMSG(msg)
+        self._STB.Refresh()
+   
+    def _init_pubsub(self):
+        """" init pubsub call and messages"""
+        pub.subscribe(self.UpdateMSG,"MAIN_FRAME.STB.MSG")
+
+    def toggle(self,status=-1):
+        if status !=-1:
+          self._STATUS = status
+        self._STATUS = not self._STATUS
+        self._STB.Show(self._STATUS)
+
 
 class JuMEG_GUI_TSVFrame(wx.Frame):
     __slots__=[ "_STB","_TB","_PLT","_verbose","_debug","_menu_info","_menu_help","_wx_file_combobox","_bt_save"]
@@ -221,19 +289,18 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         style = wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE
         super().__init__(parent,id,title,pos,size,style,name) #,**kwargs)
        #--- wx
-        self._STB     = None
-        self._TB      = None
-        self._PLT     = None
-        self._menu_help=None
-        self._menu_info=None
+        self._STB        = None
+        self._TB         = None
+        self._PLT        = None
+        self._menu_help  = None
+        self._menu_info  = None
+        self._bt_save    = None
         self._wx_file_combobox = None
-        self._bt_save = None
       #  self.AboutBox = JuMEG_wxAboutBox()
        #--- flags
         self._debug   = False
         self._verbose = False
         
-        self._STB_STATUS = True
         self._TB_STATUS  = True
         
         self._wx_init(**kwargs)
@@ -244,7 +311,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
     @property
     def PlotPanel(self): return self._PLT
     @property
-    def StatusBar(self): return self._STB
+    def StatusBar(self): return self._STB._STB
     @property
     def ToolBar(self):   return self._TB
     @property
@@ -283,7 +350,9 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         
         self._update_from_kwargs(**kwargs)
         self._wx_init_menu()
-        self._wxInitStatusBar() #  msg,path ,fname , n_bads, status
+      #--- init STB in a new CLS
+        self._STB = StatusBar(self)
+        
         self._wxInitToolBar()
         self._PLT = JuMEG_wxTSVPanel(self,**kwargs)
        
@@ -291,17 +360,6 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         self.Bind(wx.EVT_CHAR,    self.ClickOnKeyDown)
         self.Bind(wx.EVT_KEY_DOWN,self.ClickOnKeyDown)
         self.Bind(wx.EVT_KEY_UP,self.ClickOnKeyDown)
-
-        #ID_CLICK_ON_KEY = wx.NewId()
-        #self.Bind(wx.EVT_MENU, self.ClickOnKeyDown, id=ID_CLICK_ON_KEY)
-        #entry_one = wx.AcceleratorEntry(wx.ACCEL_NORMAL,ord('N'),
-        #                                ID_CLICK_ON_KEY,None)
-        #entry_two = wx.AcceleratorEntry(wx.ACCEL_NORMAL,ord('A'),
-        # #                               ID_CLICK_ON_KEY,None)
-        #entries = [entry_one,entry_two]
-
-        #accel_tbl = wx.AcceleratorTable(entries)
-        #self.SetAcceleratorTable(accel_tbl)
 
         return self._PLT
     
@@ -338,7 +396,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         tool = tb.AddControl(self._bt_save,label="SAVE Bads")
         self.Bind(wx.EVT_BUTTON,self.ClickOnSaveFile,tool)
         tb.AddSeparator()
-
+        self._bt_save.Disable()
 
 
 
@@ -409,40 +467,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
     
     def ClickOnAbout(self,evt):
         self.AboutBox.show(self)
-
-    def _wxInitStatusBar(self,fields=8,w=[80,-1.6,-1.0,-1.9,40,80,150,80],status_style=wx.SB_SUNKEN):
-        """
-        
-        :param fields: 8 Status,path,fname,bads,n-bads,time,size,nn
-        :param w:
-        :param status_style:
-        :return:
-        """
-        if self._STB:
-           self._STB.Destroy()
-        self._STB = self.CreateStatusBar(fields,style=wx.STB_DEFAULT_STYLE)
-        self._STB.SetStatusWidths(w) # 200 pixel,66%,33%,200 pix
-        st=[]
-        for i in range( len(w)):
-            st.append(status_style)
-        self._STB.SetStatusStyles(st)
-
-    def SetStatusBarMSG(self,msg):
-        '''
-         call from pubsub
-         "MAIN_FRAME.STB.MSG", value=["RUN", self._args[0], "PID", str(self.__proc.pid)]
-        '''
-        idx = 0
-        if not msg: return
-        if not isinstance(msg,(list)): msg = list(msg)
-        if msg:
-           for s in msg:
-                #self.msg_info("STB: "+s +"  "+str(idx))
-               if s:
-                  self._STB.SetStatusText(str(s),i=idx)
-               idx += 1
-               if idx >= self._STB.GetFieldsCount(): break
-
+    
     def OnExitApp(self,evt):
         self.ClickOnClose(evt)
 
@@ -451,11 +476,8 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         v   = obj.GetValue()
         name= obj.GetName()
         if name =="StatusBar":
-           if v:
-               self.StatusBar.Show()
-           else:
-               self.StatusBar.Hide()
-           return
+          self.STB.toggle(v)
+          return
         elif name =="Verbose":
              self.verbose = v
         elif name =="Debug":
@@ -464,6 +486,48 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         if self.use_pubsub:  # verbose,debug status
            pub.sendMessage('MAIN_FRAME.' + name.upper(), value=v)
 
+    def _init_pubsub(self):
+        """ init pubsub call and messages"""
+        #---
+        pub.subscribe(self.msg_error,"MAIN_FRAME.MSG.ERROR")
+        pub.subscribe(self.msg_warning,"MAIN_FRAME.MSG.WARNING")
+        pub.subscribe(self.msg_info,"MAIN_FRAME.MSG.INFO")
+        #---
+        pub.subscribe(self.OnBusy,"MAIN_FRAME.BUSY")
+        #---
+        pub.subscribe(self.ClickOnClose,"MAIN_FRAME.CLICK_ON_CLOSE")
+        #--- BADS
+        pub.subscribe(self.UpdateBads,"MAIN_FRAME.UPDATE_BADS")
+        #--- handle KEY events from sub panels / cls
+        pub.subscribe(self.OnKeyDown,"EVENT_KEY_DOWN")
+        #--- verbose debug
+        pub.sendMessage('MAIN_FRAME.VERBOSE',value=self.verbose)
+        pub.sendMessage('MAIN_FRAME.DEBUG',value=self.debug)
+
+    def UpdateBads(self,status=None):
+        '''
+        call from pubsub "MAIN_FRAME.UPDATE_BADS"
+        '''
+        if status == "CHANGED":
+            self._bt_save.Enable()
+        else:
+            self._bt_save.Disable()
+            
+        bads = self.PlotPanel.IOdata.GetBads()
+        msg = [status,None,None]  # STATUS, path,file
+        if bads:
+            msg.append(",".join(bads))  #3
+        else:
+            msg.append("")
+        msg.append( str(len(bads)) )  # 4
+        self._STB.UpdateMSG(status=status,msg=msg)
+    
+    def OnBusy(self,status="OK",msg=None):
+        if status == "CHANGED":
+           self._bt_save.Enable()
+        else:
+           self._bt_save.Disable()
+        self._STB.UpdateMSG(status=status,msg=msg)
 
     def ClickOnButton(self,evt):
         obj = evt.GetEventObject()
@@ -480,9 +544,8 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
     def ShowSplash(self):
         d = os.path.dirname(__file__)
         img = os.path.abspath(d + "/tsv/tsv.png/")
-        bitmap = wx.Bitmap(img,wx.BITMAP_TYPE_PNG)
-        self.Splash = wx.adv.SplashScreen(
-            bitmap,wx.adv.SPLASH_CENTER_ON_SCREEN | wx.adv.SPLASH_NO_TIMEOUT,-1,self)
+        bmp = wx.Bitmap(img,wx.BITMAP_TYPE_PNG)
+        self.Splash = wx.adv.SplashScreen(bmp,wx.adv.SPLASH_CENTER_ON_SCREEN|wx.adv.SPLASH_NO_TIMEOUT,-1,self)
         self.Splash.Show()
         
     def Show(self,show=True):
@@ -491,9 +554,9 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         super().Show(show=show)
         self.Splash.Destroy()
         try:
-           self.PlotPanel.update_data()
+          self.PlotPanel.update_data()
         except:
-           pass
+          pass
         
         
     def AboutBox(self):
@@ -555,52 +618,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         itm1 = self._menu_help.Append(wx.ID_ANY,"&About",'show About',wx.ITEM_NORMAL)
         itm2 = self._menu_help.Append(wx.ID_ANY,"&Help",'show help',wx.ITEM_NORMAL)
 
-    def _init_pubsub(self):
-        """ init pubsub call and messages"""
-       #---
-        pub.subscribe(self.msg_error,  "MAIN_FRAME.MSG.ERROR")
-        pub.subscribe(self.msg_warning,"MAIN_FRAME.MSG.WARNING")
-        pub.subscribe(self.msg_info,   "MAIN_FRAME.MSG.INFO")
-       #---
-        pub.subscribe(self.SetStatusBarMSG, "MAIN_FRAME.STB.MSG")
-        pub.subscribe(self.ClickOnClose, "MAIN_FRAME.CLICK_ON_CLOSE")
-       #---
-        pub.subscribe(self.wxUpdateBusy,"MAIN_FRAME.BUSY")
-       #--- BADS
-        pub.subscribe(self.wxUpdateBads,"MAIN_FRAME.UPDATE_BADS")
-       #--- handle KEY events
-        pub.subscribe(self.OnKeyDown,"EVENT_KEY_DOWN")
-       #--- verbose debug
-        pub.sendMessage('MAIN_FRAME.VERBOSE', value=self.verbose)
-        pub.sendMessage('MAIN_FRAME.DEBUG', value=self.debug)
-    
-    def wxUpdateBusy(self,status=True,txt=None):
-        if status:
-            self._STB.SetBackgroundColour('#E0E2EB')
-        else:
-            self._STB.SetBackgroundColour('YELLOW')
-        if txt:
-            self.SetStatusBarMSG(txt)
-    
-    def wxUpdateBads(self,value=""):
-         '''
-         call from pubsub "MAIN_FRAME.UPDATE_BADS"
-         '''
-         self._STB.SetStatusText(value,i=0)
-         bads = self.PlotPanel.IOdata.GetBads()
-         self._STB.SetStatusText(str( len(bads) ),i=4)
-         if bads:
-            self._STB.SetStatusText(",".join(bads),i=3)
-         else:
-            self._STB.SetStatusText("",i=3)
-            
-         if value=="CHANGED":
-            self._STB.SetBackgroundColour('ORANGE')
-         else:
-            self._STB.SetBackgroundColour('#E0E2EB')
-            
-         self._STB.Refresh()
-    
+        
     def ClickOnKeyDown(self,evt):
         self.OnkeyDown(event=evt)
  
@@ -619,8 +637,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
               self._TB_STATUS =  not self._TB_STATUS
               self._TB.Show( self._TB_STATUS )
            elif keycode == wx.WXK_F3:
-               self._STB_STATUS = not self._STB_STATUS
-               self._STB.Show(self._STB_STATUS)
+               self._STB.toggle()
            else:
                event.Skip()
         

@@ -322,7 +322,7 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
            if self.plot.ToggleBadsFromPosition(evt.GetPosition()):
               self.Refresh()
              #--- send msg update BADS
-              pub.sendMessage("MAIN_FRAME.UPDATE_BADS",value="CHANGED")
+              pub.sendMessage("MAIN_FRAME.UPDATE_BADS",status="CHANGED")
         except:
             logger.exception("---> ERROR in Mouse Right Down")
         
