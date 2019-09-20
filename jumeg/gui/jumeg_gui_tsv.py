@@ -26,7 +26,7 @@ DRI_PRIME=1 glmark2 --fullscreen
 #--------------------------------------------
 
 
-import os,sys,argparse
+import os,sys,argparse,warnings
 
 #import OpenGL
 #OpenGL.ERROR_CHECKING = False
@@ -46,13 +46,13 @@ import wx.adv
 #--- jumeg cls
 
 #--- jumeg wx stuff
-from jumeg.gui.wxlib.jumeg_gui_wxlib_main_frame      import JuMEG_wxMainFrame
-from jumeg.gui.wxlib.jumeg_gui_wxlib_main_panel      import JuMEG_wxMainPanel
+from jumeg.gui.wxlib.jumeg_gui_wxlib_main_frame            import JuMEG_wxMainFrame
+from jumeg.gui.wxlib.jumeg_gui_wxlib_main_panel            import JuMEG_wxMainPanel
 
-from jumeg.gui.tsv.utils.jumeg_tsv_utils_io_data         import JuMEG_TSV_Utils_IO_Data
-from jumeg.gui.tsv.wxlib.jumeg_tsv_wxlib_plot2d          import JuMEG_TSV_wxPlot2D
-from jumeg.gui.tsv.wxutils.jumeg_tsv_wx_utils            import jumeg_tsv_wxutils_openfile,jumeg_tsv_wxutils_dlg_plot_settings
-from jumeg.gui.tsv.wxutils.jumeg_tsv_wxutils_dlg_options import GroupDLG # ChannelDLG
+from jumeg.gui.tsv.utils.jumeg_tsv_utils_io_data           import JuMEG_TSV_Utils_IO_Data
+from jumeg.gui.tsv.wxlib.jumeg_tsv_wxlib_plot2d            import JuMEG_TSV_wxPlot2D
+from jumeg.gui.tsv.wxutils.jumeg_tsv_wx_utils              import jumeg_tsv_wxutils_openfile,jumeg_tsv_wxutils_dlg_plot_settings
+from jumeg.gui.tsv.wxutils.jumeg_tsv_wxutils_dlg_options   import GroupDLG # ChannelDLG
 
 import logging
 from jumeg.base import jumeg_logger
@@ -283,6 +283,43 @@ class StatusBar(object):
         self._STB.Show(self._STATUS)
 
 
+
+
+class MiscPopup(wx.PopupTransientWindow):
+    """
+    miscellaneous  controls & flags e.g.: verbose,dbug ...
+    Example:
+    --------
+     ctrls =[ ["verbose",self._verbose,self.ClickOnPopupCtrl],
+              ["debug",  self._debug,  self.ClickOnPopupCtrl]
+            ]
+     win = MiscPopup(self,ctrls=ctrls)
+     
+    """
+    def __init__(self, parent, **kwargs):
+        """
+        
+        :param parent:
+        :param kwargs:
+        """
+        wx.PopupTransientWindow.__init__(self, parent)
+        
+        panel = wx.Panel(self)
+        panel.SetBackgroundColour( kwargs.get("bg","GREY90"))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+   
+        for ctrl in kwargs.get("ctrls"):
+            ckb = wx.CheckBox(self,wx.NewId(),ctrl[0])
+            ckb.SetName(ctrl[0])
+            ckb.SetValue(ctrl[1])
+            ckb.Bind(wx.EVT_CHECKBOX,ctrl[2])
+            sizer.Add(ckb, 0, wx.ALL, 5)
+           
+        panel.SetSizer(sizer)
+        sizer.Fit(panel)
+        sizer.Fit(self)
+        self.Layout()
+
 class JuMEG_GUI_TSVFrame(wx.Frame):
     __slots__=[ "_STB","_TB","_PLT","_verbose","_debug","_menu_info","_menu_help","_wx_file_combobox","_bt_save"]
     def __init__(self,parent,id,title,pos=wx.DefaultPosition,size=[1024,768],name='JuMEGTSV',*kargs,**kwargs):
@@ -367,7 +404,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         """
       
         """
-        style=wx.TB_RIGHT
+       # style=wx.TB_RIGHT
         style=wx.TB_HORIZONTAL
        # style=wx.TB_BOTTOM
         
@@ -446,23 +483,39 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         
        #--- end  set Help
         ctrls = [
-                  ["Misc","Misc",wx.ART_INFORMATION,self._menu_info],
-                  ["Help","Help",wx.ART_HELP,self._menu_help],
+                  ["Misc","Miscellaneous",wx.ART_INFORMATION,self.ClickOnMisc],
+                 # ["Help","Help",wx.ART_HELP,self.ClickOnHelp],
                 ]
         for ctrl in ctrls:
             if len(ctrl):
                bmp = wx.ArtProvider.GetBitmap(ctrl[2],wx.ART_TOOLBAR,tsize)
                tool = tb.AddTool(-1,ctrl[0],bmp,wx.NullBitmap,wx.ITEM_NORMAL,ctrl[1],ctrl[1])
-               tool.SetDropdownMenu( ctrl[-1] )
-               #self.Bind(wx.EVT_TOOL,ctrl[-1],tool)
+               # tool.SetDropdownMenu( ctrl[-1] )
+               self.Bind(wx.EVT_TOOL,ctrl[-1],tool)
+               self._tool_misc= tool
             else:
                tb.AddSeparator()
      
         tb.Realize()
         self._TB = tb
+    
+    def ClickOnMisc(self,evt):
+        ctrls =[ ["verbose",self._verbose,self.ClickOnPopupCtrl],
+                 ["debug",  self._debug,  self.ClickOnPopupCtrl]
+               ]
+        win = MiscPopup(self,ctrls=ctrls)
+        win.Position(wx.GetMousePosition(),(-1,-1))
+        win.Popup()
+    
+    def ClickOnPopupCtrl(self,evt):
+        obj = evt.GetEventObject()
+       # using __slots__
+        try:
+           self.__setattr__( obj.GetName(),obj.GetValue() )
+        except:
+           logger.error(" can not set value for attribute, no such attribute in __slots__: {}".format(obj.GetName()) )
         
-        # self.Bind(wx.EVT_TOOL,self.ClickOnToolBar)
-    def ClickOnToolBar(self,evt):
+    def ClickOnHelp(self):
         pass
     
     def ClickOnAbout(self,evt):
