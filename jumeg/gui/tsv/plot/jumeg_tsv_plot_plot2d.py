@@ -15,6 +15,7 @@
 # Updates
 #--------------------------------------------
 import numpy as np
+from pubsub import pub
 import sys,logging
 logger=logging.getLogger("jumeg")
 
@@ -209,7 +210,22 @@ class JuMEG_TSV_OGLPlot2D(object):
         self._isInit   = False
         self._isOnDraw = False
         self._isUpdate = False
+        self.verbose   = False
+        self.debug     = False
+        self._init_pubsub()
         
+    def _init_pubsub(self):
+        """ init pubsub call and messages"""
+        #--- verbose debug
+        pub.subscribe(self.SetVerbose,'MAIN_FRAME.VERBOSE')
+        pub.subscribe(self.SetDebug,'MAIN_FRAME.DEBUG')
+
+    def SetVerbose(self,value=False):
+        self.verbose = value
+
+    def SetDebug(self,value=False):
+        self.debug = value
+    
     @property
     def size_in_pixel(self): return  self.GLPlot.size_in_pixel
 
@@ -244,7 +260,23 @@ class JuMEG_TSV_OGLPlot2D(object):
         self.debug   = kwargs.get("debug",self.debug)
         self.data.update(**kwargs)
    
-      
+    def ShowBads(self,status):
+        """
+        todo check for deselected channels
+        :param status:
+        :return:
+        """
+        if status:
+           self.data.settings.Channel.SetSelected(picks=None,status=False)
+           picks = self.data.settings.Channel.GetBadsPicks()
+           self.data.settings.Channel.SetSelected(picks=picks,status=True)
+        else:
+           self.data.settings.Channel.SetSelected(picks=None,status=True)
+
+        self.data.opt.channels.do_scroll = True
+        #self.update_plot_data()
+        #self.display()
+        
     def update(self,**kwargs):
         """
          VBO if  time,channel size changed
@@ -345,13 +377,17 @@ class JuMEG_TSV_OGLPlot2D(object):
             picks_selected = self.data.settings.Channel.GetSelected()
             
            #--- calc channel range  0 ,-1
-            ch_start,ch_end_range = self.data.opt.channels.index_range(n_counts = picks_selected.shape[0])
+            ch_start,ch_end_range = self.data.opt.channels.index_range(n_counts = picks_selected.shape[0] +1)
             
            #--- get selected picks
             self.GLPlot.signals.picks = picks_selected[ch_start:ch_end_range]
           
        #--- set the rest
-        self.GLPlot.signals.scale    = self.data.settings.Channel.scale
+   
+        self.GLPlot.signals.scale = self.data.settings.Channel.GetMinMaxScale(raw=self.data.raw,tsls=self.data.opt.time.index_range(),
+                                                                              picks= self.GLPlot.signals.picks, div=self.GLPlot.Grid.ydiv)
+        
+        #,picks=self.GLPlot.signals.picks)
         self.GLPlot.signals.colours  = self.data.settings.Channel.colour
      
 

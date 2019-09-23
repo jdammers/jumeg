@@ -135,7 +135,19 @@ class JuMEG_wxTSVPanel(wx.Panel):
         out = dlg.ShowModal()
         if out == wx.ID_APPLY:
            self.PlotPanel.update(settings=grp)
-      
+
+    def GoToChannel(self,label):
+        if not label: return None
+        idx = self.IOdata.label2pick(label)
+        if idx.shape[0]:
+           chidx=idx[0]
+           opt = self.PlotPanel.GetPlotOptions()
+           opt.plot_start = chidx + 1 - int(opt.n_plots/2)
+           self.PlotPanel.update() #**opt)
+           return True
+        else:
+           return None
+    
     def ClickOnCancel(self,evt):
         wx.LogMessage("Click <Cancel> button")
         #wx.CallAfter(pub.sendMessage,"MAIN_FRAME.MSG.INFO",data="<Cancel> button is no in use")
@@ -158,11 +170,16 @@ class JuMEG_wxTSVPanel(wx.Panel):
            fname = os.path.basename(fname)
           # self.ShowSplash()
            self.update_data(fname=fname,path=path,reload=False)
+           return True
+        return False
            #self.Splash.Destroy()
            
     def ShowSaveFileDialog(self):
         pass
         # fname = jumeg_tsv_wxutils_savefile(self,path=self.IOdata.path,)
+    
+    def ShowBads(self,status):
+        self.PlotPanel.ShowBads(status)
         
     def SaveBads(self):
         msg = ["Saving ..."]
@@ -196,7 +213,8 @@ class JuMEG_wxTSVPanel(wx.Panel):
             for idx in range(5):
                 msg.append(". . . . . .")
         pub.sendMessage("MAIN_FRAME.BUSY",status="OK",msg=msg)
-
+        pub.sendMessage("MAIN_FRAME.UPDATE_CHANNEL_NAMES",data=self.IOdata.GetChannelNames())
+        
     def _ApplyLayout(self):
         LEA = wx.LEFT|wx.EXPAND|wx.ALL
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -282,9 +300,6 @@ class StatusBar(object):
         self._STATUS = not self._STATUS
         self._STB.Show(self._STATUS)
 
-
-
-
 class MiscPopup(wx.PopupTransientWindow):
     """
     miscellaneous  controls & flags e.g.: verbose,dbug ...
@@ -320,6 +335,7 @@ class MiscPopup(wx.PopupTransientWindow):
         sizer.Fit(self)
         self.Layout()
 
+
 class JuMEG_GUI_TSVFrame(wx.Frame):
     __slots__=[ "_STB","_TB","_PLT","_verbose","_debug","_menu_info","_menu_help","_wx_file_combobox","_bt_save"]
     def __init__(self,parent,id,title,pos=wx.DefaultPosition,size=[1024,768],name='JuMEGTSV',*kargs,**kwargs):
@@ -333,6 +349,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         self._menu_info  = None
         self._bt_save    = None
         self._wx_file_combobox = None
+        self._tbComboGoToCahnnel=None
       #  self.AboutBox = JuMEG_wxAboutBox()
        #--- flags
         self._debug   = False
@@ -365,7 +382,8 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
            warnings.filterwarnings("ignore")
         else:
            warnings.filterwarnings("default")
-    
+        pub.sendMessage('MAIN_FRAME.DEBUG',value=self.debug)
+
     
     @property
     def verbose(self): return self._verbose
@@ -374,12 +392,15 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         if self._PLT:
            self._PLT.verbose=v
         self._verbose=v
-        
+        pub.sendMessage('MAIN_FRAME.VERBOSE',value=self.verbose)
+   
 
     def _update_from_kwargs(self,**kwargs):
         self._debug   = kwargs.get("debug",False)
         self._verbose = kwargs.get("verbose",False)
-
+        self.path     = kwargs.get("path",".")
+        self.fname    = kwargs.get("fname")
+        
     def _wx_init(self,**kwargs):
         w,h = wx.GetDisplaySize()
         self.SetSize(w/1.1,h/1.3)
@@ -401,21 +422,14 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         return self._PLT
     
     def _wxInitToolBar(self,**kwargs):
-        """
-      
-        """
-       # style=wx.TB_RIGHT
-        style=wx.TB_HORIZONTAL
-       # style=wx.TB_BOTTOM
-        
-        tsize=[24,24]
-        tb =  self.CreateToolBar(style=style)
+       
+        style = wx.TB_HORIZONTAL # wx.TB_RIGHT,wx.TB_BOTTOM
+        tsize = [24,24]
+        tb    =  self.CreateToolBar(style=style)
         tb.SetToolBitmapSize(tsize)  # sets icon size
       
         ctrls=[
                ["Load","Load Data",wx.ART_FILE_OPEN,self.ClickOnLoadFile],
-              # ["Save","Save Bads",wx.ART_FILE_SAVE,self.ClickOnSaveFile],
-              # ["Save As","Save As",wx.ART_FILE_SAVE_AS,self.ClickOnSaveFileAs],
               ]
        
         for ctrl in ctrls:
@@ -434,21 +448,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON,self.ClickOnSaveFile,tool)
         tb.AddSeparator()
         self._bt_save.Disable()
-
-
-
-         #btn = wx.BitmapButton(tb, wx.ID_ANY, make_bitmap(wx.Bitmap(gifpath)), wx.DefaultPosition, (32, 32), wx.BU_AUTODRAW|wx.RAISED_BORDER)
-      
-      #---
-        '''
-        ctrls=[
-               ["Load List","Load File List",wx.ART_FOLDER_OPEN,self.ClickOnLoadFilesFromList],
-              ]
-        self._wx_file_combobox = wx.ComboBox(tb,-1,"File List",choices=["","This","is a","wx.ComboBox"],size=(-1,-1),style=wx.CB_DROPDOWN|wx.EXPAND )
-        tb.AddSeparator()
-        tb.AddControl(self._wx_file_combobox)
-        '''
-        
+       #---
         for ctrl in ctrls:
             if len(ctrl):
                bmp  = wx.ArtProvider.GetBitmap(ctrl[2],wx.ART_TOOLBAR,tsize)
@@ -456,41 +456,58 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
                self.Bind(wx.EVT_TOOL, ctrl[-1], tool)
             else:
                tb.AddSeparator()
-        #self.Bind(wx.EVT_COMBOBOX,self.OnCombo,id=cbID)
+        tb.AddSeparator()
+      
+       #--- combo GoTo Channel
+        tb.AddStretchableSpace()
+        cbtxt = wx.StaticText(tb,-1,"GoTo Channel")
+        tb.AddControl(cbtxt)
+
+        cb =wx.ComboBox(tb,-1,name="TB.COMBO.GOTO_CHANNEL",style=wx.TE_PROCESS_ENTER)
+        cb.SetToolTip("go to channel")
+        tool = tb.AddControl(cb,label="GoTo Channel")
+        self.Bind(wx.EVT_COMBOBOX,self.ClickOnCombo,tool)
+        self.Bind(wx.EVT_TEXT_ENTER,self.ClickOnCombo,tool)
+        self._tbComboGoToCahnnel = cb
         tb.AddSeparator()
         
-       #--- group plot options
-        tb.AddStretchableSpace()
-        #tb.AddControl(wx.StaticText(tb,-1,"Settings"))
-        bt = wx.Button(tb,-1,"P L O T ` s",name="TB.BT.SETTINGS.PLOT")
+       #--- bt plot settings
+        bt=wx.Button(tb,-1,"P L O T `s",name="TB.BT.SETTINGS.PLOT")
         bt.SetToolTip("change plot settings")
         tool = tb.AddControl(bt,label="PlotSettings")
-        self.Bind(wx.EVT_BUTTON, self.ClickOnButton, tool)
+        self.Bind(wx.EVT_BUTTON,self.ClickOnButton,tool)
         
-        bt=wx.Button(tb,-1,"G R O U P `s",name="TB.BT.SETTINGS.GROUP")
+       #--- bt group settings
+        bt = wx.Button(tb,-1,"G R O U P `s",name="TB.BT.SETTINGS.GROUP")
         bt.SetToolTip("change group settings")
         tool = tb.AddControl(bt,label="GroupSettings")
         self.Bind(wx.EVT_BUTTON,self.ClickOnButton,tool)
-        
-        
+        tb.AddSeparator()
+        #--- bt plot options
+       # tb.AddStretchableSpace()
+        tb.AddSeparator()
+        bt = wx.ToggleButton(tb,-1,"Show BAD`s",name="TB.BT.SHOW_BADS")
+        bt.SetToolTip("show only bad channels")
+        bt.SetValue(False)
+        tool = tb.AddControl(bt,label="ShowBADs")
+        self.Bind(wx.EVT_TOGGLEBUTTON,self.ClickOnButton,tool)
+
+        #--- bt debug
         if self.debug:
-           # tb.AddStretchableSpace()
            tb.AddSeparator()
            tool = tb.AddControl(wx.Button(tb,-1,"DEMO",name="TB.BT.DEMO"),label="TEST")
            self.Bind(wx.EVT_BUTTON, self.ClickOnButton, tool)
-        
         tb.AddSeparator()
         
        #--- end  set Help
         ctrls = [
                   ["Misc","Miscellaneous",wx.ART_INFORMATION,self.ClickOnMisc],
-                 # ["Help","Help",wx.ART_HELP,self.ClickOnHelp],
+                  ["Help","Help",wx.ART_HELP,self.ClickOnHelp],
                 ]
         for ctrl in ctrls:
             if len(ctrl):
                bmp = wx.ArtProvider.GetBitmap(ctrl[2],wx.ART_TOOLBAR,tsize)
                tool = tb.AddTool(-1,ctrl[0],bmp,wx.NullBitmap,wx.ITEM_NORMAL,ctrl[1],ctrl[1])
-               # tool.SetDropdownMenu( ctrl[-1] )
                self.Bind(wx.EVT_TOOL,ctrl[-1],tool)
                self._tool_misc= tool
             else:
@@ -538,6 +555,50 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         
         if self.use_pubsub:  # verbose,debug status
            pub.sendMessage('MAIN_FRAME.' + name.upper(), value=v)
+           
+    def ClickOnCombo(self,evt):
+        obj = evt.GetEventObject()
+        if obj.GetName() == "TB.COMBO.GOTO_CHANNEL":
+           status = self.PlotPanel.GoToChannel( obj.GetValue() )
+           if not status:
+              obj.SetValue("")
+              
+    def ClickOnButton(self,evt):
+        obj = evt.GetEventObject()
+        #logger.info("BT {}".format(obj.GetName()))
+        if obj.GetName() == "TB.BT.DEMO":
+           self.PlotPanel.update_data(path=self.path,fname=self.fname)
+        elif obj.GetName() == "TB.BT.SETTINGS.PLOT":
+           self.PlotPanel.ShowPlotSettings()
+        elif obj.GetName() == "TB.BT.SETTINGS.GROUP":
+           self.PlotPanel.ShowGroupSettings()
+        elif obj.GetName() == "TB.BT.SHOW_BADS":
+           self.PlotPanel.ShowBads( obj.GetValue() )
+          
+        else:
+          evt.Skip()
+    
+    def ClickOnKeyDown(self,evt):
+        self.OnkeyDown(event=evt)
+ 
+    def OnKeyDown(self,event=None):
+        if event:
+           keycode = event.GetKeyCode()
+           #logger.info("MAIN KEY : {}".format(keycode))
+        
+           if keycode == wx.WXK_ESCAPE:
+              self.Close()
+           elif keycode ==wx.WXK_F1:
+            #  show help
+              event.Skip()
+              
+           elif keycode == wx.WXK_F2:
+              self._TB_STATUS =  not self._TB_STATUS
+              self._TB.Show( self._TB_STATUS )
+           elif keycode == wx.WXK_F3:
+               self._STB.toggle()
+           else:
+               event.Skip()
 
     def _init_pubsub(self):
         """ init pubsub call and messages"""
@@ -553,10 +614,17 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         pub.subscribe(self.UpdateBads,"MAIN_FRAME.UPDATE_BADS")
         #--- handle KEY events from sub panels / cls
         pub.subscribe(self.OnKeyDown,"EVENT_KEY_DOWN")
-        #--- verbose debug
+        #--- goto channel combobox
+        pub.subscribe(self.UpdateComboGoToChannel,"MAIN_FRAME.UPDATE_CHANNEL_NAMES")
+       #--- verbose debug
         pub.sendMessage('MAIN_FRAME.VERBOSE',value=self.verbose)
         pub.sendMessage('MAIN_FRAME.DEBUG',value=self.debug)
 
+    def UpdateComboGoToChannel(self,data=[]):
+        self._tbComboGoToCahnnel.Clear()
+        self._tbComboGoToCahnnel.SetItems(data)
+    
+    
     def UpdateBads(self,status=None):
         '''
         call from pubsub "MAIN_FRAME.UPDATE_BADS"
@@ -582,18 +650,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
            self._bt_save.Disable()
         self._STB.UpdateMSG(status=status,msg=msg)
 
-    def ClickOnButton(self,evt):
-        obj = evt.GetEventObject()
-        if obj.GetName() == "TB.BT.DEMO":
-           self.PlotPanel.update_data()
-        elif obj.GetName() == "TB.BT.SETTINGS.PLOT":
-           self.PlotPanel.ShowPlotSettings()
-        elif obj.GetName() == "TB.BT.SETTINGS.GROUP":
-           self.PlotPanel.ShowGroupSettings()
-
-        else:
-          evt.Skip()
-
+    
     def ShowSplash(self):
         d = os.path.dirname(__file__)
         img = os.path.abspath(d + "/tsv/tsv.png/")
@@ -672,27 +729,6 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         itm2 = self._menu_help.Append(wx.ID_ANY,"&Help",'show help',wx.ITEM_NORMAL)
 
         
-    def ClickOnKeyDown(self,evt):
-        self.OnkeyDown(event=evt)
- 
-    def OnKeyDown(self,event=None):
-        if event:
-           keycode = event.GetKeyCode()
-           #logger.info("MAIN KEY : {}".format(keycode))
-        
-           if keycode == wx.WXK_ESCAPE:
-              self.Close()
-           elif keycode ==wx.WXK_F1:
-            #  show help
-              event.Skip()
-              
-           elif keycode == wx.WXK_F2:
-              self._TB_STATUS =  not self._TB_STATUS
-              self._TB.Show( self._TB_STATUS )
-           elif keycode == wx.WXK_F3:
-               self._STB.toggle()
-           else:
-               event.Skip()
         
 #----
 def get_args(argv):

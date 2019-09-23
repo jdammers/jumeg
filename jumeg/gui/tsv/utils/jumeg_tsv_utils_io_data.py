@@ -64,6 +64,12 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
         bads = self.GetBads()
         return [self.path,self.fname,",".join(bads),len(bads),tout,sout]
     
+    def label2pick(self,label):
+        return self.picks.labels2picks(self._raw,label)
+        
+    def GetChannelNames(self):
+        return self._raw.info['ch_names']
+    
     def GetBads(self):
         if not self.isLoaded:
            return []

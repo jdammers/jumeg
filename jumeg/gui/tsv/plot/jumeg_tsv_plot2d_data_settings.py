@@ -6,6 +6,7 @@ Created on Fri Jun  5 09:19:26 2015
 """
 import re,time
 import numpy as np
+from pubsub import pub
 import mne # groups channel info
 from jumeg.base.jumeg_base import jumeg_base as jb
 # import wx.lib.colourdb as WX_CDB
@@ -13,7 +14,7 @@ from jumeg.base.jumeg_base import jumeg_base as jb
 import logging
 logger = logging.getLogger("jumeg")
 
-__version__="2019-09-17-001"
+__version__="2019-09-23-001"
 
 class ColourSettings( object ):
       """
@@ -114,7 +115,7 @@ class UnitSettings(object):
       __slots__=["_prescale","_prefix","_unit","_prescales","_units"]
       def __init__(self,**kwargs):
       
-         self._prescales = ["1","2","3","4","5","10","15","20","25","30","40","50","75","100","150","200","250","400","500","750","1000"]
+         self._prescales = ["1","2","3","4","5","8","10","15","16","20","25","30","32","40","50","64","75","100","128","150","200","250","256","400","500","512","750","1000","1024"]
          self._units     = {"prefixes": ["","m","u","n","p","f","a"],
                             "factors" : [1,1e-3,1e-6,1e-9,1e-12,1e-15,1e-18],
                             "labels"  : ["T","V","bit","s","db","AU"]}
@@ -267,22 +268,26 @@ class GroupSettingsBase(object):
           self._default_labels = ['mag','grad','ref_meg', 'ecg','eog','emg','eeg','stim','resp','misc']
           
           self._default_grp={
-                       'mag':    {"selected":True,"colour":"RED",         "prescale":500,"unit":"fT",  "DCOffsetMode":2},
-                       'grad':   {"selected":True,"colour":"BLUE",        "prescale":500,"unit":"fT",  "DCOffsetMode":2},
-                       'ref_meg':{"selected":True,"colour":"DARKGREEN",   "prescale":4,  "unit":"pT",  "DCOffsetMode":2},
-                       'eeg':    {"selected":True,"colour":"MIDNIGHTBLUE","prescale":1,  "unit":"uV",  "DCOffsetMode":2},
-                       'eog':    {"selected":True,"colour":"PURPLE",      "prescale":100,"unit":"uV",  "DCOffsetMode":2},
-                       'emg':    {"selected":True,"colour":"DARKORANGE",  "prescale":100,"unit":"uV",  "DCOffsetMode":2},
-                       'ecg':    {"selected":True,"colour":"MAROON",      "prescale":1,  "unit":"mV",  "DCOffsetMode":2},
-                       'stim':   {"selected":True,"colour":"MAGENTA",     "prescale":10, "unit":"bit", "DCOffsetMode":0},
-                       'resp':   {"selected":True,"colour":"NAVYBLUE",    "prescale":10, "unit":"bit", "DCOffsetMode":0},
-                       'default':{"selected":True,"colour":"PURPLE",      "prescale":1,  "unit":"AU",  "DCOffsetMode":2}
+                       'mag':    {"selected":True,"colour":"RED",         "prescale":500,"unit":"fT"},
+                       'grad':   {"selected":True,"colour":"BLUE",        "prescale":500,"unit":"fT"},
+                       'ref_meg':{"selected":True,"colour":"DARKGREEN",   "prescale":4,  "unit":"pT"},
+                       'eeg':    {"selected":True,"colour":"MIDNIGHTBLUE","prescale":1,  "unit":"uV"},
+                       'eog':    {"selected":True,"colour":"PURPLE",      "prescale":100,"unit":"uV"},
+                       'emg':    {"selected":True,"colour":"DARKORANGE",  "prescale":100,"unit":"uV"},
+                       'ecg':    {"selected":True,"colour":"MAROON",      "prescale":1,  "unit":"mV"},
+                       'stim':   {"selected":True,"colour":"MAGENTA",     "prescale":10, "unit":"bit"},
+                       'resp':   {"selected":True,"colour":"NAVYBLUE",    "prescale":10, "unit":"bit"},
+                       'default':{"selected":True,"colour":"PURPLE",      "prescale":1,  "unit":"AU"}
               }
           for g in self._default_grp.keys():
-              self._default_grp[g]["status"]     = 0
-              self._default_grp[g]["scale_mode"] = 0
-              self._default_grp[g]["bads"]       = []
-
+              self._default_grp[g]["status"]       = 0
+              self._default_grp[g]["scale_mode"]   = 2  # min max window
+              self._default_grp[g]["DCOffsetMode"] = 0 # fit to window
+              self._default_grp[g]["bads"]         = []
+ 
+          for g in ['stim','resp']:
+              self._default_grp[g]["scale_mode"]=0
+          
       @property
       def labels(self): return self._labels
       @labels.setter
@@ -508,8 +513,8 @@ class GroupSettings(GroupSettingsBase):
         self._grp[grp]["status"] = self._grp[grp]["status"] | self.Status.scale
 
 class ChannelSettings(object):
-    __slots__ = ["colour_index","colour","selected","scale","group_index","bads","labels","verbose","debug","scale_mode",
-                 "dcoffset","dcoffset_mode","mean","delta_minmax_global","delta_minmax_window","_colour_bads","_ScaleMode","_DC_OFFSET_WINDOW"]
+    __slots__ = ["colour_index","colour","selected","scale","group_index","bads","labels","verbose","debug","scale_mode","bit_index",
+                 "dcoffset","dcoffset_mode","mean","minmax_global","_colour_bads","_ScaleMode","_DC_OFFSET_WINDOW"]
     
     def __init__(self,**kwargs):
         self._init(**kwargs)
@@ -521,20 +526,16 @@ class ChannelSettings(object):
         self._DC_OFFSET_WINDOW = 2
         
         if raw:
-           self.labels = raw.info['ch_names']
-           n_chan = self.n_channels
+           self.labels    = raw.info['ch_names']
+           n_chan         = self.n_channels
+           self.bit_index = []
+           self.colour    = np.zeros([n_chan,3],dtype=np.float32)
            self.calc_min_max_mean(raw)
-           # self.minmax_window = np.zeros([n_chan,2],dtype=np.float32)
-           self.delta_minmax_window = np.zeros([n_chan],dtype=np.float32)
-           self.colour              = np.zeros([n_chan,3],dtype=np.float32)
-           
-
         else:
-           self.labels        = kwargs.get("labels",None)
-           self.colour        = np.zeros([],dtype=np.float32)
-           self.mean          = np.zeros([],dtype=np.float32)
-           self.delta_minmax_global = np.zeros([],dtype=np.float32)
-           self.delta_minmax_window = np.zeros([],dtype=np.float32)
+           self.labels = kwargs.get("labels",None)
+           self.colour = np.zeros([],dtype=np.float32)
+           self.mean   = np.zeros([],dtype=np.float32)
+           self.minmax_global = np.zeros([],dtype=np.float32)
 
         self.verbose = kwargs.get("verbose",False)
         self.debug   = kwargs.get("debug",False)
@@ -547,15 +548,13 @@ class ChannelSettings(object):
         self.colour_index = np.zeros(n_chan,dtype=np.uint32)
         self.group_index  = np.zeros(n_chan,dtype=np.uint32)
         self.scale_mode   = np.zeros(n_chan,dtype=np.uint32)
-        
         self.dcoffset_mode= np.zeros(n_chan,dtype=np.uint32)   # 0=none,1=global,2=window
         self.dcoffset     = np.zeros(n_chan,dtype=np.float32)
     
     def calc_min_max_mean(self,raw):
         self.mean          = np.array( raw._data.mean(axis=1),dtype=np.float32)
-        #self.minmax_global = np.array([raw._data.min(axis=1),raw._data.max(axis=1)],dtype=np.float32)
-        self.delta_minmax_global = np.array([ raw._data.min(axis=1) - raw._data.max(axis=1) ],dtype=np.float32)
-
+        self.minmax_global = np.array([ raw._data.min(axis=1),raw._data.max(axis=1) ],dtype=np.float32)
+ 
     def GetDCoffset(self,raw=None,tsls=None):
         """
         calc DC Offset for each channel depending on DCOffsetMode:
@@ -587,7 +586,57 @@ class ChannelSettings(object):
         # logger.info("--> DC Offset Time: {}".format(t1-t0))
         
         return self.dcoffset
-    
+
+    def GetMinMaxScale(self,raw=None,tsls=None,picks=None,div=1.0):
+        """
+        check for scale => min-max global,min-max window
+        :param tsls:
+        :param divisions:
+        :return: index for division,minmax_global,min,max-window
+        """
+        
+        scales = np.zeros([self.n_channels,2],dtype=np.float32) #scale,offset
+        found=0
+        
+       #--- get scale for minmax window
+        picks_idx = np.asarray(self.scale_mode[picks] == self._ScaleMode.minmax_on_window).nonzero()[0]
+        if picks_idx.shape[0]:
+           idx = picks[picks_idx]
+           data = raw._data[idx,tsls[0]:tsls[1]]
+           min = data.min(axis=1)
+           max = data.max(axis=1)
+           dmm = np.abs( (max - min) / div )
+           scales[idx,0] = data.min(axis=1) - dmm
+           scales[idx,1] = data.max(axis=1) + dmm
+
+           if picks_idx.shape[0] == self.n_channels:
+              return scales
+           found = picks_idx.shape[0]
+           
+       #--- get scale for minmax global
+        picks_idx = np.asarray(self.scale_mode[picks] == self._ScaleMode.minmax_on_global).nonzero()[0]
+        if picks_idx.shape[0]:
+           idx = picks[picks_idx]
+           scales[idx,0] = self.minmax_global[0,idx]
+           scales[idx,1] = self.minmax_global[1,idx]
+           dmm = np.abs((scales[idx,1] - scales[idx,0]) / div)
+           scales[idx,0] -= dmm
+           scales[idx,1] += dmm
+
+           if picks_idx.shape[0] + found >= self.n_channels:
+              return scales
+
+       #--- get scale division
+        picks_idx = np.asarray(self.scale_mode[picks] == self._ScaleMode.division).nonzero()[0]
+        if picks_idx.shape[0]:
+           idx = picks[picks_idx]
+           scales[idx,1] =  self.scale[idx] * div /2
+           scales[idx,0] = - scales[idx,1]
+           if self.bit_index:
+              scales[self.bit_index,0] = - 1  # set min for ch in  stim,res group
+        
+        return scales
+        
     
     @property
     def n_channels(self):
@@ -651,10 +700,23 @@ class ChannelSettings(object):
         return np.where(self.selected == False)[0]
     
     #---
-    def GetScale(self,idx):
+    def GetScaleFromIndex(self,idx):
+        """
+        
+        :param self:
+        :param idx:
+        :return:
+        """
         return self.scale[idx]
     
-    def SetScale(self,idx,v):
+    def SetScaleFromIndex(self,idx,v):
+        """
+        
+        :param self:
+        :param idx:
+        :param v:
+        :return:
+        """
         self.scale[idx] = v
     
     #---
@@ -670,7 +732,14 @@ class ChannelSettings(object):
  
     def selected_label(self):
         return self.label[ self.selected_index() ]
-      
+
+    def SetSelected(self,picks=None,status=False):
+        if picks is not None:
+           if picks.shape[0]:
+              self.selected[picks]=status
+              return
+        self.selected[:]=status
+           
      
     def GetInfo(self):
         """
@@ -680,10 +749,12 @@ class ChannelSettings(object):
         msg=[]
         msg.append(" {} {} {} {} {} {} {}".format("index","label","selected","colour","colour_index","scale","group_index","bads","dcoffset"))
         
+        if not self.debug: return
+        
         for idx in range(self.n_channels):
             msg.append(" {} {} {} {} {} {} {} {}".format(idx,self.labels[idx],self.selected[idx],self.colour[idx],self.colour_index[idx],self.scale[idx],self.group_index[idx],self.bads[idx],self.dcoffset[idx]))
         
-        logger.info("---> Channel INFO:\n"+ "\n  -> ".join(msg))
+        logger.debug("---> Channel INFO:\n"+ "\n  -> ".join(msg))
         
         #--- working with numpy arrays in pl_channels class
         if self.debug:
@@ -692,7 +763,7 @@ class ChannelSettings(object):
            logger.debug("---> channel.label: {}".format(self.labels))
            logger.debug("---> channel.scale: {}".format(self.scale))
            logger.debug("---> channel.group_index: {}".format(self.group_index))
-           
+           logger.debug("---> channel bit index: {}".format(self.Channel.bit_index))
    
 class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
       __slots__=["raw","verbose","debug","_Group","_Channel"]
@@ -705,6 +776,8 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
           self.debug        = False
        
           self._init(**kwargs)
+   
+   
       
       @property
       def Group(self): return self._Group
@@ -725,8 +798,21 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
           
       def _init(self,**kwargs):
           self._update_from_kwargs(**kwargs)
+          #self._init_pubsub()
           self.update()
-   
+          
+      def _init_pubsub(self):
+         """ init pubsub call and messages"""
+        #--- verbose debug
+         pub.subscribe(self.SetVerbose,'MAIN_FRAME.VERBOSE')
+         pub.subscribe(self.SetDebug,'MAIN_FRAME.DEBUG')
+
+      def SetVerbose(self,value=False):
+          self.verbose = value
+
+      def SetDebug(self,value=False):
+          self.debug = value
+          
       def _remove_obsolete_groups(self):
           old_grps = self.Group.labels.copy()
           self.Group.labels = []
@@ -782,7 +868,8 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
               cidx = np.array(np.where(self.Channel.group_index == idx),dtype=np.uint32).flatten()
               self.Group.SetChannelIndex(grp,cidx)
               self.Group.SetStatus(grp,self.Group.Status.update)
-              
+              if self.Group.GetUnit(grp) == "bit":
+                 self.Channel.bit_index.append(cidx)
               
       def update_channel_options(self,**kwargs):
         
@@ -803,8 +890,8 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
                     
                     """
                     # logger.info( "GRP:{}".format(grp))
-                    self.Channel.scale[picks] = self.Group.GetScaling(grp)
-                    self.Channel.scale_mode   = self.Group.GetScaleMode(grp)
+                    self.Channel.scale[picks]      = self.Group.GetScaling(grp)
+                    self.Channel.scale_mode[picks] = self.Group.GetScaleMode(grp)
                     
                  if self.Group.GetStatusColour(grp):
                     colour_idx = self.Group.GetColourIndex(grp)

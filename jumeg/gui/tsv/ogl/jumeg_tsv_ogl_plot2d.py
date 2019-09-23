@@ -301,7 +301,8 @@ class Grid(object):
 class Signals(object):
     __slots__=["srate","freq", "timepoints_status","data_status","time_start","picks_status",
                "_picks","_picks_length","_labels","_data","_data_length","_colours","_tp_data","_tp_length","_dcoffset",
-               "_scale","_scale_div","_scale_min","_scale_max","_scale_min_abs","_scale_max_abs","_glshader"]
+               "_scale","_glshader"]
+    # "_scale_div","_scale_min","_scale_max","_scale_min_abs","_scale_max_abs"
     
     def __init__(self,**kwargs):
 
@@ -324,12 +325,7 @@ class Signals(object):
 
         self._dcoffset     = np.array([],dtype=np.float32)
         self._scale        = np.array([],dtype=np.float32)
-        self._scale_div    = np.array([],dtype=np.float32)
-        self._scale_min    = np.array([])
-        self._scale_max    = np.array([])
-        self._scale_max_abs =  1.0
-        self._scale_min_abs = -1.0
-        
+       
         self._update_from_kwargs(**kwargs)
     
     """
@@ -355,7 +351,6 @@ class Signals(object):
     @scale.setter
     def scale(self,v):
         self._scale = v
-        
     @property
     def samples(self): return self._data.shape[-1]
     @property
@@ -417,8 +412,9 @@ class Signals(object):
         return self._colours[ c % self._colours.shape[0]]
     
     def GetLabel(self,i): return self._labels[i]
-    
-    def GetSignalScale(self,i):return self._scale[i]
+ 
+    def GetScale(self,i):
+        return self._scale[i]
    
     def GetDCoffset(self,i):return self._dcoffset[i]
     
@@ -780,22 +776,29 @@ class GLPlotWidget(object):
         #logger.info("---> VP matrix: cols: {} rows: {} picks: {}\n ---> matrix\n {}".format(self.n_cols,self.n_rows,self.n_plots,self._vp_matrix))
         return self._vp_matrix
     
-    def _channel_scaling_matrix(self,mat,cidx):
+    def __channel_scaling_matrix(self,mat,cidx):
         #mat[1,1] = +2.0 / (top - bottom)
         #mat[3,1] = -(top + bottom) / float(top - bottom)
         
         # min max dT
         # min max global
         # U/div
-        res  = self.signals.GetSignalScale(cidx)
+        res,offset = self.signals.GetScaleAndOffset(cidx)
         res *= self.Grid.ydiv / 2.0
-        top=res
-        bottom=-res
+        top    = res + offset
+        bottom =-res + offset
         mat[1,1] = +2.0 / (top - bottom)
         mat[3,1] = -(top + bottom) / float(top - bottom)
         
         return mat
+
+    def _channel_scaling_matrix(self,mat,cidx):
+        bottom,top = self.signals.GetScale(cidx)
+        mat[1,1] = +2.0 / (top - bottom)
+        mat[3,1] = -(top + bottom) / float(top - bottom)
     
+        return mat
+
     def _plot_data(self):
         """
         ToDo use picks, as selected channels and  pointer to raw._data

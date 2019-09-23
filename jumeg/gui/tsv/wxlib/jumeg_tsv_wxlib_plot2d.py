@@ -56,11 +56,16 @@ class JuMEG_TSV_wxGLCanvasBase(glcanvas.GLCanvas):
         
         super().__init__(parent,-1,attribList=attribList,style=wx.DEFAULT_FRAME_STYLE)
         
+        self.verbose    = False
+        self.debug      = False
+      
         self._isInit    = False
         self._isInitGL  = False
         self._isOnDraw  = False
         self._isOnPaint = False
         self._isOnSize  = False
+        
+        self._init_pubsub()
         
         self.context = glcanvas.GLContext(self)
       # Create graphics context from it
@@ -86,6 +91,18 @@ class JuMEG_TSV_wxGLCanvasBase(glcanvas.GLCanvas):
         self.Bind(wx.EVT_RIGHT_DOWN, self.OnMouseRightDown)
        # self.Bind(wx.EVT_RIGHT_UP,   self.OnMouseRightUp)
        # self.Bind(wx.EVT_MOTION,     self.OnMouseMotion)
+    
+    def _init_pubsub(self):
+        """ init pubsub call and messages"""
+       #--- verbose debug
+        pub.subscribe(self.SetVerbose,'MAIN_FRAME.VERBOSE')
+        pub.subscribe(self.SetDebug,'MAIN_FRAME.DEBUG')
+        
+    def SetVerbose(self,value=False):
+        self.verbose = value
+
+    def SetDebug(self,value=False):
+        self.debug = value
         
     @property
     def isInitGL(self):   return self._isInitGL
@@ -163,16 +180,16 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         super().__init__(parent)  #, *args, **kwargs)
         self._glplot2d = None
         #self.InitGL()
-        self.verbose    = False
-        self.debug      = False
-      
+       
         self.duration   = 1.0
         self.start      = 0.0
         #self.n_channels = 10
         #self.n_cols     = 1
-        
         self._update_from_kwargs(**kwargs)
     
+    
+        
+        
     @property
     def plot(self): return self._glplot2d
     '''
@@ -366,6 +383,10 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         if self.n_cols != v:
            self._wxTimeScaler.update(n_cols=v)
     
+    def ShowBads(self,status):
+        self.plot.plot.ShowBads(status)
+        self.plot.update()
+        
     def GetPlotOptions(self):
         return self.plot.plot.data.opt
     
@@ -395,7 +416,10 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
     
     def ClickOnKeyDown(self,evt):
         evt.Skip()
-       
+    
+    def showbads(self,status):
+        self.plot.showbads(status)
+    
     def update(self,raw=None,**kwargs):
         """
 
@@ -404,7 +428,7 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         :param n_cols:
         :return:
         """
-        logger.info("PARAM: {}".format(kwargs))
+       # logger.info("PARAM: {}".format(kwargs))
         
         if self.plot:
            try:
@@ -429,7 +453,16 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         self.SetAutoLayout(1)
         self.GetParent().Layout()
         
-    
+    def _init_pubsub(self):
+        """ init pubsub call and messages"""
+      #--- verbose debug
+        pub.subscribe(self.SetVerbose,'MAIN_FRAME.VERBOSE')
+        pub.subscribe(self.SetDebug,'MAIN_FRAME.DEBUG')
+        
+    def SetVerboss(self,value=False):
+        self.verbose=value
+    def SetDebug(self,value=False):
+        self.debug=value
 '''
  def pixel_size2mm(self,w=1,h=1):
         (x_pix,y_pix) = wx.GetDisplaySize()
