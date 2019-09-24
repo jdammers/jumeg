@@ -349,7 +349,10 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         self._menu_info  = None
         self._bt_save    = None
         self._wx_file_combobox = None
+       #--- ToDo ctrl list dis/enable
         self._tbComboGoToCahnnel=None
+        self._tbShowBads = None
+        
       #  self.AboutBox = JuMEG_wxAboutBox()
        #--- flags
         self._debug   = False
@@ -489,6 +492,8 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         bt = wx.ToggleButton(tb,-1,"Show BAD`s",name="TB.BT.SHOW_BADS")
         bt.SetToolTip("show only bad channels")
         bt.SetValue(False)
+        bt.Enable(False)
+        self._tbShowBads = bt
         tool = tb.AddControl(bt,label="ShowBADs")
         self.Bind(wx.EVT_TOGGLEBUTTON,self.ClickOnButton,tool)
 
@@ -623,7 +628,7 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
     def UpdateComboGoToChannel(self,data=[]):
         self._tbComboGoToCahnnel.Clear()
         self._tbComboGoToCahnnel.SetItems(data)
-    
+        self._tbShowBads.Enabled = True
     
     def UpdateBads(self,status=None):
         '''
@@ -689,10 +694,6 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         self.PlotPanel.SaveBads()
         self.BtSave.SetBackgroundColour(cl)
         self.Splash.Destroy()
-   
-    def ClickOnLoadFilesFromList(self,evt):
-        pass
-  
     
     def ClickOnClose(self,evt):
        # if not self.debug:
