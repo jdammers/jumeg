@@ -208,7 +208,13 @@ class GroupDLG(wx.Dialog):
         self.Fit()
         self.Layout()
 
-class ChannelDLG(GroupOptions):
+class ChannelDLG(GroupSettings):
+    """
+    ToDO: setup setings for each channel
+    wx.NoteBook page for each group
+    meg=> 248 ch   6 cols x 31 rows
+    channel ckbox selected  + bitmap button => popup dlg=> colour, scale comb1 und 2 ,dc combo, ckbox bads
+    """
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
         
@@ -250,8 +256,8 @@ if __name__ == "__main__":
     opt=None
 
     #---  Testing DEBUG
-    from tsv.utils.jumeg_tsv_utils_io_data    import JuMEG_TSV_Utils_IO_Data
-    from tsv.plot.jumeg_tsv_plot2d_data_option  import JuMEG_TSV_PLOT2D_DATA_OPTIONS,GroupOptions
+    from jumeg.gui.tsv.utils.jumeg_tsv_utils_io_data      import JuMEG_TSV_Utils_IO_Data
+    from jumeg.gui.tsv.plot.jumeg_tsv_plot2d_data_option  import JuMEG_TSV_PLOT2D_DATA_SETTINGS,GroupSettings
     
     # from tsv.wxutils.jumeg_tsv_wxutils_dlg_settings import GroupDLG,ChannelDLG
     
@@ -268,9 +274,9 @@ if __name__ == "__main__":
     IO       = JuMEG_TSV_Utils_IO_Data()
     raw,bads = IO.load_data(raw,fname,path)
    #--- ToDo use only groups from raw
-    GRP      = GroupOptions()
+    GRP      = GroupSettings()
     
-    DOpt = JuMEG_TSV_PLOT2D_DATA_OPTIONS(raw=raw)
+    DOpt = JuMEG_TSV_PLOT2D_DATA_SETTINGS(raw=raw)
     
     app = wx.App()
     MainFrame(None,'JuMEG demo',grp=GRP)

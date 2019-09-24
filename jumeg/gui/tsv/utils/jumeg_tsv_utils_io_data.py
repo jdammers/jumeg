@@ -37,8 +37,42 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
     def filename(self): return  os.path.join(self._path,self._fname)
     #@property
     #def bads(self): return self._raw.info.get('bads')
+
+    def GetDataInfo(self):
+        """
+        
+        :return: list of [ path,fname,bads,ttime duration,size]
+        """
+        t = self.raw.times[-1]
+        tout=""
+        if t // 3600:
+           tout ='{:2.0f}:{:02.0f}:{:02.3}'.format(t // 3600,t % 3600 // 60,t % 60)
+        elif t % 3600 // 60:
+           tout = '{: 5.0f}:{:02.3}'.format(t % 3600 // 60,t % 60)
+        elif t %  60:
+           tout = '{: 6.3}'.format(t % 60)
+
+        s = self._raw._data.nbytes
+        sout=""
+        if s // 1024 ** 3:
+           sout = '{:3.0f} Gb {:3.0f} Mb {:3.0f} Kb'.format(s // 1024 ** 3,s % 1024 ** 3 // 1024 ** 2,s % 1024)
+        elif s % 1024 ** 3:
+           sout = '{:8.0f}Mb {:3.0f}Kb'.format(s % 1024 ** 3 // 1024 ** 2,s % 1024)
+        else:
+           sout = '{:13.0f}Kb'.format(s % 1024 ** 3 // 1024 ** 2,s % 1024)
+        
+        bads = self.GetBads()
+        return [self.path,self.fname,",".join(bads),len(bads),tout,sout]
+    
+    def label2pick(self,label):
+        return self.picks.labels2picks(self._raw,label)
+        
+    def GetChannelNames(self):
+        return self._raw.info['ch_names']
     
     def GetBads(self):
+        if not self.isLoaded:
+           return []
         bads = list( set(self._raw.info.get('bads')) )
         bads.sort()
         return bads
@@ -105,6 +139,10 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
         """
         
         self._isLoaded    = False
+        self._path = None
+        self._fname = None
+        self.bads = []
+
         try:
             self._raw,self._fname = self.get_raw_obj(fname,raw=raw,path=path,preload=True)
         except:
@@ -114,10 +152,13 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
             return None
         
         if not self._raw:
-           return
+           return None
+        
         self._path,self._fname = os.path.split( self.fname )
         self.bads            = self._raw.info.get('bads')
         self.dtype_original  = self._raw._data.dtype
+        self._raw._data      = self._raw._data.astype(self.dtype_plot)
+
         self._isLoaded   = True
         
         if self.verbose:
@@ -137,7 +178,10 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
                           "  -> FIF in raw : {}\n".format(self.get_raw_filename(self.raw)) +
                           "  -> FIF out    : {}\n".format(fout) +
                           "  -> bads       : {}\n".format(self.raw.info['bads']))
+           
+           self._raw._data = self._raw._data.astype(self.dtype_original)
            self.raw.save(fout,overwrite=True)
+           
            if self.verbose:
               logger.info(" --> DONE save bad-channels")
            

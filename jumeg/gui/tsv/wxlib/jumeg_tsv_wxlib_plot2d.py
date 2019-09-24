@@ -20,11 +20,7 @@ import wx
 import wx.lib.dragscroller #demos
 from pubsub import pub
 
-try:
-    from agw import rulerctrl as RC
-except ImportError: # if it's not there locally, try the wxPython lib.
-    import wx.lib.agw.rulerctrl as RC
-
+from jumeg.gui.tsv.wxutils.jumeg_tsv_wxutils import RULERS as TimeScaler
 
 import sys
 import logging
@@ -60,11 +56,16 @@ class JuMEG_TSV_wxGLCanvasBase(glcanvas.GLCanvas):
         
         super().__init__(parent,-1,attribList=attribList,style=wx.DEFAULT_FRAME_STYLE)
         
+        self.verbose    = False
+        self.debug      = False
+      
         self._isInit    = False
         self._isInitGL  = False
         self._isOnDraw  = False
         self._isOnPaint = False
         self._isOnSize  = False
+        
+        self._init_pubsub()
         
         self.context = glcanvas.GLContext(self)
       # Create graphics context from it
@@ -90,6 +91,18 @@ class JuMEG_TSV_wxGLCanvasBase(glcanvas.GLCanvas):
         self.Bind(wx.EVT_RIGHT_DOWN, self.OnMouseRightDown)
        # self.Bind(wx.EVT_RIGHT_UP,   self.OnMouseRightUp)
        # self.Bind(wx.EVT_MOTION,     self.OnMouseMotion)
+    
+    def _init_pubsub(self):
+        """ init pubsub call and messages"""
+       #--- verbose debug
+        pub.subscribe(self.SetVerbose,'MAIN_FRAME.VERBOSE')
+        pub.subscribe(self.SetDebug,'MAIN_FRAME.DEBUG')
+        
+    def SetVerbose(self,value=False):
+        self.verbose = value
+
+    def SetDebug(self,value=False):
+        self.debug = value
         
     @property
     def isInitGL(self):   return self._isInitGL
@@ -134,29 +147,30 @@ class JuMEG_TSV_wxGLCanvasBase(glcanvas.GLCanvas):
     def OnDraw(self):
         """ OnDraw do your drawing,paintinf,plotting here"""
     
-    def OnKeyDown(self,e):
+    def OnKeyDown(self,evt):
         """   press <ESC> to exit pgr """
-        key = e.GetKeyCode()
+        #key = e.GetKeyCode()
         #---escape to quit
-        if key == wx.WXK_ESCAPE:
-           pub.sendMessage("MAIN_FRAME.CLICK_ON_CLOSE")
+       # if key == wx.WXK_ESCAPE:
+       #    pub.sendMessage("MAIN_FRAME.CLICK_ON_CLOSE")
            #self.click_on_exit(e)
+        evt.Skip()
     
     def OnMouseLeftDown(self,evt):
-        pass
+        evt.Skip()
  
     def OnMouseUp(self,evt):
-        pass
+        evt.Skip()
 
     def OnMouseWheel(selfself,evt):
-        pass
+        evt.Skip()
 
     def OnMouseRightDown(self,evt):
-        pass
+        evt.Skip()
     def OnMouseRightUp(self,evt):
-        pass
+        evt.Skip()
     def OnMouseMotion(self,evt):
-        pass
+        evt.Skip()
 
 
 class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
@@ -166,16 +180,16 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         super().__init__(parent)  #, *args, **kwargs)
         self._glplot2d = None
         #self.InitGL()
-        self.verbose    = False
-        self.debug      = False
-      
+       
         self.duration   = 1.0
         self.start      = 0.0
         #self.n_channels = 10
         #self.n_cols     = 1
-        
         self._update_from_kwargs(**kwargs)
     
+    
+        
+        
     @property
     def plot(self): return self._glplot2d
     '''
@@ -210,11 +224,19 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
     def OnKeyDown(self,evt):
         action = None
         type   = None
-        if not self.isInitGL:
-           evt.skip()  #---escape to quit
-        
         key = evt.GetKeyCode()
         
+        if not self.isInitGL:
+           pub.sendMessage("EVENT_KEY_DOWN",event=evt)
+           return
+     
+        #key_list    = [wx.WXK_LEFT,wx.WXK_RIGHT,wx.WXK_HOME,wx.WXK_END,wx.WXK_UP,wx.WXK_DOWN,wx.WXK_PAGEUP,wx.WXK_PAGEDOWN]
+        #action_ctrl = ["FAST_REWIND","FAST_FORWARD","START","END"]
+   
+        #if key in key_list:
+        #   evt.Skip()
+        #   return
+           
         #--- scroll time fast by window
         if (wx.GetKeyState(wx.WXK_CONTROL) == True):
             
@@ -251,13 +273,14 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
             action = "TOP"
         elif key == wx.WXK_END:
             action = "BOTTOM"
-       #---
+      #---
         if action:
            self.plot.data.opt.action(action)
            self.update()
         
         else:
-            evt.Skip()
+            pub.sendMessage("EVENT_KEY_DOWN",event=evt)
+            #evt.Skip()
     
     def InitGL(self):
         self._isInitGL = False
@@ -267,7 +290,6 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         self._glplot2d = JuMEG_TSV_OGLPlot2D()
         self.plot.size_in_pixel = size = self.GetClientSize()
         self._isInitGL = self.plot.initGL()
-        
         return self.isInitGL
  
     def OnDraw(self,size_mm=None):
@@ -299,9 +321,7 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         
     
         if not self.isInitGL:
-            w,h = size = self.GetClientSize()
-            self.plot.GLPlot.size_in_pixel = [w,h]
-            self.InitGL()
+           self.InitGL()
         else:
            self.SetCurrent(self.context)
         
@@ -309,25 +329,25 @@ class JuMEG_TSV_wxCanvas2D(JuMEG_TSV_wxGLCanvasBase):
         
         self.plot.update(**kwargs)
        
-        #if self.plot.data.opt.do_scroll_channels:
-        
         if self.plot.data.opt.do_scroll:
-           self.Refresh()
            if self.plot.data.opt.time.do_scroll:
-              self.GetParent().OnScroll(tmin=self.plot.timepoints[0],tmax=self.plot.timepoints[-1])
-    
+              self.GetParent().OnScroll(start=self.plot.timepoints[0],end=self.plot.timepoints[-1]) #,n_cols=self.plot.data.opt.n_cols)
+        self.Refresh()
+        
     def OnMouseRightDown(self,evt):
         try: # self.CaptureMouse() !!! finaly release
            if self.plot.ToggleBadsFromPosition(evt.GetPosition()):
               self.Refresh()
              #--- send msg update BADS
-              pub.sendMessage("MAIN_FRAME.UPDATE_BADS",value="CHANGED")
+              pub.sendMessage("MAIN_FRAME.UPDATE_BADS",status="CHANGED")
         except:
             logger.exception("---> ERROR in Mouse Right Down")
         
         evt.Skip()
         
-
+    def GetNumberOfCols(self):
+        return self.plot.data.opt.n_cols
+ 
 class JuMEG_TSV_wxPlot2D(wx.Panel):
     """
        CLS container:
@@ -341,23 +361,31 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         self._init(**kwargs)
     
     def _init(self,**kwargs):
-        self.verbose      = False
-        self.debug        = False
-        self._wxPlot2D    = None
-        self._wxTimeScale = None
-   
+        self.verbose        = False
+        self.debug          = False
+        self._wxPlot2D      = None
+        self._wxTimeScaler  = None
+        
         self._update_from_kwargs(**kwargs)
         self._wx_init(**kwargs)
         self._ApplyLayout()
     
     @property
     def plot(self): return self._wxPlot2D
-    @property
-    def TimeScale(self): return self._wxTimeScale
     
-    def OnScroll(self,tmin=None,tmax=None):
-        #logger.info("  -> scroll t: {} {}".format(tmin,tmax))
-        self._wxTimeScale.SetRange(tmin,tmax)
+    @property
+    def TimeScaler(self): return self._wxTimeScaler
+    
+    @property
+    def n_cols(self): return self._wxTimeScaler.n_cols
+    @n_cols.setter
+    def n_cols(self,v):
+        if self.n_cols != v:
+           self._wxTimeScaler.update(n_cols=v)
+    
+    def ShowBads(self,status):
+        self.plot.plot.ShowBads(status)
+        self.plot.update()
         
     def GetPlotOptions(self):
         return self.plot.plot.data.opt
@@ -370,13 +398,28 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         self.SetBackgroundColour(kwargs.get("bg",wx.BLUE))
         self.verbose = kwargs.get("verbose",self.verbose)
         self.debug   = kwargs.get("debug",self.debug)
-    
-    def _wx_init(self,**kwargs):
-        self._wxTimeScale = RC.RulerCtrl(self,-1,orient=wx.HORIZONTAL,style=wx.SUNKEN_BORDER)
-        self._wxTimeScale.TickMinor(tick=False)
-        self._wxTimeScale.SetTimeFormat(3)
-        self._wxPlot2D    = JuMEG_TSV_wxCanvas2D(self,**kwargs)
 
+    def OnScroll(self,**kwargs):
+        """
+        
+        :param tmin:
+        :param tmax:
+        :return:
+        """
+        #logger.info("  -> scroll t: {} {}".format(tmin,tmax))
+        self._wxTimeScaler.UpdateRange(**kwargs)
+
+    def _wx_init(self,**kwargs):
+        self._wxTimeScaler = TimeScaler(self)
+        self._wxPlot2D     = JuMEG_TSV_wxCanvas2D(self,**kwargs)
+        self.Bind(wx.EVT_CHAR,self.ClickOnKeyDown)
+    
+    def ClickOnKeyDown(self,evt):
+        evt.Skip()
+    
+    def showbads(self,status):
+        self.plot.showbads(status)
+    
     def update(self,raw=None,**kwargs):
         """
 
@@ -385,32 +428,41 @@ class JuMEG_TSV_wxPlot2D(wx.Panel):
         :param n_cols:
         :return:
         """
+       # logger.info("PARAM: {}".format(kwargs))
+        
         if self.plot:
            try:
                self.plot.update(raw=raw,**kwargs) # if raw reset data
-               
+               self.n_cols = self.plot.GetNumberOfCols() # update TimeScalers via n_cols property
            except:
-               logger.exception("Error in updating plot")
+               logger.exception("Error in update plot => kwargs:\n {}\n".format(kwargs))
                
-        #---
-   
     def ClickOnCtrls(self,evt):
         """ pass to parent event handlers """
         evt.Skip()
-
 
     def _ApplyLayout(self):
         """ default Layout Framework """
         vbox = wx.BoxSizer(wx.VERTICAL)
         if self.plot:
            vbox.Add(self.plot,1,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
-        vbox.Add(self.TimeScale,0,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
+        vbox.Add(self._wxTimeScaler ,0,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
+      
         self.SetSizer(vbox)
         self.Fit()
         self.SetAutoLayout(1)
         self.GetParent().Layout()
         
-    
+    def _init_pubsub(self):
+        """ init pubsub call and messages"""
+      #--- verbose debug
+        pub.subscribe(self.SetVerbose,'MAIN_FRAME.VERBOSE')
+        pub.subscribe(self.SetDebug,'MAIN_FRAME.DEBUG')
+        
+    def SetVerboss(self,value=False):
+        self.verbose=value
+    def SetDebug(self,value=False):
+        self.debug=value
 '''
  def pixel_size2mm(self,w=1,h=1):
         (x_pix,y_pix) = wx.GetDisplaySize()
