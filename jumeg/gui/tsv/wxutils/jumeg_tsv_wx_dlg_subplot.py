@@ -164,9 +164,7 @@ class TSVSubPlotDialog(wx.Dialog):
               )
         
     def _update_from_kwargs(self,**kwargs):
-        logger.info("PARAM")
         for k in self._param.keys():
-            #print(k)
             param = kwargs.get(k,False)
             if param:
               # print(param)
