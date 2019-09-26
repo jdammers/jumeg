@@ -100,7 +100,7 @@ ica:
     exclude: 'bads'
 
     reject:
-        'mag': 5e-12
+        'mag': 5.e-12
 
     # Save raw chops after applying ICA.
     save: True
