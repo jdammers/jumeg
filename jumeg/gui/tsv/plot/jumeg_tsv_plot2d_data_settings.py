@@ -4,8 +4,9 @@ Created on Fri Jun  5 09:19:26 2015
 
 @author: fboers
 """
-import re
+import re,time
 import numpy as np
+from pubsub import pub
 import mne # groups channel info
 from jumeg.base.jumeg_base import jumeg_base as jb
 # import wx.lib.colourdb as WX_CDB
@@ -13,7 +14,7 @@ from jumeg.base.jumeg_base import jumeg_base as jb
 import logging
 logger = logging.getLogger("jumeg")
 
-__version__="2019-09-13-001"
+__version__="2019-09-23-001"
 
 class ColourSettings( object ):
       """
@@ -114,7 +115,7 @@ class UnitSettings(object):
       __slots__=["_prescale","_prefix","_unit","_prescales","_units"]
       def __init__(self,**kwargs):
       
-         self._prescales = ["1","2","3","4","5","10","15","20","25","30","40","50","75","100","150","200","250","400","500","750","1000"]
+         self._prescales = ["1","2","3","4","5","8","10","15","16","20","25","30","32","40","50","64","75","100","128","150","200","250","256","400","500","512","750","1000","1024"]
          self._units     = {"prefixes": ["","m","u","n","p","f","a"],
                             "factors" : [1,1e-3,1e-6,1e-9,1e-12,1e-15,1e-18],
                             "labels"  : ["T","V","bit","s","db","AU"]}
@@ -214,7 +215,19 @@ class STATUS(object):
         self.dcoffset = 8
         self.update   = 255
       
-   
+class SCALE_MODE(object):
+    """
+    helper cls for scale mod: scale/div, scale on MIMAX, window or global
+    """
+    def __init__(self):
+        
+        pass
+    @property
+    def division(self): return 0
+    @property
+    def minmax_on_global(self): return 1
+    @property
+    def minmax_on_window(self): return 2
 
 class GroupSettingsBase(object):
       """
@@ -240,8 +253,8 @@ class GroupSettingsBase(object):
       """
       def __init__(self,**kwargs):
   
-          self.Status = STATUS()
-          self._labels = ['grad','mag','ref_meg','eog','emg','ecg','stim','resp','eeg'] #,'resp'] #,'exci','ias','syst','misc','seeg','chpi']
+          self.Status  = STATUS()
+          self._labels = [] #['grad','mag','ref_meg','eog','emg','ecg','stim','resp','eeg'] #,'resp'] #,'exci','ias','syst','misc','seeg','chpi']
           
           #---ToDo get groups/channel_types from mne
           '''
@@ -250,34 +263,56 @@ class GroupSettingsBase(object):
          # dict_keys(['grad', 'mag', 'ref_meg', 'eeg', 'stim', 'eog', 'emg', 'ecg', 'resp', 'misc', 'exci', 'ias', 'syst', 'seeg', 'bio', 'chpi', 'dipole', 'gof', 'ecog', 'hbo', 'hbr'])
           
           '''
-          self._grp={
-                       'mag':    {"index":0,"selected":True,"colour":"RED",         "prescale":500,"unit":"fT",  "DCoffset":True},
-                       'grad':   {"index":0,"selected":True,"colour":"BLUE",        "prescale":500,"unit":"fT",  "DCoffset":True},
-                       'ref_meg':{"index":0,"selected":True,"colour":"DARKGREEN",   "prescale":4,  "unit":"pT",  "DCoffset":True},
-                       'eeg':    {"index":0,"selected":True,"colour":"MIDNIGHTBLUE","prescale":1,  "unit":"uV",  "DCoffset":True},
-                       'eog':    {"index":0,"selected":True,"colour":"PURPLE",      "prescale":100,"unit":"uV",  "DCoffset":True},
-                       'emg':    {"index":0,"selected":True,"colour":"DARKORANGE",  "prescale":100,"unit":"uV",  "DCoffset":True},
-                       'ecg':    {"index":0,"selected":True,"colour":"MAROON",      "prescale":1,  "unit":"mV",  "DCoffset":True},
-                       'stim':   {"index":0,"selected":True,"colour":"MAGENTA",     "prescale":10, "unit":"bits","DCoffset":False},
-                       'resp':   {"index":0,"selected":True,"colour":"NAVYBLUE",    "prescale":10, "unit":"bits","DCoffset":False},
-        
-              }
-          for g in self._labels:
-            # self._grp[g]["bads"]       = None
-              self._grp[g]["status"]     = 0
-              self._grp[g]["scale_mode"] = 0
-              
-          self._default_grp = self._grp["stim"].copy()
-          self._default_grp["unit"] = "AU"
+          self._grp = {}
+         #---fixed pos to display
+          self._default_labels = ['mag','grad','ref_meg', 'ecg','eog','emg','eeg','stim','resp','misc']
           
-   
+          self._default_grp={
+                       'mag':    {"selected":True,"colour":"RED",         "prescale":500,"unit":"fT"},
+                       'grad':   {"selected":True,"colour":"BLUE",        "prescale":500,"unit":"fT"},
+                       'ref_meg':{"selected":True,"colour":"DARKGREEN",   "prescale":4,  "unit":"pT"},
+                       'eeg':    {"selected":True,"colour":"MIDNIGHTBLUE","prescale":1,  "unit":"uV"},
+                       'eog':    {"selected":True,"colour":"PURPLE",      "prescale":100,"unit":"uV"},
+                       'emg':    {"selected":True,"colour":"DARKORANGE",  "prescale":100,"unit":"uV"},
+                       'ecg':    {"selected":True,"colour":"MAROON",      "prescale":1,  "unit":"mV"},
+                       'stim':   {"selected":True,"colour":"MAGENTA",     "prescale":10, "unit":"bit"},
+                       'resp':   {"selected":True,"colour":"NAVYBLUE",    "prescale":10, "unit":"bit"},
+                       'default':{"selected":True,"colour":"PURPLE",      "prescale":1,  "unit":"AU"}
+              }
+          for g in self._default_grp.keys():
+              self._default_grp[g]["status"]       = 0
+              self._default_grp[g]["scale_mode"]   = 2  # min max window
+              self._default_grp[g]["DCOffsetMode"] = 0 # fit to window
+              self._default_grp[g]["bads"]         = []
+ 
+          for g in ['stim','resp']:
+              self._default_grp[g]["scale_mode"]=0
+          
       @property
       def labels(self): return self._labels
       @labels.setter
       def labels(self,v):
           self._labels=v
       
-        
+      def DeleteNonExistingGroup(self,grps):
+          """
+          
+          :param grps:  label or list of labels
+          :return:
+          """
+          if not isinstance(grps,(list)):
+             grps=[grps]
+          grps=list( set(grps) )
+          grps2delete = [ item for item in grps if item not in self.labels ]
+          
+          for grp in grps2delete:
+              if self._grp.pop(grp,None):
+                 try:
+                      idx = self.labels.index( grp )
+                      self.labels.pop(idx)
+                 except:
+                      pass
+                      
       def GetStatus(self):
           """
           check for each group if parameter changed
@@ -311,7 +346,7 @@ class GroupSettingsBase(object):
       def SetGroup(self,grp,v):
           if grp:
              self._grp[grp]=v
-             self._grp[g]["status"] = self.Status.allkeys
+             self._grp[grp]["status"] = self.Status.allkeys
           if grp not in self._labels:
              self._labels.append(grp)
 
@@ -323,12 +358,14 @@ class GroupSettingsBase(object):
       def GetStatusSelected(self,grp):
           return self._grp[grp]["status"] & self.Status.selected
       
-      def GetGroupIndex(self,idx):
+      def GetGroupNameFromIndex(self,idx):
           return self._labels[idx]
+      
       def GetIndex(self,grp):
-          return self._get_grp_key(grp,"index")
-      def SetIndex(self,grp,v):
-          self._set_grp_key(grp,"index",v)
+          # return self._get_grp_key(grp,"index")
+          return self._labels.index(grp)
+      #def SetIndex(self,grp,v):
+      #    self._set_grp_key(grp,"index",v)
           
       def GetColour(self,grp):
           return self._get_grp_key(grp,"colour")
@@ -350,12 +387,12 @@ class GroupSettingsBase(object):
           self._set_grp_key(grp,"unit",v)
           self._grp[grp]["status"] = self._grp[grp]["status"] | self.Status.scale
  
-      def GetDCoffset(self,grp):
-          return self._get_grp_key(grp,"DCoffset")
-      def SetDCoffset(self,grp,v):
-          self._set_grp_key(grp,"DCoffset",v)
+      def GetDCOffsetMode(self,grp):
+          return self._get_grp_key(grp,"DCOffsetMode")
+      def SetDCOffsetMode(self,grp,v):
+          self._set_grp_key(grp,"DCOffsetMode",v)
           self._grp[grp]["status"] = self._grp[grp]["status"] | self.Status.dcoffset
-      def GetStatusDCoffset(self,grp):
+      def GetStatusDCOffsetMode(self,grp):
           return self._grp[grp]["status"] & self.Status.dcoffset
         
       def GetStatusScale(self,grp):
@@ -365,7 +402,18 @@ class GroupSettingsBase(object):
           return self._grp[grp]["status"]
       def SetStatus(self,grp,v):
           self._grp[grp]["status"] = v
+
+      def UpdateLabels(self,lin):
           
+          lin = list(set(lin))
+          self._labels = []
+          for label in self._default_labels:
+              if label in lin:
+                 self._labels.append(label)
+                 del lin[ lin.index(label) ]
+          self._labels.extend(lin)
+          
+
       def ResetStatus(self,grp,status=None):
           """
           
@@ -380,24 +428,23 @@ class GroupSettingsBase(object):
 class GroupSettings(GroupSettingsBase):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
-        self._defaults = GroupSettingsBase(**kwargs)
+       # self._defaults = GroupSettingsBase(**kwargs)
         self.Colour    = ColourSettings()
         self.Unit      = UnitSettings()
         
-        self.__SCALE_MODE_DIVISION = 0
-        self.__SCALE_MODE_GLOBAL   = 1
-        self.__SCALE_MODE_WINDOW   = 2
-        self._scale_modes = ["Divsion","Global","Window"]
+        self._scale_modes   = ["Divsion","Global","Window"]
+        self._dcoffset_modes= ["None","Global","Window"]
         
     @property
     def ScaleModes(self): return self._scale_modes
-    
+
     @property
-    def defaults(self): return self._defaults
+    def DCOffsetModes(self):
+        return self._dcoffset_modes
 
     def GetScaling(self,grp):
         return self.Unit.GetScale(prescale=self._grp[grp]["prescale"],unit=self._grp[grp]["unit"] )
-    
+        
     def SetColour(self,grp,c):
         if not isinstance(c,(str)):
            idx = self.Colour.colour2index(c)
@@ -437,25 +484,16 @@ class GroupSettings(GroupSettingsBase):
         
         if grp not in self._labels:
            self._labels.append(grp)
-           # logger.info("---> Add group: {}\n  -> groups: {}".format(grp,self.labels))
-           
-        #if kwargs:
-        #   self._grp[grp]={"selected": kwargs.get("selected",True),
-        #                   "colour"  : kwargs.get("colour",self._default_grp["colour"]),
-        #                   "prescale": kwargs.get("prescal",1),
-        #                   "unit"    : kwargs.get("unit","AU"),
-        #                   "index"   : kwargs.get("index",None)
-        ##                 }
-        #else:
-        if grp in self._defaults._labels:
-           self._grp[grp] = self._defaults._grp[grp].copy()
+         
+        if self._grp.get(grp,None):
+           return
+        elif self._default_grp.get(grp,None):
+             self._grp[grp] = self._default_grp[grp].copy()
         else:
-           self._grp[grp] = self._defaults._default_grp.copy()
+             self._grp[grp] = self._default_grp["default"].copy()
              
-        self._grp[grp]["index"]         = self._labels.index(grp)
         self._grp[grp]["channels"]      = []
         self._grp[grp]["channel_index"] = np.array([],dtype=np.uint32)
-        self._grp[grp]["scale_mode"]    = self.__SCALE_MODE_DIVISION
         
         #self._grp[grp]["bads"]          = None
 
@@ -475,29 +513,29 @@ class GroupSettings(GroupSettingsBase):
         self._grp[grp]["status"] = self._grp[grp]["status"] | self.Status.scale
 
 class ChannelSettings(object):
-    __slots__ = ["colour_index","colour","selected","scale","group_index","bads","labels","verbose","debug","_colour_bads","scale_mode",
-                 "dcoffset","mean","delta_minmax_global","delta_minmax_window"]
+    __slots__ = ["colour_index","colour","selected","scale","group_index","bads","labels","verbose","debug","scale_mode","bit_index",
+                 "dcoffset","dcoffset_mode","mean","minmax_global","_colour_bads","_ScaleMode","_DC_OFFSET_WINDOW"]
     
     def __init__(self,**kwargs):
         self._init(**kwargs)
     
     def _init(self,**kwargs):
         raw = kwargs.get("raw",None)
+        
+        self._ScaleMode = SCALE_MODE()
+        self._DC_OFFSET_WINDOW = 2
+        
         if raw:
-           self.labels = raw.info['ch_names']
-           n_chan = self.n_channels
+           self.labels    = raw.info['ch_names']
+           n_chan         = self.n_channels
+           self.bit_index = []
+           self.colour    = np.zeros([n_chan,3],dtype=np.float32)
            self.calc_min_max_mean(raw)
-           # self.minmax_window = np.zeros([n_chan,2],dtype=np.float32)
-           self.delta_minmax_window = np.zeros([n_chan],dtype=np.float32)
-           self.colour              = np.zeros([n_chan,3],dtype=np.float32)
-           
-
         else:
-           self.labels        = kwargs.get("labels",None)
-           self.colour        = np.zeros([],dtype=np.float32)
-           self.mean          = np.zeros([],dtype=np.float32)
-           self.delta_minmax_global = np.zeros([],dtype=np.float32)
-           self.delta_minmax_window = np.zeros([],dtype=np.float32)
+           self.labels = kwargs.get("labels",None)
+           self.colour = np.zeros([],dtype=np.float32)
+           self.mean   = np.zeros([],dtype=np.float32)
+           self.minmax_global = np.zeros([],dtype=np.float32)
 
         self.verbose = kwargs.get("verbose",False)
         self.debug   = kwargs.get("debug",False)
@@ -510,18 +548,95 @@ class ChannelSettings(object):
         self.colour_index = np.zeros(n_chan,dtype=np.uint32)
         self.group_index  = np.zeros(n_chan,dtype=np.uint32)
         self.scale_mode   = np.zeros(n_chan,dtype=np.uint32)
-        
-        self.dcoffset     = np.zeros(n_chan,dtype=np.bool)
-        
+        self.dcoffset_mode= np.zeros(n_chan,dtype=np.uint32)   # 0=none,1=global,2=window
+        self.dcoffset     = np.zeros(n_chan,dtype=np.float32)
+    
     def calc_min_max_mean(self,raw):
         self.mean          = np.array( raw._data.mean(axis=1),dtype=np.float32)
-        #self.minmax_global = np.array([raw._data.min(axis=1),raw._data.max(axis=1)],dtype=np.float32)
-        self.delta_minmax_global = np.array([ raw._data.min(axis=1) - raw._data.max(axis=1) ],dtype=np.float32)
+        self.minmax_global = np.array([ raw._data.min(axis=1),raw._data.max(axis=1) ],dtype=np.float32)
+ 
+    def GetDCoffset(self,raw=None,tsls=None):
+        """
+        calc DC Offset for each channel depending on DCOffsetMode:
+        None => no DCOffset, GlobalDC=> global mean,  WindowDc => mean in TimeWindow range
+        dcoffset will be subsracted in OGL Vertex Shader
         
-    
-    def GetDCoffset(self):
-        fac= float( self.dcoffset )
-        return  self.mean * fac
+        :param raw: raw obj
+        :param tsls: start,end of DCoffset window
+        :return: dcoffset np.array[n_channesl]
+        """
+       #--- get all dcoffsets:  None => 0, DCGlobal=> 1  => substract mean in GLShader
+        # t0 = time.time()
+        idx = np.where(self.dcoffset_mode < self._DC_OFFSET_WINDOW)[0]
+        if idx.shape[0]:
+           if idx.shape[0] < self.dcoffset.shape[0]: # all None or Global
+              self.dcoffset[idx] = self.mean[idx] * self.dcoffset_mode[idx]
+           else:
+              self.dcoffset = self.mean * self.dcoffset_mode
+              return self.dcoffset
+           
+       #-- DC Window => self._DCMode.DCWindow = 2
+        if raw:
+           if tsls:
+              idx = np.where(self.dcoffset_mode == self._DC_OFFSET_WINDOW)[0]
+              if idx.shape[0]:
+                 self.dcoffset[idx] = raw._data[idx,tsls[0]:tsls[1]].mean(axis=1)
+              
+        # t1 = time.time()
+        # logger.info("--> DC Offset Time: {}".format(t1-t0))
+        
+        return self.dcoffset
+
+    def GetMinMaxScale(self,raw=None,tsls=None,picks=None,div=1.0):
+        """
+        check for scale => min-max global,min-max window
+        :param tsls:
+        :param divisions:
+        :return: index for division,minmax_global,min,max-window
+        """
+        
+        scales = np.zeros([self.n_channels,2],dtype=np.float32) #scale,offset
+        found=0
+        
+       #--- get scale for minmax window
+        picks_idx = np.asarray(self.scale_mode[picks] == self._ScaleMode.minmax_on_window).nonzero()[0]
+        if picks_idx.shape[0]:
+           idx = picks[picks_idx]
+           data = raw._data[idx,tsls[0]:tsls[1]]
+           min = data.min(axis=1)
+           max = data.max(axis=1)
+           dmm = np.abs( (max - min) / div )
+           scales[idx,0] = data.min(axis=1) - dmm
+           scales[idx,1] = data.max(axis=1) + dmm
+
+           if picks_idx.shape[0] == self.n_channels:
+              return scales
+           found = picks_idx.shape[0]
+           
+       #--- get scale for minmax global
+        picks_idx = np.asarray(self.scale_mode[picks] == self._ScaleMode.minmax_on_global).nonzero()[0]
+        if picks_idx.shape[0]:
+           idx = picks[picks_idx]
+           scales[idx,0] = self.minmax_global[0,idx]
+           scales[idx,1] = self.minmax_global[1,idx]
+           dmm = np.abs((scales[idx,1] - scales[idx,0]) / div)
+           scales[idx,0] -= dmm
+           scales[idx,1] += dmm
+
+           if picks_idx.shape[0] + found >= self.n_channels:
+              return scales
+
+       #--- get scale division
+        picks_idx = np.asarray(self.scale_mode[picks] == self._ScaleMode.division).nonzero()[0]
+        if picks_idx.shape[0]:
+           idx = picks[picks_idx]
+           scales[idx,1] =  self.scale[idx] * div /2
+           scales[idx,0] = - scales[idx,1]
+           if self.bit_index:
+              scales[self.bit_index,0] = - 1  # set min for ch in  stim,res group
+        
+        return scales
+        
     
     @property
     def n_channels(self):
@@ -585,10 +700,23 @@ class ChannelSettings(object):
         return np.where(self.selected == False)[0]
     
     #---
-    def GetScale(self,idx):
+    def GetScaleFromIndex(self,idx):
+        """
+        
+        :param self:
+        :param idx:
+        :return:
+        """
         return self.scale[idx]
     
-    def SetScale(self,idx,v):
+    def SetScaleFromIndex(self,idx,v):
+        """
+        
+        :param self:
+        :param idx:
+        :param v:
+        :return:
+        """
         self.scale[idx] = v
     
     #---
@@ -604,7 +732,14 @@ class ChannelSettings(object):
  
     def selected_label(self):
         return self.label[ self.selected_index() ]
-      
+
+    def SetSelected(self,picks=None,status=False):
+        if picks is not None:
+           if picks.shape[0]:
+              self.selected[picks]=status
+              return
+        self.selected[:]=status
+           
      
     def GetInfo(self):
         """
@@ -612,12 +747,14 @@ class ChannelSettings(object):
         :return:
         """
         msg=[]
-        msg.append(" {} {} {} {} {} {} {}".format("index","label","selected","colour","colour_index","scale","group_index","bads"))
+        msg.append(" {} {} {} {} {} {} {}".format("index","label","selected","colour","colour_index","scale","group_index","bads","dcoffset"))
+        
+        if not self.debug: return
         
         for idx in range(self.n_channels):
-            msg.append(" {} {} {} {} {} {} {} {}".format(idx,self.labels[idx],self.selected[idx],self.colour[idx],self.colour_index[idx],self.scale[idx],self.group_index[idx],self.bads[idx]))
+            msg.append(" {} {} {} {} {} {} {} {}".format(idx,self.labels[idx],self.selected[idx],self.colour[idx],self.colour_index[idx],self.scale[idx],self.group_index[idx],self.bads[idx],self.dcoffset[idx]))
         
-        logger.info("---> Channel INFO:\n"+ "\n  -> ".join(msg))
+        logger.debug("---> Channel INFO:\n"+ "\n  -> ".join(msg))
         
         #--- working with numpy arrays in pl_channels class
         if self.debug:
@@ -626,7 +763,7 @@ class ChannelSettings(object):
            logger.debug("---> channel.label: {}".format(self.labels))
            logger.debug("---> channel.scale: {}".format(self.scale))
            logger.debug("---> channel.group_index: {}".format(self.group_index))
-           
+           logger.debug("---> channel bit index: {}".format(self.Channel.bit_index))
    
 class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
       __slots__=["raw","verbose","debug","_Group","_Channel"]
@@ -639,6 +776,8 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
           self.debug        = False
        
           self._init(**kwargs)
+   
+   
       
       @property
       def Group(self): return self._Group
@@ -659,23 +798,59 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
           
       def _init(self,**kwargs):
           self._update_from_kwargs(**kwargs)
+          #self._init_pubsub()
           self.update()
-   
-      def init_group_info(self):
-          self.Group.reset()
-          self.Channel.reset( raw=self.raw )
+          
+      def _init_pubsub(self):
+         """ init pubsub call and messages"""
+        #--- verbose debug
+         pub.subscribe(self.SetVerbose,'MAIN_FRAME.VERBOSE')
+         pub.subscribe(self.SetDebug,'MAIN_FRAME.DEBUG')
 
-          for idx in range( self.Channel.n_channels ):
-             #--- get group for idx meg eeg ... 
+      def SetVerbose(self,value=False):
+          self.verbose = value
+
+      def SetDebug(self,value=False):
+          self.debug = value
+          
+      def _remove_obsolete_groups(self):
+          old_grps = self.Group.labels.copy()
+          self.Group.labels = []
+         #--- find obsolete grp labels
+          raw_grps = dict()
+          for g in old_grps:
+              raw_grps[g] = False
+    
+          #--- set group in new raw true
+          for idx in range(self.Channel.n_channels):
               g = mne.io.pick.channel_type(self.raw.info,idx)
-              if g not in self.Group.labels:
-                 logger.info("  -> adding new group to group list: {}".format(g))
-                 self.Group.Add(g)
-            #---  numpy arrays in ChannelOption class
+              raw_grps[g] = True
+         #--- delete obsolete groups not in new raw
+          grps2del = []
+          labels   = []
+          for k,v in raw_grps.items():
+              if v:
+                 labels.append(k)
+              else:
+                 grps2del.append(k)
+                 
+          self.Group.DeleteNonExistingGroup(grps2del)
+          self.Group.UpdateLabels(labels)
+
+      def init_group_info(self):
+          
+          self.Channel.reset( raw=self.raw )
+          
+          self._remove_obsolete_groups()
+          
+          for idx in range(self.Channel.n_channels):
+             #--- get group for idx meg eeg ...
+              g = mne.io.pick.channel_type(self.raw.info,idx)
+              self.Group.Add(g)
+             #---  numpy arrays in ChannelOption class
               self.Channel.group_index[idx] = self.Group.GetIndex(g)
-          
-          
-         # logger.info("RAW BADS: {} ".format(self.raw.info['bads']))
+        
+        # logger.info("RAW BADS: {} ".format(self.raw.info['bads']))
           
           bads_idx = jb.picks.bads2picks(self.raw)
           
@@ -689,18 +864,21 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
               # self.Channel.SetBadsColour(colour=colour_bads,index=colour_idx )
              
           for grp in self.Group.labels:
-              
               idx  = self.Group.GetIndex(grp)
               cidx = np.array(np.where(self.Channel.group_index == idx),dtype=np.uint32).flatten()
               self.Group.SetChannelIndex(grp,cidx)
               self.Group.SetStatus(grp,self.Group.Status.update)
+              if self.Group.GetUnit(grp) == "bit":
+                 self.Channel.bit_index.append(cidx)
               
       def update_channel_options(self,**kwargs):
         
           for grp in self.Group.labels:
               if self.Group.GetStatus(grp):
                  picks = self.Group.GetChannelIndex(grp)
-
+                 
+                 self.Channel.dcoffset_mode[picks] = self.Group.GetDCOffsetMode(grp)
+                 
                  if self.Group.GetStatusSelected(grp):
                      self.Channel.selected[picks] = self.Group.GetSelected(grp)
    
@@ -711,24 +889,15 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
                     in plot set trafo matrix
                     
                     """
-                    self.Channel.scale[picks] = self.Group.GetScaling(grp)
-                    self.Channel.scale_mode   = self.Group.GetScaleMode(grp)
+                    # logger.info( "GRP:{}".format(grp))
+                    self.Channel.scale[picks]      = self.Group.GetScaling(grp)
+                    self.Channel.scale_mode[picks] = self.Group.GetScaleMode(grp)
                     
                  if self.Group.GetStatusColour(grp):
                     colour_idx = self.Group.GetColourIndex(grp)
                     self.Channel.colour_index[picks] = colour_idx
                     self.Channel.colour[picks]       = self.Group.Colour.index2colour(colour_idx)
-                 
-                 if self.Group.GetStatusDCoffset(grp):
-                    """ ToDO
-                        apply/retain DC offset
-                        mark/unmark dc orrection
-                        choose mode:  global mean ,window mean, hp filter
-                        substract in OGL shader? vertex[1] - dcoffset
-                    """
-                    self.Channel.dcoffset = self.Group.GetDCoffset(grp)
-                    #self.Channel.dcoffset_mode = self.Group.GetDCoffsetMode(grp)
-          
+                
                  self.Group.ResetStatus(grp)
           self.Channel.SetBadsColour()
      
@@ -745,15 +914,15 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
          
     
       def GetInfo(self):
-          #self.Group.GetInfo()
-          #self.Channel.GetInfo()
+          self.Group.GetInfo()
+          self.Channel.GetInfo()
           pass
       #---
       def ToggleBads(self,idx):
       
       #--- no bads, reset colour
           if self.Channel.bads[idx]:
-             grp  = self.Group.GetGroupIndex(  self.Channel.group_index[idx])
+             grp  = self.Group.GetGroupNameFromIndex(self.Channel.group_index[idx])
              cidx = self.Group.GetColourIndex(grp)
              self.Channel.colour[idx] = self.Group.Colour.index2RGB(cidx)
              self.Channel.bads[idx]   = False
@@ -762,19 +931,8 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
              self.Channel.SetBadsColour(idx)
           
           self.update_bads_in_raw()
-        #---toDo make
-          #logger.info("TGbads: idx: {} => {}  raw bads:".format(idx,self.Channel.bads[idx],self.raw.info["bads"] ))
+         #logger.info("TGbads: idx: {} => {}  raw bads:".format(idx,self.Channel.bads[idx],self.raw.info["bads"] ))
       
       def update_bads_in_raw(self):
           self.raw.info["bads"] = self.Channel.GetBadsLabels()
-          #logger.info("Update Bads in RAW: {}".format(self.raw.info["bads"]))
-
-# def selected_channel_index(self):
-     #     return np.array( np.where(self.Channel.selected == True),dtype=np.uint32).flatten()
- 
-     # def selected_channel_label(self):
-     #     return self.Channel.label[ self.selected_channel_index() ]
-      
-     # def _get_number_of_selected_channels(self):
-     #     return ( np.where(self.Channel.selected == True) ).shape()
- 
+        

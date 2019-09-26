@@ -70,6 +70,8 @@ logger.error("Start LOG")
 
 https://stackoverflow.com/questions/19425736/how-to-redirect-stdout-and-stderr-to-logger-in-python
 
+ToDo: check LogBook
+https://github.com/getlogbook/logbook
 '''
 
 __version__="2019.05.14.001"
@@ -290,6 +292,7 @@ def log_stderr(reset=False,**kwargs):
 class JuMEGLogFormatter(logging.Formatter):
     """
     Logging Formatter to add colors and count warning / errors
+    https://docs.python.org/3/library/logging.html#logrecord-attributes
     https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
     
     Example:

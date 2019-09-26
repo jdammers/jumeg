@@ -7,9 +7,14 @@ Created on Wed Jun 24 14:05:40 2015
 
 import wx
 import wx.lib.colourdb as WX_CDB
-from wx.adv import BitmapComboBox
+# from wx.adv import BitmapComboBox
 
-__version__ = "2019-09-13-001"
+try:
+    from agw import rulerctrl as RC
+except ImportError: # if it's not there locally, try the wxPython lib.
+    import wx.lib.agw.rulerctrl as RC
+
+__version__ = "2019-09-18-001"
 
 class DLGButtonPanel(wx.Panel):
       """Create the Button Panel.  CANCEL, Apply"""
@@ -32,8 +37,70 @@ class DLGButtonPanel(wx.Panel):
              self.GetParent().SetAffirmativeId(AffirmativeId)
           else:
              self.GetParent().SetAffirmativeId(buttons[-1])
-             
 
+
+class RULERS(wx.Panel):
+    """TODO test multi TBs"""
+    __slots__ = ["_n_cols","_start","_end","_rulers"]
+    
+    def __init__(self,parent,**kwargs):
+        super().__init__(parent,-1)
+        self.SetBackgroundColour(kwargs.get("bg",wx.WHITE))
+        self._n_cols = 1
+        self._start = 0.0
+        self._end = 1.0
+        self.SetSizer(wx.BoxSizer(wx.HORIZONTAL))
+        
+        self.update(**kwargs)
+    
+    @property
+    def n_cols(self):
+        return self._n_cols
+    
+    @n_cols.setter
+    def n_cols(self,v):
+        self._n_cols = v
+        self.update()
+    
+    def _delete_rulers(self):
+        for child in self.GetChildren():
+            child.Destroy()
+    
+    def _update_from_kwargs(self,**kwargs):
+        self._n_cols = kwargs.get("n_cols",self._n_cols)
+        self._start = kwargs.get("start",self._start)
+        self._end = kwargs.get("end",self._end)
+    
+    def UpdateRange(self,**kwargs):
+        """
+
+        :param start:
+        :param end:
+        :param n_cols:
+        :return:
+        """
+        self._update_from_kwargs(**kwargs)
+        for ru in self.GetChildren():
+            ru.SetRange(self._start,self._end)
+    
+    def update(self,**kwargs):
+        
+        self._update_from_kwargs(**kwargs)
+        self._delete_rulers()
+        for idx in range(self._n_cols):
+            ru = RC.RulerCtrl(self,-1,orient=wx.HORIZONTAL,style=wx.NO_BORDER)
+            ru.SetRange(self._start,self._end)
+            ru.TickMinor(tick=False)
+            ru.SetFlip(True)
+            ru.SetTimeFormat(3)
+            self.Sizer.Add(ru,1,wx.ALIGN_LEFT | wx.EXPAND | wx.ALL,1)
+        
+        self.SetAutoLayout(True)
+        self.Fit()
+        self.GetParent().Layout()
+
+
+'''
 ########################################################################
 class colourComboBoxDialog(wx.Dialog):
     """"""
@@ -116,7 +183,7 @@ class colourComboBoxDialog(wx.Dialog):
         print("OnSelect: "+ i)
         print("\n")
 
-
+'''
 
 
 
