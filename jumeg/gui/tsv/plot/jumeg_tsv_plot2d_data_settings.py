@@ -287,6 +287,13 @@ class GroupSettingsBase(object):
  
           for g in ['stim','resp']:
               self._default_grp[g]["scale_mode"]=0
+       
+        #--- set meg mags
+          g  = "mag"
+          self._default_grp[g]["scale_mode"] = 0
+          self._default_grp[g]["prescale"]   = 1
+          self._default_grp[g]["unit"]       = "pT"
+          
           
       @property
       def labels(self): return self._labels
@@ -528,7 +535,7 @@ class ChannelSettings(object):
         if raw:
            self.labels    = raw.info['ch_names']
            n_chan         = self.n_channels
-           self.bit_index = []
+           self.bit_index = [] #np.array([],dtype=np.int32)
            self.colour    = np.zeros([n_chan,3],dtype=np.float32)
            self.calc_min_max_mean(raw)
         else:
@@ -632,8 +639,8 @@ class ChannelSettings(object):
            idx = picks[picks_idx]
            scales[idx,1] =  self.scale[idx] * div /2
            scales[idx,0] = - scales[idx,1]
-           if self.bit_index:
-              scales[self.bit_index,0] = - 1  # set min for ch in  stim,res group
+           if self.bit_index:  #.shape[0]:
+              scales[self.bit_index,0] = - 1.0  # set min for ch in  stim,res group
         
         return scales
         
@@ -862,15 +869,19 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
               # colour_bads = self.Group.Colour.label2colourRBG("GREY70")
               # colour_idx  = self.Group.Colour.colour2index( self.Channel.ColourBads )
               # self.Channel.SetBadsColour(colour=colour_bads,index=colour_idx )
-             
+          
+          bit_index=[]
           for grp in self.Group.labels:
               idx  = self.Group.GetIndex(grp)
               cidx = np.array(np.where(self.Channel.group_index == idx),dtype=np.uint32).flatten()
               self.Group.SetChannelIndex(grp,cidx)
               self.Group.SetStatus(grp,self.Group.Status.update)
               if self.Group.GetUnit(grp) == "bit":
-                 self.Channel.bit_index.append(cidx)
-              
+                 bit_index.extend( cidx.tolist() )
+          if bit_index:
+             bit_index.sort()
+             self.Channel.bit_index = bit_index
+            
       def update_channel_options(self,**kwargs):
         
           for grp in self.Group.labels:

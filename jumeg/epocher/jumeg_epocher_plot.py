@@ -103,7 +103,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
            if show_evt:
             #--- change legend
                idx0 = np.where(avg.times == 0)
-               labels = [ep.info['ch_names'][x] for x in picks]
+               # labels = [ep.info['ch_names'][x] for x in picks]
                if idx0:
                   for idx in range(len(labels)):
                       labels[idx] += " evt: {} ".format(int(avg.data[idx,idx0].flatten()))
@@ -184,7 +184,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
            t += ' ' + condition
         t += ' Id: {} counts: {}'.format(ep.events[0,2],ep.events.shape[0])
         if ep.info['bads']:
-           t = t + "bads: " + ','.join(ep.info['bads'])
+           t = t + "  bads: " + ','.join(ep.info['bads'])
            
        #---ck if emg channels exist
         picks = self.picks.emg_nobads(ep)

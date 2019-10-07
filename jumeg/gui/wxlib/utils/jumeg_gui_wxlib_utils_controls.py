@@ -15,7 +15,7 @@ from pubsub import pub
 
 import wx.lib.agw.floatspin as FS
 
-__version__='2019.07.01.001'
+__version__='2019.09.30.001'
 
 
 class JuMEG_wxPopUpCkBox(wx.PopupTransientWindow):
@@ -856,9 +856,9 @@ class JuMEG_wxControls(JuMEG_wxControlBase):
              
     def _gs_add_add_last_obj(self):
         """ helper fct: add last obj to add """
-        self.gs_add_empty_cell()
+        self._gs_add_empty_cell()
         self.GS.Add(self._obj[-1],0,self.LE,self.gap)
-        self.gs_add_empty_cell()
+        self._gs_add_empty_cell()
         
     
 class JuMEG_wxControlGrid(JuMEG_wxControlBase):

@@ -38,7 +38,7 @@ from jumeg.jumeg_suggest_bads      import suggest_bads
 from jumeg.jumeg_interpolate_bads  import interpolate_bads as jumeg_interpolate_bads
 
 
-from apply_ica import chop_and_apply_ica
+from jumeg.base.pipelines.apply_ica import chop_and_apply_ica
 
 logger = logging.getLogger("jumeg")
 
@@ -182,7 +182,7 @@ def apply_interpolate_bads(raw_fname=None,raw=None,config=None,label="interpolat
 #---------------------------------------------------
 #--- apply_ica
 #---------------------------------------------------
-@JuMEG_PipelineFrame
+# @JuMEG_PipelineFrame
 def apply_ica(raw_fname=None,raw=None,config=None,label="ica",fname_out=None):
     """
 
@@ -193,19 +193,19 @@ def apply_ica(raw_fname=None,raw=None,config=None,label="ica",fname_out=None):
      filename,raw-obj
     """
    #--- Interpolate bad channels using jumeg
-    with jumeg_logger.StreamLoggerSTD(label=label):
+    #with jumeg_logger.StreamLoggerSTD(label=label):
        
-         clean_filt,clean_unfilt = chop_and_apply_ica(raw_fname,config,raw_unfilt=raw)
+    clean_filt,clean_unfilt = chop_and_apply_ica(raw_fname,config,raw_unfilt=raw)
 
-         clean_filt.save(clean_filt_fname)
+    clean_filt.save(clean_filt_fname)
 
-         if config.get("unfiltered"):
-            clean_unfilt.save(clean_unfilt_fname)
+    if config.get("unfiltered"):
+       clean_unfilt.save(clean_unfilt_fname)
          
          
-       #-- check results
-         if config.get("plot_block"):
-            raw.plot(block=config.get("plot_block"))
+   #-- check results
+    if config.get("plot_block"):
+       raw.plot(block=config.get("plot_block"))
 
     return fname_out,raw,True
 

@@ -40,7 +40,7 @@ from jumeg.base import jumeg_logger
 jumeg_logger.setup_script_logging()
 logger = logging.getLogger('jumeg') # init a logger
 
-__version__="2019.05.14-001"
+__version__="2019.09.27-001"
 
 class JuMEG_wxImport_BTiCtrlGrid(wx.Panel):
     def __init__(self,parent,*kargs,**kwargs):
@@ -191,12 +191,14 @@ class JuMEG_wxImportToFIFPanel(JuMEG_wxMainPanel):
           fif_stage = /data/exp/M100/mne
           """
           fif_stage = os.path.expandvars( os.path.expanduser(self.ExpTemplate.GetStage() ))
-      
+         
           if self.BtiCtrl.UseStagePostfix:
              fif_stage_postfix = self.BtiCtrl.StagePostfix
           if not fif_stage.endswith(fif_stage_postfix):
              fif_stage += "/"+fif_stage_postfix
-          return(os.path.expandvars( os.path.expanduser(fif_stage)))
+          # os.path.expandvars(os.path.expanduser(fif_stage))
+          
+          return fif_stage
           
       def update(self,**kwargs):
           self.stage  = kwargs.get("stage", self.module_path)
@@ -299,15 +301,16 @@ class JuMEG_wxImportToFIFPanel(JuMEG_wxMainPanel):
           joblist     = []
 
          #--- del  "--fif_extention="
-          cmd_list = cmd_command.split()
-          for idx in range(len(cmd_list)):
-              if cmd_list[idx].startswith("--fif_extention"):
-                 del cmd_list[idx]
-                 break
-      
+          cmd_list = []
+          for s in cmd_command.split():
+              if s.startswith("--fif"):
+                 continue #del cmd_list[idx]
+              cmd_list.append(s)
+            
           cmd_command = " ".join(cmd_list)
           fif_stage   = self.GetFIFStage()
-    
+          logger.info("FIF stage 2: {}".format(fif_stage))
+          
           for pdf in pdfs:
               cmd  = cmd_command
               #cmd += " --pdf_stage=" + os.path.expandvars( os.path.expanduser(os.path.dirname( self.PDFBox.GetStage() +"/"+ pdf )))
@@ -315,6 +318,8 @@ class JuMEG_wxImportToFIFPanel(JuMEG_wxMainPanel):
               cmd += " --fif_stage="    + fif_stage
               cmd += " --fif_extention="+ pdf[1]
               joblist.append( cmd )
+          
+         # logger.info(joblist)
           
           if self.verbose:
              wx.LogMessage(jb.pp_list2str(joblist, head="MEEG Merger Job list: "))

@@ -56,7 +56,10 @@ jumeg_merge_meeg(meg_fname= my_meg_fname.fif, eeg_fname = my_eeg_fname.vhdr)
      add non existing channel to meg data, if channel is in eeg data but not in meg data
 ---> update 27.01.2019 FB
      add flag to check equal meg, eeg ids
-
+---> update 30.09.2019
+     mne verssion > 18.0: eeg brainvision events are stored ananotaions
+     https://mne.tools/dev/auto_tutorials/intro/plot_20_events_from_raw.html
+     reading events from eeg-raw.anotations
 '''
 import numpy as np
 import os,sys,argparse
@@ -75,7 +78,7 @@ from jumeg.base                import jumeg_logger
 from jumeg.filter.jumeg_filter import jumeg_filter
 
 logger = logging.getLogger('jumeg')
-__version__= '2019.05.148.001'
+__version__= '2019.09.30.001'
 
 class JuMEG_MergeMEEG_HiLoRate(object):
     """
@@ -245,6 +248,23 @@ class JuMEG_MergeMEEG_HiLoRate(object):
         self.raw._data = self.raw._data[:, self.tsl_onset:self.tsl_end]  #+1
         self.is_data_size_adjusted = True
 
+    def _get_events_from_raw(self):
+        """
+        check if stim channel is in raw or in raw.anotations
+        
+        :return: events
+        """
+        try:
+           ev = np.array([])
+           logger.info("---> getting Events from raw obj")
+           if self.stim_channel in self.raw.info["ch_names"]:
+              ev = mne.find_events(self.raw,**self.events)
+           if not ev.shape[0]:
+              ev,info = mne.events_from_annotations(self.raw)
+        except:
+            logger.exception("---> ERROR can not find events:\n --> <stim channel>: {}\n --> filname: {}".format(self.stim_channel,self.filename) )
+        return ev
+
     def get_onset_and_events(self):
         """
          find events with mne.find_events
@@ -258,8 +278,10 @@ class JuMEG_MergeMEEG_HiLoRate(object):
         """
         logger.info(" --> call mne find events")
         ev_start_code_onset_idx = None
-          
-        ev = mne.find_events(self.raw, **self.events)
+        
+        ev = self._get_events_from_raw()
+        
+        #ev = mne.find_events(self.raw, **self.events)
         
         if self.and_mask:
            ev[:, 1] = np.bitwise_and(ev[:, 1], self.and_mask)
