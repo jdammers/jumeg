@@ -448,13 +448,17 @@ def check_model_order(X, p, whit_min, whit_max):
         E = np.linalg.solve(AFPREV[:, :n], EF)
         E = np.reshape(E, (n, m - k + 1, N), order='F')
 
-        whi, cons = check_whiteness_and_consistency(X, E, whit_min, whit_max)
+        if k > 1:
 
-        mvar = VAR((k-1))
-        mvar.fit(X_orig)  # scot func which requires shape trials x sources x samples
-        is_st = mvar.is_stable()
+            whi, cons = check_whiteness_and_consistency(X, E, whit_min, whit_max)
 
-        print('morder %d:' % (k-1), 'white: ' + str(whi) + ';', cons, 'stable: ' + str(is_st))
+            mvar = VAR((k-1))
+            mvar.fit(X_orig)  # scot func which requires shape trials x sources x samples
+            is_st = mvar.is_stable()
+
+            output = 'morder %d:' % (k-1) + ' white: %s' % str(whi)
+            output += '; consistency: %.4f' % cons + '; stable: %s' % str(is_st)
+            print(output)
 
 
 def prepare_causality_matrix(cau, surr, freqs, nfft, sfreq, surr_thresh=95):
