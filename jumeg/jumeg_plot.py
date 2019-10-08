@@ -803,24 +803,27 @@ def plot_phases_polar(phases):
 
 def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
                             linecol='r--', title='Data Distribution',
-                            fnout=False, show=False):
-    '''
+                            zscore=True, fnout=False, show=False):
+    """
     Function to plot a histogram of the data along compared with a standard
     Gaussian.
-    '''
+    """
     import matplotlib.pyplot as pl
     from scipy import stats
-    data = orig_data.copy()
-    data -= data.mean()
-    data /= data.std()
-    print('Data of shape %s will be flattened.' % (data.shape,))
 
     # data will be flattened
-    mu, sigma = stats.norm.fit(data.flatten())  # get mu and sigma from the data
+    print('Data of shape %s will be flattened.' % (data.shape,))
+
+    data = orig_data.flatten()
+    if zscore:
+        data -= data.mean()
+        data /= data.std()
+
+    mu, sigma = stats.norm.fit(data)  # get mu and sigma from the data
 
     # plot histogram of the data
-    n, bins, patches = pl.hist(data.flatten(), nbins, normed=True,
-                                facecolor=facecol, alpha=0.75)
+    n, bins, patches = pl.hist(data, nbins, normed=True,
+                               facecolor=facecol, alpha=0.75)
 
     # add a 'best fit' line
     yfit = stats.norm.pdf(bins, mu, sigma)
@@ -828,6 +831,8 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     # plot Gaussian fit
     fig = pl.plot(bins, yfit, linecol, linewidth=2)
     pl.title(title)
+    pl.ylabel('Counts')
+    pl.xlabel('Data')
 
     if show:
         pl.show()

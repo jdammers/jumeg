@@ -58,7 +58,7 @@ import logging
 logger = logging.getLogger("jumeg")
 #logger.setLevel('DEBUG')
 
-__version__="2019.05.02.001"
+__version__="2019.09.13.001"
 
 '''
 class AccessorType(type):
@@ -636,9 +636,28 @@ class JuMEG_Base_PickChannels(object):
         else:
            return mne.pick_channels(raw.info['ch_names'],include=[labels])
 
+    def bads2picks(self,raw):
+        """
+        mne wrapper
+        get picks from bad channel labels
+        call to < mne.pick_channels >
+        picks = mne.pick_channels(raw.info['ch_names'], include=raw.info['bads'])
+
+        Parameter
+        ---------
+         raw obj
+         
+        Result
+        -------
+         bad picks as numpy array int64 (index of bad channels)
+        """
+        if raw.info['bads']:
+           return  mne.pick_channels(raw.info['ch_names'],include=raw.info['bads'])
+        return None
+
     def channels(self,raw):
         """ call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None """
-        return mne.pick_types(raw.info,meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=[])  
+        return mne.pick_types(raw.info,meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=[])
      
     def channels_nobads(self, raw):
         """ call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude='bads' """
@@ -1446,7 +1465,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
         if not fn:
            logger.error("ERROR no such file or raw-object:\n  -> raw obj: {}\n  -> fname: {}\n  -> path : {}".format(raw,fname,path))
-           return
+           return None,None
         try:
             if not os.path.isfile(fn):
                raise FileNotFoundError("ERROR no file found: {}".format(fn))
@@ -1459,12 +1478,17 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
           #--- ToDo may decide for eeg-name .eeg or.vhdr
             else:
                raw = mne.io.Raw(fn,preload=preload)
+    
+            if not raw:
+               raise FileNotFoundError("ERROR could not load RAW object: {}".format(fn))
         except:
             logger.exception("---> could not get raw obj from file:\n --> FIF name: {}\n  -> file not exist".format(fn))
+            return None,None
         
         if reset_bads:
            raw.info["bads"] = []
            logger.debug("  -> resetting bads in raw")
+           
         return raw,self.get_raw_filename(raw)
 
     def get_files_from_list(self, fin):

@@ -149,7 +149,7 @@ class JuMEG_wxMainFrame(wx.Frame):
            msgtxt= "\n".join(data)
         wx.MessageBox("Info: "+data,caption="Info  " +self.Name,style=wx.ICON_INFORMATION|wx.OK)
    #---
-    def init_toolbar(self,**kwargs):
+    def wxInitToolBar(self,**kwargs):
         """
         overwrite  e.g.
         self.toolbar = self.CreateToolBar()
@@ -180,9 +180,9 @@ class JuMEG_wxMainFrame(wx.Frame):
 
         self.update_from_kwargs(**kwargs) # overwrite
         self.onInit(**kwargs) # overwrite
-        self.init_toolbar(**kwargs)
         self._init_AboutBox()
         self.wxInitMainMenu()
+        self.wxInitToolBar(**kwargs)
         self.wxInitStatusBar()
         self.UpdateDebugMode(self.debug)
         

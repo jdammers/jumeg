@@ -285,7 +285,7 @@ def whitening(data, dim_reduction='',
     # -------------------------------------------
     # import necessary modules
     # -------------------------------------------
-    from sklearn.decomposition import RandomizedPCA
+    from sklearn.decomposition import PCA
     from . import dimension_selection as dim_sel
 
 
@@ -307,8 +307,7 @@ def whitening(data, dim_reduction='',
     stddev = np.std(X, axis=0)
     X = (X - dmean[np.newaxis, :]) / stddev[np.newaxis, :]
 
-    pca = RandomizedPCA(n_components=None, whiten=whiten,
-                        copy=True)
+    pca = PCA(n_components=None, whiten=whiten, svd_solver='randomized', copy=True)
 
     # -------------------------------------------
     # perform whitening
@@ -326,22 +325,18 @@ def whitening(data, dim_reduction='',
     # check dimension selection
     # -------------------------------------------
     if dim_reduction == 'AIC':
-        npc, _ = dim_sel.aic_mdl(pca.explained_variance_)
+        npc, _ = dim_sel.aic(pca.explained_variance_)
     elif dim_reduction == 'BIC':
-        npc = dim_sel.mibs(pca.explained_variance_, ntsl,
-                           use_bic=True)
+        npc = dim_sel.mibs(pca.explained_variance_, ntsl)
     elif dim_reduction == 'GAP':
         npc = dim_sel.gap(pca.explained_variance_)
     elif dim_reduction == 'MDL':
-        _, npc = dim_sel.aic_mdl(pca.explained_variance_)
+        _, npc = dim_sel.mdl(pca.explained_variance_)
     elif dim_reduction == 'MIBS':
-        npc = dim_sel.mibs(pca.explained_variance_, ntsl,
-                           use_bic=False)
+        npc = dim_sel.mibs(pca.explained_variance_, ntsl)
     elif dim_reduction == 'explVar':
-        # compute explained variance manually
-        explained_variance_ratio_ = pca.explained_variance_
-        explained_variance_ratio_ /= explained_variance_ratio_.sum()
-        npc = np.sum(explained_variance_ratio_.cumsum() <= explainedVar)
+        npc = dim_sel.explVar(pca.explained_variance_,explainedVar)
+
     elif npc is None:
         npc = nchan
 
