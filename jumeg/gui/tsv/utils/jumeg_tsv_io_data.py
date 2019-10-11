@@ -87,19 +87,25 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
            fname  = self.get_fif_name(raw=self.raw)
            self.load_data(fname=fname)
         else:
-           self.load_data(fname=kwargs.get("fname"),path=kwargs.get("path"),raw=kwargs.get("raw"))
+           self.load_data(fname=kwargs.get("fname"),path=kwargs.get("path"),raw=kwargs.get("raw"),ica=kwargs.get("ica"))
            
-    def load_data(self,raw=None,fname=None,path=None):
+    def load_data(self,raw=None,fname=None,path=None,ica=False):
         """
           
         :param self:
         :param raw:
         :param fname:
+        :param ica : <False>
         :return:
         """
         
-        self._isLoaded    = False
-        self._raw,self._fname = self.get_raw_obj(fname,raw=raw,path=path,preload=True)
+        self._isLoaded = False
+        
+        if ica:
+           self.get_ica_raw_obj(fname,ica_raw=raw)
+        else:
+           self._raw,self._fname = self.get_raw_obj(fname,raw=raw,path=path,preload=True)
+       
         if not self._raw:
            return
         self._path,self._fname = os.path.split( self.fname )
@@ -112,11 +118,12 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
         if self.verbose:
            logger.info("---> JuMEG TSV IO data loaded\n"+
                        "  -> path : {}\n".format(self.path)+
-                       "  -> file : {}\n".format(self.fname))
+                       "  -> file : {}\n".format(self.fname)+
+                       "  -> ICA  : {}\n".format(ica))
               
         return self.raw,self.bads
     
-      
+        
     def save_bads(self):
         self._raw._data      = self._raw._data.astype(self.dtype_original)
         return self.update_bad_channels(raw=self.raw,bads=self.bads,append=self.append_bads,save=True)

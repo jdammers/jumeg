@@ -648,7 +648,7 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
             #          logger.info(" ---> update: dict: {} key: {} value: {}".format(i,v,dicts[i].get(v)) )
             #          return dicts[i].get(v)
             
-            logger.debug(" ---> update: key: {} value:{} ".format(k,v))
+            # logger.debug(" ---> update: key: {} value:{} ".format(k,v))
             return v
     
     

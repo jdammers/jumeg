@@ -1508,7 +1508,8 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            logger.debug(" --> reading raw data:\n"+
                         "  -> raw : {}\n".format(raw)+
                         "  -> file: {}\n".format(fname)+
-                        "  -> path: {}\n".format(path))
+                        "  -> path: {}\n".format(path)+
+                        "  -> Bads: {}".format( str(raw.info['bads'])))
         if fname:
            fn = self.expandvars( fname )
            if path:
