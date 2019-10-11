@@ -657,22 +657,23 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
 
     
     def ShowSplash(self):
-        d = os.path.realpath(__file__)
-        img = os.path.dirname(d)+ "/tsv/tsv.png"
-        if os.path.isfile(img):
-           bmp = wx.Bitmap(img,wx.BITMAP_TYPE_PNG)
-        else:
-           bmp_dir = wx.GetApp().GetBitmapsDir()
-           bmp = wx.Bitmap( os.path.join(bmp_dir,"python.png"),type=wx.BITMAP_TYPE_PNG)
+        pass
+        #d = os.path.realpath(__file__)
+        #img = os.path.dirname(d)+ "/tsv/tsv.png"
+        #if os.path.isfile(img):
+        #   bmp = wx.Bitmap(img,wx.BITMAP_TYPE_PNG)
+        #else:
+        #   bmp_dir = wx.GetApp().GetBitmapsDir()
+        #   bmp = wx.Bitmap( os.path.join(bmp_dir,"python.png"),type=wx.BITMAP_TYPE_PNG)
 
-        self.Splash = wx.adv.SplashScreen(bmp,wx.adv.SPLASH_CENTER_ON_SCREEN | wx.adv.SPLASH_NO_TIMEOUT,-1,self)
-        self.Splash.Show()
+        #self.Splash = wx.adv.SplashScreen(bmp,wx.adv.SPLASH_CENTER_ON_SCREEN | wx.adv.SPLASH_NO_TIMEOUT,-1,self)
+        #self.Splash.Show()
         
     def Show(self,show=True):
        #--- make sure  Frame is on screen and OGL is init
-        self.ShowSplash()
+        #self.ShowSplash()
         super().Show(show=show)
-        self.Splash.Destroy()
+        #self.Splash.Destroy()
         try:
           self.PlotPanel.update_data()
         except:
@@ -695,10 +696,10 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
     def ClickOnSaveFile(self,evt):
         cl = self.BtSave.GetBackgroundColour()
         self.BtSave.SetBackgroundColour(wx.YELLOW)
-        self.ShowSplash()
+        #self.ShowSplash()
         self.PlotPanel.SaveBads()
         self.BtSave.SetBackgroundColour(cl)
-        self.Splash.Destroy()
+        #self.Splash.Destroy()
     
     def ClickOnClose(self,evt):
        # if not self.debug:
