@@ -282,8 +282,8 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
            bads = df[ self.marker.type_output ][ (df['bads']== self.idx_bad) ]
            
            msg.append("  -> bad events : " + str(bads.shape))
-           msg.append( bads.to_string())
-          # msg.append("Event Info:")
+           if bads.shape[0]:
+              msg.append("  -> bads: {}".format(bads.to_string()))
            logger.info( "\n".join(msg) )
            
         return(df,evt,ep_param,info_param)
@@ -781,9 +781,12 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
        #--- update and load raw     obj
         self.raw,self.fname = jumeg_base.get_raw_obj(self.fname,raw=self.raw)
        
-        ep = mne.Epochs(self.raw,evt['events'],event_id=evt['event_id'],tmin=self.marker.time_pre,tmax=self.marker.time_post,
-                        baseline=None,picks=picks,reject=self.reject,proj=self.proj,preload=True,verbose=False)
-        
+        try:
+            ep = mne.Epochs(self.raw,evt['events'],event_id=evt['event_id'],tmin=self.marker.time_pre,tmax=self.marker.time_post,
+                            baseline=None,picks=picks,reject=self.reject,proj=self.proj,preload=True,verbose=False)
+        except:
+            logger.exception("---> Error\nevents:\n{}\nevent id: {}\n".format(evt['events'],evt['event_id']))
+            
         if self.verbose: # for later show difference min max with and without bc
            meg_picks = jumeg_base.picks.meg_nobads(self.raw)
            meg_min   = ep._data[:,meg_picks,:].min()
@@ -807,18 +810,23 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
            evt['epochs'] = ep
             
         if self.verbose:
+           if evt['epochs']:
+              ep_min =  "{:0.15f}".format( evt['epochs']._data[:,meg_picks,:].min())
+              ep_max =  "{:0.15f}".format( evt['epochs']._data[:,meg_picks,:].max())
+           else:
+              ep_min=ep_max="None"
            msg=["---> Epocher apply epoch and baseline -> mne epochs:",
-                " --> fname     : " + self.fname,
+                " --> fname     : {}".format(self.fname),
                 " --> ids       : {} ".format(evt['event_id']),
                 " --> <pre time>: {:0.3f} <post time>: {:0.3f}".format(self.marker.time_pre,self.marker.time_post),
-                " --> baseline correction : %r" %(evt['baseline_corrected']),
+                " --> baseline correction : {}".format(evt['baseline_corrected']),
                 "   " +"-" * 40,
                 " --> Epochs selected: {}\n   -> index: {}".format( ep.selection.shape , np.array2string(ep.selection)),
                 "   " +"-" * 40,
-                "  -> MEG min   : %0.15f" %( meg_min ),
-                "  -> MEG min BC: %0.15f" %( evt['epochs']._data[:,meg_picks,:].min() ),
-                "  -> MEG max   : %0.15f" %( meg_max ),
-                "  -> MEG max BC: %0.15f" %( evt['epochs']._data[:,meg_picks,:].max() ) ]
+                "  -> MEG min   : {:0.15f}".format( meg_min ),
+                "  -> MEG min BC: "+ep_min,
+                "  -> MEG max   : {:0.15f}".format( meg_max ),
+                "  -> MEG max BC: "+ep_max ]
            if evt['baseline_corrected']:
               msg+=["   " +"-" * 40,
                     " --> baseline correction: DONE",

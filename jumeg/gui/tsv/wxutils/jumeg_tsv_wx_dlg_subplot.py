@@ -7,7 +7,7 @@ from jumeg.base import jumeg_logger
 logger = logging.getLogger('jumeg')
 
 __version__="2019-09-13-001"
-from tsv.wxutils.jumeg_tsv_wxutils import DLGButtonPanel
+from jumeg.gui.tsv.wxutils.jumeg_tsv_wxutils import DLGButtonPanel
 
 try:
     from agw import floatspin as FS
@@ -197,7 +197,7 @@ class TSVSubPlotDialog(wx.Dialog):
     def OnSelectSPFloatInc(self,evt):
         obj = evt.GetEventObject()
         self._param["time"]["inc_factor"] = float( obj.GetValue() )
-        self._ctrl_time.spf_set_inc_factor(  self.self._param["time"]["inc_factor"]  )
+        self._ctrl_time.spf_set_inc_factor(  self._param["time"]["inc_factor"]  )
 
 #--- opt.channels      
     def OnSpinPlots(self,evt):

@@ -265,6 +265,41 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
             [condition1,condition2 ... conditionN ]
         """
         return self.HDFobj.get_node(node)._v_groups.keys()
+    
+    def hdf_obj_get_channel_dataframe(self,key):
+        """
+        get pandas dataframe from HDFobj for key in  "channel" structure,
+        default all channels in  stim & resp group
+        
+        Parameters
+        ----------
+        key: channel label e.g.: <STI 014>
+        
+        Returns
+        ----------
+        pandas dataframe
+        
+        Example
+        ----------
+         df = self.hdf_obj_get_dataframe("STI 014")
+        
+         import pandas as pd
+         HDF = pd.HDFStore(fhdf)
+         print(HDF.keys() )
+        
+         ['/channel_events/ET_events', '/channel_events/ImgxXxonset', '/channel_events/Key_press_et',
+         '/channel_events/Key_press_meg', '/channel_events/STIxXx013', '/channel_events/STIxXx014', '/epocher/SeResp']
+
+        """
+        key = self.hdf_node_name_channel_events +"/"+key
+        try:
+            df = self.HDFobj.get( self.key2hdfkey(key) )
+        except:
+            logger.exception("---> ERROR no such key: {}\n".format(key)+
+                             " --> HDF file: {}\n".format(self.HDFobj.filename)+
+                             " --> HDF keys: {}\n".format(self.HDFobj.keys()))
+            return None
+        return  df #self.HDFobj.get( self.key2hdfkey(key) )
 
     def hdf_obj_get_dataframe(self,key):
         """ get pandas dataframe from HDFobj
@@ -283,6 +318,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
          
         """
         return self.HDFobj.get( self.key2hdfkey(key) )
+    
 
     def hdf_obj_set_dataframe(self,data=None,key=None):
         """set dataframe in HDFobj for key
