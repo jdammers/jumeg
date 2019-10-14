@@ -812,7 +812,7 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     from scipy import stats
 
     # data will be flattened
-    print('Data of shape %s will be flattened.' % (data.shape,))
+    print('Data of shape %s will be flattened.' % (orig_data.shape,))
 
     data = orig_data.flatten()
     if zscore:
