@@ -4,10 +4,14 @@
 ----------------------------------------------------------------------
 --- jumeg.decompose.fourier_ica --------------------------------------
 ----------------------------------------------------------------------
- author     : Lukas Breuer
- email      : l.breuer@fz-juelich.de
- last update: 13.11.2015
- version    : 1.0
+ authors:
+            Juergen Dammers
+            Lukas Breuer
+ email      : j.dammers@fz-juelich.de
+
+ Change history:
+ 17.10.2019: added rank estimation using PCA, FA in a cross-validation scenario
+ 25.09.2019: separated functions that were combined
 
 ----------------------------------------------------------------------
  The implementation of the following methods for automated
@@ -52,6 +56,8 @@ All methods try to estimate the optimal data dimension:
 # import necessary modules
 # ------------------------------------------
 import numpy as np
+from sklearn.decomposition import PCA, FactorAnalysis
+from sklearn.model_selection import cross_val_score
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #  AIC - Akaike's information criterion
@@ -393,6 +399,35 @@ def explVar(eigenvalues, explainedVar=0.95):
 
     return pca_dim
 
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# estimate rank from largest PCA score using cross-validation
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def pca_rank_cv(data, n_comp_list, cv=5):
+    # based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
+    pca = PCA(svd_solver='full')
+    pca_scores = []
+    for n in n_comp_list:
+        pca.n_components = np.int(n)
+        pca_scores.append(np.mean(cross_val_score(pca, data, cv=cv)))
+    n_components_pca = n_comp_list[np.argmax(pca_scores)]
+
+    return n_components_pca
+
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# estimate rank from largest Factor Analysis score using cross-validation
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def fa_rank_cv(data, n_comp_list, cv=5):
+    # based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
+    fa = FactorAnalysis()
+    fa_scores = []
+    for n in n_comp_list:
+        fa.n_components = np.int(n)
+        fa_scores.append(np.mean(cross_val_score(fa, data, cv=cv)))
+    n_components_fa = n_comp_list[np.argmax(fa_scores)]
+
+    return n_components_fa
 
 
 

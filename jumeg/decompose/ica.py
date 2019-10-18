@@ -14,7 +14,7 @@ Created on 27.11.2015
 from scipy.stats import kurtosis
 import math
 import numpy as np
-
+from sys import stdout
 
 
 #######################################################
@@ -562,7 +562,6 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
             change = np.sum(delta * delta, dtype=np.float64)
 
             if verbose:
-                from sys import stdout
                 info = "\r" if iter > 0 else ""
                 info += ">>> Step %4d of %4d; wchange: %1.4e" % (step+1, max_iter, change)
                 stdout.write(info)
