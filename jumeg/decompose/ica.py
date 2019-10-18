@@ -1,8 +1,14 @@
-# Authors: Lukas Breuer <l.breuer@fz-juelich.de>
+# ICA functions
 '''
-Created on 27.11.2015
+ authors:
+            Lukas Breuer
+            Juergen Dammers
 
-@author: lbreuer
+ email:  j.dammers@fz-juelich.de
+
+ Change history:
+ 17.10.2019: added useful functions to use ICA without MNE
+ 27.11.2015  created by Lukas Breuer
 '''
 
 
@@ -15,6 +21,7 @@ from scipy.stats import kurtosis
 import math
 import numpy as np
 from sys import stdout
+from scipy.linalg import pinv
 
 
 #######################################################
@@ -623,4 +630,151 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
 
     # prepare return values
     return weights.T
+
+
+#######################################################
+#                                                     #
+# ica_update_pca: include pca object into ica object  #
+#                                                     #
+#######################################################
+def ica_update_pca(ica, pca):
+
+    n_comp = ica.components_.shape[1]
+    ica.n_components_ = n_comp
+    ica.pca_mean_ = pca.mean_
+    ica.pca_explained_variance_ = exp_var = pca.explained_variance_
+    ica.unmixing_matrix_ = ica.components_
+    ica.unmixing_matrix_ /= np.sqrt(exp_var[0:n_comp])[None, :]  # whitening
+    ica.mixing_matrix_ = pinv(ica.unmixing_matrix_)
+
+    return ica
+
+
+
+#######################################################
+#                                                     #
+# ica2data: back-transformation to data space         #
+#                                                     #
+#######################################################
+def ica2data(sources, ica, pca, idx_zero=None, idx_keep=None):
+
+    """
+    ica2data: computes back-transformation from ICA to Data space
+    :param sources: shape [n_samples, n_features]
+    :param ica: ICA object from sklearn.decomposition
+    :param pca: PCA object from sklearn.decomposition
+    :param idx_zero: list of components to remove (optional)
+    :param idx_keep: list of components to remove (optional)
+    :return: data re-computed from ICA sources
+    """
+
+    # n_features = pca.n_features_
+    n_features = pca.n_components_             # In rare cases, n_components_ < n_features_
+    n_samples, n_comp = sources.shape
+    A = ica.mixing_.copy()                     # ICA mixing matrix
+
+    # create data with full dimension
+    data = np.zeros((n_samples, n_features))
+    idx_all = np.arange(n_comp)
+
+    # if idx_keep is set it will overwrite idx_zero
+    if idx_keep is not None:
+        idx_zero = np.setdiff1d(idx_all, idx_keep)
+
+    # if idx_zero or idx_keep was set idx_zero is always defined
+    if idx_zero is not None:
+        A[:, idx_zero] = 0.0
+
+    # --------------------------------------------------------
+    # back transformation to PCA space
+    #
+    # identical results:
+    #    data[:, :n_comp] = ica.inverse_transform(sources)
+    #    data[:, :n_comp] = np.dot(sources, ica.mixing_.T)
+    # --------------------------------------------------------
+    data[:, :n_comp] = np.dot(sources, A.T)
+
+
+    # --------------------------------------------------------
+    # back transformation to Data space
+    #
+    # identical results:
+    #    data = pca.inverse_transform(data)
+    #    data =  np.dot(data, np.sqrt(pca.explained_variance_[:, np.newaxis]) *
+    #                                 pca.components_) + pca.mean_
+    # --------------------------------------------------------
+    # back transformation to data space
+    data = pca.inverse_transform(data)
+
+    return data
+
+
+
+#######################################################
+#                                                     #
+# ica2data_single_component                           #
+#                                                     #
+#######################################################
+def ica2data_single_components(sources, ica, pca, picks=None):
+
+    # back-transformation of single ICs to data space
+    # result is of shape: [n_components, data.shape]
+
+    n_features = pca.n_features_
+    n_samples, n_comp = sources.shape
+
+    # create data with full dimension
+    data = np.zeros((n_comp, n_samples, n_features))
+
+    # loop over all ICs
+    for icomp in range(n_comp):
+        data[icomp] = ica2data(sources, ica, pca, idx_keep=icomp)
+
+
+    # ===========================================
+    #  for comparison with MNE
+    # ===========================================
+    # unmixing = np.eye(n_comp)
+    # unmixing[:n_comp, :n_comp] = ica.unmixing_matrix_
+    # unmixing = np.dot(unmixing, pca.components_[:n_comp])
+    # mixing = np.eye(n_comp)
+    # mixing[:n_comp, :n_comp] = ica.mixing_matrix_
+    # mixing = np.dot(pca.components_[:n_comp].T, mixing)
+    #
+    # proj_mat = np.dot(mixing[:, [icomp]], unmixing[[icomp], :])
+    # data = np.dot(proj_mat, data_tpq.T)
+    #
+    # # store mean TPQ values
+    # # x_mean_comp[:,icomp] = data.mean(axis=0)
+    # x_mean_comp[:, icomp] = data.mean(axis=1)
+
+    return data
+
+
+
+
+#######################################################
+#                                                     #
+# ica_sort_components                                 #
+#                                                     #
+#######################################################
+
+def ica_sort_components(sources, ica, order=None):
+    """
+    order: user defined order (indices) to change
+           the order of ICs
+           default: ordered by variance
+    """
+    n_samples, n_features = sources.shape   # [n_samp, n_chan]
+    if order:
+        assert n_features == len(order)
+    else: # sort by variance
+        var = np.sum(ica.mixing_ ** 2, axis=0) * np.sum(sources ** 2, axis=0) / (n_features * n_samples - 1)
+        var /= var.sum()
+        order = var.argsort()[::-1]
+
+    ica.mixing_= ica.mixing_[:,order]
+    ica.components_ = ica.components_[order,:]
+
+    return sources[:,order], ica, order
 
