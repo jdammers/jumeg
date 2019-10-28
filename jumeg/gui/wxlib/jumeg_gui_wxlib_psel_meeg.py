@@ -562,16 +562,23 @@ class JuMEG_wxPselMEEG(JuMEG_wxPselBase):
         :param kwargs:
         :return:
         """
-        self._update_from_kwargs(**kwargs)
+        #self._update_from_kwargs(**kwargs)
         if kwargs.pop("reset",None):
            self.PDFSelectionBox.reset()
-        if self.SearchBox:
-           self.SearchBox.update(**kwargs)
-       
-       #--- pass to PDFs search pattern
-        kwargs.update( self.SearchBox.GetValues() )
-        kwargs.update( {"recursive":self.SearchBox.isRecursive,"ignore_case": self.SearchBox.isIgnoreCase })
+        #if self.SearchBox:
+        #   self.SearchBox.update(**kwargs)
         
+        scan = kwargs.get("scan")
+        
+        #--- pass to PDFs search pattern
+       #print(kwargs)
+        kwargs.update( self.SearchBox.GetValues() )
+        
+        kwargs["eeg_scan"]=kwargs.get("scan")
+        kwargs["scan"] = scan
+        
+        kwargs.update( {"recursive":self.SearchBox.isRecursive,"ignore_case": self.SearchBox.isIgnoreCase })
+        #print(kwargs)
         self.IDSelectionBox.update(**kwargs)
 
 class JuMEG_wxTestPSEL(wx.Panel):

@@ -654,7 +654,6 @@ class JuMEG_GUI_TSVFrame(wx.Frame):
         else:
            self._bt_save.Disable()
         self._STB.UpdateMSG(status=status,msg=msg)
-
     
     def ShowSplash(self):
         pass

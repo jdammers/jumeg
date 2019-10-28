@@ -1,10 +1,10 @@
 {
     "info": {
-        "time": "2019-04-17 09:32:17",
+        "time": "2019-10-25 14:38:31",
         "user": "fboers",
-        "version": "2019-04-17-0.001",
-        "jumeg_template_version": "2019-04-02.001",
-        "jumeg_gui_version": "2019-02-07.001"
+        "version": "2019-10-25-0.001",
+        "jumeg_template_version": "2019.05.14.001",
+        "jumeg_gui_version": "2019.05.14.001"
     },
     "experiment": {
         "name": "INTEXT",
@@ -13,15 +13,10 @@
             "${JUMEG_PATH_LOCAL_DATA}/exp"
         ],
         "scans": [
-            "INTEXT01"
+            "INTEXT01",
+            "INTEXT02"
         ],
-        "bads_list": [
-            "MEG 007",
-            "MEG 010",
-            "MEG 142",
-            "MEG 156",
-            "RFM 011"
-        ],
+        "bads_list": [],
         "path": {
             "mne": "mne",
             "eeg": "eeg",

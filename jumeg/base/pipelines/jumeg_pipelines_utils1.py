@@ -189,8 +189,7 @@ def apply_ica(raw_fname=None,raw=None,config=None,label="ica",fname_out=None):
     :return:
      filename,raw-obj,True
     """
-   #--- Interpolate bad channels using jumeg
-    #with jumeg_logger.StreamLoggerSTD(label=label):
+ 
     if not config.get("run"): return fname_out,raw
    
     jICA =JuMEG_PIPELINES_ICA()
