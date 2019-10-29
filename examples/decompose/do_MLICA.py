@@ -29,7 +29,7 @@ from jumeg.jumeg_utils import get_jumeg_path
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 model_thresh = 0.8                        # >0.5 ..0.9
 n_components = 40                         # 30 .. 60
-njobs = 4
+njobs = 'cuda'
 sfreq_new = 250                           # downsampling to 250 Hz
 flow_raw, flow_high = 2, 45               # high pass filter prevents from false positives
 flow_ecg, fhigh_ecg = 8, 20
@@ -39,7 +39,6 @@ ecg_ch = 'ECG 001'
 eog1_ch = 'EOG 001'
 eog2_ch = 'EOG 002'
 reject = {'mag': 5e-12}
-refnotch = [50., 100., 150., 200., 250., 300., 350., 400.]
 
 # number time samples is fixed to 15000
 nsamples_chop = 15000
@@ -65,13 +64,6 @@ raw = mne.io.Raw(raw_fname, preload=True)
 picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
                        stim=False, exclude='bads')
 
-# ----------------------------------------------
-# noise reducer
-# ----------------------------------------------
-raw_nr = noise_reducer(raw_fname, reflp=5., return_raw=True)
-raw_nr = noise_reducer(raw_fname, raw=raw_nr, refhp=0.1, noiseref=['RFG ...'],
-                       return_raw=True)
-raw = noise_reducer(raw_fname, raw=raw_nr, refnotch=refnotch, return_raw=True)
 
 # ----------------------------------------------
 # filtering and down sampling
@@ -79,11 +71,11 @@ raw = noise_reducer(raw_fname, raw=raw_nr, refnotch=refnotch, return_raw=True)
 # filter prior to ICA
 raw_filtered = raw.copy().filter(flow_raw, flow_high, picks=picks, filter_length='auto',
                                  l_trans_bandwidth='auto', h_trans_bandwidth='auto',
-                                 n_jobs='cuda', method='fir', phase='zero',
+                                 n_jobs=njobs, method='fir', phase='zero',
                                  fir_window='hamming')
 # downsample data
 raw_ds = raw_filtered.copy().resample(sfreq_new, npad='auto', window='boxcar', stim_picks=None,
-                                      n_jobs='cuda', events=None)
+                                      n_jobs=njobs, events=None)
 
 # ----------------------------------------------
 # crop data to get first chop
@@ -96,6 +88,7 @@ tmax = ix_t2 * dt - dt           #  subtract one sample
 raw_chop = raw.copy().crop(tmin=tmin, tmax=tmax)                     # raw
 raw_filtered_chop = raw_filtered.copy().crop(tmin=tmin, tmax=tmax)   # raw filtered
 raw_ds_chop = raw_ds.copy().crop(tmin=tmin, tmax=tmax)               # raw filtered downsampled
+raw_filtered.close()
 
 # ----------------------------------------------
 # apply ICA
@@ -159,14 +152,9 @@ fnout_fig = '109925_CAU01A_100715_0842_2_c,rfDC,0-45hz,ar-perf'
 ica_filtered_chop = ica_update_mean_std(raw_filtered_chop, ica, picks=picks, reject=reject)
 raw_filtered_chop_clean = ica_filtered_chop.apply(raw_filtered_chop, exclude=ica.exclude,
                                                   n_pca_components=None)
-
 ica_unfiltered_chop = ica_update_mean_std(raw_chop, ica, picks=picks, reject=reject)
 raw_unfiltered_chop_clean = ica_unfiltered_chop.apply(raw_chop, exclude=ica.exclude, n_pca_components=None)
-
-# create copy of original data since apply_ica_replace_mean_std changes the input data in place (raw and ica)
-raw_copy = raw.copy().crop(tmin=tmin, tmax=tmax)
-
-plot_performance_artifact_rejection(raw_copy, ica_unfiltered_chop, fnout_fig,
+plot_performance_artifact_rejection(raw.copy().crop(tmin=tmin, tmax=tmax), ica_unfiltered_chop, fnout_fig,
                                     meg_clean=raw_unfiltered_chop_clean,
                                     show=True, verbose=False,
                                     name_ecg=ecg_ch,
