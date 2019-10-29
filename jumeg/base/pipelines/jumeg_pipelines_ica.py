@@ -429,8 +429,11 @@ class JuMEG_PIPELINES_ICA(object):
             ica_fname = op.join(path_ica_chops,fname)
             ica_fname = fname + ',{:06d}-{:06d}-ica.fif'.format(int(chop[0]),int(chop[1]))
           
-            logger.info("---> Start ICA chop: {} / {}\n  -> chops   : {}  -> fname: {}\n\n  -> filename: {}".
-                        format(idx+1,self._chop_times.shape[0],chop,ica_fname,self._raw_fname))
+            logger.info("---> Start ICA chop: {} / {}\n".format(idx+1,self._chop_times.shape[0])+
+                        " --> chop id      : {}\n".format(chop)+
+                        "  -> ica fname    : {}\n".format(ica_fname)+
+                        "  -> ica chop path: {}\n".format(path_ica_chops)+
+                        "  -> raw filename : {}\n".format(self._raw_fname))
             
             raw_chop = self._raw.copy().crop(tmin=chop[0],tmax=chop[1])
       
@@ -446,7 +449,7 @@ class JuMEG_PIPELINES_ICA(object):
   
            #--- save ica object
             if self.cfg.save:
-               self._ica_obj.save(ica_fname)
+               self._ica_obj.save( os.path.join(path_ica_chops,ica_fname) )
             
             logger.info("---> DONE ICA chop: {} / {} -> ica filename: {}".format(idx+1,self._chop_times.shape[0],ica_fname))
             
@@ -462,8 +465,14 @@ class JuMEG_PIPELINES_ICA(object):
         """
         ToDo
         jb.load ica from file or obj
+        calc chop times
+        check chops exists
         mk filename
-        apply_ica_and_plot_performance
+        for chops:
+            apply_ica_and_plot_performance
+        
+        append cleand chops to new raw
+        save raw-ar
         
         :param kwargs:
         :return:
@@ -489,6 +498,8 @@ class JuMEG_PIPELINES_ICA(object):
             #raw_chop_clean_filtered_list.append(clean_filt_chop)
 
         '''
+        may try this ???
+        
         from mne.decoding import UnsupervisedSpatialFilter
 
         from sklearn.decomposition import PCA,FastICA
