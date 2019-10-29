@@ -113,7 +113,7 @@ sources = np.reshape(sources, (n_components,nsamples_chop, 1))   # reshape sourc
 # ----------------------------------------------
 # compute base functions
 mm = np.float32(np.dot(ica.mixing_matrix_[:, :ica.n_components_].T,
-                       ica.pca_components_[:ica.n_components_]))
+                       ica.pca_components_[:ica.n_components_, :ica.max_pca_components]))
 # get model prediction
 model_scores = model.predict([mm, sources], verbose=1)
 # get ICs
