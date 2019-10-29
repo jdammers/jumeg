@@ -13,7 +13,7 @@
 #--------------------------------------------
 # License: BSD (3-clause)
 #--------------------------------------------
-# Updates  12.07.2019
+# Updates  28.10.2019 => yaml.full_load(f)
 #--------------------------------------------
 """
 Example
@@ -179,9 +179,12 @@ class JuMEG_DSMConfig(object):
            if os.path.isfile(fname):
               logger.warning("---> Config file not found: {} using default config file {}".format(self.filename,fname) )
               self.filename = fname
-             
+       
+        if self.debug:
+           logger.debug("  -> Start loading config file: {}".format(self.filename))
+
         with open(self.filename,'r') as f:
-             self._data = yaml.load(f)
+             self._data = yaml.full_load(f)
         
         if self.debug:
            logger.debug("  -> config:\n {}".format(self._data))
@@ -344,7 +347,7 @@ class JuMEG_DSMArchive(object):
            self.IDs = kwargs.get("ids")
         
         self.do_archive   = kwargs.get("archive",self.do_archive)
-        self.do_overwrite = kwargs.get("aoverwrite",self.do_overwrite)
+        self.do_overwrite = kwargs.get("overwrite",self.do_overwrite)
    
     def write_listfile(self,fname,flist,stage=None):
         with open(fname, mode='wt', encoding='utf-8') as f:
@@ -601,7 +604,7 @@ class JuMEG_DSMArchive(object):
                 if not self._pdfs: continue
                 
                 if self.debug:
-                   logger.debug(" --> {}".format("\n  -> {}".join( self._pdfs )) )
+                   logger.debug("\n  -> {}".join( self._pdfs ))
                 
                 self._pdfs = self.GetPDFsToArchive(stage,id)
                 
@@ -849,7 +852,7 @@ def get_args(argv,parser=None,defaults=None,version=None):
 
     parser.add_argument("-r","--run",action="store_true",help="!!! EXECUTE & RUN this program !!!")
     parser.add_argument("-ov","--overwrite",action="store_true",help="overwrite/archive existing file on DSM")
-    parser.add_argument("-arc","--archive",action="store_true",help="apply archiving, without just testing !!!")
+    parser.add_argument("-arc","--archive",action="store_true",help="apply archiving")
     
     parser.add_argument("-log","--log2file",action="store_true",help="generate logfile")
     parser.add_argument("-logoverwrite","--logoverwrite",action="store_true",help="overwrite existing logfile")

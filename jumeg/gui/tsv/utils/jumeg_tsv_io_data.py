@@ -15,9 +15,6 @@ __version__="2019-04-11-001"
 #    print raw.info['chs'][iref]['ch_name'],
 #raw.info['chs'][iref]['loc'][0:3]
 
-#fname=opt.fname,path=opt.path,verbose=opt.v,debug=opt.d,experiment=opt.exp,
-# duration=opt.duration,start=opt.start,n_channels=opt.n_channels,bads=opt.bads
-
 #----------------------------------------------------------------------------------------
 class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
     __slots__ =["_fname","_path","_raw","experiment","bads","dtype_original","dtype_plot","verbose","append_bads","_isLoaded"]
@@ -102,6 +99,13 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
         self._isLoaded = False
         
         if ica:
+        """
+        ch ica mode
+        load raw data
+        get ica chop list
+        load ica chop(s)
+        
+        """
            self.get_ica_raw_obj(fname,ica_raw=raw)
         else:
            self._raw,self._fname = self.get_raw_obj(fname,raw=raw,path=path,preload=True)
@@ -127,5 +131,26 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
     def save_bads(self):
         self._raw._data      = self._raw._data.astype(self.dtype_original)
         return self.update_bad_channels(raw=self.raw,bads=self.bads,append=self.append_bads,save=True)
+    
 
-     
+class JuMEG_TSV_Utils_IO_ICAData(JuMEG_TSV_Utils_IO_ICAData):
+    __slots__ =["_fname","_path","_raw","experiment","bads","dtype_original","dtype_plot","verbose","append_bads","_isLoaded"]
+    def __init__(self,**kwargs):
+        super().__init__()
+        self._init(**kwargs)
+        
+        
+        
+'''
+ToDo
+fraw
+load ica/chops/  *-ica.fif to
+chop list list put in combobox
+
+load ica chops
+ deselect/save ICs
+ 
+apply  filter, ica_transform
+
+
+'''

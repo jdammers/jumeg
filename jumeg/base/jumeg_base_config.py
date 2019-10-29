@@ -19,7 +19,7 @@
 https://stackoverflow.com/questions/6866600/how-to-parse-read-a-yaml-file-into-a-python-object
 """
 import os,os.path as op
-import logging,yaml
+import logging,yaml,pprint
 
 from jumeg.base.jumeg_base import jumeg_base as jb
 from jumeg.base            import jumeg_logger
@@ -85,7 +85,18 @@ class JuMEG_CONFIG_YAML_BASE(object):
     
     @property
     def data(self): return self._data
+   
+    @property
+    def filename(self): return self._fname
     
+    def _init(self,**kwargs):
+        pass
+    
+    def info(self):
+        """print config dict"""
+        logger.info("---> config file: {}\n{}/n".format(self.filename,pprint.pformat(self._cfg,indent=4)))
+        
+
     #def GetData(self,key=None):
     #    if key:
     #        return self._cfg.et(key)
@@ -123,6 +134,7 @@ class JuMEG_CONFIG_YAML_BASE(object):
         if isinstance(self._cfg,(dict)):
            if key:
               self._cfg  = self._cfg.get(key)
-           self._data = Struct(self._cfg)
+           self._data  = Struct(self._cfg)
+           self._fname = None
         else:
            self.load_cfg(fname=self._cfg,key=key)
