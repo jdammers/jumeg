@@ -10,6 +10,7 @@
  email      : j.dammers@fz-juelich.de
 
  Change history:
+ 30.10.2019: bug fix: gap, mibs, and bic now return rank not index
  17.10.2019: added rank estimation using PCA, FA in a cross-validation scenario
  25.09.2019: separated functions that were combined
 
@@ -100,7 +101,7 @@ def aic(eigenvalues):
 
 
     # ------------------------------------------
-    # get index of minimum AIC value
+    # get rank of minimum AIC value
     # ------------------------------------------
     aic_dim = aic[1:].argmin() + 1
 
@@ -180,9 +181,9 @@ def bic(eigenvalues, n_samples):
 
 
     # ------------------------------------------
-    # get index of maximum BIC value
+    # get rank of maximum BIC value
     # ------------------------------------------
-    max_bic = bic_val.argmax()
+    max_bic = bic_val[1:].argmax() + 1
 
     return max_bic
 
@@ -267,9 +268,9 @@ def mibs(eigenvalues, n_samples):
 
 
     # ------------------------------------------
-    # get index of maximum MIBS value
+    # get rank of maximum MIBS value
     # ------------------------------------------
-    max_mibs = mibs_val.argmax()
+    max_mibs = mibs_val[1:].argmax() + 1
 
     return max_mibs
 
@@ -315,7 +316,7 @@ def mdl(eigenvalues):
 
 
     # ------------------------------------------
-    # get index of minimum MDL value
+    # get rank of minimum MDL value
     # ------------------------------------------
     mdl_dim = mdl[1:].argmin() + 1
 
@@ -363,9 +364,9 @@ def gap(eigenvalues):
 
 
     # ------------------------------------------
-    # get index of maximum GAP value
+    # get rank of maximum GAP value
     # ------------------------------------------
-    pca_dim = gap_values.argmin()
+    pca_dim = gap_values.argmin() + 1
 
 
     return pca_dim
