@@ -402,14 +402,15 @@ def explVar(eigenvalues, explainedVar=0.95):
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # estimate rank from largest PCA score using cross-validation
+# data must be of shape [n_chan, n_times] = [n_features, n_samples]
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def pca_rank_cv(data, n_comp_list, cv=5):
     # based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
-    pca = PCA(svd_solver='full')
+    pca = PCA(svd_solver='auto')
     pca_scores = []
     for n in n_comp_list:
         pca.n_components = np.int(n)
-        pca_scores.append(np.mean(cross_val_score(pca, data, cv=cv)))
+        pca_scores.append(np.mean(cross_val_score(pca, data.T, cv=cv)))
     n_components_pca = n_comp_list[np.argmax(pca_scores)]
 
     return n_components_pca
@@ -417,6 +418,7 @@ def pca_rank_cv(data, n_comp_list, cv=5):
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # estimate rank from largest Factor Analysis score using cross-validation
+# data must be of shape [n_chan, n_times] = [n_features, n_samples]
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def fa_rank_cv(data, n_comp_list, cv=5):
     # based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
@@ -424,7 +426,7 @@ def fa_rank_cv(data, n_comp_list, cv=5):
     fa_scores = []
     for n in n_comp_list:
         fa.n_components = np.int(n)
-        fa_scores.append(np.mean(cross_val_score(fa, data, cv=cv)))
+        fa_scores.append(np.mean(cross_val_score(fa, data.T, cv=cv)))
     n_components_fa = n_comp_list[np.argmax(fa_scores)]
 
     return n_components_fa
