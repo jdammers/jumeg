@@ -402,11 +402,15 @@ def explVar(eigenvalues, explainedVar=0.95):
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # estimate rank from largest PCA score using cross-validation
-# data must be of shape [n_chan, n_times] = [n_features, n_samples]
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def pca_rank_cv(data, n_comp_list, cv=5):
-    # based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
-    pca = PCA(svd_solver='auto')
+def pca_rank_cv(data, n_comp_list, cv=5, whiten=True):
+    """
+    estimate rank from largest PCA score using cross-validation
+     - data: must be of shape [n_chan, n_times] = [n_features, n_samples]
+     - whiten: applies rank estimation on whitened data (default: True)
+    based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
+    """
+    pca = PCA(svd_solver='auto', whiten=whiten)
     pca_scores = []
     for n in n_comp_list:
         pca.n_components = np.int(n)
@@ -418,10 +422,15 @@ def pca_rank_cv(data, n_comp_list, cv=5):
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # estimate rank from largest Factor Analysis score using cross-validation
-# data must be of shape [n_chan, n_times] = [n_features, n_samples]
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 def fa_rank_cv(data, n_comp_list, cv=5):
-    # based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
+    """
+    estimates rank from largest Factor Analysis score using cross-validation
+     - data: must be of shape [n_chan, n_times] = [n_features, n_samples]
+             if rank estimation should be performed on whitened data, you need
+             to apply whitening before
+    based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
+    """
     fa = FactorAnalysis()
     fa_scores = []
     for n in n_comp_list:
