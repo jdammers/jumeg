@@ -85,7 +85,13 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
            self.load_data(fname=fname)
         else:
            self.load_data(fname=kwargs.get("fname"),path=kwargs.get("path"),raw=kwargs.get("raw"),ica=kwargs.get("ica"))
-           
+    
+    def info(self):
+        logger.info("---> JuMEG TSV IO data loaded\n" +
+                    "  -> path : {}\n".format(self.path) +
+                    "  -> file : {}\n".format(self.fname) +
+                    "  -> ICA  : {}\n".format(ica))
+
     def load_data(self,raw=None,fname=None,path=None,ica=False):
         """
           
@@ -98,17 +104,7 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
         
         self._isLoaded = False
         
-        if ica:
-        """
-        ch ica mode
-        load raw data
-        get ica chop list
-        load ica chop(s)
-        
-        """
-           self.get_ica_raw_obj(fname,ica_raw=raw)
-        else:
-           self._raw,self._fname = self.get_raw_obj(fname,raw=raw,path=path,preload=True)
+        self._raw,self._fname = self.get_raw_obj(fname,raw=raw,path=path,preload=True)
        
         if not self._raw:
            return
@@ -119,26 +115,75 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
         
         self._isLoaded   = True
         
-        if self.verbose:
-           logger.info("---> JuMEG TSV IO data loaded\n"+
-                       "  -> path : {}\n".format(self.path)+
-                       "  -> file : {}\n".format(self.fname)+
-                       "  -> ICA  : {}\n".format(ica))
-              
+        if self.verbose: self.info()
+        
         return self.raw,self.bads
     
         
     def save_bads(self):
         self._raw._data      = self._raw._data.astype(self.dtype_original)
         return self.update_bad_channels(raw=self.raw,bads=self.bads,append=self.append_bads,save=True)
-    
 
-class JuMEG_TSV_Utils_IO_ICAData(JuMEG_TSV_Utils_IO_ICAData):
-    __slots__ =["_fname","_path","_raw","experiment","bads","dtype_original","dtype_plot","verbose","append_bads","_isLoaded"]
+
+class JuMEG_TSV_Utils_IO_ICAChop(JuMEG_TSV_Utils_IO_Data):
+    __slots__ = ["_fname","_path","_raw","experiment","bads","dtype_original","dtype_plot","verbose",
+                 "append_bads","_isLoaded"]
+    """
+    ToDo
+    chop_times -> chop_list
+
+    """
+    
     def __init__(self,**kwargs):
         super().__init__()
         self._init(**kwargs)
+
+
+    def load_data(self,raw=None,fname=None,path=None,ica=False):
+        """
+    
+        :param self:
+        :param raw:
+        :param fname:
+        :param ica : <False>
+        :return:
+        """
         
+        self._isLoaded = False
+        
+        self.get_ica_raw_obj(fname,ica_raw=raw)
+        
+        if not self._raw:
+            return
+        
+        self._path,self._fname = os.path.split(self.fname)
+        
+        self.bads = self._raw.info.get('bads')
+        self.dtype_original = self._raw._data.dtype
+        self._raw._data = self._raw._data.astype(self.dtype_plot)
+        
+        self._isLoaded = True
+        
+        if self.verbose:
+            self.info()
+        
+        return self.raw,self.bads
+
+
+class JuMEG_TSV_Utils_IO_ICAData(JuMEG_TSV_Utils_IO_Data):
+    __slots__ =["_RAW","_ICA","verbose"]
+    """
+    ToDo
+    chop_times -> chop_list
+    
+    """
+    def __init__(self,**kwargs):
+        super().__init__()
+        self._RAW = JuMEG_TSV_Utils_IO_Data(**kawargs)
+        self._ICA = JuMEG_TSV_Utils_IO_ICAChop(**kawargs)
+
+        self._init(**kwargs)
+
         
         
 '''

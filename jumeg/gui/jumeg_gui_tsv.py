@@ -59,7 +59,7 @@ from jumeg.base import jumeg_logger
 logger = logging.getLogger('jumeg')
 
 
-__version__="2019-09-13-001"
+__version__="2019-10-30-001"
 
 class JuMEG_wxTSVPanel(wx.Panel):
     
