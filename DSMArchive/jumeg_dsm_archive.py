@@ -76,7 +76,7 @@ from jumeg.base.pipelines.jumeg_pipelines_utils_base import parser_update_flags
 
 logger = logging.getLogger("jumeg")
 
-__version__= "2019.07.12.005"
+__version__= "2019.10.30.001"
 
 
 class JuMEG_DSMConfig(object):
@@ -846,6 +846,7 @@ def get_args(argv,parser=None,defaults=None,version=None):
     #--- flags
     parser.add_argument("-v","--verbose",action="store_true",help=h_verbose)
     parser.add_argument("-d","--debug",action="store_true",help="debug mode")
+    parser.add_argument("-t","--test",action="store_true",help="test developer mode")
 
     parser.add_argument("-meg","--meg",action="store_true",help="archive meg data")
     parser.add_argument("-eeg","--eeg",action="store_true",help="archive eeg data")
@@ -870,8 +871,8 @@ def main(argv):
        parser.print_help()
        sys.exit(-1)
     
-    if opt.debug:
-       os.environ["JUMEG_PATH_BTI_EXPORT"] =jb.expandvars("$JUMEG_PATH_LOCAL_DATA")+"/megdaw_data21"
+    if opt.test:
+       os.environ["JUMEG_PATH_BTI_EXPORT"] = jb.expandvars("$JUMEG_PATH_LOCAL_DATA")+"/megdaw_data21"
        
     if opt.run: apply(name=argv[0],opt=opt)
     
