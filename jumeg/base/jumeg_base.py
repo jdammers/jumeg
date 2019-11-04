@@ -532,7 +532,53 @@ class JuMEG_Base_Basic(object):
         
         return False
 
+"""
+ToDo
+in CLS __init__
+self._defaults = { "meg":False,"grad":False...,  exclude_bads=False}
+self._types=None
 
+@property
+def types(self): return self._types
+@types.setter
+def types(self,l)
+    self._types = self._defaults.copy()
+    for k in l
+        self._types[k]=True
+
+def meg_nobads(self,raw)
+    self.types = ["meg"]
+    return self._get_picks_nobads()
+  
+def _get_picks() # can apply update/changes to mne function
+    return mne.pick_types(raw.info, **self._types)
+
+def _get_picks_no_bads() # can apply update/changes to mne function
+    self._types["exclude_bads"]=True
+    return mne.pick_types(raw.info, **self._types)
+ 
+ 
+ or use contextmanager YIELD
+
+def _GP() # can apply update/changes to mne function
+    Yield
+    return mne.pick_types(raw.info, **self._types)
+ 
+ def _GPNB() # can apply update/changes to mne function
+ #_get_picks_no_bads
+    Yield
+    self._types["exclude_bads"]=True
+    return mne.pick_types(raw.info, **self._types)
+
+@ _BPNB
+def meg_nobads(self,raw)
+    self.types = ["meg"]
+@ _BP
+def meg(self,raw)
+    self.types = ["meg"]
+   
+   
+"""
 class JuMEG_Base_PickChannels(object):
     """ MNE Wrapper Class for mne.pick_types
     return list of channel index from mne.raw obj e.g. for special groups
@@ -670,7 +716,7 @@ class JuMEG_Base_PickChannels(object):
     def all_nobads(self, raw):
         """ call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude='bads' """
         return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude='bads')
-       
+  #--- meg
     def meg(self,raw):
         """ call with meg=True """
         return mne.pick_types(raw.info,meg=True)      
@@ -679,12 +725,6 @@ class JuMEG_Base_PickChannels(object):
         ''' call with meg=True,exclude='bads' '''
         return mne.pick_types(raw.info, meg=True,exclude='bads')
     
-    def ref(self,raw):
-        ''' call with ref=True'''
-        return mne.pick_types(raw.info,ref_meg=True,meg=False,eeg=False,stim=False,eog=False)
-    def ref_nobads(self,raw):
-        ''' call with ref=True,exclude='bads' '''
-        return mne.pick_types(raw.info,ref_meg=True,meg=False,eeg=False,stim=False,eog=False,exclude='bads')
         
     def meg_and_ref(self,raw):
         ''' call with meg=True,ref_meg=True'''
@@ -692,6 +732,14 @@ class JuMEG_Base_PickChannels(object):
     def meg_and_ref_nobads(self,raw):
         ''' call with meg=mag,ref_meg=True,exclude='bads' '''
         return mne.pick_types(raw.info,meg=True,ref_meg=True,eeg=False,stim=False,eog=False,exclude='bads')
+    
+    def meg_ecg_eog(self,raw):
+        ''' call with meg=True,ref_meg=False,ecg=True,eog=True,stim=True,exclude=bads'''
+        return mne.pick_types(raw.info, meg=True,ref_meg=False,eeg=False,stim=False,eog=True,ecg=True)
+  
+    def meg_ecg_eog_nobads(self,raw):
+        ''' call with meg=True,ref_meg=False,ecg=True,eog=True,stim=True,exclude=bads'''
+        return mne.pick_types(raw.info, meg=True,ref_meg=False,eeg=False,stim=False,eog=True,ecg=True,exclude='bads')
   
     def meg_ecg_eog_stim(self,raw):
         ''' call with meg=True,ref_meg=False,ecg=True,eog=Truestim=True,'''
@@ -699,7 +747,15 @@ class JuMEG_Base_PickChannels(object):
     def meg_ecg_eog_stim_nobads(self,raw):
         ''' call with meg=True,ref_meg=False,ecg=True,eog=True,stim=True,exclude=bads'''
         return mne.pick_types(raw.info, meg=True,ref_meg=False,eeg=False,stim=True,eog=True,ecg=True,exclude='bads')
-       
+  #---
+    def ref(self,raw):
+        ''' call with ref=True'''
+        return mne.pick_types(raw.info,ref_meg=True,meg=False,eeg=False,stim=False,eog=False)
+
+    def ref_nobads(self,raw):
+        ''' call with ref=True,exclude='bads' '''
+        return mne.pick_types(raw.info,ref_meg=True,meg=False,eeg=False,stim=False,eog=False,exclude='bads')
+   #---
     def ecg(self,raw):
         ''' meg=False,ref_meg=False,ecg=True,eog=False '''
         return mne.pick_types(raw.info,meg=False,ref_meg=False,ecg=True,eog=False)
@@ -1436,9 +1492,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
          
         Results
         ----------
-         raw obj
-         
-         fname from raw obj 
+         raw obj,fname from raw obj
         """
         
         if raw:
@@ -1454,7 +1508,8 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            logger.debug(" --> reading raw data:\n"+
                         "  -> raw : {}\n".format(raw)+
                         "  -> file: {}\n".format(fname)+
-                        "  -> path: {}\n".format(path))
+                        "  -> path: {}\n".format(path)+
+                        "  -> Bads: {}".format( str(raw.info['bads'])))
         if fname:
            fn = self.expandvars( fname )
            if path:

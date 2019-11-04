@@ -15,7 +15,7 @@ from pubsub  import pub
 
 logger = logging.getLogger('jumeg')
 
-__version__="2019.07.02.001"
+__version__="2019.09.27.001"
 
 '''
 #================================================
@@ -174,7 +174,7 @@ class JuMEG_wxPDFBTi(JuMEG_wxPDFBase):
         self._pnl_search = wx.Panel(parent,style=wx.SUNKEN_BORDER)
         self._pnl_search.SetBackgroundColour(kwargs.get("bgsearch","grey95"))
     
-    def _ck_file_size(self,pdf,ckhs=False,min_size=1):
+    def _ck_file_size(self,pdf,ckhs=False,stage=None,min_size=1):
         """
         checks filesize > 1 for pdf,config
 
@@ -185,11 +185,14 @@ class JuMEG_wxPDFBTi(JuMEG_wxPDFBase):
         :return:
          True/False
         """
-        
+        #if self.debug:
+        #   logger.debug("PDFs  stage: {}\n{}".format(stage,pdf))
         key_list = [os.path.basename( pdf.get("pdf") ),"config"]
         if ckhs:
            key_list.append("hs_file")
         d = os.path.dirname( pdf.get("pdf") )
+        if stage:
+           d = os.path.join(stage,d)
         try:
             for f in key_list:
                 if os.stat( os.path.join(d,f) ).st_size < min_size:
@@ -212,11 +215,13 @@ class JuMEG_wxPDFBTi(JuMEG_wxPDFBase):
            logger.error("ERROR Please select PDFs first !!!",file=sys.stderr)
            return None
         
+        # logger.info("PDFs: {}".format(self._pdfs))
+        
         for subject_id in self._pdfs["bti"]:
             for idx in range(len(self._pdfs["bti"][subject_id])):
                 if not self._ckbox[subject_id][idx].GetValue(): continue
                 
-                self._ckbox[subject_id][idx].SetValue(self._ck_file_size(self._pdfs["bti"][subject_id][idx]))
+                self._ckbox[subject_id][idx].SetValue(self._ck_file_size(self._pdfs["bti"][subject_id][idx],stage=self._pdfs["stage"]) )
                 self._pdfs["bti"][subject_id][idx]["selected"] = self._ckbox[subject_id][idx].GetValue()
                 
                 if self._pdfs["bti"][subject_id][idx]["selected"]:
@@ -418,7 +423,10 @@ class JuMEG_wxPselBTi(JuMEG_wxPselBase):
         
         for id in self.IDSelectionBox.GetSelections():
             sdir = os.path.join( self.GetStage(),id)
-            for fpdf in self.IDSelectionBox.IDs.find_file(start_dir=sdir,pattern=pattern,file_extention=file_extention,recursive=self.SearchBox.isRecursive,ignore_case=self.SearchBox.isIgnoreCase,debug=self.debug):
+            flist = self.IDSelectionBox.IDs.find_files(start_dir=sdir,pattern=pattern,file_extention=file_extention,
+                                                       recursive=self.SearchBox.isRecursive,
+                                                       ignore_case=self.SearchBox.isIgnoreCase,debug=self.debug)
+            for fpdf in flist:
                 if not pdfs["bti"].get(id):
                    pdfs["bti"][id] = []
                    scan_tmp,session = fpdf.split("/")[0:2]

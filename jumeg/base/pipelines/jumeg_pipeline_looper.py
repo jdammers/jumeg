@@ -589,7 +589,7 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         if self.debug:
             logger.info("  -> loading config file: {} ...".format(self.config_file) )
         with open(self.config_file,'r') as f:
-             self._config_data = yaml.load(f)
+             self._config_data = yaml.full_load(f)
         if self.debug:
             logger.info("  -> DONE loading config file")
 
@@ -648,7 +648,7 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
             #          logger.info(" ---> update: dict: {} key: {} value: {}".format(i,v,dicts[i].get(v)) )
             #          return dicts[i].get(v)
             
-            logger.debug(" ---> update: key: {} value:{} ".format(k,v))
+            # logger.debug(" ---> update: key: {} value:{} ".format(k,v))
             return v
     
     

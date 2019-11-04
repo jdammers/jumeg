@@ -29,16 +29,13 @@ from jumeg.base                                      import jumeg_logger
 from jumeg.base.jumeg_base                           import jumeg_base as jb
 from jumeg.base.jumeg_badchannel_table               import update_bads_in_hdf
 from jumeg.base.pipelines.jumeg_pipelines_utils_base import get_args,JuMEG_PipelineFrame
-
+from jumeg.base.pipelines.jumeg_pipelines_ica        import JuMEG_PIPELINES_ICA
 from jumeg.plot.jumeg_plot_preproc                   import JuMEG_PLOT_PSD
 
 #--- preproc
 from jumeg.jumeg_noise_reducer     import noise_reducer
 from jumeg.jumeg_suggest_bads      import suggest_bads
 from jumeg.jumeg_interpolate_bads  import interpolate_bads as jumeg_interpolate_bads
-
-
-from apply_ica import chop_and_apply_ica
 
 logger = logging.getLogger("jumeg")
 
@@ -182,7 +179,7 @@ def apply_interpolate_bads(raw_fname=None,raw=None,config=None,label="interpolat
 #---------------------------------------------------
 #--- apply_ica
 #---------------------------------------------------
-@JuMEG_PipelineFrame
+# @JuMEG_PipelineFrame
 def apply_ica(raw_fname=None,raw=None,config=None,label="ica",fname_out=None):
     """
 
@@ -190,50 +187,23 @@ def apply_ica(raw_fname=None,raw=None,config=None,label="ica",fname_out=None):
     :param raw:
     :param cfg:
     :return:
-     filename,raw-obj
+     filename,raw-obj,True
     """
-   #--- Interpolate bad channels using jumeg
-    with jumeg_logger.StreamLoggerSTD(label=label):
-       
-         clean_filt,clean_unfilt = chop_and_apply_ica(raw_fname,config,raw_unfilt=raw)
+ 
+    if not config.get("run"): return fname_out,raw
+   
+    jICA =JuMEG_PIPELINES_ICA()
+    path = os.path.dirname(raw_fname)
+    if config.get("do_fit",False):
+       jICA.apply_fit(raw=raw,raw_fname=raw_fname,path=path,config=config)
+   
+   #--- here needs visual inspection
+   
+    if config.get("do_transform",False):
+        jICA.apply_transfort(raw=raw,raw_fname=raw_fname,path=path,config=config)
 
-         clean_filt.save(clean_filt_fname)
+    return fname_out,raw
 
-         if config.get("unfiltered"):
-            clean_unfilt.save(clean_unfilt_fname)
-         
-         
-       #-- check results
-         if config.get("plot_block"):
-            raw.plot(block=config.get("plot_block"))
-
-    return fname_out,raw,True
-
-
-
-
-'''
-for raw_fname in sub_file_list:
-
-,nr,bcc,fibp,rs'
-        if raw_fname.endswith(pre_proc_ext + '-raw.fif'):
-
-            raw_filt_fname = op.join(dirname, raw_fname)
-
-            if raw_fname.endswith('-raw.fif'):
-                clean_filt_fname = raw_filt_fname.rsplit('-raw.fif')[0] + ',ar-raw.fif'
-
-            clean_unfilt_fname = clean_filt_fname.replace(',fibp', '')
-
-            if not op.exists(clean_filt_fname) or (unfiltered and not op.exists(clean_unfilt_fname)):
-
-                # creates list of small, cleaned chops
-                clean_filt, clean_unfilt = chop_and_apply_ica(raw_filt_fname, ica_cfg)
-
-                clean_filt.save(clean_filt_fname)
-
-                if unfiltered:
-                    clean_unfilt.save(clean_unfilt_fname)
 
 
 #---------------------------------------------------
@@ -268,6 +238,3 @@ def apply_resample(raw_fname,raw=None,config=None,label="resample",fname_out=Non
     return fname_out,raw,True
 
 
-
-
-'''

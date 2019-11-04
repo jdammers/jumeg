@@ -27,7 +27,7 @@ from jumeg.base                    import jumeg_logger
 
 logger = logging.getLogger("jumeg")
 
-__version__= "2019.05.10.001"
+__version__= "2019.10.11.001"
 
 #---
 def get_args(argv,parser=None,defaults=None,version=None):
@@ -184,6 +184,7 @@ class JuMEG_PipelineFrame(object):
         self._debug     = None
         self._run       = False
         self._raw_ischanged = False
+        self._rest_bads  = False
         
         if len(kargs):
            self._function = kargs[0]
@@ -243,12 +244,16 @@ class JuMEG_PipelineFrame(object):
         self._cfg       = kwargs.get("config")
         self.verbose    = kwargs.get("verbose",self._verbose)
         self._debug     = kwargs.get("debug",self._debug)
+        self._reset_bads= kwargs.get("reset_bads",False)
         
     def info(self):
-        return "\n".join(["  -> raw obj            : {}".format(self._raw),
-                          "  -> file extention list: {}".format(self._cfg.get("file_extention")),
-                          "  -> input  raw file    : {}".format(self._raw_fname),
-                          "  -> output raw file    : {}".format(self._fname_out)])
+        msg = ["  -> raw obj            : {}".format(self._raw),
+               "  -> file extention list: {}".format(self._cfg.get("file_extention")),
+               "  -> input  raw file    : {}".format(self._raw_fname),
+               "  -> output raw file    : {}".format(self._fname_out)]
+        if self._raw:
+           msg.append("  -> Bads               : {}".format(str(self._raw.info['bads'])) )
+        return "\n".join(msg)
     
     def __call__(self,*kargs,**kwargs):
         """
@@ -322,7 +327,7 @@ class JuMEG_PipelineFrame(object):
             return self._fname_out,None
         
         #--- OK load raw, reset bads
-        self._raw,self._raw_fname = jb.get_raw_obj(self._raw_fname,raw=self._raw,reset_bads=True)
+        self._raw,self._raw_fname = jb.get_raw_obj(self._raw_fname,raw=self._raw,reset_bads=self._reset_bads)
         logger.info(" --> preproc {}\n".format(self.label) + self.info())
         return self._raw_fname,self._raw
     

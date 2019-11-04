@@ -4,10 +4,15 @@
 ----------------------------------------------------------------------
 --- jumeg.decompose.fourier_ica --------------------------------------
 ----------------------------------------------------------------------
- author     : Lukas Breuer
- email      : l.breuer@fz-juelich.de
- last update: 13.11.2015
- version    : 1.0
+ authors:
+            Juergen Dammers
+            Lukas Breuer
+ email      : j.dammers@fz-juelich.de
+
+ Change history:
+ 30.10.2019: bug fix: gap, mibs, and bic now return rank not index
+ 17.10.2019: added rank estimation using PCA, FA in a cross-validation scenario
+ 25.09.2019: separated functions that were combined
 
 ----------------------------------------------------------------------
  The implementation of the following methods for automated
@@ -52,6 +57,8 @@ All methods try to estimate the optimal data dimension:
 # import necessary modules
 # ------------------------------------------
 import numpy as np
+from sklearn.decomposition import PCA, FactorAnalysis
+from sklearn.model_selection import cross_val_score
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #  AIC - Akaike's information criterion
@@ -94,7 +101,7 @@ def aic(eigenvalues):
 
 
     # ------------------------------------------
-    # get index of minimum AIC value
+    # get rank of minimum AIC value
     # ------------------------------------------
     aic_dim = aic[1:].argmin() + 1
 
@@ -174,9 +181,9 @@ def bic(eigenvalues, n_samples):
 
 
     # ------------------------------------------
-    # get index of maximum BIC value
+    # get rank of maximum BIC value
     # ------------------------------------------
-    max_bic = bic_val.argmax()
+    max_bic = bic_val[1:].argmax() + 1
 
     return max_bic
 
@@ -261,9 +268,9 @@ def mibs(eigenvalues, n_samples):
 
 
     # ------------------------------------------
-    # get index of maximum MIBS value
+    # get rank of maximum MIBS value
     # ------------------------------------------
-    max_mibs = mibs_val.argmax()
+    max_mibs = mibs_val[1:].argmax() + 1
 
     return max_mibs
 
@@ -309,7 +316,7 @@ def mdl(eigenvalues):
 
 
     # ------------------------------------------
-    # get index of minimum MDL value
+    # get rank of minimum MDL value
     # ------------------------------------------
     mdl_dim = mdl[1:].argmin() + 1
 
@@ -357,9 +364,9 @@ def gap(eigenvalues):
 
 
     # ------------------------------------------
-    # get index of maximum GAP value
+    # get rank of maximum GAP value
     # ------------------------------------------
-    pca_dim = gap_values.argmin()
+    pca_dim = gap_values.argmin() + 1
 
 
     return pca_dim
@@ -393,6 +400,46 @@ def explVar(eigenvalues, explainedVar=0.95):
 
     return pca_dim
 
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# estimate rank from largest PCA score using cross-validation
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def pca_rank_cv(data, n_comp_list, cv=5, whiten=True):
+    """
+    estimate rank from largest PCA score using cross-validation
+     - data: must be of shape [n_chan, n_times] = [n_features, n_samples]
+     - whiten: applies rank estimation on whitened data (default: True)
+    based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
+    """
+    pca = PCA(svd_solver='auto', whiten=whiten)
+    pca_scores = []
+    for n in n_comp_list:
+        pca.n_components = np.int(n)
+        pca_scores.append(np.mean(cross_val_score(pca, data.T, cv=cv)))
+    n_components_pca = n_comp_list[np.argmax(pca_scores)]
+
+    return n_components_pca
+
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# estimate rank from largest Factor Analysis score using cross-validation
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def fa_rank_cv(data, n_comp_list, cv=5):
+    """
+    estimates rank from largest Factor Analysis score using cross-validation
+     - data: must be of shape [n_chan, n_times] = [n_features, n_samples]
+             if rank estimation should be performed on whitened data, you need
+             to apply whitening before
+    based on: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html
+    """
+    fa = FactorAnalysis()
+    fa_scores = []
+    for n in n_comp_list:
+        fa.n_components = np.int(n)
+        fa_scores.append(np.mean(cross_val_score(fa, data.T, cv=cv)))
+    n_components_fa = n_comp_list[np.argmax(fa_scores)]
+
+    return n_components_fa
 
 
 

@@ -13,7 +13,7 @@
 #--------------------------------------------
 # License: BSD (3-clause)
 #--------------------------------------------
-# Updates  12.07.2019
+# Updates  28.10.2019 => yaml.full_load(f)
 #--------------------------------------------
 """
 Example
@@ -76,7 +76,7 @@ from jumeg.base.pipelines.jumeg_pipelines_utils_base import parser_update_flags
 
 logger = logging.getLogger("jumeg")
 
-__version__= "2019.07.12.005"
+__version__= "2019.10.30.001"
 
 
 class JuMEG_DSMConfig(object):
@@ -179,9 +179,12 @@ class JuMEG_DSMConfig(object):
            if os.path.isfile(fname):
               logger.warning("---> Config file not found: {} using default config file {}".format(self.filename,fname) )
               self.filename = fname
-             
+       
+        if self.debug:
+           logger.debug("  -> Start loading config file: {}".format(self.filename))
+
         with open(self.filename,'r') as f:
-             self._data = yaml.load(f)
+             self._data = yaml.full_load(f)
         
         if self.debug:
            logger.debug("  -> config:\n {}".format(self._data))
@@ -344,7 +347,7 @@ class JuMEG_DSMArchive(object):
            self.IDs = kwargs.get("ids")
         
         self.do_archive   = kwargs.get("archive",self.do_archive)
-        self.do_overwrite = kwargs.get("aoverwrite",self.do_overwrite)
+        self.do_overwrite = kwargs.get("overwrite",self.do_overwrite)
    
     def write_listfile(self,fname,flist,stage=None):
         with open(fname, mode='wt', encoding='utf-8') as f:
@@ -601,7 +604,7 @@ class JuMEG_DSMArchive(object):
                 if not self._pdfs: continue
                 
                 if self.debug:
-                   logger.debug(" --> {}".format("\n  -> {}".join( self._pdfs )) )
+                   logger.debug("\n  -> {}".join( self._pdfs ))
                 
                 self._pdfs = self.GetPDFsToArchive(stage,id)
                 
@@ -843,13 +846,14 @@ def get_args(argv,parser=None,defaults=None,version=None):
     #--- flags
     parser.add_argument("-v","--verbose",action="store_true",help=h_verbose)
     parser.add_argument("-d","--debug",action="store_true",help="debug mode")
+    parser.add_argument("-t","--test",action="store_true",help="test developer mode")
 
     parser.add_argument("-meg","--meg",action="store_true",help="archive meg data")
     parser.add_argument("-eeg","--eeg",action="store_true",help="archive eeg data")
 
     parser.add_argument("-r","--run",action="store_true",help="!!! EXECUTE & RUN this program !!!")
     parser.add_argument("-ov","--overwrite",action="store_true",help="overwrite/archive existing file on DSM")
-    parser.add_argument("-arc","--archive",action="store_true",help="apply archiving, without just testing !!!")
+    parser.add_argument("-arc","--archive",action="store_true",help="apply archiving")
     
     parser.add_argument("-log","--log2file",action="store_true",help="generate logfile")
     parser.add_argument("-logoverwrite","--logoverwrite",action="store_true",help="overwrite existing logfile")
@@ -867,8 +871,8 @@ def main(argv):
        parser.print_help()
        sys.exit(-1)
     
-    if opt.debug:
-       os.environ["JUMEG_PATH_BTI_EXPORT"] =jb.expandvars("$JUMEG_PATH_LOCAL_DATA")+"/megdaw_data21"
+    if opt.test:
+       os.environ["JUMEG_PATH_BTI_EXPORT"] = jb.expandvars("$JUMEG_PATH_LOCAL_DATA")+"/megdaw_data21"
        
     if opt.run: apply(name=argv[0],opt=opt)
     
