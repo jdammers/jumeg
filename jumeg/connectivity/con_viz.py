@@ -126,8 +126,8 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
                              linewidth=1.5, colormap='hot', vmin=None,
                              vmax=None, colorbar=True, title=None,
                              colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
-                             fontsize_title=12, fontsize_names=8,
-                             fontsize_colorbar=8, padding=6.,
+                             symmetric_cbar=False, fontsize_title=12,
+                             fontsize_names=8, fontsize_colorbar=8, padding=6.,
                              fig=None, subplot=111, interactive=True,
                              node_linewidth=2., show=True, arrow=False,
                              arrowstyle='->,head_length=3,head_width=3', **kwargs):
@@ -182,6 +182,8 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         Size of the colorbar.
     colorbar_pos : 2-tuple
         Position of the colorbar.
+    symmetric_cbar : bool
+        Symmetric colorbar around 0.
     fontsize_title : int
         Font size to use for title.
     fontsize_names : int
@@ -313,6 +315,14 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         vmin = np.min(con[np.abs(con) >= con_thresh])
     if vmax is None:
         vmax = np.max(con)
+
+    if symmetric_cbar:
+        if np.fabs(vmin) > np.fabs(vmax):
+            vmin = -np.fabs(vmin)
+            vmax = np.fabs(vmin)
+        else:
+            vmin = -np.fabs(vmax)
+            vmax = np.fabs(vmax)
     vrange = vmax - vmin
 
     # We want to add some "noise" to the start and end position of the
@@ -441,7 +451,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                      n_lines=None, fig=None, show=True,
                                      vmin=None, vmax=None, colormap='hot',
                                      colorbar=False, colorbar_pos=(-0.3, 0.1),
-                                     bbox_inches=None, tight_layout=None, **kwargs):
+                                     symmetric_cbar=False, bbox_inches=None,
+                                     tight_layout=None, **kwargs):
     """
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
@@ -564,8 +575,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                          node_edgecolor='white', fig=fig,
                                          vmax=vmax, vmin=vmin, colorbar_size=0.2,
                                          colorbar_pos=colorbar_pos,
-                                         colorbar=colorbar, show=show,
-                                         subplot=subplot, indices=indices,
+                                         colorbar=colorbar, symmetric_cbar=symmetric_cbar,
+                                         show=show, subplot=subplot, indices=indices,
                                          title=title, **kwargs)
 
     if include_legend:
