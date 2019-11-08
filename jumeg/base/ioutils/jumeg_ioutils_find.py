@@ -166,8 +166,9 @@ class JuMEG_IoUtils_FileIO(object):
     
         """
         prev_cwd = os.getcwd()
+        path = jb.expandvars(path)
         try:
-            os.chdir(path)
+            os.chdir( path )
         except Exception as e:
             logger.exception("Can`t change to directory: ".format(path),exc_info=True)
         yield
@@ -281,6 +282,7 @@ class JuMEG_IoUtils_FileIO(object):
         with self.working_directory(start_dir):
             for fext in file_extention: # ToDo  fext re /\.vhdr|vmrk|eeg$/
                 for f in glob.iglob(pattern + fext,recursive=recursive):
+                    #print(f)
                     if abspath:
                         files_found.append(os.path.abspath(os.path.join(start_dir,f)))
                     else:
@@ -299,14 +301,15 @@ class JuMEG_IoUtils_FileIO(object):
         :return:
           pattern
         """
-        
-        pat = re.sub('\*\*+','**',pat)
-        
-        if pat.find("**") < 0:  # search in subdir
-            d = pat.split("/")
-            d[-1] = "**/" + d[-1]
-            #d[0] = "**/" + d[0]
-            pat = "/".join(d)
+        if not pat:
+           pat= "*"
+        else:
+           pat = re.sub('\*\*+','**',pat)
+           if pat.find("**") < 0:  # search in subdir
+              d = pat.split("/")
+              d[-1] = "**/" + d[-1]
+             #d[0] = "**/" + d[0]
+              pat = "/".join(d)
         
         if ignore_case:
             pat_ic = ""

@@ -300,6 +300,7 @@ class JuMEG_ICA_FILTER(object):
         
         """
         self._update_from_kwargs(**kwargs)
+        
         logger.info("---> Filter start: {}".format(self.fname))
         self.raw.filter(l_freq=self.flow,h_freq=self.fhigh,picks=self.picks)
         self._update_postfix()
@@ -359,17 +360,34 @@ class JuMEG_PIPELINES_ICA(object):
         self.path      = kwargs.get("path",self._path)
         self.raw_fname = kwargs.get("raw_fname",self._raw_fname)
 
-   #--- calc chop times
+    def trunc_nd(self,n,d):
+        """
+        https://stackoverflow.com/questions/8595973/truncate-to-three-decimals-in-python/8595991
+        """
+        n = str(n)
+        return (n if not n.find('.') + 1 else n[:n.find('.') + d + 1])
+
+    #--- calc chop times
     def _calc_chop_times(self):
-        n_chops,t_rest = np.divmod(self.raw.times[-1],self.cfg.chops.length)
-        n_chops = int(n_chops)
-        dtime   = self.cfg.chops.length + t_rest // n_chops # add rest to length
+        logger.debug("  -> Start calc Chop Times: length: {} raw time: {}".format(self.cfg.chops.length,self.raw.times[-1]))
+        self._chop_times = None
         
-        cps          = np.zeros([n_chops,2],dtype=np.float32)
-        cps[:,0]    += np.arange(n_chops) * dtime
-        cps[0:-1,1] += cps[1:,0]
-        cps[-1,1]    = self.raw.times[-1]
+        if self.raw.times[-1] <= self.cfg.chops.length:
+           cps      = np.zeros([1,2],dtype=np.float32)
+           cps[0,0] = 0.0
+           logger.warning("---> <Raw Times> : {} smaler than <Chop Times> : {}\n\n".format(self.raw.times[-1],self._chop_times))
+        else:
+           n_chops,t_rest = np.divmod(self.raw.times[-1],self.cfg.chops.length)
+           n_chops = int(n_chops)
+           dtime   = self.cfg.chops.length + t_rest // n_chops # add rest to length
         
+           cps          = np.zeros([n_chops,2],dtype=np.float32)
+           cps[:,0]    += np.arange(n_chops) * dtime
+           cps[0:-1,1] += cps[1:,0]
+        #cps[-1,1]    = '%.3f'%( self.raw.times[-1] ) # ???? error in mne crop line 438
+        # fb 01.11.2019
+        
+        cps[-1,1] = None #self.trunc_nd(self.raw.times[-1], 3)  # ???? error in mne crop line 438 mne error tend == or less tmax
         self._chop_times = cps
         
         logger.debug("  -> Chop Times:\n{}".format(self._chop_times))
@@ -388,12 +406,24 @@ class JuMEG_PIPELINES_ICA(object):
         self._CFG.update(**kwargs)
  
       #--- init or load raw
-        self._raw,self._raw_fname = jb.get_raw_obj(self.raw_fname,raw=self.raw,)
+        self._raw,self._raw_fname = jb.get_raw_obj(self.raw_fname,raw=self.raw)
       
       #--- get picks from raw
         self._picks = jb.picks.meg_nobads(self._raw)
+      
+      #--- chop times
+        if self.cfg.chops.epocher.use:
+            """ToDo use epocher information chop onset,offset"""
+            pass
+        else:
+            self._calc_chop_times()
+        
+        if not isinstance(self._chop_times,(np.ndarray)):
+           logger.error("---> No <chop times> defined for ICA\n" +
+                        "  -> raw filename : {}\n".format(self._raw_fname))
+           return None
 
-      #--- ck for 1.filter => filter inplace:
+        #--- ck for 1.filter => filter inplace:
         if self.cfg.pre_filter.run:
            filename = self._FiPre.apply(
                                  flow  = self.cfg.pre_filter.flow,
@@ -407,10 +437,6 @@ class JuMEG_PIPELINES_ICA(object):
         else:
            filename = self._raw_fname
         
-        if self.cfg.chops.epocher.use:
-           pass
-        else:
-           self._calc_chop_times()
            
         fname,fextention = op.basename(filename).rsplit('-',1) #raw.fif
         path_ica         = op.join( os.path.dirname(filename),"ica" )
@@ -421,8 +447,7 @@ class JuMEG_PIPELINES_ICA(object):
         msg=["---> Apply ICA => FIT ICA -> mkdirs\n  -> ica     : {}\n  -> chops   : {}\n  -> filename: {}\n  -> raw filename: {}".format(path_ica,path_ica_chops,fname,self._raw_fname),
              "  -> is filtered: {}".format(self._raw_isfiltered)]
         logger.info( "\n".join(msg))
-      
-      #--- calc ica fit  for chops
+        
         for idx in range( self._chop_times.shape[0] ) :
             chop = self._chop_times[idx]
             
@@ -435,8 +460,10 @@ class JuMEG_PIPELINES_ICA(object):
                         "  -> ica chop path: {}\n".format(path_ica_chops)+
                         "  -> raw filename : {}\n".format(self._raw_fname))
             
-            raw_chop = self._raw.copy().crop(tmin=chop[0],tmax=chop[1])
-      
+            if self._chop_times.shape[0] > 1:
+               raw_chop = self._raw.copy().crop(tmin=chop[0],tmax=chop[1])
+            else:
+               raw_chop = self._raw
           #--- get dict from struct
             reject = self.CFG.GetDataDict(key="reject")
             

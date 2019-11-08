@@ -239,7 +239,7 @@ class JuMEG_DSMArchive(object):
         self._CFG   = JuMEG_DSMConfig(**kwargs)
         self.Config.update(**kwargs)
        
-        self._remove_tmpfile = True
+        self._remove_tmpfile = False#True
         
         self._FIDs  = JuMEG_IOutils_FindIds()
         self._FPDFs = JuMEG_IoUtils_FileIO()
@@ -537,19 +537,21 @@ class JuMEG_DSMArchive(object):
            cmd.extend(["ssh","-x",self.Config.host])
         cmd.extend(["dsmc","archive","-filelist=" + fname,"-description="+self.GetDescription(id) ])
         cmd.extend( self.Config.GetDSMOptions() )
-        
+       
        #--- call dsm
-        logger.info("  -> DSM archive call: {}".format( " ".join(cmd) ))
+        logger.info("  -> DSM archive call: {}\n  -> {}".format( self.do_archive," ".join(cmd) ))
         
         if self.do_archive:
-           logger.info("  -> START DSM archive call: {}".format(" ".join(cmd)))
-           dsm = subprocess.run(cmd,shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False,universal_newlines=True)
+           cmd_str = " ".join(cmd)
+           logger.info("  -> START DSM archive call: {}".format( cmd_str ) )
            try:
-              result = dsm.stdout #.readlines()
-              logger.debug("DSM archive output\n {}".format(result))
+              '''http://queirozf.com/entries/python-3-subprocess-examples'''
+              dsm = subprocess.run(cmd,shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False,universal_newlines=True)
+              logger.debug("DSM archive  STDOUT output\n {}".format(dsm.stdout))
+              logger.debug("DSM archive  STDERR output\n {}".format(dsm.stderr))
            except:
-              result = dsm.stderr#.readlines()
-              logger.exception("DSM archive STDERR files on archive\n {}".format(result))
+              logger.exception("DSM archive STDERR files on archive\n {}".format(dsm.stderr))
+         
            logger.info("  -> DONE DSM archive id: {}".format(id))
         
         if self._remove_tmpfile:
@@ -646,6 +648,7 @@ class JuMEG_DSMArchiveEEG(JuMEG_DSMArchive):
             self._experiments.extend( v )
         else:
            self._experiments.extend( v.split(",") )
+        self._experiments.sort()
     
     def _find_eeg_experiments(self,stage):
         """
@@ -669,7 +672,8 @@ class JuMEG_DSMArchiveEEG(JuMEG_DSMArchive):
                  if os.path.isdir(d):
                     if os.path.isdir( os.path.join(d,"eeg") ):
                        exps.append(d)
-                       
+             exps.sort()
+            
         logger.debug("  -> Experiments with {} data: stage: {}\n  {}".format(self.data_type,stage,exps) )
         return exps
         
@@ -786,6 +790,7 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
         level="DEBUG"
     else:
         level="INFO"
+        
     jumeg_logger.setup_script_logging(name=name,opt=opt,logger=logger,level=level)
 
     if opt.meg:
@@ -794,8 +799,8 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
        JDS_MEG.archive(ids=opt.ids,scans=opt.scans,data_type="MEG")
     
     if opt.eeg:
-       JDS_EEG = JuMEG_DSMArchiveEEG(data_type="EEG",ids=opt.ids,scans=opt.scans,experiments=opt.experiments,\
-                                     config=opt.config,verbose=opt.verbose,debug=opt.debug)
+       JDS_EEG = JuMEG_DSMArchiveEEG(data_type="EEG",ids=opt.ids,scans=opt.scans,experiments=opt.experiments,
+                                     archive=opt.archive,config=opt.config,verbose=opt.verbose,debug=opt.debug)
        JDS_EEG.archive(ids=opt.ids,scans=opt.scans,data_type="EEG")
       
 #=======================================================================================================================
@@ -870,10 +875,13 @@ def main(argv):
     if len(argv) < 2:
        parser.print_help()
        sys.exit(-1)
-    
+      
     if opt.test:
        os.environ["JUMEG_PATH_BTI_EXPORT"] = jb.expandvars("$JUMEG_PATH_LOCAL_DATA")+"/megdaw_data21"
-       
+
+    #if opt.archive:
+    #   opt.run = True
+
     if opt.run: apply(name=argv[0],opt=opt)
     
 if __name__ == "__main__":

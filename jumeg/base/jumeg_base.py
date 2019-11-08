@@ -1307,7 +1307,8 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
       #--- ToDo --- start implementig BV support may new CLS
         self.brainvision_response_shift = 1000
         self.brainvision_extention      = '.vhdr'
-        
+        self.ica_extention              = '-ica.fif'
+
     def get_fif_name(self, fname=None, raw=None,path=None, prefix=None,postfix=None, extention="-raw.fif", update_raw_fname=False):
         """
         changing filename with prefix postfix path and option to update filename in raw-obj
@@ -1447,32 +1448,40 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         return raw,raw.info['bads']
 
 #--- helper function
-    def get_ica_raw_obj(self,fname_ica,ica_raw=None):
+    def _get_ica_raw_obj(self,fname,raw=None):
         """check for <ica filename> or <ica raw obj>
         if <ica_raw> obj is None load <ica raw obj> from <ica filename>
 
         Parameters:
         -----------  
-        fname_ica: ica filename 
-        raw_ica  : ica raw obj <None> 
+        fname: ica filename
+        raw  : ica raw obj <None>
         
         Returns:
         --------
         <ica raw obj>,ica raw obj filename
         
         """
-        if ica_raw is None:
-           if fname_ica is None:
+        if raw is None:
+           if fname is None:
               assert "---> ERROR no file foumd!!\n\n"
               if self.verbose:
                  logger.info("<<<< Reading ica raw data ...")
-        
-           ica_raw = mne.preprocessing.read_ica(fname_ica)
-         
-           if ica_raw is None:
-              assert "---> ERROR in jumeg.jumeg_base.get_ica_raw_obj => could not get ica raw obj:\n ---> FIF name: " + fname_ica   
+        if fname:
+           fn = self.expandvars( fname )
+           if path:
+              path = self.expandvars(path)
+              fn   = os.path.join(path,fn)
+        else:
+           fn = self.get_raw_filename(raw)
    
-        return ica_raw,self.get_raw_filename(ica_raw)
+           raw = mne.preprocessing.read_ica(fn)
+         
+           if raw is None:
+              assert "---> ERROR in jumeg.jumeg_base.get_ica_raw_obj => could not get ica raw obj:\n ---> FIF name: " + fname
+   
+        return raw,self.get_raw_filename(raw)
+    
             
     def get_raw_obj(self,fname,raw=None,path=None,preload=True,reload_raw=False,reset_bads=False):
         """
@@ -1495,21 +1504,27 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
          raw obj,fname from raw obj
         """
         
-        if raw:
-           if reload_raw:
-              raw = mne.io.Raw( self.get_raw_filename(raw),preload=preload )
-           if reset_bads:
-              raw.info["bads"] = []
-           return raw,self.get_raw_filename(raw)
         
         if self.verbose:
            logger.info("<<<< Reading raw data ...")
+           
         if self.debug:
-           logger.debug(" --> reading raw data:\n"+
-                        "  -> raw : {}\n".format(raw)+
-                        "  -> file: {}\n".format(fname)+
-                        "  -> path: {}\n".format(path)+
-                        "  -> Bads: {}".format( str(raw.info['bads'])))
+           msg= [" --> start reading raw data:\n",
+                 "  -> raw : {}\n".format(raw),
+                 "  -> file: {}\n".format(fname),
+                 "  -> path: {}\n".format(path)]
+           if raw:
+               msg.append("  -> Bads: {}".format(str(raw.info.get('bads'))))
+           logger.debug("".join(msg) )
+
+        if raw:
+           fname = None
+           if reset_bads:
+              if "bads" in raw.info:
+                 raw.info["bads"] = []
+           if not reload_raw:
+              return raw ,self.get_raw_filename(raw)
+
         if fname:
            fn = self.expandvars( fname )
            if path:
@@ -1530,7 +1545,8 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                # raw = mne.io.read_raw_brainvision(fn,response_trig_shift=self.brainvision_response_shift,preload=preload)
                raw = mne.io.read_raw_brainvision(fn,preload=preload)
                #raw.info['bads'] = []
-          #--- ToDo may decide for eeg-name .eeg or.vhdr
+            elif (fn.endswith(self.ica_extention)):
+                raw = mne.preprocessing.read_ica(fn)
             else:
                raw = mne.io.Raw(fn,preload=preload)
     
@@ -1541,10 +1557,11 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
             return None,None
         
         if reset_bads:
-           raw.info["bads"] = []
+           if "bads" in raw.info:
+              raw.info["bads"] = []
            logger.debug("  -> resetting bads in raw")
            
-        return raw,self.get_raw_filename(raw)
+        return raw,fn #self.get_raw_filename(raw)
 
     def get_files_from_list(self, fin):
         """ get filename or filenames from a list
