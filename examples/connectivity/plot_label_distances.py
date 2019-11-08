@@ -21,30 +21,25 @@ data_path = sample.data_path()
 subjects_dir = data_path + '/subjects'
 subject = 'sample'
 
-parc = 'aparc_sub'
+parc = 'aparc'
 
-# labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
 yaml_fname = get_jumeg_path() + '/data/desikan_%s_cortex_based_grouping.yaml' % parc
+label_distances_fname = get_jumeg_path() + '/data/desikan_%s_label_com_distances.npy' % parc
 
-config_fname = op.join('/Users/psripad/megscripts/thesis_scripts/con_matrix_config.yaml')
-with open(config_fname, 'r') as cf:
-    config = yaml.safe_load(cf)
+labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
+with open(labels_fname, 'r') as f:
+    label_names = yaml.safe_load(f)['label_names']
 
-label_names = config['%s_label_names' % parc]
-
-label_distances_fname = get_jumeg_path() + '/data/%s_label_com_distances.npy' % parc
-
-replacer_dict = config['replacer_dict_%s' % parc]
-
-# with open(labels_fname, 'r') as f:
-#     label_names = yaml.safe_load(f)['label_names']
+replacer_dict_fname = get_jumeg_path() + '/data/replacer_dictionaries.yaml'
+with open(replacer_dict_fname, 'r') as f:
+    replacer_dict = yaml.safe_load(f)['replacer_dict_aparc']
 
 # load the distances matrix
 con = np.load(label_distances_fname)
 node_order_size = con.shape[0]
 
 # forget long range connections, plot short neighbouring connections
-neighbor_range = 10.  # cms
+neighbor_range = 30.  # millimetres 
 con[con > neighbor_range] = 0.
 
 plot_grouped_connectivity_circle(yaml_fname, con, label_names,
