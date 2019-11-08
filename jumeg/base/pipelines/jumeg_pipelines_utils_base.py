@@ -58,7 +58,7 @@ def get_args(argv,parser=None,defaults=None,version=None):
     h_lpath    = "path for list file, list of file to process containing list of full filenames"
     h_lname    = "list file name, list of file to process containing list of full filenames"
     
-    h_fpath    = "path for file to process"
+    h_fpath    = "full path to file to process e.g.: must include <stage>"
     h_fname    = "file name to process"
     
     h_fextention ="fif file extention or list of extentions, looking for files to process with these extention e.g. meeg-raw.fif or [meeg-raw.fif,rfDC-empty.fif]"
