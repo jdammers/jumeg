@@ -593,7 +593,6 @@ def compute_order_extended(X, m_max, verbose=True):
     bic : list
         List with the BICs for the orders from 1 to m_max.
     """
-    import scot
     from scot.var import VAR
     from scipy import linalg
 
@@ -622,7 +621,7 @@ def compute_order_extended(X, m_max, verbose=True):
         ########################################################################
         # from [2]
         ########################################################################
-        # TODO: is l_nm correct?
+        # TODO: are l_nm and d_m specified correctly?
         l_nm = -np.log(linalg.det(sigma))
         d_m = (p ** 2) * (m + 1) / (n_total)
 
@@ -636,35 +635,36 @@ def compute_order_extended(X, m_max, verbose=True):
         c = 2  # c > 1
         m_hqc = -2 * l_nm + 2 * c * d_m * np.log(np.log(n_total))
 
-        # Bridge criterion
-        c = n_total ** (2/3)
-
-        def bc_rec(d):
-            """
-            Recursive function for Bridge criterion computation.
-            d : int
-            """
-            assert type(d) is int, "d must be an integer."
-
-            if d == 1:
-                return 1
-            elif d < 1:
-                raise ValueError("d must be greater than 1.")
-            else:
-                return 1 / d + bc_rec(d-1)
-
-        m_bc = -2 * l_nm + c * bc_rec(d)
-
+        # # Bridge criterion
+        # c = n_total ** (2/3)
+        #
+        # def bc_rec(d):
+        #     """
+        #     Recursive function for Bridge criterion computation.
+        #     d : int
+        #     """
+        #     assert type(d) is int, "d must be an integer."
+        #
+        #     if d == 1:
+        #         return 1
+        #     elif d < 1:
+        #         raise ValueError("d must be greater than 1.")
+        #     else:
+        #         return 1 / d + bc_rec(d-1)
+        # print(d_m)
+        # m_bc = -2 * l_nm + c * bc_rec(d_m)
 
         if verbose:
-            print('Model order: %d' % (m+1))
-            print('     AIC: %.2f' % m_aic)
-            print('     BIC: %.2f' % m_bic)
-            print('    AIC2: %.2f' % m_aic2)
-            print('    BIC2: %.2f' % m_bic2)
-            print('    AICc: %.2f' % m_aicc)
-            print('     HQC: %.2f' % m_hqc)
-            print('      BC: %.2f' % m_bc)
+            results = 'Model order: ' + str(m+1).zfill(2)
+            results += '     AIC: %.2f' % m_aic
+            results += '     BIC: %.2f' % m_bic
+            results += '    AIC2: %.2f' % m_aic2
+            results += '    BIC2: %.2f' % m_bic2
+            results += '    AICc: %.2f' % m_aicc
+            results += '     HQC: %.2f' % m_hqc
+            # results += '      BC: %.2f' % m_bc
+
+            print(results)
 
             # print(('Model order: %d, AIC: %.2f, BIC value: %.2f' %(m+1, aic[m], bic[m])))
 
@@ -702,15 +702,13 @@ def compute_order(X, m_max, verbose=True):
     bic : list
         List with the BICs for the orders from 1 to m_max.
     """
-    import scot
     from scot.var import VAR
     from scipy import linalg
 
     N, p, n = X.shape
     bic = []
     for m in range(m_max):
-        VAR(m+1)
-        mvar = scot.var.VAR(m+1)
+        mvar = VAR(m+1)
         mvar.fit(X)
         sigma = mvar.rescov
         m_bic = np.log(linalg.det(sigma))
