@@ -560,6 +560,118 @@ def make_frequency_bands(cau, freqs, sfreq):
     return np.array(cau_con)
 
 
+def compute_order_extended(X, m_max, verbose=True):
+    """
+    Estimate VAR order with the Bayesian Information Criterion (BIC).
+
+    Parameters
+    ----------
+    X : ndarray, shape (trials, n_channels, n_samples)
+
+    m_max : int
+        The maximum model order to test
+
+    Reference
+    ---------
+    [1] provides the equation:BIC(m) = 2*log[det(Σ)]+ 2*(p**2)*m*log(N*n*m)/(N*n*m),
+    Σ is the noise covariance matrix, p is the channels, N is the trials, n
+    is the n_samples, m is model order.
+
+    [1] Mingzhou Ding, Yonghong Chen (2008). "Granger Causality: Basic Theory and Application
+    to Neuroscience." Elsevier Science
+
+    [2] Jie Ding, Vahid Tarokh, and Yuhong Yang (2018). “Model Selection Techniques: An Overview.”
+    IEEE Signal Processing Magazine 35 (6)
+
+    URL: https://gist.github.com/dongqunxi/b23d1679b9bffa8e458c11f93bd8d6ff
+
+
+    Returns
+    -------
+    o_m : int
+        Estimated order
+    bic : list
+        List with the BICs for the orders from 1 to m_max.
+    """
+    import scot
+    from scot.var import VAR
+    from scipy import linalg
+
+    N, p, n = X.shape
+    aic = []
+    bic = []
+
+    # TODO: should this be n_total = N * n * p ???
+    # total number of data points: n_trials * n_samples
+    # Esther Florin (2010): N_total is number of time points contained in each time series
+    n_total = N * n
+
+    for m in range(m_max):
+        mvar = VAR(m+1)
+        mvar.fit(X)
+        sigma = mvar.rescov
+
+        ########################################################################
+        # from [1]
+        ########################################################################
+        m_aic = 2 * np.log(linalg.det(sigma)) + 2 * (p ** 2) * (m + 1) / (n_total)
+        m_bic = 2 * np.log(linalg.det(sigma)) + 2 * (p ** 2) * (m + 1) / (n_total) * np.log(n_total)
+        aic.append(m_aic)
+        bic.append(m_bic)
+
+        ########################################################################
+        # from [2]
+        ########################################################################
+        # TODO: is l_nm correct?
+        l_nm = -np.log(linalg.det(sigma))
+        d_m = (p ** 2) * (m + 1) / (n_total)
+
+        m_aic2 = -2 * l_nm + 2 * d_m
+        m_bic2 = -2 * l_nm + d_m * np.log(n_total)
+
+        # Finite-sample corrected AIC (AICc)
+        m_aicc = m_aic2 + 2 * (d_m + 1) * (d_m + 2) / (n_total - d_m - 2)
+
+        # Hannan and Quinn criterion
+        c = 2  # c > 1
+        m_hqc = -2 * l_nm + 2 * c * d_m * np.log(np.log(n_total))
+
+        # Bridge criterion
+        c = n_total ** (2/3)
+
+        def bc_rec(d):
+            """
+            Recursive function for Bridge criterion computation.
+            d : int
+            """
+            assert type(d) is int, "d must be an integer."
+
+            if d == 1:
+                return 1
+            elif d < 1:
+                raise ValueError("d must be greater than 1.")
+            else:
+                return 1 / d + bc_rec(d-1)
+
+        m_bc = -2 * l_nm + c * bc_rec(d)
+
+
+        if verbose:
+            print('Model order: %d' % (m+1))
+            print('     AIC: %.2f' % m_aic)
+            print('     BIC: %.2f' % m_bic)
+            print('    AIC2: %.2f' % m_aic2)
+            print('    BIC2: %.2f' % m_bic2)
+            print('    AICc: %.2f' % m_aicc)
+            print('     HQC: %.2f' % m_hqc)
+            print('      BC: %.2f' % m_bc)
+
+            # print(('Model order: %d, AIC: %.2f, BIC value: %.2f' %(m+1, aic[m], bic[m])))
+
+    o_m = np.argmin(bic) + 1
+    return o_m, aic, bic
+
+
 def compute_order(X, m_max, verbose=True):
     """
     Estimate VAR order with the Bayesian Information Criterion (BIC).
