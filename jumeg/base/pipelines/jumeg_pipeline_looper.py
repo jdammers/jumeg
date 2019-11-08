@@ -624,33 +624,18 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         
         def get_value(k,d):
             """
-            check if key is in dict of dicts
-            da > dd > dc
-            args > defaults > config
-            problem in order and None,False
-            
             :param k: key in dict
-            :param dicts:
+            :param list of dicts:
             :return: value of first match
             """
-            #v = None
-            if d[0].get(k):
-               v = d[0].get(k)
-            # elif k in d[1].keys():  gets None too
-            elif d[1].get(k):
-               v = d[1].get(k)
-            else:
-               v= d[-1].get(k)
-            
-            #for i in range(len(dicts)):
-            #    if dicts[i]:
-            #       if v in dicts[i]:
-            #          logger.info(" ---> update: dict: {} key: {} value: {}".format(i,v,dicts[i].get(v)) )
-            #          return dicts[i].get(v)
-            
-            # logger.debug(" ---> update: key: {} value:{} ".format(k,v))
+            v=None
+            for obj in d:
+                if isinstance(obj,(dict)):
+                   if obj.get(k):
+                      v= obj.get(k)
+                      logger.info("---> TEST: {} => {}".format(k,v))
+                      return v
             return v
-    
     
         self.clear() # clear all pdf lists
         
@@ -663,34 +648,38 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         else:
            opt = {}
 
+        vlist = [opt,defaults]
        #--- set flags
-        self.verbose = get_value("verbose",[opt,defaults] )
-        self.debug   = get_value("debug",  [opt,defaults] )
+        self.verbose = get_value("verbose",vlist )
+        self.debug   = get_value("debug",  vlist )
     
        #--- load cfg ToDo in CLS
-        self.load_config( config=get_value("config",[opt,defaults] ))
+        self.load_config( config=get_value("config",vlist))
       
        #--- get global parameter from cfg ToDo in CLS
         if self.config:
            cfg_global = self.config.get("global")
-        
+           vlist.append(cfg_global)
+           
         logger.debug(" ---> config global parameter: {} ".format(cfg_global))
-        
+        #logger.debug(" ---> value list parameter: {} ".format(vlist))
+   
        #--- logfile
-        self.log2file      = get_value("log2file",     [opt,defaults,cfg_global])
-        self.logprefix     = get_value("logprefix",    [opt,defaults,cfg_global])
-        self.logoverwrite  = get_value("logoverwrite", [opt,defaults,cfg_global])
+        self.log2file      = get_value("log2file",    vlist)
+        self.logprefix     = get_value("logprefix",   vlist)
+        self.logoverwrite  = get_value("logoverwrite",vlist)
         
-        self.recursive      = get_value("recursive",    [opt,defaults,cfg_global])
-        self.subjects       = get_value("subjects",     [opt,defaults,cfg_global])
-        self.stage          = get_value("stage",        [opt,defaults,cfg_global])
-        self.file_extention = get_value("file_extention",[opt,defaults,cfg_global])
-        #self.overwrite      = get_value("overwrite"    ,[opt,defaults,cfg_global])
+        self.recursive      = get_value("recursive",     vlist)
+        self.subjects       = get_value("subjects",      vlist)
+        self.stage          = get_value("stage",         vlist)
+        self.file_extention = get_value("file_extention",vlist)
+        #self.overwrite      = get_value("overwrite"    ,vlist)
         
-        self._PDFList.list_file_path = get_value("list_path",[opt,defaults,cfg_global])
-        self._PDFList.list_file_name = get_value("list_name",[opt,defaults,cfg_global])
-        self._PDFFile.path           = get_value("fpath",    [opt,defaults,cfg_global])
-        self._PDFFile.name           = get_value("fname",    [opt,defaults,cfg_global])
+        self._PDFList.list_file_path = get_value("list_path",vlist)
+        self._PDFList.list_file_name = get_value("list_name",vlist)
+        
+        self._PDFFile.path  = get_value("fpath",    vlist)
+        self._PDFFile.name  = get_value("fname",    vlist)
         
         self._update_config_values()
         
