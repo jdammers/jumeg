@@ -457,8 +457,10 @@ def check_model_order(X, p, whit_min, whit_max):
             mvar.fit(X_orig)  # scot func which requires shape trials x sources x samples
             is_st = mvar.is_stable()
 
-            output = 'morder %d:' % (k-1) + ' white: %s' % str(whi)
-            output += '; consistency: %.4f' % cons + '; stable: %s' % str(is_st)
+            output = 'morder %d:' % (k-1)
+            output += ' white: %s' % str(whi)
+            output += '; consistency: %.4f' % cons
+            output += '; stable: %s' % str(is_st)
             print(output)
 
 
