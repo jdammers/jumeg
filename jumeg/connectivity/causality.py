@@ -359,7 +359,7 @@ def check_whiteness_and_consistency(X, E, whit_min=1.0, whit_max=3.0):
     return whi, cons
 
 
-def check_model_order(X, p, whit_min, whit_max):
+def check_model_order(X, p, whit_min, whit_max, check_stability=True):
     """
     Check whiteness, consistency, and stability for all model
     orders k <= p.
@@ -369,10 +369,13 @@ def check_model_order(X, p, whit_min, whit_max):
 
     Parameters:
     -----------
-    X: narray, shape (n_epochs, n_sources, n_times)
+    X : narray, shape (n_epochs, n_sources, n_times)
         The data to estimate the model order for.
-    p: int
+    p : int
         The maximum model order.
+    check_stability : bool
+        Check the stability condition. Time intensive since
+        it fits a second MVAR model from scot.var.VAR
     Returns:
     --------
     A: array, coefficients of the specified model
@@ -453,14 +456,16 @@ def check_model_order(X, p, whit_min, whit_max):
 
             whi, cons = check_whiteness_and_consistency(X, E, whit_min, whit_max)
 
-            mvar = VAR((k-1))
-            mvar.fit(X_orig)  # scot func which requires shape trials x sources x samples
-            is_st = mvar.is_stable()
+            if check_stability:
+                mvar = VAR((k-1))
+                mvar.fit(X_orig)  # scot func which requires shape trials x sources x samples
+                is_st = mvar.is_stable()
 
             output = 'morder %d:' % (k-1)
             output += ' white: %s' % str(whi)
             output += '; consistency: %.4f' % cons
-            output += '; stable: %s' % str(is_st)
+            if check_stability:
+                output += '; stable: %s' % str(is_st)
             print(output)
 
 
