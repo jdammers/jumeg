@@ -583,13 +583,20 @@ def compute_order_extended(X, m_max, verbose=True):
     [2] Jie Ding, Vahid Tarokh, and Yuhong Yang (2018). “Model Selection Techniques: An Overview.”
     IEEE Signal Processing Magazine 35 (6)
 
+    [3] Nicoletta Nicolaou and Julius Georgiou (2013). “Autoregressive Model Order Estimation
+    Criteria for Monitoring Awareness during Anaesthesia.” IFIP Advances in Information and
+    Communication Technology 412
+
+    [4] Helmut Lütkepohl (2005). "New Introduction to Multiple Time Series Analysis."
+    1st ed. Berlin: Springer-Verlag Berlin Heidelberg.
+
     URL: https://gist.github.com/dongqunxi/b23d1679b9bffa8e458c11f93bd8d6ff
 
 
     Returns
     -------
     o_m : int
-        Estimated order
+        Estimated order using BIC.
     bic : list
         List with the BICs for the orders from 1 to m_max.
     """
@@ -605,71 +612,91 @@ def compute_order_extended(X, m_max, verbose=True):
     # Esther Florin (2010): N_total is number of time points contained in each time series
     n_total = N * n
 
-    for m in range(m_max):
-        mvar = VAR(m+1)
+    for m in range(1, m_max + 1):
+        mvar = VAR(m)
         mvar.fit(X)
         sigma = mvar.rescov
 
         ########################################################################
         # from [1]
         ########################################################################
-        m_aic = 2 * np.log(linalg.det(sigma)) + 2 * (p ** 2) * (m + 1) / (n_total)
-        m_bic = 2 * np.log(linalg.det(sigma)) + 2 * (p ** 2) * (m + 1) / (n_total) * np.log(n_total)
+        m_aic = 2 * np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total
+        m_bic = 2 * np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total * np.log(n_total)
         aic.append(m_aic)
         bic.append(m_bic)
 
         ########################################################################
         # from [2]
         ########################################################################
-        # TODO: are l_nm and d_m specified correctly?
+        # TODO: How to calculate the log likelihood l_nm and the dimension of the model d_m
         l_nm = -np.log(linalg.det(sigma))
-        d_m = (p ** 2) * (m + 1) / (n_total)
+        d_m = (p ** 2) * m / n_total
 
         m_aic2 = -2 * l_nm + 2 * d_m
         m_bic2 = -2 * l_nm + d_m * np.log(n_total)
 
         # Finite-sample corrected AIC (AICc)
-        m_aicc = m_aic2 + 2 * (d_m + 1) * (d_m + 2) / (n_total - d_m - 2)
+        m_aicc2 = m_aic2 + 2 * (d_m + 1) * (d_m + 2) / (n_total - d_m - 2)
 
         # Hannan and Quinn criterion
         c = 2  # c > 1
-        m_hqc = -2 * l_nm + 2 * c * d_m * np.log(np.log(n_total))
+        m_hqc2 = -2 * l_nm + 2 * c * d_m * np.log(np.log(n_total))
 
-        # # Bridge criterion
-        # c = n_total ** (2/3)
-        #
-        # def bc_rec(d):
-        #     """
-        #     Recursive function for Bridge criterion computation.
-        #     d : int
-        #     """
-        #     assert type(d) is int, "d must be an integer."
-        #
-        #     if d == 1:
-        #         return 1
-        #     elif d < 1:
-        #         raise ValueError("d must be greater than 1.")
-        #     else:
-        #         return 1 / d + bc_rec(d-1)
-        # print(d_m)
-        # m_bc = -2 * l_nm + c * bc_rec(d_m)
+        # Bridge criterion
+        c = n_total ** (2/3)
+
+        def bc_rec(d):
+            """
+            Recursive function for Bridge criterion computation.
+            d : int
+            """
+            assert type(d) is int, "d must be an integer."
+
+            if d == 1:
+                return 1
+            elif d < 1:
+                raise ValueError("d must be greater than 1.")
+            else:
+                return 1 / d + bc_rec(d-1)
+
+        # m_bc2 = -2 * l_nm + c * bc_rec(d_m)
+
+        ########################################################################
+        # from [3]
+        ########################################################################
+
+        m_aic3 = np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total
+        m_bic3 = np.log(linalg.det(sigma)) + (p ** 2) * m / n_total * np.log(n_total)
+
+        ########################################################################
+        # from [4]
+        ########################################################################
+        # Akaike's final prediction error
+        m_fpe4 = linalg.det(sigma) * ((n_total + m * p + 1) / (n_total - m * p -1)) ** p
+        m_ln_fpe4 = np.log(linalg.det(sigma)) + p * np.log((n_total + m * p + 1) / (n_total - m * p -1))
+        m_hqc4 = np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total * np.log(np.log(n_total))
+
 
         if verbose:
-            results = 'Model order: ' + str(m+1).zfill(2)
+            results = 'Model order: ' + str(m).zfill(2)
             results += '     AIC: %.2f' % m_aic
             results += '     BIC: %.2f' % m_bic
-            results += '    AIC2: %.2f' % m_aic2
-            results += '    BIC2: %.2f' % m_bic2
-            results += '    AICc: %.2f' % m_aicc
-            results += '     HQC: %.2f' % m_hqc
-            # results += '      BC: %.2f' % m_bc
+            # results += '    AIC2: %.2f' % m_aic2
+            # results += '    BIC2: %.2f' % m_bic2
+            # results += '   AICc2: %.2f' % m_aicc
+            # results += '    HQC2: %.2f' % m_hqc
+            # results += '     BC2: %.2f' % m_bc
+            # results += '    AIC3: %.2f' % m_aic3
+            # results += '    BIC3: %.2f' % m_bic3
+            results += '    FPE4: %.2f' % m_ln_fpe4
+            results += '    HQC4: %.2f' % m_hqc4
 
             print(results)
 
             # print(('Model order: %d, AIC: %.2f, BIC value: %.2f' %(m+1, aic[m], bic[m])))
 
     o_m = np.argmin(bic) + 1
-    return o_m, aic, bic
+    return o_m, bic
 
 
 def compute_order(X, m_max, verbose=True):
