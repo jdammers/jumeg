@@ -567,7 +567,7 @@ def make_frequency_bands(cau, freqs, sfreq):
     return np.array(cau_con)
 
 
-def compute_order_extended(X, m_max, verbose=True):
+def compute_order_extended(X, m_max, m_min=1, m_step=1, verbose=True):
     """
     Estimate VAR order with the Bayesian Information Criterion (BIC).
 
@@ -610,13 +610,25 @@ def compute_order_extended(X, m_max, verbose=True):
     N, p, n = X.shape
     aic = []
     bic = []
+    morder = []
 
     # TODO: should this be n_total = N * n * p ???
     # total number of data points: n_trials * n_samples
     # Esther Florin (2010): N_total is number of time points contained in each time series
     n_total = N * n
 
-    for m in range(1, m_max + 1):
+    # check model order min/max/step input
+    if m_min >= m_max:
+        m_min = m_max-1
+    if m_min < 1:
+        m_min = 1
+    if m_step<1:
+        m_step=1
+    if m_step >=m_max:
+        m_step=m_max
+
+    for m in range(m_min, m_max + 1, m_step):
+        morder.append(m)
         mvar = VAR(m)
         mvar.fit(X)
         sigma = mvar.rescov
@@ -632,7 +644,6 @@ def compute_order_extended(X, m_max, verbose=True):
         ########################################################################
         # from [2]
         ########################################################################
-
         m_aic2 = np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total
         m_bic2 = np.log(linalg.det(sigma)) + (p ** 2) * m / n_total * np.log(n_total)
 
@@ -655,7 +666,11 @@ def compute_order_extended(X, m_max, verbose=True):
 
             print(results)
 
-    o_m = np.argmin(bic) + 1
+    # o_m = np.argmin(bic) + 1
+    morder = np.array(morder)
+    o_m = morder[np.argmin(bic)]
+    # print ('>>> Optimal model order = %d' % o_m)
+
     return o_m, bic
 
 
