@@ -203,7 +203,7 @@ class JuMEG_TSV_OGLPlot2D(object):
         super().__init__()
        
       #--- data with RAW obj
-        self.data = JuMEG_TSV_OGL_Data()
+        self.data = JuMEG_TSV_ICA_OGL_Data()
       #---
         self.GLPlot = GLPlotWidget()
 
@@ -306,7 +306,10 @@ class JuMEG_TSV_OGLPlot2D(object):
        #--- ck for update
         if kwargs.get("raw",False):
            self.update_plot_data(init=True,**kwargs)
+        if kwargs.get("ica",False):
+           self.update_plot_data(init_ica=True,**kwargs)
         else:
+          
           # logger.info(" ---> UPATE => update_plot_data")
            self.update_plot_data(**kwargs)
            
