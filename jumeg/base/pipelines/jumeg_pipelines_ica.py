@@ -449,10 +449,15 @@ class JuMEG_PIPELINES_ICA(object):
         logger.info( "\n".join(msg))
         
         for idx in range( self._chop_times.shape[0] ) :
+           
             chop = self._chop_times[idx]
             
             ica_fname = op.join(path_ica_chops,fname)
-            ica_fname = fname + ',{:06d}-{:06d}-ica.fif'.format(int(chop[0]),int(chop[1]))
+            
+            if np.isnan(chop[1]):
+               ica_fname = fname + ',{:06d}-{:06d}-ica.fif'.format(int(chop[0]),int(self.raw.times[-1]))
+            else:
+               ica_fname = fname + ',{:06d}-{:06d}-ica.fif'.format(int(chop[0]),int(chop[1]))
           
             logger.info("---> Start ICA chop: {} / {}\n".format(idx+1,self._chop_times.shape[0])+
                         " --> chop id      : {}\n".format(chop)+
