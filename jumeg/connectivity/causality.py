@@ -571,15 +571,16 @@ def compute_order_extended(X, m_max, verbose=True):
     """
     Estimate VAR order with the Bayesian Information Criterion (BIC).
 
-    Parameters
-    ----------
+    Parameters:
+    -----------
     X : ndarray, shape (trials, n_channels, n_samples)
-
     m_max : int
         The maximum model order to test
+    verbose : bool
+        Plot results for other information criteria as well.
 
-    Reference
-    ---------
+    References:
+    -----------
     [1] provides the equation:BIC(m) = 2*log[det(Σ)]+ 2*(p**2)*m*log(N*n*m)/(N*n*m),
     Σ is the noise covariance matrix, p is the channels, N is the trials, n
     is the n_samples, m is model order.
@@ -597,8 +598,8 @@ def compute_order_extended(X, m_max, verbose=True):
     URL: https://gist.github.com/dongqunxi/b23d1679b9bffa8e458c11f93bd8d6ff
 
 
-    Returns
-    -------
+    Returns:
+    --------
     o_m : int
         Estimated order using BIC.
     bic : list
