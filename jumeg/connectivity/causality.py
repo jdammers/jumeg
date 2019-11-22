@@ -567,7 +567,7 @@ def make_frequency_bands(cau, freqs, sfreq):
     return np.array(cau_con)
 
 
-def compute_order_extended(X, m_max, verbose=True):
+def compute_order_extended(X, m_max, n_jobs=None, verbose=True):
     """
     Estimate VAR order with the Bayesian Information Criterion (BIC).
 
@@ -576,6 +576,11 @@ def compute_order_extended(X, m_max, verbose=True):
     X : ndarray, shape (trials, n_channels, n_samples)
     m_max : int
         The maximum model order to test
+    n_jobs : int | None, optional
+        Number of jobs to run in parallel for various tasks (e.g. whiteness
+        testing). If set to None, joblib is not used at all. Note that the main
+        script must be guarded with `if __name__ == '__main__':` when using
+        parallelization.
     verbose : bool
         Plot results for other information criteria as well.
 
@@ -602,15 +607,20 @@ def compute_order_extended(X, m_max, verbose=True):
     --------
     o_m : int
         Estimated order using BIC.
-    bic : list
-        List with the BICs for the orders from 1 to m_max.
+    ics : np.array of shape (n_ics, m_max)
+        The information criteria for the different model orders.
+        [AIC1, BIC1, AIC2, BIC2, lnFPE, HQIC]
     """
     from scot.var import VAR
     from scipy import linalg
 
     N, p, n = X.shape
-    aic = []
-    bic = []
+    aic1 = []
+    bic1 = []
+    aic2 = []
+    bic2 = []
+    lnfpe = []
+    hqic = []
 
     # TODO: should this be n_total = N * n * p ???
     # total number of data points: n_trials * n_samples
@@ -618,7 +628,7 @@ def compute_order_extended(X, m_max, verbose=True):
     n_total = N * n
 
     for m in range(1, m_max + 1):
-        mvar = VAR(m)
+        mvar = VAR(m, n_jobs=n_jobs)
         mvar.fit(X)
         sigma = mvar.rescov
 
@@ -627,8 +637,8 @@ def compute_order_extended(X, m_max, verbose=True):
         ########################################################################
         m_aic = 2 * np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total
         m_bic = 2 * np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total * np.log(n_total)
-        aic.append(m_aic)
-        bic.append(m_bic)
+        aic1.append(m_aic)
+        bic1.append(m_bic)
 
         ########################################################################
         # from [2]
@@ -637,6 +647,9 @@ def compute_order_extended(X, m_max, verbose=True):
         m_aic2 = np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total
         m_bic2 = np.log(linalg.det(sigma)) + (p ** 2) * m / n_total * np.log(n_total)
 
+        aic2.append(m_aic2)
+        bic2.append(m_bic2)
+
         ########################################################################
         # from [3]
         ########################################################################
@@ -644,6 +657,9 @@ def compute_order_extended(X, m_max, verbose=True):
         m_ln_fpe3 = np.log(linalg.det(sigma)) + p * np.log((n_total + m * p + 1) / (n_total - m * p -1))
         # Hannan-Quinn criterion
         m_hqc3 = np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total * np.log(np.log(n_total))
+
+        lnfpe.append(m_ln_fpe3)
+        hqic.append(m_hqc3)
 
         if verbose:
             results = 'Model order: ' + str(m).zfill(2)
@@ -656,8 +672,11 @@ def compute_order_extended(X, m_max, verbose=True):
 
             print(results)
 
-    o_m = np.argmin(bic) + 1
-    return o_m, bic
+    o_m = np.argmin(bic2) + 1
+
+    ics = [aic1, bic1, aic2, bic2, lnfpe, hqic]
+    ics = np.asarray(ics)
+    return o_m, ics
 
 
 def compute_order(X, m_max, verbose=True):
