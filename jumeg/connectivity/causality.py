@@ -567,16 +567,17 @@ def make_frequency_bands(cau, freqs, sfreq):
     return np.array(cau_con)
 
 
-def compute_order_extended(X, m_max, n_jobs=None, verbose=True):
+def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=True):
     """
     Estimate VAR order with the Bayesian Information Criterion (BIC).
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     X : ndarray, shape (trials, n_channels, n_samples)
+
     m_max : int
         The maximum model order to test
-    n_jobs : int | None, optional
+    n_jobs : None | int, optional
         Number of jobs to run in parallel for various tasks (e.g. whiteness
         testing). If set to None, joblib is not used at all. Note that the main
         script must be guarded with `if __name__ == '__main__':` when using
@@ -607,7 +608,9 @@ def compute_order_extended(X, m_max, n_jobs=None, verbose=True):
     --------
     o_m : int
         Estimated order using BIC.
-    ics : np.array of shape (n_ics, m_max)
+    morder : np.array of shape ((m_max - m_min) / m_step, )
+        The model orders corresponding to the entries in ics.
+    ics : np.array of shape (n_ics, (m_max - m_min) / m_step)
         The information criteria for the different model orders.
         [AIC1, BIC1, AIC2, BIC2, lnFPE, HQIC]
     """
@@ -615,6 +618,7 @@ def compute_order_extended(X, m_max, n_jobs=None, verbose=True):
     from scipy import linalg
 
     N, p, n = X.shape
+
     aic1 = []
     bic1 = []
     aic2 = []
@@ -622,12 +626,25 @@ def compute_order_extended(X, m_max, n_jobs=None, verbose=True):
     lnfpe = []
     hqic = []
 
+    morder = []
+
     # TODO: should this be n_total = N * n * p ???
     # total number of data points: n_trials * n_samples
     # Esther Florin (2010): N_total is number of time points contained in each time series
     n_total = N * n
 
-    for m in range(1, m_max + 1):
+    # check model order min/max/step input
+    if m_min >= m_max:
+        m_min = m_max-1
+    if m_min < 1:
+        m_min = 1
+    if m_step < 1:
+        m_step = 1
+    if m_step >= m_max:
+        m_step = m_max
+
+    for m in range(m_min, m_max + 1, m_step):
+        morder.append(m)
         mvar = VAR(m, n_jobs=n_jobs)
         mvar.fit(X)
         sigma = mvar.rescov
@@ -672,11 +689,15 @@ def compute_order_extended(X, m_max, n_jobs=None, verbose=True):
 
             print(results)
 
-    o_m = np.argmin(bic2) + 1
+    morder = np.array(morder)
+    o_m = morder[np.argmin(bic2)]
+    if verbose:
+        print('>>> Optimal model order according to BIC2 = %d' % o_m)
 
     ics = [aic1, bic1, aic2, bic2, lnfpe, hqic]
     ics = np.asarray(ics)
-    return o_m, ics
+
+    return o_m, morder, ics
 
 
 def compute_order(X, m_max, verbose=True):
