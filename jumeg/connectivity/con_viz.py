@@ -695,10 +695,15 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
     con_l = np.tril(caus, k=-1)
     con_u = np.triu(caus, k=1).T
 
-    if vmin is None or vmax is None:
-        print('Setting vmin and vmax')
-        vmin = np.min([np.min(con_l[con_l != 0]), np.min(con_u[con_u != 0])])
-        vmax = np.max([np.max(con_l[con_l != 0]), np.max(con_u[con_u != 0])])
+    if vmax is None:
+        vmax = np.max([np.max(con_l), np.max(con_u)])
+    if vmin is None:
+        if np.max([np.max(con_l), np.max(con_u)]) == 0:
+            # no significant connections found
+            vmin = 0
+            vmax = 0.1
+        else:
+            vmin = np.min([np.min(con_l[con_l != 0]), np.min(con_u[con_u != 0])])
 
     if not fig:
         import matplotlib.pyplot as plt
