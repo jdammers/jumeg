@@ -367,7 +367,7 @@ def check_whiteness_and_consistency(X, E, whit_min=1.0, whit_max=3.0):
     return whi, cons
 
 
-def check_model_order(X, p, whit_min, whit_max, check_stability=True):
+def check_model_order(X, p, whit_min=1.5, whit_max=2.5, check_stability=True):
     """
     Check whiteness, consistency, and stability for all model
     orders k <= p.
@@ -381,6 +381,10 @@ def check_model_order(X, p, whit_min, whit_max, check_stability=True):
         The data to estimate the model order for.
     p : int
         The maximum model order.
+    whit_min : float
+        Lower boundary for the Durbin-Watson test.
+    whit_max : float
+        Upper boundary for the Durbin-Watson test.
     check_stability : bool
         Check the stability condition. Time intensive since
         it fits a second MVAR model from scot.var.VAR
@@ -575,7 +579,8 @@ def make_frequency_bands(cau, freqs, sfreq):
     return np.array(cau_con)
 
 
-def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=True):
+def compute_order_extended(X, m_max, m_min=1, m_step=1, whit_min=1.5,
+                           whit_max=2.5, n_jobs=None, verbose=True):
     """
     Estimate VAR order with the Bayesian Information Criterion (BIC).
 
@@ -584,7 +589,18 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     X : ndarray, shape (trials, n_channels, n_samples)
 
     m_max : int
-        The maximum model order to test
+        The maximum model order to test,
+    m_min : int
+        The minimum model order to test.
+    m_step : int
+        The step size for checking the model order interval
+        given by m_min and m_max.
+    whit_min : float
+        Durbin-Watson minimum value.
+    whit_max : float
+        Durbin-Watson maximum value. If the whiteness value lies
+        outside of the interval given by whit_min and whit_max
+        the residuals are considered to be non-white.
     n_jobs : None | int, optional
         Number of jobs to run in parallel for various tasks (e.g. whiteness
         testing). If set to None, joblib is not used at all. Note that the main
@@ -621,6 +637,11 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     ics : np.array of shape (n_ics, (m_max - m_min) / m_step)
         The information criteria for the different model orders.
         [AIC1, BIC1, AIC2, BIC2, lnFPE, HQIC]
+    whiteness : np.array of shape ((m_max - m_min) / m_step), )
+        Results of the Durbin-Watson test for serial correlation in the
+        residuals.
+    consistency : np.array of shape ((m_max - m_min) / m_step), )
+        Results of the MVAR consistency estimation.
     """
     from scot.var import VAR
     from scipy import linalg
@@ -635,6 +656,8 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     hqic = []
 
     morder = []
+    whiteness = []
+    consistency = []
 
     # TODO: should this be n_total = N * n * p ???
     # total number of data points: n_trials * n_samples
@@ -655,6 +678,13 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
         morder.append(m)
         mvar = VAR(m, n_jobs=n_jobs)
         mvar.fit(X)
+
+        white, cons = check_whiteness_and_consistency(X.transpose(1, 2, 0), mvar.residuals.transpose(1, 2, 0),
+                                                      whit_min=whit_min, whit_max=whit_max)
+
+        whiteness.append(white)
+        consistency.append(cons)
+
         sigma = mvar.rescov
 
         ########################################################################
@@ -694,6 +724,8 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
             results += '    BIC2: %.2f' % m_bic2
             results += '  lnFPE3: %.2f' % m_ln_fpe3
             results += '    HQC3: %.2f' % m_hqc3
+            results += '   white: %d' % int(white)
+            results += ' consistency: %.4f' % cons
 
             print(results)
 
@@ -705,7 +737,10 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     ics = [aic1, bic1, aic2, bic2, lnfpe, hqic]
     ics = np.asarray(ics)
 
-    return o_m, morder, ics
+    whiteness = np.array(whiteness)
+    consistency = np.array(consistency)
+
+    return o_m, morder, ics, whiteness, consistency
 
 
 def compute_order(X, m_max, verbose=True):
