@@ -137,15 +137,16 @@ def _durbinwatson(X, E):
     return dw, pval
 
 
-def _whiteness(X, E):
+def dw_whiteness(X, E):
     """
     Durbin-Watson test for whiteness (no serial correlation) of
-    VAR residuals.
+    VAR residuals. Null hypothesis: there is no autocorrelation.
+
     Prarameters
     -----------
-    X: array
+    X: array of shape (n_sources, n_times, n_epochs)
       Multi-trial time series data.
-    E: array
+    E: array of shape (n_sources, n_times, n_epochs)
       Residuals time series.
 
     Returns
@@ -167,7 +168,7 @@ def _whiteness(X, E):
     return dw, pval
 
 
-def _consistency(X_orig, E):
+def consistency(X_orig, E):
     """
     Consistency test. [1]
 
@@ -307,10 +308,10 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
     del A, SIG
 
     whi = False
-    dw, pval = _whiteness(X_trans, E)
+    dw, pval = dw_whiteness(X_trans, E)
     if np.all(dw < whit_max) and np.all(dw > whit_min):
         whi = True
-    cons = _consistency(X_trans, E)
+    cons = consistency(X_trans, E)
     del dw, pval, E
 
     from scot.var import VAR
@@ -348,13 +349,13 @@ def check_whiteness_and_consistency(X, E, whit_min=1.0, whit_max=3.0):
         Result of the consistency test.
     """
 
-    from jumeg.connectivity.causality import _whiteness, _consistency
+    from jumeg.connectivity.causality import dw_whiteness, consistency
 
     whi = False
-    dw, pval = _whiteness(X, E)
+    dw, pval = dw_whiteness(X, E)
     if np.all(dw < whit_max) and np.all(dw > whit_min):
         whi = True
-    cons = _consistency(X, E)
+    cons = consistency(X, E)
 
     return whi, cons
 
