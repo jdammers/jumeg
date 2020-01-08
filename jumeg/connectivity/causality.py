@@ -156,13 +156,14 @@ def dw_whiteness(X, E):
     pval: array
          Vector of p-values.
     """
-    n, m, N = X.shape
-    dw = np.zeros(n)
-    pval = np.zeros(n)
-    for i in range(n):
+
+    n_sources, n_times, n_epochs = X.shape
+    dw = np.zeros(n_sources)
+    pval = np.zeros(n_sources)
+    for i in range(n_sources):
         Ei = np.squeeze(E[i, :, :])
         e_a, e_b = Ei.shape
-        tempX = np.reshape(X, (n, m * N), order='F')
+        tempX = np.reshape(X, (n_sources, n_times * n_epochs), order='F')
         tempE = np.reshape(Ei, (e_a * e_b), order='F')
         dw[i], pval[i] = _durbinwatson(tempX, tempE)
     return dw, pval
