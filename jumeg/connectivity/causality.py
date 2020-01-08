@@ -171,7 +171,7 @@ def dw_whiteness(X, E):
 
 def consistency(X_orig, E):
     """
-    Consistency test. [1]
+    Consistency test. Equation 12 in [1].
 
     Parameters
     -----------
@@ -190,16 +190,22 @@ def consistency(X_orig, E):
         assessment." (2000), Biol. Cybern., vol. 83, 35-45
     """
     X = X_orig.copy()
-    n, m, N = X.shape
-    p = m - E.shape[1]
-    X = X[:, p:m, :]
-    n1, m1, N1 = X.shape
-    X = np.reshape(X, (n1, m1 * N1), order='F')
-    E = np.reshape(E, (n1, m1 * N1), order='F')
-    s = N * (m - p)
+    n_sources, n_times, n_epochs = X.shape
+
+    p = n_times - E.shape[1]
+    X = X[:, p:n_times, :]
+
+    n_sources1, n_times1, n_epochs1 = X.shape
+
+    X = np.reshape(X, (n_sources1, n_times1 * n_epochs1), order='F')
+    E = np.reshape(E, (n_sources1, n_times1 * n_epochs1), order='F')
+
+    s = n_epochs * (n_times - p)
     Y = X - E
+
     Rr = X.dot(X.T) / (s - 1)
     Rs = Y.dot(Y.T) / (s - 1)
+
     cons = 1 - np.linalg.norm(Rs - Rr, 2) / np.linalg.norm(Rr, 2)
     return cons
 
