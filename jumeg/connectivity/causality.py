@@ -652,9 +652,8 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     hqic = []
 
     morder = []
-    whiteness = []
-    consistency = []
     dw = []
+    consistency = []
 
     # TODO: should this be n_total = N * n * p ???
     # total number of data points: n_trials * n_samples
