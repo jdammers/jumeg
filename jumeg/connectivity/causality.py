@@ -354,6 +354,10 @@ def check_whiteness_and_consistency(X, E, whit_min=1.0, whit_max=3.0):
         Whiteness
     cons: float
         Result of the consistency test.
+    dw_min : float
+        The minimum DW statistic.
+    dw_max : float
+        The maximum DW statistic.
     """
 
     from jumeg.connectivity.causality import dw_whiteness, consistency
@@ -364,7 +368,7 @@ def check_whiteness_and_consistency(X, E, whit_min=1.0, whit_max=3.0):
         whi = True
     cons = consistency(X, E)
 
-    return whi, cons
+    return whi, cons, dw.min(), dw.max()
 
 
 def check_model_order(X, p, whit_min=1.5, whit_max=2.5, check_stability=True):
@@ -466,7 +470,7 @@ def check_model_order(X, p, whit_min=1.5, whit_max=2.5, check_stability=True):
 
         if k > 1:
 
-            whi, cons = check_whiteness_and_consistency(X, E, whit_min, whit_max)
+            whi, cons, _, _ = check_whiteness_and_consistency(X, E, whit_min, whit_max)
 
             if check_stability:
                 mvar = VAR((k-1))
@@ -579,8 +583,7 @@ def make_frequency_bands(cau, freqs, sfreq):
     return np.array(cau_con)
 
 
-def compute_order_extended(X, m_max, m_min=1, m_step=1, whit_min=1.5,
-                           whit_max=2.5, n_jobs=None, verbose=True):
+def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=True):
     """
     Estimate VAR order with the Bayesian Information Criterion (BIC).
 
@@ -595,12 +598,6 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, whit_min=1.5,
     m_step : int
         The step size for checking the model order interval
         given by m_min and m_max.
-    whit_min : float
-        Durbin-Watson minimum value.
-    whit_max : float
-        Durbin-Watson maximum value. If the whiteness value lies
-        outside of the interval given by whit_min and whit_max
-        the residuals are considered to be non-white.
     n_jobs : None | int, optional
         Number of jobs to run in parallel for various tasks (e.g. whiteness
         testing). If set to None, joblib is not used at all. Note that the main
@@ -637,9 +634,8 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, whit_min=1.5,
     ics : np.array of shape (n_ics, (m_max - m_min) / m_step)
         The information criteria for the different model orders.
         [AIC1, BIC1, AIC2, BIC2, lnFPE, HQIC]
-    whiteness : np.array of shape ((m_max - m_min) / m_step), )
-        Results of the Durbin-Watson test for serial correlation in the
-        residuals.
+    dw : np.array of shape ((m_max - m_min) / m_step), 2)
+        Minimum and maximum Durbin-Watson statistic.
     consistency : np.array of shape ((m_max - m_min) / m_step), )
         Results of the MVAR consistency estimation.
     """
@@ -658,6 +654,7 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, whit_min=1.5,
     morder = []
     whiteness = []
     consistency = []
+    dw = []
 
     # TODO: should this be n_total = N * n * p ???
     # total number of data points: n_trials * n_samples
@@ -679,11 +676,12 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, whit_min=1.5,
         mvar = VAR(m, n_jobs=n_jobs)
         mvar.fit(X)
 
-        white, cons = check_whiteness_and_consistency(X.transpose(1, 2, 0), mvar.residuals.transpose(1, 2, 0),
-                                                      whit_min=whit_min, whit_max=whit_max)
+        _, cons, dw_min, dw_max = check_whiteness_and_consistency(X.transpose(1, 2, 0),
+                                                                  mvar.residuals.transpose(1, 2, 0),
+                                                                  whit_min=1.5, whit_max=2.5)
 
-        whiteness.append(white)
         consistency.append(cons)
+        dw.append([dw_min, dw_max])
 
         sigma = mvar.rescov
 
@@ -724,7 +722,8 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, whit_min=1.5,
             results += '    BIC2: %.2f' % m_bic2
             results += '  lnFPE3: %.2f' % m_ln_fpe3
             results += '    HQC3: %.2f' % m_hqc3
-            results += '   white: %d' % int(white)
+            results += '   DWmin: %.2f' % dw_min
+            results += '   DWmax: %.2f' % dw_max
             results += ' consistency: %.4f' % cons
 
             print(results)
@@ -737,10 +736,10 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, whit_min=1.5,
     ics = [aic1, bic1, aic2, bic2, lnfpe, hqic]
     ics = np.asarray(ics)
 
-    whiteness = np.array(whiteness)
+    dw = np.array(dw)
     consistency = np.array(consistency)
 
-    return o_m, morder, ics, whiteness, consistency
+    return o_m, morder, ics, dw, consistency
 
 
 def compute_order(X, m_max, verbose=True):
