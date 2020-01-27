@@ -7,7 +7,7 @@
  authors:
             Juergen Dammers
             Lukas Breuer
- email      : j.dammers@fz-juelich.de
+ email: j.dammers@fz-juelich.de
 
  Change history:
  30.10.2019: bug fix: gap, mibs, and bic now return rank not index

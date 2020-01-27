@@ -1189,15 +1189,15 @@ class JuMEG_icasso(object):
         # ------------------------------------------
         for irep in range(self.nrep):
             weights, pca, activations = ica_array(ica_data,
-                                                  overwrite=None, pca=pca,
-                                                  max_pca_components=self.pca_dim,
-                                                  method=self.ica_method,
-                                                  cost_func=self.cost_function,
-                                                  weights=None, lrate=self.lrate,
-                                                  wchange=self.conv_eps,
-                                                  maxsteps=self.max_iter,
-                                                  verbose=verbose)
-
+                                              return_ica_object=False,
+                                              overwrite=None, pca=pca,
+                                              max_pca_components=self.pca_dim,
+                                              method=self.ica_method,
+                                              cost_func=self.cost_function,
+                                              weights=None, lrate=self.lrate,
+                                              wchange=self.conv_eps,
+                                              maxsteps=self.max_iter,
+                                              verbose=verbose)
 
             if irep == 0:
                 self.whitenMat = pca.components_
