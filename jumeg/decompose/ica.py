@@ -1,13 +1,18 @@
 # ICA functions
 '''
  authors:
-            Lukas Breuer
             Juergen Dammers
-
+            Lukas Breuer
  email:  j.dammers@fz-juelich.de
 
  Change history:
- 17.10.2019: added useful functions to use ICA without MNE
+ 21.01.2020: - changes in ica_array
+                - now returns an MNE-type of ICA object (default)
+                - in fastica changed default to whiten=False
+             - added function to convert any ica object to MNE-type
+             - name change: "activations" are now named "sources"
+ 06.01.2020: added whitening option in PCA
+ 17.10.2019: added mulitple useful functions to use ICA without MNE
  27.11.2015  created by Lukas Breuer
 '''
 
@@ -22,6 +27,7 @@ import math
 import numpy as np
 from sys import stdout
 from scipy.linalg import pinv
+from copy import deepcopy
 
 
 #######################################################
@@ -30,13 +36,13 @@ from scipy.linalg import pinv
 #                    a data array                     #
 #                                                     #
 #######################################################
-def ica_array(data_orig, dim_reduction='',
-              explainedVar=1.0, overwrite=None,
+def ica_array(data_orig, dim_reduction='', explainedVar=1.0,
+              overwrite=None, return_ica_object=True,
               max_pca_components=None, method='infomax',
               cost_func='logcosh', weights=None, lrate=None,
               block=None, wchange=1e-16, annealdeg=60.,
               annealstep=0.9, n_subgauss=1, kurt_size=6000,
-              maxsteps=200, pca=None, verbose=True):
+              maxsteps=200, pca=None, whiten=False, verbose=True):
 
     """
     interface to perform (extended) Infomax or FastICA on a data array
@@ -44,6 +50,9 @@ def ica_array(data_orig, dim_reduction='',
         Parameters
         ----------
         data_orig : array of data to be decomposed [nchan, ntsl].
+
+        Optional Parameters
+        -------------------
         dim_reduction : {'', 'AIC', 'BIC', 'GAP', 'MDL', 'MIBS', 'explVar'}
             Method for dimension selection. For further information about
             the methods please check the script 'dimension_selection.py'.
@@ -63,6 +72,19 @@ def ica_array(data_orig, dim_reduction='',
             when dim_reduction=''
         method : {'fastica', 'infomax', 'extended-infomax'}
           The ICA method to use. Defaults to 'infomax'.
+
+        whiten : bool, optional (default False)
+            When True the `components_` vectors are multiplied
+            by the square root of n_samples and then divided by the singular values
+            to ensure uncorrelated outputs with unit component-wise variances.
+            Whitening will remove some information from the transformed signal
+            (the relative variance scales of the components) but can sometime
+            improve the predictive accuracy of the downstream estimators by
+            making their data respect some hard-wired assumptions.
+
+        return_ica_object: bool, optional (default True)
+            When True an MNE-type of ICA object is returned (including PCA) besides the sources
+            When False the ICA unmixing matrix, the PCA obejct and the sources are returned
 
 
         FastICA parameter:
@@ -113,10 +135,8 @@ def ica_array(data_orig, dim_reduction='',
         pca : instance of PCA
             Returns the instance of PCA where all information about the
             PCA decomposition are stored.
-        activations : underlying sources
+        sources: ICA sources
     """
-
-
 
     # -------------------------------------------
     # check overwrite option
@@ -126,9 +146,9 @@ def ica_array(data_orig, dim_reduction='',
     else:
         data = data_orig
 
-
     # -------------------------------------------
     # perform centering and whitening of the data
+    #    - optional use the provided PCA object
     # -------------------------------------------
     if pca:
         # perform centering and whitening
@@ -140,14 +160,12 @@ def ica_array(data_orig, dim_reduction='',
         # update mean and standard-deviation in PCA object
         pca.mean_ = dmean
         pca.stddev_ = stddev
-
     else:
         if verbose:
             print("     ... perform centering and whitening ...")
 
         data, pca = whitening(data.T, dim_reduction=dim_reduction, npc=max_pca_components,
-                              explainedVar=explainedVar)
-
+                              explainedVar=explainedVar, whiten=whiten)
 
     # -------------------------------------------
     # now call ICA algortithm
@@ -155,9 +173,10 @@ def ica_array(data_orig, dim_reduction='',
     # FastICA
     if method == 'fastica':
         from sklearn.decomposition import fastica
-        _, unmixing_, sources_ = fastica(data, fun=cost_func, max_iter=maxsteps, tol=1e-4,
-                                         whiten=True)
-        activations = sources_.T
+        # By Lukas, whitening was set to True. The new default is whiten=False
+        # However, whitening should not ne applied again, was whitened already (which is the default)
+        _, unmixing_, sources_ = fastica(data, fun=cost_func, max_iter=maxsteps, tol=1e-4, whiten=False)
+        sources = sources_.T
         weights = unmixing_
 
     # Infomax or extended Infomax
@@ -176,13 +195,16 @@ def ica_array(data_orig, dim_reduction='',
                           w_change=wchange, anneal_deg=annealdeg, anneal_step=annealstep,
                           extended=extended, n_subgauss=n_subgauss, kurt_size=kurt_size,
                           max_iter=maxsteps, verbose=verbose)
-        activations = np.dot(weights, data.T)
+        sources = np.dot(weights, data.T)
 
-    # return results
-    return weights, pca, activations
-
-
-
+    # create an MNE-Python type of ICA object
+    # Note, when used with MNE functions the info dict needs
+    # to be manually added to the ica object, such as, ica.info = info
+    if return_ica_object:
+        ica = ica_convert2mne(weights, pca, method=method)
+        return ica, sources
+    else:
+       return weights, pca, sources
 
 
 #######################################################
@@ -191,37 +213,31 @@ def ica_array(data_orig, dim_reduction='',
 #                    a data array                     #
 #                                                     #
 #######################################################
-def infomax2data(weights, pca, activations, idx_zero=None):
+def infomax2data(unmixing, pca, sources, idx_zero=None):
 
     """
     interface to perform (extended) Infomax ICA on a data array
 
         Parameters
         ----------
-        weights : un-mixing matrix
+        unmixing: the ICA un-mixing (weight) matrix
         pca : instance of PCA object
-        activations : underlying sources
+        sources : underlying sources
         idx_zero : indices of independent components (ICs) which
             should be removed
             default: idx_zero=None --> not IC is removed
 
         Returns
         -------
-        data : backtransformed cleaned data array
+        data : back-transformed cleaned data array
     """
-
-    # -------------------------------------------
-    # import necessary modules
-    # -------------------------------------------
-    from scipy.linalg import pinv
-
 
     # -------------------------------------------
     # check dimension of the input data
     # -------------------------------------------
-    npc   = len(weights)
+    npc   = len(unmixing)
     nchan = len(pca.components_)
-    ntsl  = activations.shape[1]
+    ntsl  = sources.shape[1]
 
     # create array for principal components
     pc    = np.zeros((nchan, ntsl))
@@ -229,21 +245,18 @@ def infomax2data(weights, pca, activations, idx_zero=None):
     # -------------------------------------------
     # backtransform data
     # -------------------------------------------
-    iweights = pinv(weights)
+    mixing = pinv(unmixing)
 
     if idx_zero is not None:
-       iweights[:, idx_zero] = 0.
+       mixing[:, idx_zero] = 0.
 
-    pc[:npc] = np.dot(iweights, activations)      # back-transform to PCA-space
-    data     = np.dot(pca.components_.T, pc)      # back-transform to data-space
+    pc[:npc] = np.dot(mixing, sources)            # back-transform to PCA-space
+    data = np.dot(pca.components_.T, pc)          # back-transform to data-space
     del pc                                        # delete principal components
-    data     = (data * pca.stddev_[:, np.newaxis]) + pca.mean_[:, np.newaxis]  # reverse normalization
-
+    data = (data * pca.stddev_[:, np.newaxis]) + pca.mean_[:, np.newaxis]  # reverse normalization
 
     # return results
     return data
-
-
 
 
 #######################################################
@@ -252,7 +265,7 @@ def infomax2data(weights, pca, activations, idx_zero=None):
 #                                                     #
 #######################################################
 def whitening(data, dim_reduction='',
-              npc=None, explainedVar=1.0):
+              npc=None, explainedVar=1.0, whiten=False):
 
     """
     routine to perform whitening prior to Infomax ICA application
@@ -279,6 +292,16 @@ def whitening(data, dim_reduction='',
             explained variance of 'explainedVar'
             default: explainedVar = None
 
+        whiten : bool, optional (default False)
+            When True the `components_` vectors are multiplied
+            by the square root of n_samples and then divided by the singular values
+            to ensure uncorrelated outputs with unit component-wise variances.
+            Whitening will remove some information from the transformed signal
+            (the relative variance scales of the components) but can sometime
+            improve the predictive accuracy of the downstream estimators by
+            making their data respect some hard-wired assumptions.
+
+
         Returns
         -------
         whitened_data : data array [nchan, ntsl] of decomposed sources
@@ -295,7 +318,6 @@ def whitening(data, dim_reduction='',
     from sklearn.decomposition import PCA
     from . import dimension_selection as dim_sel
 
-
     # -------------------------------------------
     # check input data
     # -------------------------------------------
@@ -304,23 +326,21 @@ def whitening(data, dim_reduction='',
     if (nchan < 2) or (ntsl < nchan):
         raise ValueError('Data size too small!')
 
-
     # -------------------------------------------
     # perform PCA decomposition
     # -------------------------------------------
     X = data.copy()
-    whiten = False
+    # whiten = False
     dmean = X.mean(axis=0)
     stddev = np.std(X, axis=0)
     X = (X - dmean[np.newaxis, :]) / stddev[np.newaxis, :]
 
-    pca = PCA(n_components=None, whiten=whiten, svd_solver='randomized', copy=True)
+    pca = PCA(n_components=None, whiten=whiten, svd_solver='auto', copy=True)
 
     # -------------------------------------------
     # perform whitening
     # -------------------------------------------
     whitened_data = pca.fit_transform(X)
-
 
     # -------------------------------------------
     # update PCA structure
@@ -348,9 +368,8 @@ def whitening(data, dim_reduction='',
         npc = nchan
 
     # return results
-    return whitened_data[:, :(npc+1)], pca
-
-
+    # return whitened_data[:, :(npc + 1)], pca
+    return whitened_data[:, :(npc)], pca
 
 
 #######################################################
@@ -569,8 +588,8 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
             change = np.sum(delta * delta, dtype=np.float64)
 
             if verbose:
-                info = "\r" if iter > 0 else ""
-                info += ">>> Step %4d of %4d; wchange: %1.4e" % (step+1, max_iter, change)
+                # info = "\r" if iter > 0 else ""
+                info = ">>> Step %4d of %4d; wchange: %1.4e\n" % (step+1, max_iter, change)
                 stdout.write(info)
                 stdout.flush()
 
@@ -627,28 +646,57 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
                 raise ValueError('Error in Infomax ICA: unmixing_matrix matrix'
                                  'might not be invertible!')
 
-
-    # prepare return values
-    return weights.T
+    # return ICA unmixing matrix
+    return weights.T        # after transpose shape corresponds to [n_features, n_samples]
 
 
 #######################################################
-#                                                     #
-# ica_update_pca: include pca object into ica object  #
-#                                                     #
+#
+# ica_convert2mne:
+#   - create a MNE-type of ICA object
+#   - include pca object into ica object
+#   - define entries as used by MNE-Python
+#
 #######################################################
-def ica_update_pca(ica, pca):
+def ica_convert2mne(unmixing, pca, info=None, method='fastica'):
 
-    n_comp = ica.components_.shape[1]
-    ica.n_components_ = n_comp
+    # create MNE-type of ICA object
+    from mne.preprocessing.ica import ICA
+    n_comp = unmixing.shape[1]
+
+    if method == 'extended-infomax':
+        ica_method = 'infomax'
+        fit_params = dict(extended=True)
+    else:
+        ica_method = method
+        fit_params = None
+
+    ica = ICA(n_components=n_comp, method=ica_method, fit_params=fit_params)
+
+    # add PCA object
+    ica.pca = pca
+
+    # PCA info to be used bei MNE-Python
     ica.pca_mean_ = pca.mean_
-    ica.pca_explained_variance_ = exp_var = pca.explained_variance_
-    ica.unmixing_matrix_ = ica.components_
-    ica.unmixing_matrix_ /= np.sqrt(exp_var[0:n_comp])[None, :]  # whitening
-    ica.mixing_matrix_ = pinv(ica.unmixing_matrix_)
+    ica.pca_components_ = pca.components_
+    exp_var = pca.explained_variance_
+    ica.pca_explained_variance_ = exp_var
+    ica.pca_explained_variance_ratio_ = pca.explained_variance_ratio_
+
+    # ICA info
+    ica.n_components_ = n_comp
+    ica.n_components = n_comp
+    ica.components_ = unmixing                  # compatible with sklearn
+    ica.unmixing_= ica.components_                                              # as used by sklearn
+    ica.mixing_ = pinv(ica.unmixing_)                                           # as used by sklearn
+    ica.unmixing_matrix_ = ica.unmixing_ / np.sqrt(exp_var[0:n_comp])[None, :]  # as used by MNE-Python
+    ica.mixing_matrix_ = pinv(ica.unmixing_matrix_)                             # as used by MNE-Python
+    ica._ica_names = ['ICA%03d' % ii for ii in range(n_comp)]
+    ica.fun = method
+    if info:
+        ica.info = info
 
     return ica
-
 
 
 #######################################################
@@ -694,7 +742,6 @@ def ica2data(sources, ica, pca, idx_zero=None, idx_keep=None):
     # --------------------------------------------------------
     data[:, :n_comp] = np.dot(sources, A.T)
 
-
     # --------------------------------------------------------
     # back transformation to Data space
     #
@@ -707,7 +754,6 @@ def ica2data(sources, ica, pca, idx_zero=None, idx_keep=None):
     data = pca.inverse_transform(data)
 
     return data
-
 
 
 #######################################################
@@ -749,32 +795,3 @@ def ica2data_single_components(sources, ica, pca, picks=None):
     # x_mean_comp[:, icomp] = data.mean(axis=1)
 
     return data
-
-
-
-
-#######################################################
-#                                                     #
-# ica_sort_components                                 #
-#                                                     #
-#######################################################
-
-def ica_sort_components(sources, ica, order=None):
-    """
-    order: user defined order (indices) to change
-           the order of ICs
-           default: ordered by variance
-    """
-    n_samples, n_features = sources.shape   # [n_samp, n_chan]
-    if order:
-        assert n_features == len(order)
-    else: # sort by variance
-        var = np.sum(ica.mixing_ ** 2, axis=0) * np.sum(sources ** 2, axis=0) / (n_features * n_samples - 1)
-        var /= var.sum()
-        order = var.argsort()[::-1]
-
-    ica.mixing_= ica.mixing_[:,order]
-    ica.components_ = ica.components_[order,:]
-
-    return sources[:,order], ica, order
-
