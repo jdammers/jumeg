@@ -11,7 +11,6 @@ from functools import partial
 import numpy as np
 import scipy as sci
 
-import mne
 from mne.viz.utils import plt_show
 from mne.viz.circle import (circular_layout, _plot_connectivity_circle_onpick)
 
@@ -686,6 +685,55 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
         pl.savefig(out_fname, facecolor='white', dpi=600)
 
 
+def get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u):
+    """
+    Get the minimum and maximum off-diagonal values that
+    are different from 0.
+
+    Parameters:
+    -----------
+    vmin : None | float
+        If vmin is None, the minimum value is taken
+        from the data.
+    vmax : None | float
+        If vmax is None, the maximum value is taken
+        from the data.
+    cau_l : np.array of shape (n_rois, n_rois)
+        The causality data with the upper triangle set to zero.
+    cau_u : np.array of shape (n_rois, n_rois)
+        The causality data with the lower triangle set to zero.
+
+    Returns:
+    --------
+    vmin : float
+        The minimum value.
+    vmax : float
+        The maximum value.
+    """
+
+    if vmax is None:
+        vmax = np.max([np.max(cau_l), np.max(cau_u)])
+    if vmin is None:
+        if np.max([np.max(cau_l), np.max(cau_u)]) == 0:
+            # no significant connections found
+            vmin = 0
+            vmax = 0.2
+        else:
+
+            if (cau_l != 0).any():
+                vmin_l = np.min(cau_l[cau_l != 0])
+            else:
+                vmin_l = 0
+
+            if (cau_u != 0).any():
+                vmin_u = np.min(cau_u[cau_u != 0])
+            else:
+                vmin_u = 0
+            vmin = np.min([vmin_l, vmin_u])
+
+    return vmin, vmax
+
+
 def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   labels_mode='cortex_only', title='Causal Metric',
                                   out_fname='causality_circle.png', colormap='Blues',
@@ -693,17 +741,8 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   vmin=None, vmax=None, tight_layout=False, **kwargs):
 
     con_l = np.tril(caus, k=-1)
-    con_u = np.triu(caus, k=1).T
-
-    if vmax is None:
-        vmax = np.max([np.max(con_l), np.max(con_u)])
-    if vmin is None:
-        if np.max([np.max(con_l), np.max(con_u)]) == 0:
-            # no significant connections found
-            vmin = 0
-            vmax = 0.1
-        else:
-            vmin = np.min([np.min(con_l[con_l != 0]), np.min(con_u[con_u != 0])])
+    con_u = np.triu(caus, k=1).T  # transpose for plotting
+    vmin, vmax = get_vmin_vmax_causality(vmin, vmax, con_l, con_u)
 
     if not fig:
         import matplotlib.pyplot as plt
