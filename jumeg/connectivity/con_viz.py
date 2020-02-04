@@ -766,6 +766,10 @@ def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
     Given degree values of various nodes of a network, plot a grouped circle
     plot a scatter plot around a circle.
     """
+
+    cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
+                     'g', 'r', 'c', 'y', 'b', 'm']
+
     n_nodes = len(degrees)
 
     with open(orig_labels_fname, 'r') as f:
@@ -796,20 +800,11 @@ def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
 
     # the respective no. of regions in each cortex
     # yaml fix order change
-    group_bound = [len(list(key.values())[0]) for key in labels]
-    group_bound = [0] + group_bound[::-1] + group_bound
-    group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
+    group_numbers = [len(list(key.values())[0]) for key in labels]
+    group_numbers = group_numbers[::-1] + group_numbers
 
-    # remove the first element of group_bound
-    # make label colours such that each cortex is of one colour
-    group_bound.pop(0)
-
-    # remove the last total sum of the list
-    group_boundaries.pop()
-
-    from mne.viz.circle import circular_layout
-    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
-                                  group_boundaries=group_boundaries)
+    node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
+                                                           node_order, orig_labels)
 
     # prepare group label positions
     group_labels = [list(lab.keys())[0] for lab in labels]
@@ -836,23 +831,10 @@ def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
 
     ax = plt.subplot(*subplot, polar=True, facecolor='white')
 
-    cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
-                     'g', 'r', 'c', 'y', 'b', 'm']
-
-    label_colors = []
-    for ind, rep in enumerate(group_bound):
-        label_colors += [cortex_colors[ind]] * rep
-    assert len(label_colors) == len(node_order), 'Number of colours do not match'
-
-    # the order of the node_colors must match that of orig_labels
-    # therefore below reordering is necessary
-    reordered_colors = [label_colors[node_order.index(orig)]
-                        for orig in orig_labels]
-
     # first plot the circle showing the degree
     theta = np.deg2rad(node_angles)
     radii = np.ones(len(node_angles)) * radsize
-    c = ax.scatter(theta, radii, c=reordered_colors, s=degrees * degsize,
+    c = ax.scatter(theta, radii, c=node_colors, s=degrees * degsize,
                    cmap=None, alpha=alpha)
 
     ax.grid(False)
