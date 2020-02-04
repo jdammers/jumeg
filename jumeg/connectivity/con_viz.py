@@ -11,7 +11,6 @@ from functools import partial
 import numpy as np
 import scipy as sci
 
-import mne
 from mne.viz.utils import plt_show
 from mne.viz.circle import (circular_layout, _plot_connectivity_circle_onpick)
 
@@ -480,71 +479,69 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         print('%s - File not found.' % yaml_fname)
         sys.exit()
 
-    cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
-                     'g', 'r', 'c', 'y', 'b', 'm']
+    node_angles, node_colors = _get_group_node_angles_and_colors(labels, orig_labels, node_order_size)
 
-    # make list of label_names (without individual cortex locations)
-    label_names = list()
-    for lab in labels:
-        # label_names.extend(labels[lab])
-        label_names += list(lab.values())[0]  # yaml order fix
+    my_labels = _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict)
 
-    lh_labels = [name + '-lh' for name in label_names if name + '-lh' in orig_labels]
-    rh_labels = [name + '-rh' for name in label_names if name + '-rh' in orig_labels]
+    # Plot the graph using node_order and colours
+    # orig_labels is the order of nodes in the con matrix (important)
+    fig, axes = plot_connectivity_circle(con, my_labels, n_lines=n_lines,
+                                         facecolor='white', textcolor='black',
+                                         node_angles=node_angles, colormap=colormap,
+                                         node_colors=node_colors,
+                                         node_edgecolor='white', fig=fig,
+                                         vmax=vmax, vmin=vmin, colorbar_size=0.2,
+                                         colorbar_pos=colorbar_pos,
+                                         colorbar=colorbar, symmetric_cbar=symmetric_cbar,
+                                         show=show, subplot=subplot, indices=indices,
+                                         title=title, **kwargs)
 
-    # Save the plot order and create a circular layout
-    node_order = list()
-    node_order.extend(lh_labels[::-1])  # reverse the order
-    node_order.extend(rh_labels)
+    if include_legend:
+        import matplotlib.patches as mpatches
+        # yaml order fix
+        legend_patches = [mpatches.Patch(color=col, label=list(llab.keys())[0])
+                          for col, llab in zip(['g', 'r', 'c', 'y', 'b', 'm'], labels)]
+        # legend_patches = [mpatches.Patch(color=col, label=key)
+        #                   for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
+        #                                       labels.keys())]
+        plt.legend(handles=legend_patches, loc=3, ncol=1,
+                   mode=None, fontsize='medium')
 
-    assert len(node_order) == node_order_size, 'Node order length is correct.'
+    if tight_layout:
+        fig.tight_layout()
 
-    group_bound = [0]
-    # left first in reverse order, then right hemi labels
-    for i in range(len(labels))[::-1]:
-        cortical_region = list(labels[i].keys())[0]
-        actual_num_lh = [rlab for rlab in labels[i][cortical_region] if rlab + '-lh' in lh_labels]
-        # print(cortical_region, len(actual_num_lh))
-        group_bound.append(len(actual_num_lh))
+    if out_fname:
+        fig.savefig(out_fname, facecolor='white',
+                    dpi=600, bbox_inches=bbox_inches)
 
-    for i in range(len(labels)):
-        cortical_region = list(labels[i].keys())[0]
-        actual_num_rh = [rlab for rlab in labels[i][cortical_region] if rlab + '-rh' in rh_labels]
-        # print(cortical_region, len(actual_num_rh))
-        group_bound.append(len(actual_num_rh))
+    return fig
 
-    assert np.sum(group_bound) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
 
-    # the respective no. of regions in each cortex
-    # group_bound = [len(list(key.values())[0]) for key in labels]  # yaml order fix
-    # group_bound = [0] + group_bound[::-1] + group_bound
-    group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
+def _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict):
+    """
+    Parameters:
+    -----------
+    labels_mode : str | None
+        'blank' mode plots no labels on the circle plot,
+        'cortex_only' plots only the name of the cortex on one representative
+        node and None plots all of the orig_label names provided.
+    orig_labels : list of str
+        Label names in the order as appears in con.
+    replacer_dict :
+        Dictionary to replace the individual label names with cortex
+        names.
 
-    # remove the first element of group_bound
-    # make label colours such that each cortex is of one colour
-    group_bound.pop(0)
-    label_colors = []
-    for ind, rep in enumerate(group_bound):
-        label_colors += [cortex_colors[ind]] * rep
-    assert len(label_colors) == len(node_order), 'Number of colours do not match'
-
-    # remove the last total sum of the list
-    group_boundaries.pop()
-
-    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
-                                  group_boundaries=group_boundaries)
-
-    # print(node_angles)
-
-    # the order of the node_colors must match that of orig_labels
-    # therefore below reordering is necessary
-    reordered_colors = [label_colors[node_order.index(orig)]
-                        for orig in orig_labels]
+    Returns:
+    --------
+    my_labels : list of str
+        The label names used in the circular plot.
+    """
 
     # labels mode decides the labels printed for each of the nodes
     if labels_mode == 'blank':
         # show nothing, only the empty circle plot
-        my_labels = ['' for orig in orig_labels]
+        my_labels = ['' for _ in orig_labels]
+
     elif labels_mode == 'cortex_only':
         if isinstance(replacer_dict, dict):
             # show only the names of cortex areas on one representative node
@@ -566,39 +563,83 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         # show all the node labels as originally given
         my_labels = orig_labels
 
-    # Plot the graph using node_order and colours
-    # orig_labels is the order of nodes in the con matrix (important)
-    fig, axes = plot_connectivity_circle(con, my_labels, n_lines=n_lines,
-                                         facecolor='white', textcolor='black',
-                                         node_angles=node_angles, colormap=colormap,
-                                         node_colors=reordered_colors,
-                                         node_edgecolor='white', fig=fig,
-                                         vmax=vmax, vmin=vmin, colorbar_size=0.2,
-                                         colorbar_pos=colorbar_pos,
-                                         colorbar=colorbar, symmetric_cbar=symmetric_cbar,
-                                         show=show, subplot=subplot, indices=indices,
-                                         title=title, **kwargs)
+    return my_labels
 
-    if include_legend:
-        import matplotlib.patches as mpatches
-        # yaml order fix
-        legend_patches = [mpatches.Patch(color=col, label=list(llab.keys())[0])
-                          for col, llab in zip(['g', 'r', 'c', 'y', 'b', 'm'],
-                                               labels)]
-        # legend_patches = [mpatches.Patch(color=col, label=key)
-        #                   for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
-        #                                       labels.keys())]
-        plt.legend(handles=legend_patches, loc=3, ncol=1,
-                   mode=None, fontsize='medium')
 
-    if tight_layout:
-        fig.tight_layout()
+def _get_group_node_angles_and_colors(labels, orig_labels, node_order_size, cortex_colors=None):
 
-    if out_fname:
-        fig.savefig(out_fname, facecolor='white',
-                    dpi=600, bbox_inches=bbox_inches)
+    if cortex_colors is None:
+        cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
+                         'g', 'r', 'c', 'y', 'b', 'm']
 
-    return fig
+    ######################################################################
+    # Get labels in left and right hemisphere
+    ######################################################################
+
+    label_names = list()
+    for lab in labels:
+        # label_names.extend(labels[lab])
+        label_names += list(lab.values())[0]  # yaml order fix
+
+    lh_labels = [name + '-lh' for name in label_names if name + '-lh' in orig_labels]
+    rh_labels = [name + '-rh' for name in label_names if name + '-rh' in orig_labels]
+
+    ######################################################################
+    # Get number of labels per group in a list
+    ######################################################################
+
+    group_numbers = []
+    # left first in reverse order, then right hemi labels
+    for i in reversed(range(len(labels))):
+        cortical_region = list(labels[i].keys())[0]
+        actual_num_lh = len([rlab for rlab in labels[i][cortical_region] if rlab + '-lh' in lh_labels])
+        # print(cortical_region, actual_num_lh)
+        group_numbers.append(actual_num_lh)
+
+    for i in range(len(labels)):
+        cortical_region = list(labels[i].keys())[0]
+        actual_num_rh = len([rlab for rlab in labels[i][cortical_region] if rlab + '-rh' in rh_labels])
+        # print(cortical_region, actual_num_rh)
+        group_numbers.append(actual_num_rh)
+
+    assert np.sum(group_numbers) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
+
+    ######################################################################
+    # assign a color and angle to each label based on the group
+    ######################################################################
+
+    node_order = list()
+    node_order.extend(reversed(lh_labels))  # reverse the order
+    node_order.extend(rh_labels)
+
+    assert len(node_order) == node_order_size, 'Node order length is correct.'
+
+    node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
+                                                           node_order, orig_labels)
+
+    return node_angles, node_colors
+
+
+def _get_node_angles_and_colors(group_numbers, cortex_colors, node_order, orig_labels):
+
+    # the respective no. of regions in each cortex
+    group_boundaries = np.cumsum([0] + group_numbers)[:-1]
+
+    label_colors = []
+    for ind, rep in enumerate(group_numbers):
+        label_colors += [cortex_colors[ind]] * rep
+
+    assert len(label_colors) == len(node_order), 'Number of colours do not match'
+
+    # the order of the node_colors must match that of orig_labels
+    # therefore below reordering is necessary
+
+    node_colors = [label_colors[node_order.index(orig)] for orig in orig_labels]
+
+    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
+                                  group_boundaries=group_boundaries)
+
+    return node_angles, node_colors
 
 
 def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
@@ -639,36 +680,17 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
     assert len(node_order) == node_order_size, 'Node order length is correct.'
 
     # the respective no. of regions in each cortex
-    group_bound = [len(labels[key]) for key in list(labels.keys())]
-    group_bound = [0] + group_bound
-    group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
+    group_numbers = [len(labels[key]) for key in list(labels.keys())]
 
-    # remove the first element of group_bound
-    # make label colours such that each cortex is of one colour
-    group_bound.pop(0)
-    label_colors = []
-    for ind, rep in enumerate(group_bound):
-        label_colors += [cortex_colors[ind]] * rep
-    assert len(label_colors) == len(node_order), 'Number of colours do not match'
-
-    # remove the last total sum of the list
-    group_boundaries.pop()
-
-    from mne.viz.circle import circular_layout
-    node_angles = circular_layout(orig_labels, label_names, start_pos=90,
-                                  group_boundaries=group_boundaries)
-
-    # the order of the node_colors must match that of orig_labels
-    # therefore below reordering is necessary
-    reordered_colors = [label_colors[node_order.index(orig)]
-                        for orig in orig_labels]
+    node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
+                                                           node_order, orig_labels)
 
     # Plot the graph using node_order and colours
     # orig_labels is the order on nodes in the con matrix (important)
     plot_connectivity_circle(con, orig_labels, n_lines=n_lines,
                              facecolor='white', textcolor='black',
                              node_angles=node_angles,
-                             node_colors=reordered_colors,
+                             node_colors=node_colors,
                              node_edgecolor='white', fig=fig,
                              fontsize_names=8, vmax=vmax, vmin=vmin,
                              colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
@@ -686,6 +708,55 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
         pl.savefig(out_fname, facecolor='white', dpi=600)
 
 
+def get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u):
+    """
+    Get the minimum and maximum off-diagonal values that
+    are different from 0.
+
+    Parameters:
+    -----------
+    vmin : None | float
+        If vmin is None, the minimum value is taken
+        from the data.
+    vmax : None | float
+        If vmax is None, the maximum value is taken
+        from the data.
+    cau_l : np.array of shape (n_rois, n_rois)
+        The causality data with the upper triangle set to zero.
+    cau_u : np.array of shape (n_rois, n_rois)
+        The causality data with the lower triangle set to zero.
+
+    Returns:
+    --------
+    vmin : float
+        The minimum value.
+    vmax : float
+        The maximum value.
+    """
+
+    if vmax is None:
+        vmax = np.max([np.max(cau_l), np.max(cau_u)])
+    if vmin is None:
+        if np.max([np.max(cau_l), np.max(cau_u)]) == 0:
+            # no significant connections found
+            vmin = 0
+            vmax = 0.2
+        else:
+
+            if (cau_l != 0).any():
+                vmin_l = np.min(cau_l[cau_l != 0])
+            else:
+                vmin_l = 0
+
+            if (cau_u != 0).any():
+                vmin_u = np.min(cau_u[cau_u != 0])
+            else:
+                vmin_u = 0
+            vmin = np.min([vmin_l, vmin_u])
+
+    return vmin, vmax
+
+
 def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   labels_mode='cortex_only', title='Causal Metric',
                                   out_fname='causality_circle.png', colormap='Blues',
@@ -693,17 +764,8 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   vmin=None, vmax=None, tight_layout=False, **kwargs):
 
     con_l = np.tril(caus, k=-1)
-    con_u = np.triu(caus, k=1).T
-
-    if vmax is None:
-        vmax = np.max([np.max(con_l), np.max(con_u)])
-    if vmin is None:
-        if np.max([np.max(con_l), np.max(con_u)]) == 0:
-            # no significant connections found
-            vmin = 0
-            vmax = 0.1
-        else:
-            vmin = np.min([np.min(con_l[con_l != 0]), np.min(con_u[con_u != 0])])
+    con_u = np.triu(caus, k=1).T  # transpose for plotting
+    vmin, vmax = get_vmin_vmax_causality(vmin, vmax, con_l, con_u)
 
     if not fig:
         import matplotlib.pyplot as plt
@@ -743,6 +805,10 @@ def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
     Given degree values of various nodes of a network, plot a grouped circle
     plot a scatter plot around a circle.
     """
+
+    cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
+                     'g', 'r', 'c', 'y', 'b', 'm']
+
     n_nodes = len(degrees)
 
     with open(orig_labels_fname, 'r') as f:
@@ -773,20 +839,11 @@ def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
 
     # the respective no. of regions in each cortex
     # yaml fix order change
-    group_bound = [len(list(key.values())[0]) for key in labels]
-    group_bound = [0] + group_bound[::-1] + group_bound
-    group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
+    group_numbers = [len(list(key.values())[0]) for key in labels]
+    group_numbers = group_numbers[::-1] + group_numbers
 
-    # remove the first element of group_bound
-    # make label colours such that each cortex is of one colour
-    group_bound.pop(0)
-
-    # remove the last total sum of the list
-    group_boundaries.pop()
-
-    from mne.viz.circle import circular_layout
-    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
-                                  group_boundaries=group_boundaries)
+    node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
+                                                           node_order, orig_labels)
 
     # prepare group label positions
     group_labels = [list(lab.keys())[0] for lab in labels]
@@ -813,23 +870,10 @@ def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
 
     ax = plt.subplot(*subplot, polar=True, facecolor='white')
 
-    cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
-                     'g', 'r', 'c', 'y', 'b', 'm']
-
-    label_colors = []
-    for ind, rep in enumerate(group_bound):
-        label_colors += [cortex_colors[ind]] * rep
-    assert len(label_colors) == len(node_order), 'Number of colours do not match'
-
-    # the order of the node_colors must match that of orig_labels
-    # therefore below reordering is necessary
-    reordered_colors = [label_colors[node_order.index(orig)]
-                        for orig in orig_labels]
-
     # first plot the circle showing the degree
     theta = np.deg2rad(node_angles)
     radii = np.ones(len(node_angles)) * radsize
-    c = ax.scatter(theta, radii, c=reordered_colors, s=degrees * degsize,
+    c = ax.scatter(theta, radii, c=node_colors, s=degrees * degsize,
                    cmap=None, alpha=alpha)
 
     ax.grid(False)

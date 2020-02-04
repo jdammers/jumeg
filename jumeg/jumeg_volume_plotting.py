@@ -421,7 +421,7 @@ def plot_vstc_grid_slice(vstc, params_plot_img_with_bg, time=None, cut_coords=6,
 def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, title=None, cut_coords=6,
                          display_mode='z', figure=None, axes=None, colorbar=False, cmap='magma',
                          symmetric_cbar=False, threshold='min', cbar_range=None,
-                         save=False, fname_save=None):
+                         save=False, fname_save=None, verbose=False):
     """
     Plot a volume source space estimation.
 
@@ -481,6 +481,8 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, title=None,
         at fname_save location
     fname_save : string
         The path where to save the plot.
+    verbose : bool
+        Print additional information.
 
     Returns
     -------
@@ -505,7 +507,9 @@ def plot_vstc_sliced_old(vstc, vsrc, tstep, subjects_dir, time=None, title=None,
     else:
         t = np.argmin(np.fabs(vstc.times - time))
         t_in_ms = vstc.times[t] * 1e3
-    print('    Found time slice: ', t_in_ms, 'ms')
+
+    if verbose:
+        print('    Found time slice: ', t_in_ms, 'ms')
 
     # img_data = img.get_data()
     # aff = img.affine
