@@ -601,6 +601,131 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     return fig
 
 
+def _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict):
+    """
+    Parameters:
+    -----------
+    labels_mode : str | None
+        'blank' mode plots no labels on the circle plot,
+        'cortex_only' plots only the name of the cortex on one representative
+        node and None plots all of the orig_label names provided.
+    orig_labels : list of str
+        Label names in the order as appears in con.
+    replacer_dict :
+        Dictionary to replace the individual label names with cortex
+        names.
+
+    Returns:
+    --------
+    my_labels : list of str
+        The label names used in the circular plot.
+    """
+
+    # labels mode decides the labels printed for each of the nodes
+    if labels_mode == 'blank':
+        # show nothing, only the empty circle plot
+        my_labels = ['' for _ in orig_labels]
+
+    elif labels_mode == 'cortex_only':
+        if isinstance(replacer_dict, dict):
+            # show only the names of cortex areas on one representative node
+            replacer = replacer_dict
+        else:
+            raise RuntimeError('Replacer dict with cortex names not set, \
+                                cannot choose cortex_only labels_mode.')
+
+        replaced_labels = []
+        for myl in orig_labels:
+            if myl.split('-lh')[0] in list(replacer.keys()):
+                replaced_labels.append(replacer[myl.split('-lh')[0]] + '-lh')
+            elif myl.split('-rh')[0] in list(replacer.keys()):
+                replaced_labels.append(replacer[myl.split('-rh')[0]] + '-rh')
+            else:
+                replaced_labels.append('')
+        my_labels = replaced_labels
+    else:
+        # show all the node labels as originally given
+        my_labels = orig_labels
+
+    return my_labels
+
+
+def _get_group_node_angles_and_colors(labels, orig_labels, node_order_size, cortex_colors=None):
+
+    if cortex_colors is None:
+        cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
+                         'g', 'r', 'c', 'y', 'b', 'm']
+
+    ######################################################################
+    # Get labels in left and right hemisphere
+    ######################################################################
+
+    label_names = list()
+    for lab in labels:
+        # label_names.extend(labels[lab])
+        label_names += list(lab.values())[0]  # yaml order fix
+
+    lh_labels = [name + '-lh' for name in label_names if name + '-lh' in orig_labels]
+    rh_labels = [name + '-rh' for name in label_names if name + '-rh' in orig_labels]
+
+    ######################################################################
+    # Get number of labels per group in a list
+    ######################################################################
+
+    group_numbers = []
+    # left first in reverse order, then right hemi labels
+    for i in reversed(range(len(labels))):
+        cortical_region = list(labels[i].keys())[0]
+        actual_num_lh = len([rlab for rlab in labels[i][cortical_region] if rlab + '-lh' in lh_labels])
+        # print(cortical_region, actual_num_lh)
+        group_numbers.append(actual_num_lh)
+
+    for i in range(len(labels)):
+        cortical_region = list(labels[i].keys())[0]
+        actual_num_rh = len([rlab for rlab in labels[i][cortical_region] if rlab + '-rh' in rh_labels])
+        # print(cortical_region, actual_num_rh)
+        group_numbers.append(actual_num_rh)
+
+    assert np.sum(group_numbers) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
+
+    ######################################################################
+    # assign a color and angle to each label based on the group
+    ######################################################################
+
+    node_order = list()
+    node_order.extend(reversed(lh_labels))  # reverse the order
+    node_order.extend(rh_labels)
+
+    assert len(node_order) == node_order_size, 'Node order length is correct.'
+
+    node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
+                                                           node_order, orig_labels)
+
+    return node_angles, node_colors
+
+
+def _get_node_angles_and_colors(group_numbers, cortex_colors, node_order, orig_labels):
+
+    # the respective no. of regions in each cortex
+    group_boundaries = np.cumsum(group_numbers)
+
+    label_colors = []
+    for ind, rep in enumerate(group_numbers):
+        label_colors += [cortex_colors[ind]] * rep
+
+    assert len(label_colors) == len(node_order), 'Number of colours do not match'
+
+    # the order of the node_colors must match that of orig_labels
+    # therefore below reordering is necessary
+
+    node_colors = [label_colors[node_order.index(orig)] for orig in orig_labels]
+
+    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
+                                  group_boundaries=group_boundaries[:-1])
+
+    return node_angles, node_colors
+
+
 def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
                                 node_order_size,
                                 out_fname='circle.png', title=None,
