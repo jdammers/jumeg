@@ -681,36 +681,17 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
     assert len(node_order) == node_order_size, 'Node order length is correct.'
 
     # the respective no. of regions in each cortex
-    group_bound = [len(labels[key]) for key in list(labels.keys())]
-    group_bound = [0] + group_bound
-    group_boundaries = [sum(group_bound[:i+1]) for i in range(len(group_bound))]
+    group_numbers = [len(labels[key]) for key in list(labels.keys())]
 
-    # remove the first element of group_bound
-    # make label colours such that each cortex is of one colour
-    group_bound.pop(0)
-    label_colors = []
-    for ind, rep in enumerate(group_bound):
-        label_colors += [cortex_colors[ind]] * rep
-    assert len(label_colors) == len(node_order), 'Number of colours do not match'
-
-    # remove the last total sum of the list
-    group_boundaries.pop()
-
-    from mne.viz.circle import circular_layout
-    node_angles = circular_layout(orig_labels, label_names, start_pos=90,
-                                  group_boundaries=group_boundaries)
-
-    # the order of the node_colors must match that of orig_labels
-    # therefore below reordering is necessary
-    reordered_colors = [label_colors[node_order.index(orig)]
-                        for orig in orig_labels]
+    node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
+                                                           node_order, orig_labels)
 
     # Plot the graph using node_order and colours
     # orig_labels is the order on nodes in the con matrix (important)
     plot_connectivity_circle(con, orig_labels, n_lines=n_lines,
                              facecolor='white', textcolor='black',
                              node_angles=node_angles,
-                             node_colors=reordered_colors,
+                             node_colors=node_colors,
                              node_edgecolor='white', fig=fig,
                              fontsize_names=8, vmax=vmax, vmin=vmin,
                              colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
