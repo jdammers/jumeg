@@ -795,7 +795,7 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
         # get strongest causal connections in entire causality matrix
         con = con[con[:, 1].argsort()][n_lines:]
         # get how many are in upper and in lower triangle
-        n_liness = [n_lines - con[:, 0].sum(), con[:, 0].sum()]
+        n_liness = [int(n_lines - con[:, 0].sum()), int(con[:, 0].sum())]
     else:
         n_liness = [None, None]
 
