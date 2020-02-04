@@ -624,7 +624,7 @@ def _get_group_node_angles_and_colors(labels, orig_labels, node_order_size, cort
 def _get_node_angles_and_colors(group_numbers, cortex_colors, node_order, orig_labels):
 
     # the respective no. of regions in each cortex
-    group_boundaries = np.cumsum(group_numbers)
+    group_boundaries = np.cumsum([0] + group_numbers)[:-1]
 
     label_colors = []
     for ind, rep in enumerate(group_numbers):
@@ -638,7 +638,7 @@ def _get_node_angles_and_colors(group_numbers, cortex_colors, node_order, orig_l
     node_colors = [label_colors[node_order.index(orig)] for orig in orig_labels]
 
     node_angles = circular_layout(orig_labels, node_order, start_pos=90,
-                                  group_boundaries=group_boundaries[:-1])
+                                  group_boundaries=group_boundaries)
 
     return node_angles, node_colors
 
