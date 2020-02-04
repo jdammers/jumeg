@@ -763,14 +763,15 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   figsize=(10, 6), show=False, colorbar=False, fig=None,
                                   vmin=None, vmax=None, tight_layout=False, **kwargs):
 
-    con_l = np.tril(caus, k=-1)
-    con_u = np.triu(caus, k=1).T  # transpose for plotting
-    vmin, vmax = get_vmin_vmax_causality(vmin, vmax, con_l, con_u)
+    cau_l = np.tril(caus, k=-1)
+    cau_u = np.triu(caus, k=1).T  # transpose for plotting
+    conds = [cau_l, cau_u]
+
+    vmin, vmax = get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u)
 
     if not fig:
         import matplotlib.pyplot as plt
         fig = plt.figure(num=None, figsize=figsize)
-    conds = [con_l, con_u]
 
     if colorbar:
         colorbar = [False, True]
@@ -782,7 +783,24 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
     else:
         tight_layout = [None, None]
 
+    # get how many of the strongest connections are in lower and upper triangle
+    if n_lines is not None:
+        cltri = np.zeros([n_lines, 2])
+        cltri[:, 1] = np.sort(np.abs(cau_l).ravel())[-n_lines:]
+
+        cutri = np.ones([n_lines, 2])
+        cutri[:, 1] = np.sort(np.abs(cau_u).ravel())[-n_lines:]
+
+        con = np.concatenate((cltri, cutri), axis=0)
+        # get strongest causal connections in entire causality matrix
+        con = con[con[:, 1].argsort()][n_lines:]
+        # get how many are in upper and in lower triangle
+        n_liness = [n_lines - con[:, 0].sum(), con[:, 0].sum()]
+    else:
+        n_liness = [None, None]
+
     for ii, cond in enumerate(conds):
+        n_lines = n_liness[ii]
         plot_grouped_connectivity_circle(yaml_fname, conds[ii],
                                          label_names,
                                          out_fname=out_fname,
