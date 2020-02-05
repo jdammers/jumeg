@@ -290,7 +290,14 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
     # Draw lines between connected nodes, only draw the strongest connections
     if n_lines is not None and len(con) > n_lines:
-        con_thresh = np.sort(np.abs(con).ravel())[-n_lines]
+
+        n_significant_cons = len(np.where(con)[0])
+
+        if n_significant_cons > n_lines:
+            con_thresh = np.sort(np.abs(con).ravel())[-n_lines]
+        else:
+            con_thresh = np.sort(np.abs(con).ravel())[-n_significant_cons]
+
     else:
         con_thresh = 0.
 
