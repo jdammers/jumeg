@@ -260,7 +260,14 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         if con.shape[0] != n_nodes or con.shape[1] != n_nodes:
             raise ValueError('con has to be 1D or a square matrix')
         # we use the lower-triangular part
-        indices = np.tril_indices(n_nodes, -1)
+
+        is_symmetric = np.all(np.abs(con - con.T) < 1e-8)
+        if is_symmetric:
+            indices = np.tril_indices(n_nodes, -1)
+        else:
+            # get off-diagonal indices
+            indices = np.where(~np.eye(con.shape[0], dtype=bool))
+
         con = con[indices]
     else:
         raise ValueError('con has to be 1D or a square matrix')
@@ -719,7 +726,7 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
         pl.savefig(out_fname, facecolor='white', dpi=600)
 
 
-def get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u):
+def get_vmin_vmax_causality(vmin, vmax, cau):
     """
     Get the minimum and maximum off-diagonal values that
     are different from 0.
@@ -732,10 +739,8 @@ def get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u):
     vmax : None | float
         If vmax is None, the maximum value is taken
         from the data.
-    cau_l : np.array of shape (n_rois, n_rois)
-        The causality data with the upper triangle set to zero.
-    cau_u : np.array of shape (n_rois, n_rois)
-        The causality data with the lower triangle set to zero.
+    cau : np.array of shape (n_rois, n_rois)
+        The causality data.
 
     Returns:
     --------
@@ -745,25 +750,19 @@ def get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u):
         The maximum value.
     """
 
+    # off diagonal elements
+    cau_od = cau[np.where(~np.eye(cau.shape[0], dtype=bool))]
     if vmax is None:
-        vmax = np.max([np.max(cau_l), np.max(cau_u)])
+        vmax = cau_od.max()
+
     if vmin is None:
-        if np.max([np.max(cau_l), np.max(cau_u)]) == 0:
+        if cau_od.max() == 0:
             # no significant connections found
             vmin = 0
             vmax = 0.2
         else:
-
-            if (cau_l != 0).any():
-                vmin_l = np.min(cau_l[cau_l != 0])
-            else:
-                vmin_l = 0
-
-            if (cau_u != 0).any():
-                vmin_u = np.min(cau_u[cau_u != 0])
-            else:
-                vmin_u = 0
-            vmin = np.min([vmin_l, vmin_u])
+            # get minimum value that is different from 0
+            vmin = cau_od[np.where(cau_od)].min()
 
     return vmin, vmax
 
@@ -774,54 +773,22 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   figsize=(10, 6), show=False, colorbar=False, fig=None,
                                   vmin=None, vmax=None, tight_layout=False, **kwargs):
 
-    cau_l = np.tril(caus, k=-1)
-    cau_u = np.triu(caus, k=1).T  # transpose for plotting
-    conds = [cau_l, cau_u]
-
-    vmin, vmax = get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u)
+    vmin, vmax = get_vmin_vmax_causality(vmin, vmax, caus)
 
     if not fig:
         import matplotlib.pyplot as plt
         fig = plt.figure(num=None, figsize=figsize)
 
-    if colorbar:
-        colorbar = [False, True]
-    else:
-        colorbar = [False, False]
-
-    if tight_layout:
-        tight_layout = [False, True]
-    else:
-        tight_layout = [None, None]
-
-    # get how many of the strongest connections are in lower and upper triangle
-    if n_lines is not None:
-        cltri = np.zeros([n_lines, 2])
-        cltri[:, 1] = np.sort(np.abs(cau_l).ravel())[-n_lines:]
-
-        cutri = np.ones([n_lines, 2])
-        cutri[:, 1] = np.sort(np.abs(cau_u).ravel())[-n_lines:]
-
-        con = np.concatenate((cltri, cutri), axis=0)
-        # get strongest causal connections in entire causality matrix
-        con = con[con[:, 1].argsort()][n_lines:]
-        # get how many are in upper and in lower triangle
-        n_liness = [int(n_lines - con[:, 0].sum()), int(con[:, 0].sum())]
-    else:
-        n_liness = [None, None]
-
-    for ii, cond in enumerate(conds):
-        n_lines = n_liness[ii]
-        plot_grouped_connectivity_circle(yaml_fname, conds[ii],
-                                         label_names,
-                                         out_fname=out_fname,
-                                         labels_mode=labels_mode,
-                                         show=show, title=title,
-                                         fig=fig, subplot=(1, 1, 1),
-                                         vmin=vmin, vmax=vmax,
-                                         n_lines=n_lines, colormap=colormap,
-                                         colorbar=colorbar[ii], arrow=True,
-                                         tight_layout=tight_layout[ii], **kwargs)
+    plot_grouped_connectivity_circle(yaml_fname, caus,
+                                     label_names,
+                                     out_fname=out_fname,
+                                     labels_mode=labels_mode,
+                                     show=show, title=title,
+                                     fig=fig, subplot=(1, 1, 1),
+                                     vmin=vmin, vmax=vmax,
+                                     n_lines=n_lines, colormap=colormap,
+                                     colorbar=colorbar, arrow=True,
+                                     tight_layout=tight_layout, **kwargs)
 
 
 def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
