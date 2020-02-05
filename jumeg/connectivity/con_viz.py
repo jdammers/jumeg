@@ -295,6 +295,10 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
         if n_significant_cons > n_lines:
             con_thresh = np.sort(np.abs(con).ravel())[-n_lines]
+        elif n_significant_cons == 0:
+            # there are no significant connections, set minimum threshold to
+            # avoid plotting everything
+            con_thresh = 0.001
         else:
             con_thresh = np.sort(np.abs(con).ravel())[-n_significant_cons]
 
