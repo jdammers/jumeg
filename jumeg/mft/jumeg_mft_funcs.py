@@ -672,7 +672,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     elif mftparm['prbfct'] == 'flat' or mftparm['prbfct'] == 'uniform':
         if verbosity >= 2:
             print("Setting initial w=const !")
-        wdist0 = np.ones(n_loc / 3) / (float(n_loc) / np.sqrt(3.))
+        wdist0 = np.ones(int(n_loc / 3)) / (float(n_loc) / np.sqrt(3.))
     elif mftparm['prbfct'] == 'random':
         if verbosity >= 2:
             print("Setting initial w=random !")
