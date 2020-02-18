@@ -34,4 +34,5 @@ plot_grouped_connectivity_circle(yaml_fname, con, label_names,
                                  replacer_dict=replacer_dict,
                                  out_fname='example_grouped_con_circle.png',
                                  colorbar_pos=(0.1, 0.1),
-                                 n_lines=10, colorbar=True)
+                                 n_lines=10, colorbar=True,
+                                 colormap='viridis')
