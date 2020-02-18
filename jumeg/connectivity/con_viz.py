@@ -129,7 +129,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
                              fontsize_names=8, fontsize_colorbar=8, padding=6.,
                              fig=None, subplot=111, interactive=True,
                              node_linewidth=2., show=True, arrow=False,
-                             arrowstyle='->,head_length=3,head_width=3', **kwargs):
+                             arrowstyle='->,head_length=0.7,head_width=0.4', **kwargs):
     """Visualize connectivity as a circular graph.
 
     Note: This code is based on the circle graph example by Nicolas P. Rougier
@@ -265,6 +265,12 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         if is_symmetric:
             indices = np.tril_indices(n_nodes, -1)
         else:
+            if not arrow:
+                import warnings
+                warnings.warn('Since the con matrix is asymmetric it will be '
+                              'treated as a causality matrix and arrow will '
+                              'be set to True.', Warning)
+                arrow = True
             # get off-diagonal indices
             indices = np.where(~np.eye(con.shape[0], dtype=bool))
 
