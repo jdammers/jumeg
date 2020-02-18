@@ -129,7 +129,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
                              fontsize_names=8, fontsize_colorbar=8, padding=6.,
                              fig=None, subplot=111, interactive=True,
                              node_linewidth=2., show=True, arrow=False,
-                             arrowstyle='->,head_length=3,head_width=3', **kwargs):
+                             arrowstyle='->,head_length=0.7,head_width=0.4', **kwargs):
     """Visualize connectivity as a circular graph.
 
     Note: This code is based on the circle graph example by Nicolas P. Rougier
@@ -260,7 +260,20 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         if con.shape[0] != n_nodes or con.shape[1] != n_nodes:
             raise ValueError('con has to be 1D or a square matrix')
         # we use the lower-triangular part
-        indices = np.tril_indices(n_nodes, -1)
+
+        is_symmetric = np.all(np.abs(con - con.T) < 1e-8)
+        if is_symmetric:
+            indices = np.tril_indices(n_nodes, -1)
+        else:
+            if not arrow:
+                import warnings
+                warnings.warn('Since the con matrix is asymmetric it will be '
+                              'treated as a causality matrix and arrow will '
+                              'be set to True.', Warning)
+                arrow = True
+            # get off-diagonal indices
+            indices = np.where(~np.eye(con.shape[0], dtype=bool))
+
         con = con[indices]
     else:
         raise ValueError('con has to be 1D or a square matrix')
@@ -288,15 +301,31 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     # Remove the black axes border which may obscure the labels
     axes.spines['polar'].set_visible(False)
 
+    con_abs = np.abs(con)
+    n_nonzero_cons = len(np.where(con_abs)[0])
     # Draw lines between connected nodes, only draw the strongest connections
     if n_lines is not None and len(con) > n_lines:
-        con_thresh = np.sort(np.abs(con).ravel())[-n_lines]
+
+        if n_nonzero_cons > n_lines:
+            con_thresh = np.sort(np.abs(con).ravel())[-n_lines]
+        elif n_nonzero_cons > 0:
+            con_thresh = np.sort(np.abs(con).ravel())[-n_nonzero_cons]
+        else:
+            # there are no significant connections, set minimum threshold to
+            # avoid plotting everything
+            con_thresh = 0.001
+
     else:
-        con_thresh = 0.
+        if n_nonzero_cons > 0:
+            con_thresh = con_abs[np.where(con_abs)].min()
+        else:
+            # there are no significant connections, set minimum threshold to
+            # avoid plotting everything
+            con_thresh = 0.001
 
     # get the connections which we are drawing and sort by connection strength
     # this will allow us to draw the strongest connections first
-    con_abs = np.abs(con)
+
     con_draw_idx = np.where(con_abs >= con_thresh)[0]
 
     con = con[con_draw_idx]
@@ -305,15 +334,21 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
     # now sort them
     sort_idx = np.argsort(con_abs)
-    con_abs = con_abs[sort_idx]
+    del con_abs
     con = con[sort_idx]
     indices = [ind[sort_idx] for ind in indices]
 
     # Get vmin vmax for color scaling
     if vmin is None:
-        vmin = np.min(con[np.abs(con) >= con_thresh])
+        if n_nonzero_cons > 0:
+            vmin = np.min(con)
+        else:
+            vmin = 0.
     if vmax is None:
-        vmax = np.max(con)
+        if n_nonzero_cons > 0:
+            vmax = np.max(con)
+        else:
+            vmax = 0.2
 
     if symmetric_cbar:
         if np.fabs(vmin) > np.fabs(vmax):
@@ -708,7 +743,7 @@ def plot_generic_grouped_circle(yaml_fname, con, orig_labels,
         pl.savefig(out_fname, facecolor='white', dpi=600)
 
 
-def get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u):
+def get_vmin_vmax_causality(vmin, vmax, cau):
     """
     Get the minimum and maximum off-diagonal values that
     are different from 0.
@@ -721,10 +756,8 @@ def get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u):
     vmax : None | float
         If vmax is None, the maximum value is taken
         from the data.
-    cau_l : np.array of shape (n_rois, n_rois)
-        The causality data with the upper triangle set to zero.
-    cau_u : np.array of shape (n_rois, n_rois)
-        The causality data with the lower triangle set to zero.
+    cau : np.array of shape (n_rois, n_rois)
+        The causality data.
 
     Returns:
     --------
@@ -734,25 +767,19 @@ def get_vmin_vmax_causality(vmin, vmax, cau_l, cau_u):
         The maximum value.
     """
 
+    # off diagonal elements
+    cau_od = cau[np.where(~np.eye(cau.shape[0], dtype=bool))]
     if vmax is None:
-        vmax = np.max([np.max(cau_l), np.max(cau_u)])
+        vmax = cau_od.max()
+
     if vmin is None:
-        if np.max([np.max(cau_l), np.max(cau_u)]) == 0:
+        if cau_od.max() == 0:
             # no significant connections found
             vmin = 0
             vmax = 0.2
         else:
-
-            if (cau_l != 0).any():
-                vmin_l = np.min(cau_l[cau_l != 0])
-            else:
-                vmin_l = 0
-
-            if (cau_u != 0).any():
-                vmin_u = np.min(cau_u[cau_u != 0])
-            else:
-                vmin_u = 0
-            vmin = np.min([vmin_l, vmin_u])
+            # get minimum value that is different from 0
+            vmin = cau_od[np.where(cau_od)].min()
 
     return vmin, vmax
 
@@ -763,36 +790,22 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
                                   figsize=(10, 6), show=False, colorbar=False, fig=None,
                                   vmin=None, vmax=None, tight_layout=False, **kwargs):
 
-    con_l = np.tril(caus, k=-1)
-    con_u = np.triu(caus, k=1).T  # transpose for plotting
-    vmin, vmax = get_vmin_vmax_causality(vmin, vmax, con_l, con_u)
+    vmin, vmax = get_vmin_vmax_causality(vmin, vmax, caus)
 
     if not fig:
         import matplotlib.pyplot as plt
         fig = plt.figure(num=None, figsize=figsize)
-    conds = [con_l, con_u]
 
-    if colorbar:
-        colorbar = [False, True]
-    else:
-        colorbar = [False, False]
-
-    if tight_layout:
-        tight_layout = [False, True]
-    else:
-        tight_layout = [None, None]
-
-    for ii, cond in enumerate(conds):
-        plot_grouped_connectivity_circle(yaml_fname, conds[ii],
-                                         label_names,
-                                         out_fname=out_fname,
-                                         labels_mode=labels_mode,
-                                         show=show, title=title,
-                                         fig=fig, subplot=(1, 1, 1),
-                                         vmin=vmin, vmax=vmax,
-                                         n_lines=n_lines, colormap=colormap,
-                                         colorbar=colorbar[ii], arrow=True,
-                                         tight_layout=tight_layout[ii], **kwargs)
+    plot_grouped_connectivity_circle(yaml_fname, caus,
+                                     label_names,
+                                     out_fname=out_fname,
+                                     labels_mode=labels_mode,
+                                     show=show, title=title,
+                                     fig=fig, subplot=(1, 1, 1),
+                                     vmin=vmin, vmax=vmax,
+                                     n_lines=n_lines, colormap=colormap,
+                                     colorbar=colorbar, arrow=True,
+                                     tight_layout=tight_layout, **kwargs)
 
 
 def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
