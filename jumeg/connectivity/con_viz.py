@@ -301,26 +301,31 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     # Remove the black axes border which may obscure the labels
     axes.spines['polar'].set_visible(False)
 
+    con_abs = np.abs(con)
+    n_nonzero_cons = len(np.where(con_abs)[0])
     # Draw lines between connected nodes, only draw the strongest connections
     if n_lines is not None and len(con) > n_lines:
 
-        n_significant_cons = len(np.where(con)[0])
-
-        if n_significant_cons > n_lines:
+        if n_nonzero_cons > n_lines:
             con_thresh = np.sort(np.abs(con).ravel())[-n_lines]
-        elif n_significant_cons == 0:
+        elif n_nonzero_cons > 0:
+            con_thresh = np.sort(np.abs(con).ravel())[-n_nonzero_cons]
+        else:
             # there are no significant connections, set minimum threshold to
             # avoid plotting everything
             con_thresh = 0.001
-        else:
-            con_thresh = np.sort(np.abs(con).ravel())[-n_significant_cons]
 
     else:
-        con_thresh = 0.
+        if n_nonzero_cons > 0:
+            con_thresh = con_abs[np.where(con_abs)].min()
+        else:
+            # there are no significant connections, set minimum threshold to
+            # avoid plotting everything
+            con_thresh = 0.001
 
     # get the connections which we are drawing and sort by connection strength
     # this will allow us to draw the strongest connections first
-    con_abs = np.abs(con)
+
     con_draw_idx = np.where(con_abs >= con_thresh)[0]
 
     con = con[con_draw_idx]
@@ -329,15 +334,21 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
     # now sort them
     sort_idx = np.argsort(con_abs)
-    con_abs = con_abs[sort_idx]
+    del con_abs
     con = con[sort_idx]
     indices = [ind[sort_idx] for ind in indices]
 
     # Get vmin vmax for color scaling
     if vmin is None:
-        vmin = np.min(con[np.abs(con) >= con_thresh])
+        if n_nonzero_cons > 0:
+            vmin = np.min(con)
+        else:
+            vmin = 0.
     if vmax is None:
-        vmax = np.max(con)
+        if n_nonzero_cons > 0:
+            vmax = np.max(con)
+        else:
+            vmax = 0.2
 
     if symmetric_cbar:
         if np.fabs(vmin) > np.fabs(vmax):
