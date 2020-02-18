@@ -126,7 +126,7 @@ if write_tab_files:
     tabfile.write("# time_idx = %d\n" % time_idx)
     tabfile.write("# max amplitude = %11.4e\n" % cdvnmax)
     tabfile.write("#  x/mm    y/mm    z/mm     |cdv|   index\n")
-    for ipnt in range(n_loc / 3):
+    for ipnt in range(int(n_loc / 3)):
         copnt = 1000. * fwdmag['source_rr'][ipnt]
         tabfile.write(" %7.2f %7.2f %7.2f %11.4e %5d\n" % \
                       (copnt[0], copnt[1], copnt[2], stcdata[ipnt, time_idx], ipnt))
