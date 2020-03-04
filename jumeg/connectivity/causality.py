@@ -119,6 +119,48 @@ def _normcdf(x, mu, sigma):
 
 
 def _durbinwatson(X, E):
+    """
+    Durbin-Watson test for whiteness (no serial correlation) of VAR residuals.
+
+    Returns the Durbin-Watson test statistic |dw| along with p-values |pval|
+    for a multivariate regression of time series data |X| with residuals |E|
+    (may be single- or multi-trial). This routine computes the statistic
+    separately for each individual variable in |X|.
+
+    A standard rule of thumb is that |dw < 1| or |dw > 3| indicates a high
+    chance of residuals serial correlation; this implies poor VAR model fit.
+
+    NOTE: To test for significance you should correct for multiple null
+    hypotheses, or test for false discovery rate; see <significance.html
+    |significance|>.
+   
+    Parameters:
+    -----------
+    X : np.array
+        Multi-trial time series data
+    E: np.array
+        Residuals time series
+   
+    Results:
+    --------
+    dw : np.array
+        Vector of Durbin-Watson statistics
+    pval : np.array
+        Vector of p-values
+
+    References:
+    -----------
+   
+    [1] J. Durbin and G. S. Watson, "Testing for Serial Correlation in Least
+    Squares Regression I", _Biometrika_, 37, 1950.
+   
+    [2] A. Bhargava, L. Franzini and W. Narendranathan, "Serial Correlation and
+    the Fixed Effects Model", _Review of Economic Studies_, 49, 1982.
+
+   
+    See MVGC Toolbox by Lionel Barnett and Anil K. Seth, 2012.
+    """
+
     n, m = X.shape
     dw = np.sum(np.diff(E, axis=0) ** 2) / np.sum(E ** 2, axis=0)
     A = np.dot(X, X.T)
