@@ -629,8 +629,8 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     """
     Estimate VAR order with the Bayesian Information Criterion (BIC).
 
-    Parameters
-    ----------
+    Parameters:
+    -----------
     X : ndarray, shape (trials, n_channels, n_samples)
 
     m_max : int
@@ -647,6 +647,29 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
         parallelization.
     verbose : bool
         Plot results for other information criteria as well.
+
+    Returns:
+    --------
+    o_m : int
+        Estimated order using BIC2.
+    morders : np.array of shape ((m_max - m_min) / m_step, )
+        The model orders corresponding to the entries in the following results
+        arrays.
+    ics : np.array of shape (n_ics, (m_max - m_min) / m_step)
+        The information criteria for the different model orders.
+        [AIC1, BIC1, AIC2, BIC2, lnFPE, HQIC]
+    p_white_scot : np.array of shape ((m_max - m_min) / m_step), )
+        p-value that the residuals are white based on the Li-McLeod Portmanteau test
+        implemented in SCoT. Reject hypothesis of white residuals if p is smaller
+        than the critical p-value.
+    p_white_dw : np.array of shape ((m_max - m_min) / m_step), n_rois)
+        Uncorrected p-values that the residuals are white based on the Durbin-Watson
+        test as implemented by Barnett and Seth (2012). Reject hypothesis of white
+        residuals if all p's are smaller than the critical p-value.
+    dw : np.array of shape ((m_max - m_min) / m_step), n_rois)
+        The Durbin-Watson statistics.
+    consistency : np.array of shape ((m_max - m_min) / m_step), )
+        Results of the MVAR consistency estimation.
 
     References:
     -----------
@@ -665,21 +688,6 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     1st ed. Berlin: Springer-Verlag Berlin Heidelberg.
 
     URL: https://gist.github.com/dongqunxi/b23d1679b9bffa8e458c11f93bd8d6ff
-
-
-    Returns:
-    --------
-    o_m : int
-        Estimated order using BIC.
-    morder : np.array of shape ((m_max - m_min) / m_step, )
-        The model orders corresponding to the entries in ics.
-    ics : np.array of shape (n_ics, (m_max - m_min) / m_step)
-        The information criteria for the different model orders.
-        [AIC1, BIC1, AIC2, BIC2, lnFPE, HQIC]
-    dw : np.array of shape ((m_max - m_min) / m_step), 2)
-        Minimum and maximum Durbin-Watson statistic.
-    consistency : np.array of shape ((m_max - m_min) / m_step), )
-        Results of the MVAR consistency estimation.
     """
     from scot.var import VAR
     from scipy import linalg
@@ -693,8 +701,12 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     lnfpe = []
     hqic = []
 
-    morder = []
+    morders = []
+
+    p_white_scot = []
+    p_white_dw = []
     dw = []
+
     consistency = []
 
     # TODO: should this be n_total = N * n * p ???
@@ -713,16 +725,20 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
         m_step = m_max
 
     for m in range(m_min, m_max + 1, m_step):
-        morder.append(m)
+        morders.append(m)
         mvar = VAR(m, n_jobs=n_jobs)
         mvar.fit(X)
+        p_white_scot_ = mvar.test_whiteness(h=m, repeats=100, get_q=False, random_state=None)
+        white_scot_ = p_white_scot_ >= 0.05
 
-        _, cons, dw_min, dw_max = check_whiteness_and_consistency(X.transpose(1, 2, 0),
-                                                                  mvar.residuals.transpose(1, 2, 0),
-                                                                  whit_min=1.5, whit_max=2.5)
+        p_white_scot.append(p_white_scot_)
 
+        white_dw_, cons, dw_, pval = check_whiteness_and_consistency(X.transpose(1, 2, 0),
+                                                                     mvar.residuals.transpose(1, 2, 0),
+                                                                     alpha=0.05)
+        dw.append(dw_)
+        p_white_dw.append(pval)
         consistency.append(cons)
-        dw.append([dw_min, dw_max])
 
         sigma = mvar.rescov
 
@@ -763,14 +779,16 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
             results += '    BIC2: %.2f' % m_bic2
             results += '  lnFPE3: %.2f' % m_ln_fpe3
             results += '    HQC3: %.2f' % m_hqc3
-            results += '   DWmin: %.2f' % dw_min
-            results += '   DWmax: %.2f' % dw_max
+            results += '  white1: %s' % str(white_scot_)
+            results += '  white2: %s' % str(white_dw_)
+            results += '   DWmin: %.2f' % dw_.min()
+            results += '   DWmax: %.2f' % dw_.max()
             results += ' consistency: %.4f' % cons
 
             print(results)
 
-    morder = np.array(morder)
-    o_m = morder[np.argmin(bic2)]
+    morders = np.array(morders)
+    o_m = morders[np.argmin(bic2)]
     if verbose:
         print('>>> Optimal model order according to BIC2 = %d' % o_m)
 
@@ -780,7 +798,7 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     dw = np.array(dw)
     consistency = np.array(consistency)
 
-    return o_m, morder, ics, dw, consistency
+    return o_m, morders, ics, p_white_scot, p_white_dw, dw, consistency
 
 
 def compute_order(X, m_max, verbose=True):
