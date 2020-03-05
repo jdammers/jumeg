@@ -764,7 +764,7 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
         # from [3]
         ########################################################################
         # Akaike's final prediction error
-        m_ln_fpe3 = np.log(linalg.det(sigma)) + p * np.log((n_total + m * p + 1) / (n_total - m * p -1))
+        m_ln_fpe3 = np.log(linalg.det(sigma)) + p * np.log((n_total + m * p + 1) / (n_total - m * p - 1))
         # Hannan-Quinn criterion
         m_hqc3 = np.log(linalg.det(sigma)) + 2 * (p ** 2) * m / n_total * np.log(np.log(n_total))
 
