@@ -773,8 +773,8 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
 
         if verbose:
             results = 'Model order: ' + str(m).zfill(2)
-            results += '     AIC: %.2f' % m_aic
-            results += '     BIC: %.2f' % m_bic
+            results += '    AIC1: %.2f' % m_aic
+            results += '    BIC1: %.2f' % m_bic
             results += '    AIC2: %.2f' % m_aic2
             results += '    BIC2: %.2f' % m_bic2
             results += '  lnFPE3: %.2f' % m_ln_fpe3
