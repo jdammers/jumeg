@@ -12,15 +12,15 @@
       - postcentral
 
 - temporal:
+      - transversetemporal
+      - superiortemporal
+      - bankssts
+      - middletemporal
+      - inferiortemporal
+      - fusiform
       - temporalpole
       - entorhinal
       - parahippocampal
-      - fusiform
-      - inferiortemporal
-      - middletemporal
-      - bankssts
-      - superiortemporal
-      - transversetemporal
 
 - cingulate:
       - isthmuscingulate
