@@ -373,9 +373,12 @@ def do_mvar_evaluation(X, morder, whit_max=3., whit_min=1., thr_cons=0.8):
     return str(whi), cons, str(is_st)
 
 
-def check_whiteness_and_consistency(X, E, whit_min=1.0, whit_max=3.0):
+def check_whiteness_and_consistency(X, E, alpha=0.05):
     """
     Check the whiteness and consistency of the MVAR model.
+
+    Test whiteness with Durbin-Watson and FDR correction
+    for multiple comparisons.
 
     Paramters:
     ----------
@@ -383,34 +386,31 @@ def check_whiteness_and_consistency(X, E, whit_min=1.0, whit_max=3.0):
         The data array.
     E : np.array
         Serially uncorrelated residuals.
-    whit_min : float
-        Durbin-Watson minimum value
-    whit_max : float
-        Durbin-Watson maximum value. If the whiteness value lies
-        outside of the interval given by whit_min and whit_max
-        the residuals are considered to be non-white.
 
     Returns:
     --------
     whi : bool
-        Whiteness
+        Whiteness after FDR correction.
     cons: float
         Result of the consistency test.
-    dw_min : float
-        The minimum DW statistic.
-    dw_max : float
-        The maximum DW statistic.
+    dw : np.array
+        The Durbin-Watson statistics.
+    pval : float
+        The uncorrected p-values corresponding to the DW-statistics.
     """
 
-    from jumeg.connectivity.causality import dw_whiteness, consistency
-
-    whi = False
+    whi = True
     dw, pval = dw_whiteness(X, E)
-    if np.all(dw < whit_max) and np.all(dw > whit_min):
-        whi = True
+
+    from mne.stats import fdr_correction
+    reject, pval_corrected = fdr_correction(pval, alpha=alpha)
+    if reject.any():
+        # test if serial correlation is present in at least one residual
+        whi = False
+
     cons = consistency(X, E)
 
-    return whi, cons, dw.min(), dw.max()
+    return whi, cons, dw, pval
 
 
 def check_model_order(X, p, whit_min=1.5, whit_max=2.5, check_stability=True):
