@@ -798,13 +798,15 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
         import matplotlib.pyplot as plt
         fig = plt.figure(num=None, figsize=figsize)
 
-    plot_grouped_connectivity_circle(yaml_fname, caus, label_names,
-                                     out_fname=out_fname, labels_mode=labels_mode,
-                                     node_order_size=len(label_names), show=show,
-                                     title=title, fig=fig, subplot=(1, 1, 1),
-                                     vmin=vmin, vmax=vmax, n_lines=n_lines,
-                                     colormap=colormap, colorbar=colorbar,
-                                     arrow=True, tight_layout=tight_layout, **kwargs)
+    fig = plot_grouped_connectivity_circle(yaml_fname, caus, label_names,
+                                           out_fname=out_fname, labels_mode=labels_mode,
+                                           node_order_size=len(label_names), show=show,
+                                           title=title, fig=fig, subplot=(1, 1, 1),
+                                           vmin=vmin, vmax=vmax, n_lines=n_lines,
+                                           colormap=colormap, colorbar=colorbar,
+                                           arrow=True, tight_layout=tight_layout, **kwargs)
+
+    return fig
 
 
 def plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
