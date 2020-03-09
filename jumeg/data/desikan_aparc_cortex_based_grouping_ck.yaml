@@ -5,9 +5,9 @@
       - cuneus
 
 - parietal:
-      - inferiorparietal
-      - superiorparietal
       - precuneus
+      - superiorparietal
+      - inferiorparietal
       - supramarginal
       - postcentral
 
