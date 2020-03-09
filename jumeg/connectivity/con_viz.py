@@ -123,8 +123,8 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
                              node_colors=None, facecolor='black',
                              textcolor='white', node_edgecolor='black',
                              linewidth=1.5, colormap='hot', vmin=None,
-                             vmax=None, colorbar=True, title=None,
-                             colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
+                             vmax=None, colorbar=True, title=None, title_pad=15,
+                             colorbar_size=0.2, colorbar_pos=(-0.25, 0.05),
                              symmetric_cbar=False, fontsize_title=12,
                              fontsize_names=8, fontsize_colorbar=8, padding=6.,
                              fig=None, subplot=111, interactive=True,
@@ -177,6 +177,9 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         Display a colorbar or not.
     title : str
         The figure title.
+    title_pad : float
+        The offset of the title from the top of the axes, in points.
+        matplotlib default is None to use rcParams['axes.titlepad'].
     colorbar_size : float
         Size of the colorbar.
     colorbar_pos : 2-tuple
@@ -451,7 +454,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
     if title is not None:
         plt.title(title, color=textcolor, fontsize=fontsize_title,
-                  axes=axes)
+                  axes=axes, pad=title_pad)
 
     if colorbar:
         sm = plt.cm.ScalarMappable(cmap=colormap,
@@ -483,7 +486,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                      subplot=111, include_legend=False,
                                      n_lines=None, fig=None, show=True,
                                      vmin=None, vmax=None, colormap='hot',
-                                     colorbar=False, colorbar_pos=(-0.3, 0.1),
+                                     colorbar=False, colorbar_pos=(-0.25, 0.05),
                                      symmetric_cbar=False, bbox_inches=None,
                                      tight_layout=None, **kwargs):
     """
