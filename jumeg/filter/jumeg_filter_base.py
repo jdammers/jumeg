@@ -287,19 +287,19 @@ class JuMEG_Filter_Base(JuMEG_Base_Basic):
     @property
     def filter_name_postfix(self):
         """return string with filter parameters for file name postfix"""
-        
-        self.__filter_name_extention  = "fi" + self.filter_type 
-        if self.filter_type == 'bp' :
-           self.__filter_name_extention +=  "{}".format(self.fcut1).rstrip("0").rstrip(".")
-           self.__filter_name_extention += "-{}".format(self.fcut2).rstrip("0").rstrip(".")
+
+        self.__filter_name_extension = "fi" + self.filter_type
+        if self.filter_type == 'bp':
+            self.__filter_name_extension += "{}".format(self.fcut1).rstrip("0").rstrip(".")
+            self.__filter_name_extension += "-{}".format(self.fcut2).rstrip("0").rstrip(".")
            
-        elif self.filter_type != 'notch' :
-           self.__filter_name_extention += "{}".format(self.fcut1).rstrip("0").rstrip(".")
-           
-        if self.filter_notch.size :
-           self.__filter_name_extention += "n%d"%(self.filter_notch.size)
-         
-        return self.__filter_name_extention
+        elif self.filter_type != 'notch':
+            self.__filter_name_extension += "{}".format(self.fcut1).rstrip("0").rstrip(".")
+
+        if self.filter_notch.size:
+            self.__filter_name_extension += "n%d" % (self.filter_notch.size)
+
+        return self.__filter_name_extension
 
 #--- filter_info
     @property
