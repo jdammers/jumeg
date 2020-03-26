@@ -191,4 +191,4 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200,
     raw._data[raw.ch_names.index('STI 014')] = eeg._data[3]
 
     # Write the combined FIF file to disk.
-    raw.save(raw_fname.split('-')[0] + '-raw.fif', overwrite=True)
+    raw.save(raw_fname.split('-')[0] + ',meeg-raw.fif', overwrite=True)

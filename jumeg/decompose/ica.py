@@ -588,11 +588,10 @@ def infomax(data, weights=None, l_rate=None, block=None, w_change=1e-12,
             change = np.sum(delta * delta, dtype=np.float64)
 
             if verbose:
-                # info = "\r" if iter > 0 else ""
-                info = ">>> Step %4d of %4d; wchange: %1.4e\n" % (step+1, max_iter, change)
+                info = "\r" if step > 0 else ""
+                info = ">>> Step %4d of %4d; wchange: %1.4e\n" % (step, max_iter, change)
                 stdout.write(info)
                 stdout.flush()
-
 
             if step > 1:
                 angledelta = math.acos(np.sum(delta * olddelta) /
