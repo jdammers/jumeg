@@ -31,10 +31,6 @@ fig = raw.plot_psd(tmin=0.0, tmax=160., fmin=0, fmax=np.inf, n_fft=None,
                    spatial_colors=None, xscale='linear', verbose='ERROR');
 fig.suptitle('Original sprectrum')
 
-# filter data using mne filter_data
-# (mne.filter.band_pass_filter, jumeg.jumeg_preprocessing.apply_filter
-# all use the same underlying function)
-
 l_freq, h_freq = 1., 45.
 
 # apply FIR filter
@@ -48,12 +44,13 @@ filter_type = 'butter'
 filt_method = 'fft'
 iir_params={'ftype': filter_type, 'order': 4}
 
+# apply IIR filter
 iir_filt = raw.copy().filter(l_freq, h_freq, picks=picks, filter_length='auto',
                              l_trans_bandwidth='auto', h_trans_bandwidth='auto',
                              n_jobs=4, method='iir', iir_params=iir_params, phase='zero',
                              fir_window='hamming', verbose='ERROR')
 
-# apply the jumeg filter using mne (just to check)
+# apply the jumeg filter using mne
 filt_ju_mne = jumeg_filter(filter_method='mne', filter_type='bp', fcut1=l_freq, fcut2=h_freq,
                            remove_dcoffset=True, sampling_frequency=raw.info['sfreq'],
                            filter_window='hamming', notch=np.array([50., 60.]),
@@ -76,14 +73,13 @@ filt_ju_bw.apply_filter(ju_bw_filt._data, picks)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 
-# plot the jumeg MNE filtered raw psd
+# plot the jumeg MNE and jumeg Butterworth filtered raw psds
 ju_mne_filt.plot_psd(tmin=0.0, tmax=160., fmin=0, fmax=70., n_fft=None,
                      picks=picks, ax=ax1, color='blue', area_mode='std',
                      area_alpha=0.33, n_overlap=0, dB=True, average=True,
                      show=False, n_jobs=4, line_alpha=None,
                      spatial_colors=None, xscale='linear', verbose=None);
 
-# plot the jumeg Butterworth filtered raw psd
 ju_bw_filt.plot_psd(tmin=0.0, tmax=160., fmin=0, fmax=70., n_fft=None,
                     picks=picks, ax=ax1, color='green', area_mode='std',
                     area_alpha=0.33, n_overlap=0, dB=True, average=True,
@@ -93,6 +89,7 @@ ju_bw_filt.plot_psd(tmin=0.0, tmax=160., fmin=0, fmax=70., n_fft=None,
 ax1.set_xlim(0., 75.);
 ax1.set_title('jumeg MNE (blue)/jumeg BW (green)');
 
+# plot the MNE FIR and IIR filterered raw psds
 fir_filt.plot_psd(tmin=0.0, tmax=160., fmin=0, fmax=70., n_fft=None,
                   picks=picks, ax=ax2, color='red', area_mode='std',
                   area_alpha=0.33, n_overlap=0, dB=True, average=True,
