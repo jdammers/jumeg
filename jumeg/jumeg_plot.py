@@ -12,8 +12,9 @@ from .jumeg_math import (calc_performance,
                          calc_frequency_correlation)
 
 
-def plot_powerspectrum(fname, raw=None, picks=None, dir_plots="plots",
-                       tmin=None, tmax=None, fmin=0.0, fmax=450.0, n_fft=4096):
+def plot_powerspectrum(fname, raw=None, picks=None, dir_plots='plots',
+                       tmin=None, tmax=None, fmin=None, fmax=None, n_fft=4096,
+                       area_mode='range', color=(0, 0, 1), **kwargs):
         '''
 
         '''
@@ -25,25 +26,29 @@ def plot_powerspectrum(fname, raw=None, picks=None, dir_plots="plots",
             raw = mne.io.Raw(fname, preload=True)
 
         if picks is None:
-            picks = jumeg_base.pick_meg_nobads(raw)
+            # picks = jumeg_base.picks.meg_nobads(raw)
+            picks = jumeg_base.picks.meg(raw)
 
-        dir_plots = os.path.join(os.path.dirname(fname), dir_plots)
+        if dir_plots is None:
+            dir_plots = '.'
+        else:
+            dir_plots = os.path.join(os.path.dirname(fname), dir_plots)
+
         base_fname = os.path.basename(fname).strip('.fif')
 
-        mkpath(dir_plots)
+        if not os.path.isdir(dir_plots):
+            mkpath(dir_plots)
 
         file_name = fname.split('/')[-1]
         fnfig = dir_plots + '/' + base_fname + '-psds.png'
 
-        pl.figure()
-        pl.title('PSDS ' + file_name)
-        ax = pl.axes()
-        fig = raw.plot_psds(fmin=fmin, fmax=fmax, n_fft=n_fft, n_jobs=1, proj=False, ax=ax,
-                            color=(0, 0, 1), picks=picks, area_mode='range')
+        # pl.figure()
         pl.ioff()
-        # pl.ion()
+        fig = raw.plot_psd(fmin=fmin, fmax=fmax, n_fft=n_fft, picks=picks,
+                           **kwargs)
+        fig.suptitle('PSDS ' + file_name)
         fig.savefig(fnfig)
-        pl.close()
+        pl.close(fig)
 
         return fname
 
@@ -840,4 +845,4 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     if fnout:
         pl.savefig(fnout)
 
-    return fig    
+    return fig
