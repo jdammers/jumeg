@@ -4,6 +4,7 @@ _keys:
   - global
   - noise_reducer
   - suggest_bads
+  - bads_to_hdf
   - interpolate_bads
   - ica
   - report
@@ -128,6 +129,8 @@ interpolate_bads:
   file_extention:
   - ',nr,bcc-raw.fif'
   - rfDC,nr,bcc-empty.fif
+
+  hdfname: jumeg_badchannel_info.hdf
   overwrite: false
   plot_block: false
   postfix: int
@@ -174,7 +177,6 @@ suggest_bads:
   - ',nr-raw.fif'
   - rfDC,nr-empty.fif
   fmax: 100
-  hdfname: jumeg_badchannel_info.hdf
   overwrite: false
   parameter:
     epoch_length: None
@@ -189,3 +191,7 @@ suggest_bads:
   postfix: bcc
   run: true
   save: true
+bads_to_hdf:
+  run: true
+  hdfname: jumeg_badchannel_info.hdf
+
