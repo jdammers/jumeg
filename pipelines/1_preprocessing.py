@@ -126,6 +126,9 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
        #--- call suggest_bads
         raw_fname,raw = utils.apply_suggest_bads(raw_fname=raw_fname,raw=raw,config=jpl.config.get("suggest_bads"))
        
+       #--- call bads to HDF
+        raw_fnamee,raw = utils.apply_bads_to_hdf(raw_fname=raw_fname,raw=raw,config=jpl.config.get("bads_to_hdf"))
+    
        #--- call interploate_bads
         raw_fname,raw = utils.apply_interpolate_bads(raw_fname=raw_fname,raw=raw,config=jpl.config.get("interpolate_bads") )
         
