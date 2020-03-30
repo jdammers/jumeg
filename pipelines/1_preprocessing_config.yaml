@@ -1,151 +1,191 @@
-# test config file for the jumeg sample data analysis.
-
-#--- auto generated or by experts
-info:
-    time: "2019-05-13 00:00:00"
-    user: "meg"
-    version: "2019-05-13-0.001"
-
-#--- global settings
+_keys:
+  _root_keys:
+  - info
+  - global
+  - noise_reducer
+  - suggest_bads
+  - interpolate_bads
+  - ica
+  - report
+  _sorted_keys:
+  - run
+  - overwrite
+  - save
+  - plot
+  - plot_show
+  - plot_dir
+epocher:
+  _sorted_keys:
+  - do_events
+  - do_epochs
+  conditions: None
+  do_epochs: false
+  do_events: false
+  overwrite: false
+  run: false
+  save: true
+  template: None
+filter_1:
+  fhigh: 120.0
+  file_extention:
+  - ar-raw.fif
+  - ar-empty.fif
+  flow: 0.1
+  overwrite: false
+  postfix: fi
+  run: false
+  save: true
+  type: mne
 global:
-    experiment: "MEG94T"
-    subjects: None
-    stage:  "$JUMEG_PATH_MNE_IMPORT2/MEG94T/mne"
-    file_extention: ["c,rfDC-raw.fif","meeg-raw.fif","rfDC-empty.fif"]
-    recursive: True
-
-###############################################################################
-# pre-processing settings
-###############################################################################
-
-#--- noise reducer fb
-noise_reducer:
-    # low pass filter for reference channels, default 5.0 Hz
-    reflp: 5.
-    # high pass filter for reference channels, default 0.1 Hz
-    refhp: 0.1
-    # TODO: check if comment is correct -> Eberhard
-    # Names of the reference channels for high pass filter
-    noiseref_hp: ['RFG ...']
-    # frequencies for notch filter (for power line noise, projector, etc.)
-    refnotch: [50., 100., 150., 200., 250., 300., 350., 400.,
-               60., 120., 180.]
-   #--- file postfix
-    postfix: "nr"
-    plot: True
-    plot_dir: 'plots'
-    plot_show : False
-    save: False
-    run:  True
-    fmax: 300
-    overwrite: False
-    file_extention: ["c,rfDC-raw.fif","meeg-raw.fif","rfDC-empty.fif"]
-
-#--- suggest bads
-suggest_bads:
-    postfix: "bcc"
-    save: True
-    run:  True
-    plot_show : False
-    overwrite: False
-    file_extention: [",nr-raw.fif","rfDC,nr-empty.fif"]
-    hdfname: "badchannel_info.hdf"
-
-   #--- suggest bads special parameter
-    parameter:
-       sensitivity_steps: 97
-       sensitivity_psd: 95
-       fraction: 0.001
-       epoch_length: None
-       summary_plot: False
-       validation: True
-       show_raw: False
-
-#--- interpolate bads
-interpolate_bads:
-    postfix: "int"
-    save: True
-    run:  True
-    overwrite: False
-    file_extention: [",nr,bcc-raw.fif","rfDC,nr,bcc-empty.fif"]
-
-    plot_block: False
-
-   # parameter:
-   #    origin: None
-   #    reset_bads: True
-
-#--- ica
+  _sorted_keys:
+  - experiment
+  - subjects
+  - stage
+  - file_extention
+  - recursive
+  experiment: TEST
+  file_extention:
+  - meeg-raw.fif
+  - rfDC-empty.fif
+  recursive: true
+  subjects: None
 ica:
-    # Apply ica only to filtered (False) or to both filtered and
-    # unfiltered data (True)
-    unfiltered: False
-
-    # Chop raw data into smaller segments of length given by chop_length
-    # and apply ica on each segment separately. Concatenate results in the end.
-    chop_length: 60.
-
-    # Name of the ECG channel.
-    ecg_ch: 'ECG 001'
-    # Name of the horizontal EOG channel.
-    eog_hor_ch: 'EOG 001'
-    # Name of the vertical EOG channel.
-    eog_ver_ch: 'EOG 002'
-
-    # Lower frequency for the scoring of ECG sources.
-    flow_ecg: 8
-    # Higher frequency for the scoring of ECG sources.
-    fhigh_ecg: 20
-    # Lower frequency for the scoring of EOG sources.
-    flow_eog: 1
-    # Higher frequency for the scoring of EOG sources.
-    fhigh_eog: 20
-
-    # Threshold for independent ecg components.
-    ecg_thresh: 0.3
-    # Threshold for independent EOG components.
-    eog_thresh: 0.3
-    # Use jumeg or mne methods for artifact component identification
-    use_jumeg: True
-    # Seed for pseudo random number generator.
-    random_state: 42
-
-    exclude: 'bads'
-
-    reject:
-        'mag': 5e-12
-
-    # Save raw chops after applying ICA.
-    save: True
-
-
-
-
-
-#--- filtering
-filtering:
-    postfix: "fi"
-    save: True
-    run:  False
-    overwrite: True
-    file_extention: [",nr,bcc,int-raw.fif","rfDC,nr,bcc,int-empty.fif"]
-
-    l_freq: 1.0
-    h_freq: 45.
-    method: 'fir'
-    fir_design: 'firwin'
-    phase: 'zero'
-    # create files for unfiltered data as well
-    unfiltered: True
-
-
-#--- resampling
-resampling:
-    postfix: "rs"
-    save: True
-    run:  False
-    overwrite: True
-    file_extention: [",nr,bcc,int,fi-raw.fif","rfDC,nr,bcc,int,fi-empty.fif"]
-
-    rsfreq: 250
-
+  chops:
+    epocher:
+      condition: test
+      template: test
+      use: false
+    length: 120.0
+  ecg:
+    ch_name: ECG
+    event_id: 999
+    fhigh: 20
+    flow: 8
+    thresh: 0.3
+    tmax: 0.4
+    tmin: -0.4
+    use_jumeg: true
+  eog:
+    ch_name:
+    - EOG ver
+    event_id:
+    - 997
+    fhigh: 20
+    flow: 1
+    hor_ch: EOG hor
+    thresh: 0.2
+    tmax: 0.6
+    tmin: -0.6
+    use_jumeg: true
+    ver_ch: EOG ver
+  exclude: bads
+  file_extention:
+  - ',nr,bcc,int-raw.fif'
+  - rfDC,nr,bcc,int-empty.fif
+  fit:
+    _sorted_keys:
+    - plot_sources
+    overwrite: true
+    save: false
+    use_artifact_rejection: true
+    use_svm: false
+  overwrite: false
+  plot_dir: report
+  postfix: ar
+  pre_filter:
+    fhigh: 45.0
+    flow: 0.1
+    overwrite: false
+    run: true
+    save: false
+  random_state: 42
+  reject:
+    mag: 6.0e-11
+  run: false
+  transform:
+    _sorted_keys:
+    - filtered
+    - unfiltered
+    filtered:
+      run: true
+      save: true
+      save_chop: false
+      save_chop_clean: false
+    run: true
+    unfiltered:
+      run: true
+      save: true
+      save_chop: false
+      save_chop_clean: false
+info:
+  gui-version: 2020.03.11.001
+  python-version: 3.7.7
+  time: 2020-03-30 13:29
+  user: fboers
+interpolate_bads:
+  _sorted_keys:
+  - plot_block
+  file_extention:
+  - ',nr,bcc-raw.fif'
+  - rfDC,nr,bcc-empty.fif
+  overwrite: false
+  plot_block: false
+  postfix: int
+  run: false
+  save: true
+noise_reducer:
+  file_extention:
+  - meeg-raw.fif
+  - rfDC-empty.fif
+  fmax: 300
+  noiseref_hp:
+  - RFG ...
+  overwrite: false
+  plot: true
+  plot_dir: report
+  plot_show: false
+  postfix: nr
+  refhp: 0.1
+  reflp: 5.0
+  refnotch:
+  - 50.0
+  - 100.0
+  - 150.0
+  - 200.0
+  - 250.0
+  - 300.0
+  - 350.0
+  - 400.0
+  run: true
+  save: true
+report:
+  ica:
+    extention: ar.png
+    run: true
+  noise_reducer:
+    extention: nr-raw.png
+    run: true
+  overwrite: true
+  path: report
+  run: true
+  save: true
+suggest_bads:
+  file_extention:
+  - ',nr-raw.fif'
+  - rfDC,nr-empty.fif
+  fmax: 100
+  hdfname: jumeg_badchannel_info.hdf
+  overwrite: false
+  parameter:
+    epoch_length: None
+    fraction: 0.001
+    sensitivity_psd: 95
+    sensitivity_steps: 97
+    show_raw: false
+    summary_plot: false
+    validation: true
+  plot: false
+  plot_show: false
+  postfix: bcc
+  run: true
+  save: true
