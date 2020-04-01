@@ -293,22 +293,33 @@ def apply_ica(raw_fname=None,raw=None,path=None,config=None,label="ica",fname_ou
 #---------------------------------------------------
 #--- apply_report
 #---------------------------------------------------
-def apply_report(**kwargs):
+def apply_report(stage=None,subject_id=None,experiment=None,path=None,fname=None,config=None)
     """
-    stage=jpl.stage,subject_id=subject_id,experiment=jpl.experiment,
-                           path=raw_dir,fname=raw_fname,
-                           config=jpl.config.get("report")
         
     :param stage:
     :param subject_id:
     :param fname:
     :param path
-    :param config:
+    
+    :param config:  dict e.g.:  
+    
+        overwrite: true
+        path: report
+        run: true
+        save: true
+   
+        ica:
+           extention: ar.png
+           run: true
+        noise_reducer:
+           extention: nr-raw.png
+           run: true
+    
     :return:
     """
-    if config.run:
+    if config.get("run"):
        jReport = JuMEG_REPORT()
-       jReport.run(**kwargs)
+       jReport.run(stage=stage,subject_id=subject_id,experiment=experiment,path=path,fname=fname,config=config)
  
 #---------------------------------------------------
 #--- apply_filter
