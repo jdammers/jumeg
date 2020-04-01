@@ -306,8 +306,9 @@ def apply_report(**kwargs):
     :param config:
     :return:
     """
-    jReport = JuMEG_REPORT()
-    jReport.run(**kwargs)
+    if config.run:
+       jReport = JuMEG_REPORT()
+       jReport.run(**kwargs)
  
 #---------------------------------------------------
 #--- apply_filter
