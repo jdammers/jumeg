@@ -860,19 +860,31 @@ class JuMEG_PIPELINES_ICA(object):
        #-- check data size orig and transformed
         ds_in = self._raw._data.shape
         msg = ["Check data size"," --> raw          orig: {}".format(ds_in)]
-       
+        
+        ck_size   = False
+        ck_size_u = False
+        
         if raw_unfiltered_clean:
            ds_uout = raw_unfiltered_clean._data.shape
            msg.append(" --> raw-ar unfiltered: {}".format(ds_uout))
-        
+           if ( ds_in[1] == ds_uout[1] ):
+               ck_size_u = True
+        else:
+           ck_size_u = True 
+               
         if raw_filtered_clean:
            ds_out = raw_filtered_clean._data.shape
            msg.append(" --> raw-ar   filtered: {}".format(ds_out))
+           if ( ds_in[1] == ds_out[1] ):
+               ck_size = True
+        else:
+           ck_size = True
         
-        if (ds_in[1] == ds_uout[1]) and (ds_in[1] == ds_out[1]):
-           logger.info("\n".join(msg))
+        if (ck_size and ck_size_u):
+            logger.info( "\n".join(msg) )
         else:     
            raise ValueError("ERROR chop crop data\n".join(msg))
+        
         self._update_report(data)
         
         self.clear(objects=ICA_objs)
