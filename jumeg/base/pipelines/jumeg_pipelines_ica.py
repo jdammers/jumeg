@@ -41,62 +41,80 @@ logger = logging.getLogger("jumeg")
 __version__= "2020.03.30.001"
 
 
-def get_chop_times_indices(times, chop_length=60., strict=False):
+
+def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False):
     """
     calculate chop times for every X s
     where X=interval.
+    
+    Author: J.Dammers
+
     Parameters
     ----------
-    times : the time array
-    chop_length : float  (in seconds)
-    
-    strict: boolean
+    times: the time array
+    chop_length: float  (in seconds)
+    chop_nsamp: int (number of samples per chop)
+                if set, chop_length is ignored
+
+    strict: boolean (only when chop_samp=None)
             True: use be strict with the length of the chop
                   If the length of the last chop is less than X
                   the last chop is combined with the penultimate chop.
             False: (default) the full time is equally distributed across chops
                    The last chop will only have a few samples more
-    
+
     Returns
     -------
     chop_times : list of float
-                 Time points for when to chop the raw file
-    chop_time_indices : list of int
-    
+                 Time range for each chop
+    chop_time_indices : list of indices defining the time range for each chop
+
     """
-    
-    dt = times[1] - times[0]              # time period between two time samples
+
     n_times = len(times)
-    n_chops, t_rest = np.divmod(times[-1], chop_length)
-    n_chops = int(n_chops)
-    
-    # chop duration in s
-    if strict:
-        chop_len = chop_length
-    else:
-        chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
-    n_times_chop = int(chop_len / dt)
-    
-    # check if chop length is larger than max time (e.g. if strict=True)
-    if n_times_chop > n_times:
-        n_times_chop = n_times
-    
+   
+    try:
+        data_type = times.dtype()
+    except:
+        data_type = np.float64 
+
+    if chop_nsamp:  # compute chop based on number of samples
+        n_chops = int(n_times // chop_nsamp)
+        if n_chops == 0:
+            n_chops = 1
+        n_times_chop = chop_nsamp
+    else:  # compute chop based on duration given
+        dt = times[1] - times[0]  # time period between two time samples
+        n_chops, t_rest = np.divmod(times[-1], chop_length)
+        n_chops = int(n_chops)
+        # chop duration in s
+        if strict:
+            chop_len = chop_length
+        else:
+            chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
+        n_times_chop = int(chop_len / dt)
+        # check if chop length is larger than max time (e.g. if strict=True)
+        if n_times_chop > n_times:
+            n_times_chop = n_times
+
     # compute indices for each chop
-    ix_start = np.arange(n_chops) * n_times_chop      # first indices of each chop
-    ix_end = np.arange(1,n_chops) * (n_times_chop-1)  # last indices of each chop
-    ix_end = np.append(ix_end, n_times-1)             # add last entry with last index
-    
+    ix_start = np.arange(n_chops) * n_times_chop  # first indices of each chop
+    ix_end = np.append((ix_start - 1)[1:], n_times - 1)  # add last entry with last index
+
     # chop indices
-    chop_indices = np.zeros([n_chops,2],dtype=np.float32)
-    chop_indices[:,0] = ix_start
-    chop_indices[:,1] = ix_end
-    
+    chop_indices = np.zeros([n_chops, 2], dtype=np.int)
+    chop_indices[:, 0] = ix_start
+    chop_indices[:, 1] = ix_end
+
     # times in s
-    chop_times = np.zeros([n_chops,2],dtype=np.float32)
-    chop_times[:,0] = times[ix_start]
-    chop_times[:,1] = times[ix_end]
     
+    chop_times = np.zeros([n_chops, 2], dtype=data_type)
+    chop_times[:, 0] = times[ix_start]
+    chop_times[:, 1] = times[ix_end]
+
     return chop_times, chop_indices
+
+
 
 def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
             flow_ecg, fhigh_ecg, flow_eog, fhigh_eog, ecg_thresh,
@@ -280,7 +298,7 @@ class JuMEG_PIPELINES_ICA(object):
     @stage.setter
     def stage(self,v):
         self._stage=v
-    
+             
     @property
     def path(self): return self._raw_path
     @path.setter
@@ -345,9 +363,11 @@ class JuMEG_PIPELINES_ICA(object):
         self._raw_fname = None
         self._raw_isfiltered = False
         
-        self._ica_obj    = None
-        self._picks      = None
-        self._chop_times = None
+        self._ica_obj      = None
+        self._picks        = None
+        self._chop_times   = None
+        self._chop_indices = None
+        
         self._filter_prefix = ""
         self._filter_fname  = ""
         
@@ -374,29 +394,34 @@ class JuMEG_PIPELINES_ICA(object):
         n = str(n)
         return (n if not n.find('.') + 1 else n[:n.find('.') + d + 1])
 
-    #--- calc chop times
+    
     def _calc_chop_times(self):
+        """
+        calc chop times & indices
+
+        Returns
+        self._chop_times,self._chop_indices
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
         logger.debug("Start calc Chop Times: length: {} raw time: {}".format(self.cfg.chops.length,self.raw.times[-1]))
-        self._chop_times = None
         
+        self._chop_times   = None
+        self._chop_indices = None
+       
+        #--- warn if times less than chop length
         if self.raw.times[-1] <= self.cfg.chops.length:
-           cps      = np.zeros([1,2],dtype=np.float32)
-           cps[0,0] = 0.0
            logger.warning("<Raw Times> : {} smaler than <Chop Times> : {}\n\n".format(self.raw.times[-1],self._chop_times))
-        else:
-           n_chops,t_rest = np.divmod(self.raw.times[-1],self.cfg.chops.length)
-           n_chops = int(n_chops)
-           dtime   = self.cfg.chops.length + t_rest // n_chops # add rest to length
+                       
+        self._chop_times,self._chop_indices = get_chop_times_indices(self.raw.times,chop_length=self.cfg.chops.length) 
         
-           cps          = np.zeros([n_chops,2],dtype=np.float32)
-           cps[:,0]    += np.arange(n_chops) * dtime
-           cps[0:-1,1] += cps[1:,0]
-         
-        cps[-1,1] = None #self.trunc_nd(self.raw.times[-1], 3)  # ???? error in mne crop line 438 mne error tend == or less tmax
-        self._chop_times = cps
+        if self.debug:
+           logger.debug("Chop Times:\n  -> {}\n --> Indices:  -> {}".format(self._chop_times,self._chop_indices))
         
-        logger.debug("Chop Times:\n{}".format(self._chop_times))
-        return self._chop_times
+        return self._chop_times,self._chop_indices
+        
        
     def _copy_crop_and_chop(self,raw,chop):
         """
@@ -813,10 +838,12 @@ class JuMEG_PIPELINES_ICA(object):
                                                     save_chops       = self.cfg.transform.unfiltered.save_chop,
                                                     save_chops_clean = self.cfg.transform.unfiltered.save_chop_clean,
                                                     save_clean       = self.cfg.transform.unfiltered.save)
-                                  
+                           
+         
         logger.info("DONE ICA FIT & Transpose\n"+
                     "  -> filename : {}\n".format( jb.get_raw_filename(raw_unfiltered_clean) )+
                     "  -> time to process :{}".format( datetime.timedelta(seconds= time.time() - self._start_time ) ))
+        
             
        #--- plot
         data = { "ICA-FI-AR":None,"ICA-AR":None }
@@ -830,6 +857,22 @@ class JuMEG_PIPELINES_ICA(object):
                                     plot_path=self.plot_dir,fout=self.raw_fname.rsplit("-",1)[0] + "-ar")
            data["ICA-AR"] = [self.ICAPerformance.Plot.fout,*fimages_unfiltered]
         
+       #-- check data size orig and transformed
+        ds_in = self._raw._data.shape
+        msg = ["Check data size"," --> raw          orig: {}".format(ds_in)]
+       
+        if raw_unfiltered_clean:
+           ds_uout = raw_unfiltered_clean._data.shape
+           msg.append(" --> raw-ar unfiltered: {}".format(ds_uout))
+        
+        if raw_filtered_clean:
+           ds_out = raw_filtered_clean._data.shape
+           msg.append(" --> raw-ar   filtered: {}".format(ds_out))
+        
+        if (ds_in[1] == ds_uout[1]) and (ds_in[1] == ds_out[1]):
+           logger.info("\n".join(msg))
+        else:     
+           raise ValueError("ERROR chop crop data\n".join(msg))
         self._update_report(data)
         
         self.clear(objects=ICA_objs)
