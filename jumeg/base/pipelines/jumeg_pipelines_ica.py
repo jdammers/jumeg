@@ -41,6 +41,63 @@ logger = logging.getLogger("jumeg")
 __version__= "2020.03.30.001"
 
 
+def get_chop_times_indices(times, chop_length=60., strict=False):
+    """
+    calculate chop times for every X s
+    where X=interval.
+    Parameters
+    ----------
+    times : the time array
+    chop_length : float  (in seconds)
+    
+    strict: boolean
+            True: use be strict with the length of the chop
+                  If the length of the last chop is less than X
+                  the last chop is combined with the penultimate chop.
+            False: (default) the full time is equally distributed across chops
+                   The last chop will only have a few samples more
+    
+    Returns
+    -------
+    chop_times : list of float
+                 Time points for when to chop the raw file
+    chop_time_indices : list of int
+    
+    """
+    
+    dt = times[1] - times[0]              # time period between two time samples
+    n_times = len(times)
+    n_chops, t_rest = np.divmod(times[-1], chop_length)
+    n_chops = int(n_chops)
+    
+    # chop duration in s
+    if strict:
+        chop_len = chop_length
+    else:
+        chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
+    n_times_chop = int(chop_len / dt)
+    
+    # check if chop length is larger than max time (e.g. if strict=True)
+    if n_times_chop > n_times:
+        n_times_chop = n_times
+    
+    # compute indices for each chop
+    ix_start = np.arange(n_chops) * n_times_chop      # first indices of each chop
+    ix_end = np.arange(1,n_chops) * (n_times_chop-1)  # last indices of each chop
+    ix_end = np.append(ix_end, n_times-1)             # add last entry with last index
+    
+    # chop indices
+    chop_indices = np.zeros([n_chops,2],dtype=np.float32)
+    chop_indices[:,0] = ix_start
+    chop_indices[:,1] = ix_end
+    
+    # times in s
+    chop_times = np.zeros([n_chops,2],dtype=np.float32)
+    chop_times[:,0] = times[ix_start]
+    chop_times[:,1] = times[ix_end]
+    
+    return chop_times, chop_indices
+
 def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
             flow_ecg, fhigh_ecg, flow_eog, fhigh_eog, ecg_thresh,
             eog_thresh, use_jumeg=True, random_state=42):
@@ -494,11 +551,11 @@ class JuMEG_PIPELINES_ICA(object):
                    )
         return self._ica_obj,fname_ica
 
-   #--- apply ica transform
+  
     def apply_ica_artefact_rejection(self,raw,ICA,fname_raw= None,fname_clean=None,replace_pre_whitener=True,copy_raw=True,
                                      reject=None):
         """
-        Applies ICA to the raw object.
+        Applies ICA to the raw object. (ica transform)
 
         Parameters
         ----------

@@ -293,7 +293,7 @@ def apply_ica(raw_fname=None,raw=None,path=None,config=None,label="ica",fname_ou
 #---------------------------------------------------
 #--- apply_report
 #---------------------------------------------------
-def apply_report(stage=None,subject_id=None,experiment=None,path=None,fname=None,config=None)
+def apply_report(stage=None,subject_id=None,experiment=None,path=None,fname=None,config=None):
     """
         
     :param stage:
