@@ -239,7 +239,8 @@ class JuMEG_Template(JuMEG_Base_Basic):
         self.template_data.clear() # clear all copies
         
         try:
-          
+
+          #--- ToDo check for path if not mkpath, use JB.isPath
            with open(self.template_full_filename) as FH: # PY3
 
                 if self.use_yaml:
@@ -251,13 +252,13 @@ class JuMEG_Template(JuMEG_Base_Basic):
               self.template_data = dict2obj(self.template_data)
               self._template_isUpdate = True
         except json.decoder.JSONDecodeError as e:
-               logger.exception("---> Error in json template file format: " + self.template_full_filename)
+               logger.exception("---> Error in json template file format:\n   -> use yaml: {}\n  -> file: {}\n".format(self.use_yaml,self.template_full_filename))
                status=False
         except ValueError as e:
                logger.exception("---> Value Error in json template file: " + self.template_full_filename)
         except FileNotFoundError as e:
-            logger.exception("---> Error open template file: " + self.template_full_filename)
-            status = False
+               logger.exception("---> Error open template file:\n  -> use yaml: {}\n  -> file: {}\n".format(self.use_yaml,self.template_full_filename))
+               status = False
 
         if status:
            return status

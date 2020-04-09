@@ -43,7 +43,7 @@ try:
 except:
     _has_colorlogs = False
  
-__version__="2020.03.30.001"
+__version__="2020.04.07.001"
 
 #===========================================================
 #=== test logging stdout, stderr
@@ -482,8 +482,14 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
     """
     
     if not logger:
-       logger=logging.getLogger(logname)
-        
+       logger=logging.getLogger(name=logname)
+  
+   #--- clear Handlers  
+    for hdlr in logger.handlers[:]:  # remove the existing handlers
+        hdlr.flush()
+        hdlr.close()
+        logger.removeHandler(hdlr)  
+    
    #----
     name = name if name else "jumeg_logfile"
     

@@ -140,27 +140,29 @@ class ARTEFACT_EVENTS(JUMEG_SLOTS):
                self.events[ch_name]["pulse"] = res[2]
         
         if self.set_annotations:
-           return self.set_anotations()
+           return self.update_annotations()
         return None
 
-    def set_anotations(self,save=False):
+    def update_annotations(self,save=False):
         """
-        update raw.anotattions with artefact events e.g.: ECG,EOG
+        update raw.annotattions with artefact events e.g.: ECG,EOG
         save: save raw with annotations Talse
         return annotations
         
         """
 
-        raw_annot = None
         evt_annot = None
         try:
-            raw_annot = self.raw.annotations
-        except:
-            pass
-
+            raw_annot  = self.raw.annotations #.copy()
+            #logger.info("Input Annotations in RAW obj:\n  -> {}".format(raw_annot))
+            orig_time  = raw_annot.orig_time
+        except: 
+            raw_annot = None
+            orig_time = None #self.raw.info.get("meas_date",None) #self.raw.times[0])     
+           
         #--- store event info into raw.anotations
-        time_format = '%Y-%m-%d %H:%M:%S.%f'
-        orig_time   = self.raw.info.get("meas_date",self.raw.times[0])
+        # time_format = '%Y-%m-%d %H:%M:%S.%f'
+       
         
         for k in self.events.keys():
             msg = ["update raw.annotations: {}".format(k)]
@@ -168,8 +170,7 @@ class ARTEFACT_EVENTS(JUMEG_SLOTS):
             onset  = self.events[k]['events'][:,0] / self.raw.info["sfreq"]
             #onset -= self.tmin
             duration = np.ones( onset.shape[0] ) / self.raw.info["sfreq"]  # one line in raw.plot
-            #duration+= abs(-self.tmin) + self.tmax
-    
+      
             evt_annot = mne.Annotations(onset=onset.tolist(),
                                         duration=duration.tolist(),
                                         description=k, # [condition for x in range(evt["events"].shape[0])],
@@ -189,7 +190,7 @@ class ARTEFACT_EVENTS(JUMEG_SLOTS):
                raw_annot = self.raw.annotations
         
         if save:
-           f      = jb.get_raw_filename(raw)
+           f      = jb.get_raw_filename(self.raw)
            fanato = f.replace( "-raw.fif","-anato.csv")
            self.raw.annotations.save( fanato )
            
@@ -444,12 +445,15 @@ class JuMEG_ICA_PERFORMANCE_PLOT(CalcSignal):
         self.scale     = { "raw":{ "factor":10.0 ** 15,"unit":"fT" },"ref":{ "factor":10.0 ** 3,"unit":"mV" } }
         
         self._update_from_kwargs(**kwargs)
+     
+  
+    def init_plot_parameter(self):
        #--- A4 landscape
         plt.rc('figure',figsize=self.figsize,autolayout=True)
         plt.rcParams.update({ 'font.size':self.fontsize })
         plt.subplots_adjust(left=0.1,right=0.95,bottom=0.05,top=0.95,hspace=0.35)
         plt.rcParams['savefig.facecolor'] = "0.9"
-
+   
     @property
     def figure(self): return self._figure
     
@@ -521,6 +525,7 @@ class JuMEG_ICA_PERFORMANCE_PLOT(CalcSignal):
         sig_ref,_,_ = self._calc_signal(self.raw,evt,event_id=self.event_id,tmin=self.tmin,tmax=self.tmax,picks=jb.picks.labels2picks(self.raw,self.ch_name))
     
         if not self.figure:
+           self.init_plot_parameter()
            self._figure = plt.figure()
            #self.figure.suptitle(os.path.basename(jb.get_raw_filename(self.raw)),fontsize=12)
            

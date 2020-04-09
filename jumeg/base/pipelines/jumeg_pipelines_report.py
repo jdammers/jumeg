@@ -137,6 +137,8 @@ class MNE_REPORT(JUMEG_SLOTS):
             else:
                self._MNE_REPORT = mne.Report(info_fname=self.info_name,title=self.title,image_format=self.image_format,
                                              raw_psd=self.raw_psd,verbose=self.verbose)
+               logger.info("open Report (h5): \n   -> {}".format(self._MNE_REPORT))
+               
             self._isOpen = True
         except:
             logger.exception("ERROR: can not open or create MNE Report {}".format(self.hdf_name))
@@ -148,12 +150,18 @@ class MNE_REPORT(JUMEG_SLOTS):
             return self.isOpen
         
         # mkpath( self.path,mode=0o770)
+      
+        if overwrite:
+           if os.path.isfile(self.html_name):
+              os.remove(self.html_name)
+           if os.path.isfile(self.hdf_name):
+              os.remove(self.hdf_name)
        #--- html
         self.MNEreport.save(self.html_name,overwrite=overwrite,open_browser=self.open_browser)
-        logger.info("DONE saving JuMEG MNE report: HTML: {}\n".format(self.html_name))
+        logger.info("DONE saving JuMEG MNE report [overwrite: {}] : HTML: {}\n".format(overwrite,self.html_name))
        #--- h5
         self.MNEreport.save( self.hdf_name, overwrite=overwrite,open_browser=False)
-        logger.info("DONE saving JuMEG MNE report: HDF5: {}\n".format(self.hdf_name))
+        logger.info("DONE saving JuMEG MNE report [overwrite: {}] : HDF5: {}\n".format(overwrite,self.hdf_name))
      
         return self.isOpen
     
@@ -162,7 +170,7 @@ class MNE_REPORT(JUMEG_SLOTS):
         load img from list
         add to report
         :param path   : report image path
-        :param data  : dict or list of pngs
+        :param data   : dict or list of pngs
         :param section: section in report e.g.: Noise reducer, ICA
         :param prefix : prefix for caption e.g.: ICA-0815_
         :return:
