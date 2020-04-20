@@ -136,20 +136,20 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
     def chops(self):   return self._chops
     @property  
     def indices(self): return self._indices
-    @property  
-    def times(self):   return self._raw.times
-    
+     
     @property  
     def estimated_chops(self):   return self._estimated_chops
     @property  
     def estimated_indices(self): return self._estimated_indices
-    
+   #--- 
     @property
     def raw(self): return self._raw
     @raw.setter
     def raw(self,v): 
         self._raw = v
-
+    @property  
+    def times(self): return self._raw.times
+  
     @property
     def sfreq(self): return self._raw.info['sfreq']  
     
@@ -505,6 +505,11 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
         idx = -1
         stim_indices = np.zeros(n_chops,dtype=np.int)
         
+        evt_ana=mne.events_from_annotations(raw)
+        print(evt_ana)
+        print(evt_ana[0].shape)
+      
+         
         for tsls in indices:
             idx += 1
             stim_indices[idx] = tsls[1]
@@ -519,13 +524,21 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
         
            #--- stim data   
             data = self.raw._data[picks,window_tsl0:window_tsl1].sum(axis=0).astype(np.int)
-            didx = np.where( data[0:-1] - data[1:] )[0]
-          
+            
+            ToDo add EOG  add   in data => eog_onset set = 1
+            EOG + picks
+     
+            didx = np.where( data[0:-1] - data[1:] )[0]+1
+         
            #--- no codes in window   
             if not didx.shape[0]:  
                continue
-           
-           #--- find events in window
+            
+            logger.info("DX: {}\n data: {}\n data: {}\n".format(didx,data[didx],data[didx+1]))
+         
+        #error onset offset !!!!    
+        
+        #--- find events in window
             evt        = np.zeros( [ didx.shape[0],3 ],dtype=np.int) 
             evt[:,0]  += didx + window_tsl0
             evt[:,2]  += data[didx]
@@ -553,7 +566,7 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
                msg=["can not find chop window with zero event code =>\n",
                     " using TSL : {}\n".format(tsls[1]),
                     "  -> idx   : {}]\n".format(idx),
-                    "  -> chop  : {}\n".format(chops[idx]),
+                    "  -> chop  : {}\n".format(chops[idx]), 
                     "  -> events:\n{}\n".format(evt)]
                      
                logger.warning( "".join(msg) )
@@ -563,11 +576,26 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
             if didx[-1] == evt.shape[0]-1:
                didx = didx[0:-1]    
                
-            offset_tsl = evt[didx,0]
-            onset_tsl  = evt[didx+1,0]
-            diff_tsl   = offset_tsl - onset_tsl
-            idx_tsl    = np.argmax(diff_tsl)
-            stim_indices[idx] = int( offset_tsl[idx_tsl] + diff_tsl[idx_tsl] /2.0 )
+            zeros_onset_tsl  = evt[didx,0]
+            zeros_offset_tsl = evt[didx+1,0]
+            diff_tsl         = zeros_offset_tsl - zeros_onset_tsl
+            
+            idx_tsl    = np.argmax( np.abs(diff_tsl) )
+           
+            onset = np.max(zeros_offset_tsl - zeros_onset_tsl)
+            
+            tsl = evt[1:,0]-evt[0:-1,0]
+            tp  = tsl / self.sfreq
+            logger.info("didx: {}\n onset: {}\n time: {}".format(didx,tsl,tp) )
+        
+            logger.info("evt: {}\n".format(evt[:,0]/self.sfreq) )
+        
+        
+            logger.info("diff: {}\n{}\n{}\n{}".format(diff_tsl,idx_tsl,zeros_offset_tsl[idx_tsl],diff_tsl[idx_tsl] ) )
+        
+        
+            evt_idx = didx[idx_tsl]
+            stim_indices[idx] = int(  evt[evt_idx,0] + diff_tsl[idx_tsl] /2.0 )
        
             
        #--- set annotations 
@@ -619,7 +647,7 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
         
         raw_annot = self.raw.annotations
         raw_annot.orig_time = None
-        
+        logger.info("UPDATE RAW Annotations in RAW obj:\n  -> {}".format(self.raw.annotations ))
           
         info      = mne.create_info(['STI 013','STI 014','STI SUM'], self.sfreq, ['stim','stim','stim'])
         stim_data = np.zeros([3, len(self.raw.times)])
@@ -632,12 +660,12 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
         
         stim_raw.set_annotations(raw_annot)
       
-        logger.info("STIM Annotations in RAW obj:\n  -> {}".format(stim_raw.annotations ))
-        logger.info("STIM Annotations chop:\n TSL: {}\n Time: {}".format(stim_annot.onset,stim_annot.onset ))
+       # logger.info("STIM Annotations in RAW obj:\n  -> {}".format(stim_raw.annotations ))
+        logger.info("STIM Annotations chop times: {}".format(stim_annot.onset ))
         
         
         
-        #stim_raw.plot(show=True, block=True,scalings=scalings)
+        stim_raw.plot(show=True, block=True,scalings=scalings,duration=evt_window_sec *2 +2,start=stim_annot.onset[0]  - evt_window_sec-1)
             
           
            #  st_t_diff = st_t[1:]-st_t[0:-1]
