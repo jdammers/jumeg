@@ -124,14 +124,33 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
 
     
 class JuMEG_CHOPS(JUMEG_SLOTS):
-    __slots__=["verbose","length","groups","_raw",
+    __slots__=["verbose","length","groups","show","_time_window_sec","_raw","_description",
                "_estimated_chops","_estimated_indices","_chops","_indices"]
     
     def __init__(self,**kwargs):
-       
-        # self.groups = ["stim","resp","ecg","eog"]
         self.init(**kwargs)
+        if not self._time_window_sec:
+           self._time_window_sec = np.array([5.0,5.0],dtype=np.float) 
+        if not self._description:
+           self._description="ICA chops" 
+       
+    @property
+    def description(self): return self._description
+    @description.setter
+    def description(self,v):
+        self._description=v
         
+    @property
+    def time_window_sec(self): return self._time_window_sec
+    @time_window_sec.setter
+    def time_window_sec(self,v):
+        if isinstance(v,(list,tuple,np.ndarray)):
+           self._time_window_sec = v
+           if not v[-1]:
+              v[-1] = v[0] 
+        else:
+           self._time_window_sec = [v,v]
+           
     @property  
     def chops(self):   return self._chops
     @property  
@@ -183,284 +202,52 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
            self.GetInfo()
            
         return self._estimated_chops,self._estimated_indices
-              
-    def __adjust_chops_for_stimulus_response(self,chops=None):
-        """
-        adjust chop onset not in stimulus / response window 
-
-        Returns
-        -------
-         chops,indices
-       
-        "events":{"stim_channel":"STI 014","output":"onset","consecutive":true,"min_duration":0.0005,
-                  "shortest_event":1,"mask":0},
-                  "event_id":84,"and_mask":255,"system_delay_ms":0.0,"early_ids_to_ignore":null
-        """
-        import sys
-        np.set_printoptions(formatter={'float': '{: 0.3f}'.format},threshold=sys.maxsize)
-        #np.set_printoptions(formatter={'float': '{: 0.3f}'.format},threshold=50)
-      
-        '''
-        define search window for events 
-        
-        '''
-        #-- make combined sti-resp raw obj
-        # https://github.com/mne-tools/mne-python/issues/4208
-        info      = mne.create_info(['STI 013','STI 014','STI SUM'], self.sfreq, ['stim','stim','stim'])
-        stim_data = np.zeros([3, len(self.raw.times)])
-        picks     = jb.picks.stim_response(self.raw)
-     
-        
-     #---ToDo
-     #   own handling _data events or for loop time window
-     #   or make events
-        stim_data[0:2,:] += self.raw._data[picks,:] # .sum(axis=0)
-        stim_data[2,:]   += self.raw._data[picks,:].sum(axis=0)
-        scalings={'stim':16}
-        stim_raw  = mne.io.RawArray(stim_data, info)
-        #raw.add_channels([stim_raw], force_update_info=True)
-        #stim_raw.plot(show=True, block=True,scalings=scalings)
-
-        
-        
-        evt_window_sec   = 5.0
-        evt_window_tsl   = int( evt_window_sec * self.sfreq )
-        evt_distance_sec = 1.0
-        evt_distance_tsl = int( evt_distance_sec * self.sfreq)
-        
-        _events   = {'consecutive': True, 'output': 'step', 'stim_channel':'STI SUM','min_duration': 0,'shortest_event': 1, 'mask': None,'initial_event':True }
-        # _events   = {'consecutive': False, 'output': 'step', 'stim_channel':['STI 013','STI 014'],'min_duration': 0,'shortest_event': 1, 'mask': None}
-        #_events   = {'consecutive': True, 'output': 'step', 'stim_channel':'STI 014','min_duration': 0,'shortest_event': 1, 'mask': None}
-        
-        '''
-        'output': 'step' => get onset/offset
-        [[155936      0     30]  => onset
-         [156088     30      0]  => offset
-         [157989      0     55]
-         [158141     55      0]
-         [159432      0     80]
-         [159585     80      0]]
-        '''
-        
-        
-        
-        # df_stim   = pd.DataFrame(evt_stim)
-               
-        #events_resp = _events.copy()
-        #events_resp['stim_channel'] = 'STI 013'
-        #evt_resp = mne.find_events(self.raw,**events_resp)
-        #df_resp  = pd.DataFrame(evt_stim)
-          
-        if not chops:
-           chops   = self._estimated_chops.copy()
-           indices = self._estimated_indices.copy()
-        else:
-           indices = (chops * self.sfreq).astype(int)
-       
-        logger.info("Indices: {}".format(indices))
-        n_chops = len(chops)
-        
-       
-        evt_stim  = mne.find_events(stim_raw,**_events)
-        
-       #--- no events 
-        if evt_stim is None:
-           logger.warning("No events found:\n   {}\n  return orig :\n{}\n{}".format(_events,chops,indices)) 
-           return chops,indices
-      
-       # logger.info("Events:\n{}".format(evt_stim))
-       # return
-        
-        #evt_steps = mne.find_stim_steps(raw=self.raw,stim_channel=['STI 013','STI 014'])
-        
-        #logger.info("STIM Steps:\n{}".format(evt_steps))
-      
-        # chops_evt = np.zeros( [n_chops,2],dtype= chops.dtype ) 
-        
-        stim_indices = np.zeros( n_chops,dtype=np.int64 )
-        stim_times   = np.zeros( n_chops,dtype=self.raw.times.dtype )
-        idx =-1
-        
-        
-        for chop,tsls in zip(chops,indices):
-            logger.info("STIM TSLS:\n{} end: {}".format(tsls,self.raw.n_times))
-            
-            if tsls[1] >=  self.raw.n_times-1:
-               continue 
-            logger.info("STIM TSLS:\n{}".format(tsls))
-               
-            
-            idx += 1
-            window_tsl0  = tsls[1]
-            window_tsl1  = tsls[1] + evt_window_tsl
-            n_tsls = window_tsl1 - window_tsl0
-            
-            #data         = np.zeros(n_tsls,dtype=np.int)
-            #data = self.raw._data[picks,window_tsl0:window_tsl1].sum(axis=0)
-                        
-            #chops_evt[idx][0] = chops[idx][0]
-            #chops_evt[idx][1] = chops[idx][1]
-            #tw   = np.array( [ chops[idx][1],chops[idx][1] + dt ] )
-            #tslw = (tw * self.sfreq).astype(int)
-          
-            #---
-            #tsl_onset = np.where( (evt_stim[:,0]< tsl_window[0]) )[0]
-            #logger.info("---> STIM tsl onset: {}".format(tsl_onset))
-            #if tsl_onset.shape[0]:
-             #--- ck for offset
-            #   print(evt_stim[tsl_onset:2,:])
-            #   tsl_window[0] = tsl_onset[-1]
-          
-          
-         #--- window chop => chop+ dt
-            stim_idx = np.where( (window_tsl0 < evt_stim[:,0]) & (evt_stim[:,0] < window_tsl1) )[0]
-            
-           #--- if no stim evt in window search for event before 
-            if not stim_idx.shape[0]:  
-               stim_idx = np.where( evt_stim[:,0] < window_tsl0 )[0]
-              #--- not stim event at all
-               if not stim_idx.shape[0]:  
-                  stim_indices[idx]= tsls[1] 
-                  logger.warning("No events at all:\n chop: {}\n window tsl: {} <=> {}\n".format(chops,window_tsl0,window_tsl1)) 
-              #--- ok indice  
-               elif evt_stim[ stim_idx[-1] ][0] + evt_distance_tsl <  window_tsl0:
-                  stim_indices[idx]= tsls[1] 
-              #--- cal new indice
-               else:  
-                  stim_indices[idx] = evt_stim[ stim_idx[-1] ][0] + evt_distance_tsl
-               
-               logger.info("stim indice found: {}  chop: {} => {}".format( idx,chop,stim_indices[idx] ) )
-               stim_times[idx] =  self.raw.times[ stim_indices[idx] ]
-               continue
-           
-           #--- stim events in window  
-            logger.info("stim window:\n{}".format( evt_stim[stim_idx] ) )
-            evt = evt_stim[ stim_idx ] 
-            
-            off_idx = np.where( evt_stim[stim_idx,2] == 0 )[0] # get offsets
-            #--- if off_idx
-            offset_idx  = stim_idx[off_idx]
-            onset_idx   = offset_idx +1
-           #--- 
-            
-            idx_diff = evt_stim[ offset_idx,0 ]- evt_stim[ onset_idx,0 ]
-            t_diff   = idx_diff / self.sfreq
-            
-            logger.info("---> STIM Chop: {}\n-> tsls: {}\n  -> offset_idx : {}\n  -> idx_diff : {}\n  -> diff : {}".
-                        format(chop,tsls,offset_idx,idx_diff,t_diff))
-          
-            
-            #offset_t = evt_stim[ offset_idx,0 ] / self.sfreq
-            #onset_t  = evt_stim[ onset_idx,0 ] / self.sfreq
-            #dt       = onset_t - offset_t 
-            #idx_hit  = np.argmax(dt)
-           
-            offset_i = evt_stim[ offset_idx,0 ]
-            onset_i  = evt_stim[ onset_idx,0 ] 
-            di       = onset_i - offset_i 
-            hit_idx  = np.argmax(di)
-            stim_indices[idx] =  int( onset_i[hit_idx] + di[hit_idx] / 2.0)
-            stim_times[idx]   =  self.raw.times[ stim_indices[idx] ]
-            
-            logger.info("---> STIM Chop: {}\n-> offset: {}\n  -> dt: {}".
-                        format(chop,offset_i,di))
-          
-            
-          #--- ck for first event 
-           # if stim_idx[0] == 0:
-           #    evt = evt_stim[ stim_idx ]  
-           # else:
-           #    evt = evt_stim[ stim_idx[0]-1 : stim_idx[-1] +1 ]  
-           
-            logger.info("events:\n {}".format(evt) )
-     
-       #--- set annotations 
-        try:
-            raw_annot  = self.raw.annotations #.copy()
-            logger.info("Input Annotations in RAW obj:\n  -> {}".format(raw_annot))
-            raw_annot.orig_time = None
-            orig_time  = None #raw_annot.orig_time
-        except:
-            raw_annot = None
-            orig_time = None #self.raw.info.get("meas_date",None) #self.raw.times[0])     
-        
-    
-            
-        dscp     = "ica-chop"
-        onset    = stim_times #indices #/ self.sfreq
-        duration = np.ones( onset.shape[0] ) / self.sfreq  # one line in raw.plot
-             
-        stim_annot = mne.Annotations(onset=onset.tolist(),
-                                     duration=duration.tolist(),
-                                     description=dscp,
-                                     orig_time = orig_time)
-        
-        msg = ["update raw.annotations: {}".format(dscp)]
-        
-        if raw_annot:
-            msg.append(" --> found mne.annotations in RAW:\n  -> {}".format(raw_annot))
-           #--- clear old annotations
-            kidx = np.where( raw_annot.description == dscp)[0] # get index
-            if kidx.any():
-                msg.append("  -> delete existing annotation {} counts: {}".format(dscp, kidx.shape[0]) )
-                raw_annot.delete(kidx)
-       
-            self.raw.set_annotations( raw_annot + stim_annot)
-        else:
-            self.raw.set_annotations(stim_annot)
-        
-        raw_annot = self.raw.annotations
-        raw_annot.orig_time = None
-        
-      
-        logger.info("STIM Annotations in RAW obj:\n  -> {}".format(stim_raw.annotations ))
-        logger.info("STIM Annotations in RAW obj:\n  -> {}".format(stim_annot.onset ))
-        
-        
-        
-        stim_raw.plot(show=True, block=True,scalings=scalings)
-            
-          
-           #  st_t_diff = st_t[1:]-st_t[0:-1]
-           
-          #  logger.info("---> STIM Chop: {}\n-> chop_time_idx: {}\n  -> idx  : {}\n  -> time : {}\n  -> dt   : {}\n  -> diff : {}".
-           #             format(chops[idx],chop_time_idx,st_idx,st_t,st_dt,st_t_diff))
-           
-           
-       
-        
-        '''       
-        raw_A.annotations
-        idx=indices[0][1]
-        dt_idx= int(dt*raw.info["sfreq"])  
-        print(idx)
-        print(dt_idx)
-        
-        
-        evt_ana=mne.events_from_annotations(raw)
-        print(evt_ana)
-        print(evt_ana[0].shape)
-        
-        #-- ECG id == 1
-        ecg_onsets=df[ (tsl0 < df["onset"]) & (df["onset"] <tsl1) & (df["id"]==1)]
-        print(ecg_onsets)
-        
-        
-        #-- ECG id == 1
-        dton = ecg_onsets["onset"] / sampling_freq - cptime
-        print(dton)
-        #-- EOG id == 1
-        eog_onsets=df[ (tsl0 < df["onset"]) & (df["onset"] <tsl1) & (df["id"]==3)]
-        print(eog_onsets)
-        '''
-        
-    def _adjust_chops_for_ecg(self):
-        pass
-    
-    def _adjust_chops_for_eog(self):
-        pass
          
-    
+   
+    def _get_events_in_window(self,window_tsl=None,raw=None,picks=None,events=None):
+               
+        if not raw:
+           raw = self._raw 
+        
+            
+        
+        evt = None   
+       #--- stim data  
+     
+        if events is not None:
+           data = np.zeros([len(picks) +1, window_tsl[1] - window_tsl[0] ],dtype=np.float)
+           data[0:-1,:] += raw._data[picks,window_tsl[0]:window_tsl[1] ]
+          #--- ToDo vectorize NUMA 
+           for e in events:
+               onset = e[0] - window_tsl[0] -2
+               if onset < 0: 
+                  onset = 0
+               
+               offset = e[0] - window_tsl[0] +2
+               if offset <= onset:
+                  offset = onset + 2    
+              
+               if offset > data.shape[-1]:
+                  offset = data.shape[-1] 
+               data[-1,onset:offset]+=1
+               
+           data = data.sum(axis=0).astype(np.int)
+        else:
+           data = raw._data[picks,window_tsl[0]:window_tsl[1] ].sum(axis=0).astype(np.int)
+      
+        didx = np.where( data[0:-1] - data[1:] )[0]+1
+
+        #--- if codes in window -> find events in window
+        if didx.shape[0]: 
+           #--- mne event array
+           evt        = np.zeros( [ didx.shape[0],3 ],dtype=np.int) 
+           evt[:,0]  += didx + window_tsl[0]
+           evt[:,2]  += data[didx]
+           evt[1:,1] += data[didx][0:-1]
+           
+           logger.debug(" window tsl: {}\n events:\n{}\n".format(window_tsl,evt) )
+     
+        return evt
               
     def _adjust_chops_for_stimulus_response(self,chops=None):
         """
@@ -470,9 +257,6 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
         -------
          chops,indices
        
-        "events":{"stim_channel":"STI 014","output":"onset","consecutive":true,"min_duration":0.0005,
-                  "shortest_event":1,"mask":0},
-                  "event_id":84,"and_mask":255,"system_delay_ms":0.0,"early_ids_to_ignore":null
         """
         import sys
         np.set_printoptions(formatter={'float': '{: 0.3f}'.format},threshold=sys.maxsize)
@@ -485,13 +269,14 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
         # https://github.com/mne-tools/mne-python/issues/4208
         #info      = mne.create_info(['STI 013','STI 014','STI SUM'], self.sfreq, ['stim','stim','stim'])
         #stim_data = np.zeros([3, len(self.raw.times)])
-        picks     = jb.picks.stim_response(self.raw)
- 
-        evt_window_sec   = 5.0
-        evt_window_tsl   = int( evt_window_sec * self.sfreq )
-        evt_distance_sec = 1.0
-        evt_distance_tsl = int( evt_distance_sec * self.sfreq)
-        last_sample      = self.raw.n_times -1
+       
+        time_window_tsl = np.array(self.time_window_sec * self.sfreq).astype(np.int)
+       
+        picks = jb.picks.stim_response(self.raw)
+        anno_evt,anno_labels = mne.events_from_annotations(self.raw)
+       
+        self._chops   = None
+        self._indices = None
         
         if not chops:
            chops   = self._estimated_chops.copy()
@@ -504,46 +289,39 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
         
         idx = -1
         stim_indices = np.zeros(n_chops,dtype=np.int)
-        
-        evt_ana=mne.events_from_annotations(raw)
-        print(evt_ana)
-        print(evt_ana[0].shape)
-      
+          
          
         for tsls in indices:
             idx += 1
             stim_indices[idx] = tsls[1]
-            logger.info("STIM last sample: {}\n  -> TSLS: {}".format(last_sample,tsls))
+            logger.info("STIM last sample: {}\n  -> TSLS: {}".format(self.raw.last_samp,tsls))
             
-            if tsls[1] >= last_sample:
+            if tsls[1] >= self.raw.last_samp:
                continue 
             logger.info("STIM: {}\n TSLS: {}\n stim indices: {}\n".format(idx,tsls,stim_indices))
             
-            window_tsl0 = tsls[1] - evt_window_tsl
-            window_tsl1 = tsls[1] + evt_window_tsl
+            #window_tsl0 = tsls[1] - window_tsl[0]
+            #window_tsl1 = tsls[1] + window_tsl[1]
         
-           #--- stim data   
-            data = self.raw._data[picks,window_tsl0:window_tsl1].sum(axis=0).astype(np.int)
+            window_tsl =[ tsls[1] - time_window_tsl[0],tsls[1] + time_window_tsl[1]]
+           
+           #--- find ECG,EOG hor, EOG ver 1,2,3 in window 
+            evt_artifacts = None
+           
+            if anno_evt.shape[0]:
+               logger.info("idx: {}\n Chops:\n{}\n window tsl:\n{}\n annos:\n{}\n".format(idx,chops,window_tsl,anno_evt) )
+               logger.info("idx: {}\n Chops:\n{}\n window tsl:\n{}\n".format(idx,chops,window_tsl) )
+               #onsets = evt_from_annotations[0][]:,0]
+               evt_eog_idx = np.where( (anno_evt[:,0] > window_tsl[0]) &
+                                       (anno_evt[:,0] < window_tsl[1]) &
+                                       (anno_evt[:,2] > 0) )[0]
             
-            ToDo add EOG  add   in data => eog_onset set = 1
-            EOG + picks
-     
-            didx = np.where( data[0:-1] - data[1:] )[0]+1
+               if evt_eog_idx.shape[0]:
+                  evt_artifacts = anno_evt[evt_eog_idx,:]
+                
+            
+            evt = self._get_events_in_window(window_tsl=window_tsl,picks=picks,events=evt_artifacts)
          
-           #--- no codes in window   
-            if not didx.shape[0]:  
-               continue
-            
-            logger.info("DX: {}\n data: {}\n data: {}\n".format(didx,data[didx],data[didx+1]))
-         
-        #error onset offset !!!!    
-        
-        #--- find events in window
-            evt        = np.zeros( [ didx.shape[0],3 ],dtype=np.int) 
-            evt[:,0]  += didx + window_tsl0
-            evt[:,2]  += data[didx]
-            evt[1:,1] += data[didx][0:-1]
-            
             logger.info("idx: {}\n Chops:\n{}\n indices:\n{}\n events:\n{}\n".format(idx,chops,indices,evt) )
             '''
             Chop:    [ 0.000  152.999]
@@ -558,7 +336,12 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
                  [159431     55      0]
                  [159584      0     80]]
             '''
-           #--- find zero code windows
+     
+
+            if evt is None:
+               continue
+          
+        #--- find zero code windows
             didx = np.where( evt[:,2] == 0 )[0] # get offsets
          
            #--- ck for no offset / onset => no zero event code
@@ -608,81 +391,18 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
             chops[idx][1]= self.raw.times[ indices[idx][1] ]
         
         logger.info("STIM chops:\n{}\n Chop:\n{}\n => indices:\n{}\n stim\n{}\n".format(idx,chops,indices,stim_indices) )
-            
-            
-        try:
-            raw_annot  = self.raw.annotations #.copy()
-            logger.info("Input Annotations in RAW obj:\n  -> {}".format(raw_annot))
-            raw_annot.orig_time = None
-            orig_time  = None #raw_annot.orig_time
-        except:
-            raw_annot = None
-            orig_time = None #self.raw.info.get("meas_date",None) #self.raw.times[0])     
+        
+        self._chops   = chops
+        self._indices = indices
+        
+        return chops,indices       
        
-        
-    
-            
-        dscp     = "ica-chop"
-        onset    = stim_indices
-        duration = np.ones( onset.shape[0] ) / self.sfreq  # one line in raw.plot
-             
-        stim_annot = mne.Annotations(onset=chops[:,1].tolist(),
-                                     duration=duration.tolist(),
-                                     description=dscp,
-                                     orig_time = orig_time)
-        
-        msg = ["update raw.annotations: {}".format(dscp)]
-        
-        if raw_annot:
-            msg.append(" --> found mne.annotations in RAW:\n  -> {}".format(raw_annot))
-           #--- clear old annotations
-            kidx = np.where( raw_annot.description == dscp)[0] # get index
-            if kidx.any():
-                msg.append("  -> delete existing annotation {} counts: {}".format(dscp, kidx.shape[0]) )
-                raw_annot.delete(kidx)
-       
-            self.raw.set_annotations( raw_annot + stim_annot)
-        else:
-            self.raw.set_annotations(stim_annot)
-        
-        raw_annot = self.raw.annotations
-        raw_annot.orig_time = None
-        logger.info("UPDATE RAW Annotations in RAW obj:\n  -> {}".format(self.raw.annotations ))
-          
-        info      = mne.create_info(['STI 013','STI 014','STI SUM'], self.sfreq, ['stim','stim','stim'])
-        stim_data = np.zeros([3, len(self.raw.times)])
-        picks     = jb.picks.stim_response(self.raw)
-      
-        stim_data[0:2,:] += self.raw._data[picks,:] # .sum(axis=0)
-        stim_data[2,:]   += self.raw._data[picks,:].sum(axis=0)
-        scalings={'stim':16}
-        stim_raw  = mne.io.RawArray(stim_data, info)
-        
-        stim_raw.set_annotations(raw_annot)
-      
-       # logger.info("STIM Annotations in RAW obj:\n  -> {}".format(stim_raw.annotations ))
-        logger.info("STIM Annotations chop times: {}".format(stim_annot.onset ))
-        
-        
-        
-        stim_raw.plot(show=True, block=True,scalings=scalings,duration=evt_window_sec *2 +2,start=stim_annot.onset[0]  - evt_window_sec-1)
-            
-          
-           #  st_t_diff = st_t[1:]-st_t[0:-1]
-           
-          #  logger.info("---> STIM Chop: {}\n-> chop_time_idx: {}\n  -> idx  : {}\n  -> time : {}\n  -> dt   : {}\n  -> diff : {}".
-           #             format(chops[idx],chop_time_idx,st_idx,st_t,st_dt,st_t_diff))
-           
-           
- 
     
     def update(self,**kwargs):
         """
-        ToDo
-        check and shfit for stimulus,respose onset/offset
-        check for EOG onset
-        check for ECG onset
-        
+        calc chops from timepoints 
+        adjust for stimulus/response onset/offset
+        adjust for EOG,ECG onsets
         """
         self._update_from_kwargs(**kwargs)
         #--- calc estimated chops from chop length
@@ -690,15 +410,92 @@ class JuMEG_CHOPS(JUMEG_SLOTS):
         #---
         self._adjust_chops_for_stimulus_response()
         #---
-        #self._adjust_chops_for_ecg()
+        self._update_annotations()
         #---
-        #self._adjust_chops_for_eog()
+        if self.show:
+           self.show_chops() 
+        
+    def _update_annotations(self):
+        
+        try:
+            raw_annot  = self.raw.annotations #.copy()
+            raw_annot.orig_time = None
+        except:
+            raw_annot = None
+       
+        duration   = np.ones( self.chops.shape[0] ) / self.sfreq  # one line in raw.plot
+        chop_annot = mne.Annotations(onset=self.chops[:,1].tolist(),
+                                     duration=duration.tolist(),
+                                     description=self.description,
+                                     orig_time=None)
+        
+        msg = ["update raw.annotations: {}".format(self.description)]
+      
+        if raw_annot:
+            msg.append(" --> found mne.annotations in RAW:\n  -> {}".format(raw_annot))
+           #--- clear old annotations
+            kidx = np.where( raw_annot.description == self.description)[0] # get index
+            if kidx.any():
+                msg.append("  -> delete existing annotation {} counts: {}".format(self.description,kidx.shape[0]) )
+                raw_annot.delete(kidx)
+       
+            self.raw.set_annotations( raw_annot + chop_annot)
+        else:
+            self.raw.set_annotations(chop_annot)
+ 
+        idx = np.where(self.raw.annotations.description == self.description)[0]
+        logger.info("Update Annotations for chops: {}\n  -> {}\n   -> chop onset\n{}".format(self.description,self.raw.annotations,
+                                                                                            self.raw.annotations.onset[idx] ))
         
         
+    def show_chops(self,time_window_sec=None):
+        """
+        show chops with raw.plot() 
+        
+        Parameters
+        ----------
+        time_window_sec: None
+              
+        Returns
+        -------
+        None
+
+        """
+        
+        if not time_window_sec:
+           time_window_sec  = self.time_window_sec
+             
+        picks  = jb.picks.stim_response(self.raw)
+        labels = jb.picks.picks2labels(self.raw, picks)
+        labels.append('STI SUM') #  sum off all stim channels
+        
+        stim_data = np.zeros([ len(labels), len(self.raw.times)])
+        stim_data[0:-1,:] += self.raw._data[picks,:]
+        stim_data[-1,:]   += self.raw._data[picks,:].sum(axis=0)
+        scalings={'stim':16}
+    
+       #--- create raw to plot 
+        info     = mne.create_info(labels,self.sfreq,['stim' for l in range( len(labels))] )
+        stim_raw = mne.io.RawArray(stim_data, info)
+      
+       #--- cp annotations
+        raw_annot = self.raw.annotations
+        raw_annot.orig_time = None
+        stim_raw.set_annotations(raw_annot)
+      
+        idx = np.where(raw_annot.description == self.description)[0]
+        chop_onsets = raw_annot.onset[idx]
+     
+        logger.info("STIM Annotations chop time onsets: {}".format(chop_onsets))
+        for onset in chop_onsets:
+            if onset < stim_raw.times[-1]:
+               stim_raw.plot(show=True,block=True,scalings=scalings,duration=time_window_sec[0] + time_window_sec[1],
+                             start=onset - time_window_sec[0])
+           
         
     def GetInfo(self):
         msg = ["Chops Info:"]      
-        msg.append("estimeted chops\n  -> length: {}\n  -> times:\n  -> {}\n --> indices:  -> {}\n".
+        msg.append("estimeted chops\n --> length: {}\n --> times:\n{}\n --> indices:\n{}\n".
                    format(self.length,self._estimated_chops,self._estimated_indices))
         logger.info( "\n".join(msg) )   
          
@@ -778,7 +575,7 @@ class JuMEG_PIPELINES_CHOPPER(object):
         #logger.info(kwargs)
         #logger.info(self.raw.times)
                 
-        self.Chops.update(timepoints=self.raw.times,length=self.chop_length)
+        self.Chops.update(timepoints=self.raw.times,length=self.chop_length,show=True)
         
         #self.Chops.GetInfo()
 
