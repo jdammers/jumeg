@@ -16,11 +16,11 @@
 #--------------------------------------------
 
 import mne
-import logging
 import numpy as np
 from jumeg.base.jumeg_base import jumeg_base as jb
+from jumeg.base            import jumeg_logger
 
-logger = logging.getLogger("jumeg")
+logger = jumeg_logger.get_logger()
 
 __version__= "2020.03.19.001"
 
