@@ -52,16 +52,16 @@ find | grep empty.fif > empty_filelist.txt
 1_preprocessing.py -c preproc_config01.yaml -lname empty_filelist.txt -lpath ${MNE_DATA_PATH} -v -r
 """
 
-import os,sys,logging
+import os,sys
 
 from jumeg.base import jumeg_logger
-from jumeg.base.pipelines.jumeg_pipeline_looper import JuMEG_PipelineLooper
+from jumeg.base.pipelines.jumeg_pipelines_looper import JuMEG_PipelineLooper
 
 import jumeg.base.pipelines.jumeg_pipelines_utils1 as utils
 
-logger = logging.getLogger("jumeg")
+logger = jumeg_logger.get_logger()
 
-__version__= "2020.03.30.001"
+__version__= "2020.04.21.001"
 
 #--- parameter / argparser defaults
 defaults={
