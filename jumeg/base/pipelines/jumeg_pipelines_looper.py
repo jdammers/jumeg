@@ -14,11 +14,11 @@
 # Updates
 #--------------------------------------------
 
-import os,sys,logging,yaml,argparse,glob
+import os,sys,yaml,argparse,glob
 from jumeg.base            import jumeg_logger
 from jumeg.base.jumeg_base import jumeg_base as jb
 
-logger = logging.getLogger('jumeg')
+logger = jumeg_logger.get_logger()
 
 __version__="2020.03.16.001"
 
@@ -214,7 +214,7 @@ class JuMEG_PDF_IDS(JuMEG_PDF_BASE):
              with jb.working_directory(start_dir):
                   for fext in self.file_extention:
                       if self.debug:
-                         logging.debug( "start dir     : {}\n".format(start_dir)+
+                         logger.debug( "start dir     : {}\n".format(start_dir)+
                                         "  -> extention     : {}\n".format(fext)+
                                         "  -> glob recursive: {}\n".format(self.recursive) +
                                         "  -> glob pattern  : {}".format(fpatt)
@@ -304,7 +304,6 @@ class JuMEG_PDF_LIST(JuMEG_PDF_BASE):
             
            # if self.debug:
            #    logger.info("  -> list file: {}".format( self.GetFullListFileName() ) )
-           files_to_exclude = []
            with open(self.GetFullListFileName(),'r') as f:
                 for line in f:
                     line = line.strip()
@@ -545,7 +544,7 @@ class JuMEG_PipelineLooper(JuMEG_PDF_BASE):
         self._PDFIDS._update_from_kwargs(**kwargs)
         self._PDFList._update_from_kwargs(**kwargs)
         self._PDFFile._update_from_kwargs(**kwargs)
-        self.ExitOnError = kwargs.get(exit_on_error,self.ExitOnError)
+        self.ExitOnError = kwargs.get("exit_on_error",self.ExitOnError)
     
     def clear_all(self):
         self.clear_list()
@@ -805,5 +804,5 @@ if __name__ == "__main__":
   #--- init/update logger
    from jumeg.base import jumeg_logger
    logger=jumeg_logger.setup_script_logging(logger=logger)
-   logger.setLevel(logging.DEBUG)
+   logger.setLevel("DEBUG")
   

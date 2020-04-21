@@ -23,6 +23,8 @@ import inspect
 from distutils.dir_util import mkpath
 import logging
 
+__version__="2020.04.21.001"
+
 try:
     # https://github.com/borntyping/python-colorlog
     import colorlog
@@ -42,8 +44,21 @@ try:
     _has_colorlogs = True
 except:
     _has_colorlogs = False
+
  
-__version__="2020.04.07.001"
+def log_stdout(reset=False,**kwargs):
+    if reset:
+       sys.stdout = sys.__stdout__
+    else:
+       sys.stdout = StreamLogger(**kwargs)
+    return sys.stdout
+
+def log_stderr(reset=False,**kwargs):
+    if reset:
+       sys.stderr = sys.__stderr__
+    else:
+       sys.stderr = StreamLogger(**kwargs)
+    return sys.stderr
 
 #===========================================================
 #=== test logging stdout, stderr
@@ -51,17 +66,17 @@ __version__="2020.04.07.001"
 def test_log_std(txt):
   
    #--- log stdout,stderr
-   jumeg_logger.log_stdout(label=" LOGTEST")
-   jumeg_logger.log_stderr()
+   log_stdout(label=" LOGTEST")
+   log_stderr()
    
-   print("  -> TEST print to logger: {}".format(txt) )
+   print("  -> SET logger STDOUT & STDERR: {}".format(txt) )
 
   #--- return back stdout/stderr from logger
-   jumeg_logger.log_stdout(reset=True)
-   jumeg_logger.log_stderr(reset=True)
+   log_stdout(reset=True)
+   log_stderr(reset=True)
+   print("  -> TEST reset logger STDOUT & STDERR: {}".format(txt) )
    
-   return raw_fname,raw
-
+   
 class StreamLogger(object):
    """
    coppy from:
@@ -239,20 +254,6 @@ class StreamLoggerSTD(object):
        self.unlog_stdout()
        self.unlog_stderr()
 
- 
-def log_stdout(reset=False,**kwargs):
-    if reset:
-       sys.stdout = sys.__stdout__
-    else:
-       sys.stdout = StreamLogger(**kwargs)
-    return sys.stdout
-
-def log_stderr(reset=False,**kwargs):
-    if reset:
-       sys.stderr = sys.__stderr__
-    else:
-       sys.stderr = StreamLogger(**kwargs)
-    return sys.stderr
 
 class JuMEGLogFormatter(logging.Formatter):
     """
@@ -541,7 +542,11 @@ def setup_script_logging(fname=None,name=None,opt=None,level="DEBUG",logger=None
 
     return logger
 
-    
+def get_logger(logger=None,logname="jumeg"):
+    if not logger:
+       logger=logging.getLogger(logname)
+    return logger   
+     
 def update_filehandler(logger=None,logname="jumeg",**kwargs):
     """
     close all filehandlers first and add a new filehandler to the logger
@@ -562,8 +567,8 @@ def update_filehandler(logger=None,logname="jumeg",**kwargs):
     :return:
     new filehandler
     """
-    if not logger:
-       logger=logging.getLogger(logname)
+    
+    logger = get_logger(logger=logger,logname=logname)
       
     level=kwargs.get("level")
     

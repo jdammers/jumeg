@@ -21,7 +21,7 @@ preproc functions:
  apply_interpolate_bads call interpolate_bads
 
 """
-import sys,os,logging,yaml,argparse,glob
+import sys,os,yaml,argparse,glob
 
 import mne
 #---
@@ -41,7 +41,7 @@ from jumeg.jumeg_noise_reducer     import noise_reducer
 from jumeg.jumeg_suggest_bads      import suggest_bads
 from jumeg.jumeg_interpolate_bads  import interpolate_bads as jumeg_interpolate_bads
 
-logger = logging.getLogger("jumeg")
+logger = jumeg_logger.get_logger()
 
 __version__= "2019.08.07.001"
 

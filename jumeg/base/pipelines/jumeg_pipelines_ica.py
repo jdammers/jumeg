@@ -15,15 +15,13 @@
 
 import os,os.path as op
 import numpy as np
-import logging,time,datetime
-import matplotlib.pyplot as pl
+import time,datetime
 
 from distutils.dir_util import mkpath
 
 import mne
-from mne.preprocessing import find_ecg_events, find_eog_events
 
-from jumeg.decompose.ica_replace_mean_std import ICA, read_ica, apply_ica_replace_mean_std
+from jumeg.decompose.ica_replace_mean_std import ICA,apply_ica_replace_mean_std
 from jumeg.jumeg_preprocessing            import get_ics_cardiac, get_ics_ocular
 #---
 from jumeg.base                    import jumeg_logger
@@ -32,88 +30,14 @@ from jumeg.base.jumeg_base_config  import JuMEG_CONFIG as jCFG
 #---
 from jumeg.base.pipelines.jumeg_pipelines_ica_perfromance  import JuMEG_ICA_PERFORMANCE
 from jumeg.base.pipelines.jumeg_pipelines_ica_svm          import JuMEG_ICA_SVM
-# from jumeg.base.pipelines.jumeg_pipelines_report           import JuMEG_REPORT
+from jumeg.base.pipelines.jumeg_pipelines_chopper          import JuMEG_PIPELINES_CHOPPER
+
 #---
 from jumeg.filter.jumeg_mne_filter import JuMEG_MNE_FILTER
 
-logger = logging.getLogger("jumeg")
+logger = jumeg_logger.get_logger()
 
-__version__= "2020.03.30.001"
-
-
-
-def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False):
-    """
-    calculate chop times for every X s
-    where X=interval.
-    
-    Author: J.Dammers
-
-    Parameters
-    ----------
-    times: the time array
-    chop_length: float  (in seconds)
-    chop_nsamp: int (number of samples per chop)
-                if set, chop_length is ignored
-
-    strict: boolean (only when chop_samp=None)
-            True: use be strict with the length of the chop
-                  If the length of the last chop is less than X
-                  the last chop is combined with the penultimate chop.
-            False: (default) the full time is equally distributed across chops
-                   The last chop will only have a few samples more
-
-    Returns
-    -------
-    chop_times : list of float
-                 Time range for each chop
-    chop_time_indices : list of indices defining the time range for each chop
-
-    """
-
-    n_times = len(times)
-   
-    try:
-        data_type = times.dtype()
-    except:
-        data_type = np.float64 
-
-    if chop_nsamp:  # compute chop based on number of samples
-        n_chops = int(n_times // chop_nsamp)
-        if n_chops == 0:
-            n_chops = 1
-        n_times_chop = chop_nsamp
-    else:  # compute chop based on duration given
-        dt = times[1] - times[0]  # time period between two time samples
-        n_chops, t_rest = np.divmod(times[-1], chop_length)
-        n_chops = int(n_chops)
-        # chop duration in s
-        if strict:
-            chop_len = chop_length
-        else:
-            chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
-        n_times_chop = int(chop_len / dt)
-        # check if chop length is larger than max time (e.g. if strict=True)
-        if n_times_chop > n_times:
-            n_times_chop = n_times
-
-    # compute indices for each chop
-    ix_start = np.arange(n_chops) * n_times_chop  # first indices of each chop
-    ix_end = np.append((ix_start - 1)[1:], n_times - 1)  # add last entry with last index
-
-    # chop indices
-    chop_indices = np.zeros([n_chops, 2], dtype=np.int)
-    chop_indices[:, 0] = ix_start
-    chop_indices[:, 1] = ix_end
-
-    # times in s
-    
-    chop_times = np.zeros([n_chops, 2], dtype=data_type)
-    chop_times[:, 0] = times[ix_start]
-    chop_times[:, 1] = times[ix_end]
-
-    return chop_times, chop_indices
-
+__version__= "2020.04.21.001"
 
 
 def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
@@ -279,6 +203,7 @@ class JuMEG_PIPELINES_ICA(object):
         
         self._CFG           = jCFG(**kwargs)
         self.PreFilter      = JuMEG_MNE_FILTER()
+        self.Chopper        = JuMEG_PIPELINES_CHOPPER()
         self.ICAPerformance = JuMEG_ICA_PERFORMANCE()
         self.SVM            = JuMEG_ICA_SVM()
        
@@ -348,6 +273,7 @@ class JuMEG_PIPELINES_ICA(object):
                     pass
     
         self.PreFilter.clear()
+        self.Chopper.clear()
         self.ICAPerformance.clear()
         self._clear()
     
@@ -363,10 +289,10 @@ class JuMEG_PIPELINES_ICA(object):
         self._raw_fname = None
         self._raw_isfiltered = False
         
-        self._ica_obj      = None
-        self._picks        = None
-        self._chop_times   = None
-        self._chop_indices = None
+        self._ica_obj   = None
+        self._picks     = None
+        #self._chop_times   = None
+        #self._chop_indices = None
         
         self._filter_prefix = ""
         self._filter_fname  = ""
@@ -394,50 +320,7 @@ class JuMEG_PIPELINES_ICA(object):
         n = str(n)
         return (n if not n.find('.') + 1 else n[:n.find('.') + d + 1])
 
-    
-    def _calc_chop_times(self):
-        """
-        calc chop times & indices
-
-        Returns
-        self._chop_times,self._chop_indices
-        -------
-        TYPE
-            DESCRIPTION.
-
-        """
-        logger.debug("Start calc Chop Times: length: {} raw time: {}".format(self.cfg.chops.length,self.raw.times[-1]))
-        
-        self._chop_times   = None
-        self._chop_indices = None
-       
-        #--- warn if times less than chop length
-        if self.raw.times[-1] <= self.cfg.chops.length:
-           logger.warning("<Raw Times> : {} smaler than <Chop Times> : {}\n\n".format(self.raw.times[-1],self._chop_times))
-                       
-        self._chop_times,self._chop_indices = get_chop_times_indices(self.raw.times,chop_length=self.cfg.chops.length) 
-        
-        if self.debug:
-           logger.debug("Chop Times:\n  -> {}\n --> Indices:  -> {}".format(self._chop_times,self._chop_indices))
-        
-        return self._chop_times,self._chop_indices
-        
-       
-    def _copy_crop_and_chop(self,raw,chop):
-        """
-        copy raw
-        crop
-        :param raw:
-        :param chop:
-        :return:
-        """
-        if self._chop_times.shape[0] > 1:
-           raw_crop = raw.copy().crop(tmin=chop[0],tmax=chop[1])
-           if self.debug:
-              logger.debug("RAW Crop Annotation : {}\n  -> tmin: {} tmax: {}\n {}\n".format(jb.get_raw_filename(raw),chop[0],chop[1],raw_crop.annotations))
-           return raw_crop
-        return raw
-
+   
     def _initRawObj(self):
         """
         load or get RAW obj
@@ -683,12 +566,12 @@ class JuMEG_PIPELINES_ICA(object):
         raw_chops_clean_list = []
         fimages = []
         
-        for idx in range(self._chop_times.shape[0]):
-            chop = self._chop_times[idx]
-            logger.info("Start ICA FIT & Transform chop: {} / {}\n".format(idx + 1,self._chop_times.shape[0]))
+        for idx in range(self.Chopper.n_chops):
+            chop = self.Chopper.chops[idx]
+            logger.info("Start ICA FIT & Transform chop: {} / {}\n".format(idx + 1,self.Chopper.n_chops))
         
            #--- chop raw
-            raw_chop = self._copy_crop_and_chop(raw,chop)
+            raw_chop = self.Chopper.copy_crop_and_chop(raw,chop)
             fname_chop,fname_raw = self._get_chop_name(raw_chop,chop=chop,extention="-raw.fif")
             jb.set_raw_filename(raw_chop,fname_chop)
     
@@ -758,41 +641,28 @@ class JuMEG_PIPELINES_ICA(object):
         self._clear()
         self._update_from_kwargs(**kwargs)
         
-      #--- load config
-        
+       #--- load config
         kwargs["useStruct"] = True
         self._CFG.update(**kwargs )
         self.useSVM               = self.cfg.fit.use_svm
         self.useArtifactRejection = self.cfg.fit.use_artifact_rejection
         
-        #--- init or load raw
+       #--- init or load raw
         self._initRawObj()
-        
-      #--- chop times
-        if self.cfg.chops.epocher.use:
-            """ToDo use epocher information chop onset,offset"""
-            pass
-        else:
-            self._calc_chop_times()
-        
-        if not isinstance(self._chop_times,(np.ndarray)):
-           logger.exception("No <chop times> defined for ICA\n" +
-                            "  -> raw filename : {}\n".format(self._raw_fname))
-           return None
-       
        #--- find & store ECG/EOG events in raw.annotations
         self._set_ecg_eog_annotations()
-       
-      #--- init logger INFO
-        s = ""
-        for cp in self._chop_times:   # chops as string
-            s+="{}-{}  ".format(cp[0],cp[1])
+       #--- chop times
+        self.Chopper.update(raw=self.raw,length=self.cfg.chops.length,
+                            description=self.cfg.chops.description,time_window_sec=self.cfg.chops.time_window,
+                            show=self.cfg.chops.show,verbose=self.verbose,debug=self.debug)
             
         msg = [
             "Apply ICA => FIT & Transform",
             "  -> filename      : {}".format(self._raw_fname),
             "  -> ica chop path : {}".format(self.path_ica_chops),
-            "  -> chops         : {}".format(s),
+            "-" * 40,
+            "  -> chops [sec]    : {}".format(self.Chopper.chops_as_string() ),
+            "  -> chops [indices]: {}".format(self.Chopper.indices_as_string() ),
             "-" * 40
             ]
         
@@ -928,3 +798,48 @@ def test1():
 if __name__ == "__main__":
   test1()
   
+'''
+    def _calc_chop_times(self):
+        """
+        calc chop times & indices
+
+        Returns
+        self._chop_times,self._chop_indices
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        logger.debug("Start calc Chop Times: length: {} raw time: {}".format(self.cfg.chops.length,self.raw.times[-1]))
+        
+        self._chop_times   = None
+        self._chop_indices = None
+       
+        #--- warn if times less than chop length
+        if self.raw.times[-1] <= self.cfg.chops.length:
+           logger.warning("<Raw Times> : {} smaler than <Chop Times> : {}\n\n".format(self.raw.times[-1],self._chop_times))
+                       
+        self._chop_times,self._chop_indices = get_chop_times_indices(self.raw.times,chop_length=self.cfg.chops.length) 
+        
+        if self.debug:
+           logger.debug("Chop Times:\n  -> {}\n --> Indices:  -> {}".format(self._chop_times,self._chop_indices))
+        
+        return self._chop_times,self._chop_indices
+        
+       
+    def _copy_crop_and_chop(self,raw,chop):
+        """
+        copy raw
+        crop
+        :param raw:
+        :param chop:
+        :return:
+        """
+        if self._chop_times.shape[0] > 1:
+           raw_crop = raw.copy().crop(tmin=chop[0],tmax=chop[1])
+           if self.debug:
+              logger.debug("RAW Crop Annotation : {}\n  -> tmin: {} tmax: {}\n {}\n".format(jb.get_raw_filename(raw),chop[0],chop[1],raw_crop.annotations))
+           return raw_crop
+        return raw
+'''
+    

@@ -18,7 +18,7 @@
 #import copy
 import os,os.path as op
 import warnings
-import logging,time,datetime
+import time,datetime
 
 import numpy as np
 from distutils.dir_util import mkpath
@@ -33,9 +33,9 @@ from jumeg.base.jumeg_base            import JUMEG_SLOTS
 from jumeg.base.jumeg_base_config     import JuMEG_CONFIG as jCFG
 from jumeg.base                       import jumeg_logger
 
-logger = logging.getLogger("jumeg")
+logger = jumeg_logger.get_logger()
 
-__version__= "2020.03.06.001"
+__version__= "2020.04.21.001"
 
 class ARTEFACT_EVENTS(JUMEG_SLOTS):
     """
@@ -230,7 +230,6 @@ class CalcSignal(JUMEG_SLOTS):
     sz = np.shape(data)
     nchan = np.size(sz)
     #  calc RMS
-    rmsmean = 0
     if nchan == 1:
         ntsl = sz[0]
         return np.sqrt(np.sum(data ** 2) / ntsl)
@@ -457,11 +456,11 @@ class JuMEG_ICA_PERFORMANCE_PLOT(CalcSignal):
     @property
     def figure(self): return self._figure
     
-    def _plot(self,ax,t,data,ylabel,color,range=None,range_color="cyan"):
+    def _plot(self,ax,t,data,ylabel,color,range=None,range_color="cyan",alpha=0.3):
         ax.plot(t,data,color=color)
         
         if range:
-          ax.fill_between(t,range[0],y2=range[1],color=range_colors,alpha=alpha)
+          ax.fill_between(t,range[0],y2=range[1],color=range_color,alpha=alpha)
   
         ax.set_xlabel("[s]")
         ax.set_xlim(t[0],t[-1])
@@ -560,7 +559,7 @@ class JuMEG_ICA_PERFORMANCE_PLOT(CalcSignal):
         #   self.save_figure()
 
         if self.show:
-           ion()
+           plt.ion()
            self.figure.tight_layout()
            plt.show()
 
@@ -586,9 +585,9 @@ class JuMEG_ICA_PERFORMANCE_PLOT(CalcSignal):
           fout = "test"+self.plot_extention
         
         if self.plot_path:
-           path = jb.isPath(self.plot_path,mkdir=True)
-           fout = os.path.basename(fout)
-           fout = os.path.join(self.plot_path,fout)
+           if jb.isPath(self.plot_path,mkdir=True):
+              fout = os.path.basename(fout)
+              fout = os.path.join(self.plot_path,fout)
         
         if self.set_title:
            txt = os.path.basename(fout).rsplit(".",1)[0]
