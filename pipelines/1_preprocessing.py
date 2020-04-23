@@ -61,7 +61,7 @@ import jumeg.base.pipelines.jumeg_pipelines_utils1 as utils
 
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.21.001"
+__version__= "2020.04.23.001"
 
 #--- parameter / argparser defaults
 defaults={

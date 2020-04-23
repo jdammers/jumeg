@@ -7,6 +7,7 @@ _keys:
   - bads_to_hdf
   - interpolate_bads
   - ica
+  - epocher
   - report
   _sorted_keys:
   - run
@@ -15,6 +16,9 @@ _keys:
   - plot
   - plot_show
   - plot_dir
+bads_to_hdf:
+  hdfname: jumeg_intext_badchannel_info.hdf
+  run: false
 epocher:
   _sorted_keys:
   - do_events
@@ -44,7 +48,7 @@ global:
   - stage
   - file_extention
   - recursive
-  experiment: TEST
+  experiment: INTEXT
   file_extention:
   - meeg-raw.fif
   - rfDC-empty.fif
@@ -52,11 +56,12 @@ global:
   subjects: None
 ica:
   chops:
-    epocher:
-      condition: test
-      template: test
-      use: false
+    description: ica-chops
     length: 120.0
+    show: false
+    time_window:
+    - 5.0
+    - 5.0
   ecg:
     ch_name: ECG
     event_id: 999
@@ -86,7 +91,7 @@ ica:
   fit:
     _sorted_keys:
     - plot_sources
-    overwrite: true
+    overwrite: false
     save: false
     use_artifact_rejection: true
     use_svm: false
@@ -102,7 +107,7 @@ ica:
   random_state: 42
   reject:
     mag: 6.0e-11
-  run: false
+  run: true
   transform:
     _sorted_keys:
     - filtered
@@ -120,8 +125,8 @@ ica:
       save_chop_clean: false
 info:
   gui-version: 2020.03.11.001
-  python-version: 3.7.7
-  time: 2020-03-30 13:29
+  python-version: 3.6.10
+  time: 2020-04-23 16:23
   user: fboers
 interpolate_bads:
   _sorted_keys:
@@ -129,7 +134,6 @@ interpolate_bads:
   file_extention:
   - ',nr,bcc-raw.fif'
   - rfDC,nr,bcc-empty.fif
-
   hdfname: jumeg_badchannel_info.hdf
   overwrite: false
   plot_block: false
@@ -159,9 +163,16 @@ noise_reducer:
   - 300.0
   - 350.0
   - 400.0
-  run: true
+  run: false
   save: true
 report:
+  _sorted_keys:
+  - noise_reducer
+  - ica
+  - epocher
+  epocher:
+    extention: ep.png
+    run: false 
   ica:
     extention: ar.png
     run: true
@@ -189,9 +200,5 @@ suggest_bads:
   plot: false
   plot_show: false
   postfix: bcc
-  run: true
+  run: false
   save: true
-bads_to_hdf:
-  run: true
-  hdfname: jumeg_badchannel_info.hdf
-
