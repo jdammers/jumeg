@@ -20,7 +20,7 @@ from jumeg.base.jumeg_base                           import jumeg_base as jb
 from jumeg.base.jumeg_badchannel_table               import update_bads_in_hdf
 from jumeg.base.jumeg_base_config                    import JuMEG_CONFIG as jCFG
 #---
-from jumeg.base.pipelines.jumeg_pipelines_utils_base import JuMEG_PipelineFrame
+from jumeg.base.pipelines.jumeg_pipelines_utils_base import get_args,JuMEG_PipelineFrame
 from jumeg.base.pipelines.jumeg_pipelines_ica        import JuMEG_PIPELINES_ICA
 from jumeg.base.pipelines.jumeg_pipelines_epocher    import JuMEG_PIPELIENS_EPOCHER
 from jumeg.base.pipelines.jumeg_pipelines_report     import JuMEG_REPORT

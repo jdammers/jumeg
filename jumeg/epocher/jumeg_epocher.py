@@ -88,16 +88,20 @@ if DO_EPOCHS:
 
 '''
 
-import os,sys,logging,argparse
+import sys
+import numpy as np
+import pandas as pd
+
+from jumeg.base                         import jumeg_logger
 from jumeg.epocher.jumeg_epocher_epochs import JuMEG_Epocher_Epochs
 
-logger = logging.getLogger("jumeg")
-__version__= "2019.05.14.001"
+logger = jumeg_logger.get_logger()
+__version__= "2020.04.23.001"
 
 class JuMEG_Epocher(JuMEG_Epocher_Epochs):
     def __init__ (self,template_path=None,template_name="DEFAULT",verbose=False):
 
-        super(JuMEG_Epocher, self).__init__()
+        super().__init__()
         
         if template_path:
            self.template_path = template_path

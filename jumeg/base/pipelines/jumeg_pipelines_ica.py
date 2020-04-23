@@ -37,7 +37,7 @@ from jumeg.filter.jumeg_mne_filter import JuMEG_MNE_FILTER
 
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.22.001"
+__version__= "2020.04.23.001"
 
 
 def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
