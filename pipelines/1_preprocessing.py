@@ -137,9 +137,13 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
 
        #--- call filter 1
         raw_fname,raw = utils.apply_filter(raw_fname=raw_fname,raw=raw,config=jpl.config.get("filter_1"))
+     
+       #--- call epocher
+        utils.apply_epocher(stage=jpl.stage,subject_id=subject_id,experiment=jpl.experiment,
+                           path=raw_dir,fname=raw_fname,
+                           config=jpl.config.get("epocher") )
 
        #--- call resample
-        # raw_fname,raw = utils.apply_resample(raw_fname,raw=raw,config=jpl.config.get("resampling"))
         utils.apply_report(stage=jpl.stage,subject_id=subject_id,experiment=jpl.experiment,
                            path=raw_dir,fname=raw_fname,
                            config=jpl.config.get("report") )
