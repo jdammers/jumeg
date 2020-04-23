@@ -18,11 +18,11 @@
 import os,sys,copy
 from pubsub                             import pub
 from jumeg.base.template.jumeg_template import JuMEG_Template
+from jumeg.base.jumeg_logger            import get_logger
 
-import logging
-logger = logging.getLogger("jumeg")
+logger = get_logger()
 
-__version__="2020.03.29.001"
+__version__="2020.04.22.001"
 
 __DEFAULT_EXPERIMENT_TEMPLATE__={
 "info":{

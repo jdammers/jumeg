@@ -15,7 +15,7 @@
 # Updates
 #--------------------------------------------
 
-import os,logging
+import os
 from distutils.dir_util import mkpath
 
 #import pandas as pd
@@ -32,9 +32,9 @@ from jumeg.base.jumeg_base_config  import JuMEG_CONFIG as jCFG
 from jumeg.base                    import jumeg_logger
 
 
-__version__= "2019.12.16.001"
+__version__= "2020.04.22.001"
 
-logger = logging.getLogger("jumeg")
+logger = jumeg_logger.get_logger()
 
 class MNE_REPORT(JUMEG_SLOTS):
     """

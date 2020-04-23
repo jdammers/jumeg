@@ -43,7 +43,7 @@ from jumeg.jumeg_interpolate_bads  import interpolate_bads as jumeg_interpolate_
 
 logger = jumeg_logger.get_logger()
 
-__version__= "2019.08.07.001"
+__version__= "2020.04.22.001"
 
 #---------------------------------------------------
 #--- apply_noise_reducer

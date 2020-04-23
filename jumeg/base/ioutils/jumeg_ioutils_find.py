@@ -15,16 +15,14 @@
 """
 
 import os,sys,glob,contextlib,re
-import logging
 
-# from pubsub  import pub
-
-from jumeg.base.jumeg_base import JuMEG_Base_Basic
+from jumeg.base.jumeg_logger   import get_logger
+from jumeg.base.jumeg_base     import JuMEG_Base_Basic
 jb = JuMEG_Base_Basic()
 
-logger = logging.getLogger('jumeg')
+logger = get_logger()
 
-__version__="2019.07.12.001"
+__version__="2020.04.20.001"
 
 class JuMEG_IoUtils_FileIO(object):
     def __init__ (self):

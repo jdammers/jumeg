@@ -20,7 +20,7 @@ from jumeg.base.jumeg_base import jumeg_base as jb
 
 logger = jumeg_logger.get_logger()
 
-__version__="2020.03.16.001"
+__version__="2020.04.22.001"
 
 class JuMEG_PDF_BASE(object):
    def __init__(self,**kwargs):

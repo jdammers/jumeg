@@ -21,10 +21,10 @@
 https://stackoverflow.com/questions/6866600/how-to-parse-read-a-yaml-file-into-a-python-object
 """
 import os,os.path as op
-import logging,pprint
+import pprint
 
-from jumeg.base.jumeg_base import jumeg_base as jb
-from jumeg.base            import jumeg_logger
+from jumeg.base.jumeg_base    import jumeg_base as jb
+from jumeg.base.jumeg_logger  import get_logger
 
 import datetime
 import getpass
@@ -57,14 +57,10 @@ except:
 
 import json
 
-try:
-   logger = logging.getLogger("jumeg")
-   logger.setLevel("INFO")
-except:
-   logger = logging.getLogger()
+logger = get_logger()
    
 
-__version__= "2020.03.11.01" #datetime.datetime.now()
+__version__= "2020.04.22.01" #datetime.datetime.now()
 
 class _Struct:
     def __init__(self, **entries):

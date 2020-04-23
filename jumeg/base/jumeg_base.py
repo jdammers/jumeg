@@ -1151,7 +1151,7 @@ class JuMEG_Base_StringHelper(JuMEG_Base_Basic):
         if seq is None:
            return np.unique( np.asarray( [ ] ) )
         if self.isString(seq):
-           s = re.sub(r",+",",",seq_str.replace(" ",",") )
+           s = re.sub(r",+",",",seq.replace(" ",",") )
            anr = np.asarray (self.range_to_list( s ) )
         else:
            anr = np.asarray (self.range_to_list( seq ) )
@@ -1628,7 +1628,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         return raw,raw.info['bads']
 
 #--- helper function
-    def _get_ica_raw_obj(self,fname,raw=None):
+    def _get_ica_raw_obj(self,fname,raw=None,path=None):
         """check for <ica filename> or <ica raw obj>
         if <ica_raw> obj is None load <ica raw obj> from <ica filename>
 
@@ -1636,6 +1636,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         -----------  
         fname: ica filename
         raw  : ica raw obj <None>
+        path : <None>
         
         Returns:
         --------
@@ -1737,7 +1738,7 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
             elif (fn.endswith(self.ica_extention)):
                 raw = mne.preprocessing.read_ica(fn)
             elif ( fn.endswith(self.ctf_extention) ):
-                raw = mne.io.read_raw_ctf(fn,system_clock=system_clock,preload=preload,clean_names=clean_names,verbose=verbose)
+                raw = mne.io.read_raw_ctf(fn,system_clock=system_clock,preload=preload,clean_names=clean_names,verbose=self.debug)
             else:
                raw = mne.io.Raw(fn,preload=preload)
     
@@ -1756,17 +1757,17 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                 logger.exception("ERROR -> cannot reset bads in raw: {}".format(fn))
 
         if raw:
-           msg = ["done loading raw data:\n",
-                  "  -> raw : {}\n".format(raw),
-                  "  -> file: {}\n".format(fname),
-                  "  -> path: {}\n".format(path),
-                  "  -> Bads: {}\n".format(str(raw.info.get('bads')))]
+           msg = ["done loading raw data:",
+                  "  -> raw : {}".format(raw),
+                  "  -> file: {}".format(fname),
+                  "  -> path: {}".format(path),
+                  "  -> Bads: {}".format(str(raw.info.get('bads')))]
 
            try:
-               msg.append(" --> mne.annotations in RAW:\n  -> {}\n".format(self.raw.annotations))
+              msg.append(" --> mne.annotations in RAW:\n  -> {}\n".format(raw.annotations))
            except:
-               msg.append(" --> mne.annotations in RAW: None\n")
-           logger.info("".join(msg))
+              msg.append(" --> mne.annotations in RAW: None\n")
+           logger.info("\n".join(msg))
 
         return raw,fn #self.get_raw_filename(raw)
     

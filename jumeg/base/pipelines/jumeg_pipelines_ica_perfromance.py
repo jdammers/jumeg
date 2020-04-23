@@ -35,7 +35,7 @@ from jumeg.base                       import jumeg_logger
 
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.21.001"
+__version__= "2020.04.22.001"
 
 class ARTEFACT_EVENTS(JUMEG_SLOTS):
     """

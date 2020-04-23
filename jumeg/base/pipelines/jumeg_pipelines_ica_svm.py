@@ -8,17 +8,17 @@ Created on Mon Jan 30 13:12:26 2020
 import os,sys,argparse
 
 import numpy as np
-import pickle,logging
+import pickle
 
 import mne
-from mne.preprocessing import find_ecg_events, find_eog_events
+#from mne.preprocessing import find_ecg_events, find_eog_events
 
 from jumeg.base.jumeg_base   import jumeg_base as jb
 from jumeg.base              import jumeg_logger
 
-logger = logging.getLogger("jumeg")
+logger = jumeg_logger.get_logger()
 
-__version__= "2020.02.18.001"
+__version__= "2020.04.22.001"
 
 
 #--- SVM ICA

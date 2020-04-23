@@ -29,11 +29,11 @@ from jumeg.base                    import jumeg_logger
 from jumeg.base.jumeg_base         import jumeg_base as jb
 from jumeg.base.jumeg_base         import JUMEG_SLOTS
 
-np.set_printoptions(formatter={'float': '{: 0.3f}'.format},threshold=sys.maxsize)
+# np.set_printoptions(formatter={'float': '{: 0.3f}'.format},threshold=sys.maxsize)
      
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.21.001"
+__version__= "2020.04.22.001"
 
 #@jit (nopython=True)
 def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False):
@@ -212,6 +212,95 @@ def copy_crop_and_chop(raw,chop,verbose=False):
        logger.info("RAW Crop Annotation : {}\n  -> tmin: {} tmax: {}\n {}\n".format(jb.get_raw_filename(raw),chop[0],chop[1],raw_crop.annotations))
     return raw_crop
         
+
+def concat_and_save(raws,fname=None,save=False,annotations=None,clear=True):
+    '''
+    concatenate a list of raw obj's to a new raw obj
+    calling mne.concatenate_raw
+    clear raws in list
+    
+    with new raw obj:
+     set fname, annotations
+     save raw
+    
+    Parameters
+    ----------
+    raws  : list of raw objs
+    fname : full filename <None>
+    save  : <False>
+    clear : close all raw obj in raws <True>
+    annotations: set annotations in raw obj <None>.
+  
+    Returns
+    -------
+    raw obj concatenated
+    '''
+    raw_concat = None
+    
+    if raws:
+       raw_concat = mne.concatenate_raws(raws)
+       if clear:
+          while raws:
+                raws.pop().close()
+          del raws
+       if annotations:
+          raw_concat.set_annotations(annotations)
+       
+       if fname:
+          jb.set_raw_filename(raw_concat,fname)
+       if save:
+          jb.apply_save_mne_data(raw_concat,fname=fname)
+              
+    return raw_concat
+
+
+def compare_data(d1,d2,picks=None,verbose=False):
+    '''
+    compare two data sets
+    
+    Parameters
+    ----------
+    d1 : TYPE
+        DESCRIPTION.
+    d2 : TYPE
+        DESCRIPTION.
+    picks : TYPE, optional
+        DESCRIPTION. The default is None.
+    verbose : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Raises
+    ------
+    ValueError
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # np.not_equal([1.,2.], [1., 3.],where=True)
+    if picks:
+       dif_idx = np.where( d1 [picks,:] - d2[picks,:] )[0]
+    else:
+       dif_idx = np.where( d1 - d2 )[0]
+       
+        
+    msg = ["Compare",
+              "  -> data 1 : {}".format(d1.shape),
+              "  -> data 2 : {}".format(d2.shape),
+              "-"*40,
+              "  -> non equal data : {}".format(dif_idx.shape[0])
+          ]
+    
+    if dif_idx.shape[0]:
+       raise ValueError(" ERROR chop crop data\n".join(msg))
+    elif verbose:
+       logger.info( "\n".join(msg))
+  
+    if dif_idx.shape[0]:
+       return False
+    return True
      
     
 class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
@@ -330,6 +419,7 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
     @property
     def sfreq(self): return self._raw.info['sfreq']  
  
+    @property   
     def chops_as_string(self):
         '''
         
@@ -342,7 +432,8 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
         for cp in self.chops:
             s+="{:0.3f}-{:0.3f} ".format(cp[0],cp[1])
         return s
-      
+    
+    @property  
     def indices_as_string(self):
         '''
         
@@ -513,40 +604,64 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
            
        #--- set annotations 
         indices[:,1]  = stim_indices #[idx]
-        indices[1:,0] = indices[0:-1,1]
+        indices[1:,0] = indices[0:-1,1]+1
         
         for idx in range(n_chops):
             chops[idx][0]= self.raw.times[ indices[idx][0] ]
             chops[idx][1]= self.raw.times[ indices[idx][1] ]
+       
+       #--- set last chop/indice offset to last timepoint/sample 
+        chops[-1][1]   = self.raw.times[-1 ]
+        indices[-1:,1] = self.raw.last_samp
         
-        logger.info("adjust chops for stimulus,response and artifact on/offsets:\n{}\n Chop:\n{}\n => indices:\n{}\n stim\n{}\n".format(idx,chops,indices,stim_indices) )
-        
+        if self.debug:
+           msg=[
+                "adjust chops for stimulus,response and artifact on/offsets: {}".format(chops.shape[0]),
+                "  -> chops  :\n{}".format(chops),
+                "  -> indices:\n{}".format(indices),
+                "  -> stim   :\n{}".format(stim_indices)
+               ] 
+           logger.debug("\n".join(msg))
         self._chops   = chops
         self._indices = indices
         
         return chops,indices       
         
     def _update_annotations(self):
-       
+        '''
+        store chop offset as timepoints in raw.annotations
+        e.g.:
+            description: ica-chops
+            onsets: [ 152.129  310.137  461.694]
+        
+        Returns
+        -------
+        None.
+
+        '''
+        
+        try:
+           raw_annot = self.raw.annotations
+           orig_time = raw_annot.orig_time 
+        except:
+           raw_annot = None
+           orig_time = None
+     
         duration   = np.ones( self.chops.shape[0] ) / self.sfreq  # one line in raw.plot
         chop_annot = mne.Annotations(onset      = self.chops[:,1].tolist(),
                                      duration   = duration.tolist(),
                                      description=self.description,
-                                     orig_time  = None)
-        
-        msg = ["Update Annotations with description: {}".format(self.description)]
+                                     orig_time  = orig_time)
+                     
+        msg = ["Update Annotations with description: <{}>".format(self.description)]
       
-        try:
-            raw_annot  = self.raw.annotations #.copy()
-            raw_annot.orig_time = None
-        except:
-            raw_annot = None
-       
+         
         if raw_annot:
-           #--- clear old annotations
+      
+          #--- clear old annotations
             kidx = np.where( raw_annot.description == self.description)[0] # get index
             if kidx.any():
-                msg.append("  -> delete existing annotation {} counts: {}".format(self.description,kidx.shape[0]) )
+                msg.append("  -> delete existing annotation <{}> counts: {}".format(self.description,kidx.shape[0]) )
                 raw_annot.delete(kidx)
        
             self.raw.set_annotations( raw_annot + chop_annot)
@@ -555,10 +670,12 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
        
         if self.verbose:
            idx = np.where(self.raw.annotations.description == self.description)[0]
-           msg.extend(["  -> onsets:\n{}".format(self.raw.annotations.onset[idx]),
+           msg.extend([
+                       " --> mne.annotations in RAW:\n  -> {}".format(self.raw.annotations),
                        "-"*40,
-                       " --> mne.annotations in RAW:\n  -> {}".format(self.raw.annotations)])
-           
+                       "  -> <{}> onsets:\n{}".format(self.description,self.raw.annotations.onset[idx]),
+                       "-"*40])
+               
            logger.info("\n".join(msg))
         
   
@@ -581,39 +698,7 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
        #--- show plot
         if self.show:
            self.show_chops() 
-  
-    def copy_crop_and_chop(self,raw=None,chop=None):
-        '''
-        chop raw using copy & crop
         
-        Parameters
-        ----------
-        raw : mne.RAW obj, optional
-              The default is None.
-              if None: use raw obj from class [self.raw]
-            
-        chop : np.array,list,tuple [start time,end time]
-               if None return None
-            
-        Returns
-        -------
-        raw_crop : copy of part of mne.RAW obj in range of chop time
-        or None if chop is None
-    
-        '''
-        
-        if not chop : return None
-      
-        if not raw:
-           raw= self.raw
-            
-        raw_crop = raw.copy().crop(tmin=chop[0],tmax=chop[1])
-        if self.verbose:
-           logger.info("RAW Crop Annotation : {}\n  -> tmin: {} tmax: {}\n {}\n"
-                       .format(jb.get_raw_filename(raw),chop[0],chop[1],raw_crop.annotations))
-        return raw_crop
-        
-      
         
     def show_chops(self,raw=None,time_window_sec=None,description=None,picks=None):
         """
@@ -651,66 +736,106 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
         stim_data[-1,:]   += raw._data[picks,:].sum(axis=0)
         scalings={'stim':16}
     
-        #-- create raw to plot 
+       #-- create raw to plot 
         #-- make combined sti-resp raw obj
         # https://github.com/mne-tools/mne-python/issues/4208
         #info      = mne.create_info(['STI 013','STI 014','STI SUM'], self.sfreq, ['stim','stim','stim'])
         #stim_data = np.zeros([3, len(self.raw.times)])
       
-        info     = mne.create_info(labels,raw.info['sfreq'],['stim' for l in range( len(labels))] )
+        info = mne.create_info(labels,raw.info['sfreq'],['stim' for l in range( len(labels))] )
+        info['meas_date' ] = self.raw.info['meas_date'] # for annotations.orig_time
+        
         stim_raw = mne.io.RawArray(stim_data, info)
       
        #-- cp annotations
-        raw_annot = self.raw.annotations
-        raw_annot.orig_time = None
+        raw_annot = self.raw.annotations.copy() 
         stim_raw.set_annotations(raw_annot)
       
         idx = np.where(raw_annot.description == description)[0]
         chop_onsets = raw_annot.onset[idx]
-     
-        logger.info("STIM Annotations chop time onsets: {}".format(chop_onsets))
+       
+        if self.verbose:
+           msg=[
+                "Plot STIM Annotations: {}".format(raw_annot),
+                "  -> chop time onsets: {}".format(chop_onsets)]
+           logger.info("\n".join(msg))
+        
         for onset in chop_onsets:
-            if onset < stim_raw.times[-1]:
-               stim_raw.plot(show=True,block=True,scalings=scalings,duration=time_window_sec[0] + time_window_sec[1],
-                             start=onset - time_window_sec[0])
-           
+            stim_raw.plot(show=True,block=True,scalings=scalings,duration=time_window_sec[0] + time_window_sec[1],
+                          start=onset - time_window_sec[0])
+        
+       
         
     def GetInfo(self):
-        msg = ["Chops Info:"]      
-        msg.extend([" --> estimated chops",
-                    "  -> length [sec]: {}".format(self.length), 
+        msg = ["Info estimated Chops:"]      
+        msg.extend(["  -> length [sec]: {}".format(self.length), 
                     "  -> times  :\n{}".format(self.estimated_chops), 
                     "  -> indices:\n{}".format(self.estimated_indices)])
                    
-        
-        
         if self.chops is not None:
            lt = self.chops[:,1]   - self.chops[:,0]
            li = self.indices[:,1] - self.indices[:,0]
-           msg.extend(["-"*40,
-                       " --> calculated chops",
+           msg.extend(["",
+                       "---> Info adjusted Chops:",
                        "  -> length [sec]    : {}".format(lt),
                        "  -> length [samples]: {}".format(li),
-                       "  -> times  :\n{}".format(self.chops_as_string()),
-                       "  -> indices:\n{}".format(self.indices_as_string)])
+                       "  -> times  : {}".format(self.chops_as_string),
+                       "  -> indices: {}".format(self.indices_as_string),
+                       "  -> samples in raw : {}".format(self._raw._data.shape[1]),
+                       "  -> last sample    : {}".format(self._raw.last_samp)
+                      ])
         msg.append("-"*40)          
         logger.info( "\n".join(msg) )   
  
 
 def test():
+    '''
+    from jumeg.base.jumeg_base                                 import jumeg_base as jb
+    from jumeg.base.pipelines.jumeg_pipelines_ica_perfromance  import ICAPerformance
+    from jumeg.base.pipelines.jumeg_base_pipelines_chopper import JuMEG_PIPELINES_CHOPPER,copy_crop_and_chop,concat_and_save
     
+    '''
+
     stage= "$JUMEG_TEST_DATA/mne/201772/INTEXT01/190212_1334/2"
     fn   = "201772_INTEXT01_190212_1334_2_c,rfDC,meeg,nr,bcc,int-raw.fif"
     fin  = os.path.join(stage,fn)
 
+
     raw,fname = jb.get_raw_obj(fname=fin)
-
-    logger.info("RAW annotations: {}".format(raw.annotations))
-   
+ 
+    #--- ck for annotations in raw 
+    try:
+      annota = raw.annotations
+    except:
+      from jumeg.base.pipelines.jumeg_pipelines_ica_perfromance import ICAPerformance
+      IP = ICAPerformance()
+     #--- find ECG
+      IP.ECG.find_events(raw=raw)
+      IP.ECG.GetInfo(debug=True)
+     #--- find EOG
+      IP.EOG.find_events(raw=raw)
+      IP.EOG.GetInfo(debug=True)
+    
+     
     jCP = JuMEG_PIPELINES_CHOPPER()
-    jCP.update(raw=raw,verbose=True,debug=True,show=True)
+    jCP.update(raw=raw,verbose=True,debug=False,show=True)
+   
+   #---  test chop crop
+    raw_chops=[]
+    
+   # raw = jCP.stim_raw
+    
+    for chop in jCP.chops:
+        raw_chop = copy_crop_and_chop(raw=raw,chop=chop)
+        raw_chops.append(raw_chop)
+   #--- concat chpos
+    raw_concat = concat_and_save(raw_chops,annotations=raw.annotations)
 
-
+    if not compare_data(raw._data[0],raw_concat._data[0],verbose=False):
+       logger.exception("Error raw and raw_concat not equal") 
+       sys.exit()
+   
+    
 if __name__ == "__main__":
     
    logger = jumeg_logger.setup_script_logging(logger=logger)

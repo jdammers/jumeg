@@ -37,7 +37,7 @@ from jumeg.filter.jumeg_mne_filter import JuMEG_MNE_FILTER
 
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.21.001"
+__version__= "2020.04.22.001"
 
 
 def fit_ica(raw, picks, reject, ecg_ch, eog_hor, eog_ver,
@@ -511,22 +511,25 @@ class JuMEG_PIPELINES_ICA(object):
         :return:
          concat raw obj
         """
+        raw_concat = None
+    
         if raws:
            raw_concat = mne.concatenate_raws(raws)
            while raws:
                  raws.pop().close()
+            
+           if annotations:
+              raw_concat.set_annotations(annotations)
+           
            if fname:
               jb.set_raw_filename(raw_concat,fname)
            if save:
               if not fname.startswith(self.path):
                  fname = os.path.join(self.path,fname)
               jb.apply_save_mne_data(raw_concat,fname=fname)
-           
-           if annotations:
-              raw_concat.set_annotations(annotations)
-              
+                  
         return raw_concat
-
+     
     def _update_report(self,data):
         """
         
@@ -753,7 +756,7 @@ class JuMEG_PIPELINES_ICA(object):
         if (ck_size and ck_size_u):
             logger.info( "\n".join(msg) )
         else:     
-           raise ValueError("ERROR chop crop data\n".join(msg))
+           raise ValueError(" ERROR chop crop data\n".join(msg))
         
         self._update_report(data)
         

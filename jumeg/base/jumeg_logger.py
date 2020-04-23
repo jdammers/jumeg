@@ -23,7 +23,7 @@ import inspect
 from distutils.dir_util import mkpath
 import logging
 
-__version__="2020.04.21.001"
+__version__="2020.04.22.001"
 
 try:
     # https://github.com/borntyping/python-colorlog
@@ -591,10 +591,11 @@ def test1():
     print("TEST Logger ( using print)")
    
     logger = setup_script_logging()
-    logger.info(    "LOGGER INFO    : {}".format(__version__))
-    logger.debug(   "LOGGER DEBUG   : {}".format("this is debug"))
-    logger.warning( "LOGGER WARNING : {}".format("this is a warning"))
-    logger.error(   "LOGGER ERROR   : {}".format("this is error"))
+    logger.info("LOGGER INFO    :\n --> use colorlogs   : {}\n --> version         : {}".
+                format(_has_colorlogs,__version__))
+    logger.debug("LOGGER DEBUG   : {}".format("this is debug"))
+    logger.warning("LOGGER WARNING : {}".format("this is a warning"))
+    logger.error("LOGGER ERROR   : {}".format("this is error"))
     logger.critical("LOGGER CRITICAL: {}".format("this is critical"))
    
     logger.info("DONE TEST LOGGER\n{}".format("="*40))

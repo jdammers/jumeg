@@ -23,9 +23,10 @@ from   matplotlib.backends.backend_pdf import PdfPages
 
 from mne.time_frequency import psd_welch
 
-from jumeg.base.jumeg_base import jumeg_base as jb
+from jumeg.base.jumeg_base   import jumeg_base as jb
+from jumeg.base.jumeg_logger import get_logger
 
-logger = logging.getLogger('jumeg')
+logger = get_logger()
 
 __version__="2020.03.30.001"
 
