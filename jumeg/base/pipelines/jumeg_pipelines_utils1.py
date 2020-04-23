@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -+-coding: utf-8 -+-
 
-"""
-"""
-
 #--------------------------------------------
 # Authors: Frank Boers <f.boers@fz-juelich.de> 
 #
@@ -14,24 +11,18 @@
 #--------------------------------------------
 # Updates
 #--------------------------------------------
-"""
-preproc functions:
- apply_noise_reducer    call noise_reducer
- apply_suggest_bads     call suggest_bads
- apply_interpolate_bads call interpolate_bads
 
-"""
-import sys,os,yaml,argparse,glob
+import os
 
-import mne
 #---
 from jumeg.base                                      import jumeg_logger
 from jumeg.base.jumeg_base                           import jumeg_base as jb
 from jumeg.base.jumeg_badchannel_table               import update_bads_in_hdf
 from jumeg.base.jumeg_base_config                    import JuMEG_CONFIG as jCFG
 #---
-from jumeg.base.pipelines.jumeg_pipelines_utils_base import get_args,JuMEG_PipelineFrame
+from jumeg.base.pipelines.jumeg_pipelines_utils_base import JuMEG_PipelineFrame
 from jumeg.base.pipelines.jumeg_pipelines_ica        import JuMEG_PIPELINES_ICA
+from jumeg.base.pipelines.jumeg_pipelines_epocher    import JuMEG_PIPELIENS_EPOCHER
 from jumeg.base.pipelines.jumeg_pipelines_report     import JuMEG_REPORT
 #---
 from jumeg.base.plot.jumeg_base_plot_preproc         import JuMEG_PLOT_PSD
@@ -43,13 +34,13 @@ from jumeg.jumeg_interpolate_bads  import interpolate_bads as jumeg_interpolate_
 
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.22.001"
+__version__= '2020.04.23.001'
 
 #---------------------------------------------------
 #--- apply_noise_reducer
 #---------------------------------------------------
 @JuMEG_PipelineFrame # first  call execute __init__; later calls  execute __call__
-def apply_noise_reducer(raw_fname=None,raw=None,config=None,label="noise reducer",fname_out=None):
+def apply_noise_reducer(raw_fname=None,raw=None,config=None,label='noise reducer',fname_out=None):
     '''
     apply <magic ee noise reducer> thrice to reference channels with different freq parameters
     save PSD plot in subfolder /plots
@@ -177,7 +168,7 @@ def apply_noise_reducer(raw_fname=None,raw=None,config=None,label="noise reducer
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_suggest_bads(raw_fname=None,raw=None,config=None,label="suggest_bads",fname_out=None):
-    """
+    '''
     in config:
     suggest_bads:
       file_extention:
@@ -205,7 +196,7 @@ def apply_suggest_bads(raw_fname=None,raw=None,config=None,label="suggest_bads",
     :return:
    
      filename,raw-obj
-    """
+    '''
     with jumeg_logger.StreamLoggerSTD(label=label):
          marked,raw = suggest_bads(raw) #,**cfg["parameter"]) #show_raw=config.get("show_raw") )
   
@@ -220,39 +211,39 @@ def apply_suggest_bads(raw_fname=None,raw=None,config=None,label="suggest_bads",
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_bads_to_hdf(raw_fname=None,raw=None,config=None,label="bads_to_HDF"):
-   """
+    '''
     update ads in global HDF: e.g.:  $STAGE/<jumeg_badchannels.hdf5>
     in config
        bads_to_hdf:
          run: true
          hdfname: jumeg_badchannel_info.hdf
 
-   :param raw_fname:
-   :param raw:
-   :param config:
-   :param label:
-   :param fname_out:
-   :return:
+    :param raw_fname:
+    :param raw:
+    :param config:
+    :param label:
+    :param fname_out:
+    :return:
      raw_fname,raw,True,None
-   """
-   fhdf = os.path.join(config.get("stage"),config.get("hdfname","badchannels.hdf5"))
-   update_bads_in_hdf(fhdf=fhdf,bads=raw.info.get("bads"),fname=raw_fname,verbose=config.get("verbose"))
+    ''' 
+    fhdf = os.path.join(config.get("stage"),config.get("hdfname","badchannels.hdf5"))
+    update_bads_in_hdf(fhdf=fhdf,bads=raw.info.get("bads"),fname=raw_fname,verbose=config.get("verbose"))
    
-   return raw_fname,raw,True,None
+    return raw_fname,raw,True,None
 
 #---------------------------------------------------
 #--- apply_interpolate_bads
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_interpolate_bads(raw_fname=None,raw=None,config=None,label="interpolate bads",fname_out=None):
-    """
+    '''
 
     :param raw_fname:
     :param raw:
     :param cfg:
     :return:
      filename,raw-obj
-    """
+    '''
    #--- Interpolate bad channels using jumeg
     with jumeg_logger.StreamLoggerSTD(label=label):
          raw = jumeg_interpolate_bads(raw)
@@ -267,14 +258,14 @@ def apply_interpolate_bads(raw_fname=None,raw=None,config=None,label="interpolat
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_ica(raw_fname=None,raw=None,path=None,config=None,label="ica",fname_out=None):
-    """
+    '''
 
     :param raw_fname:
     :param raw:
     :param cfg:
     :return:
      filename,raw-obj,True
-    """
+    '''
  
     if not config.get("run"): return fname_out,raw
    
@@ -290,11 +281,43 @@ def apply_ica(raw_fname=None,raw=None,path=None,config=None,label="ica",fname_ou
   
     return fname_out,raw,True,None
 
+    
+#---------------------------------------------------
+#--- apply_epocher
+#---------------------------------------------------
+def apply_epocher(stage=None,subject_id=None,experiment=None,path=None,fname=None,config=None):
+    '''
+   
+    Parameters
+    ----------
+    stage : TYPE, optional
+        DESCRIPTION. The default is None.
+    subject_id : TYPE, optional
+        DESCRIPTION. The default is None.
+    experiment : TYPE, optional
+        DESCRIPTION. The default is None.
+    path : TYPE, optional
+        DESCRIPTION. The default is None.
+    fname : TYPE, optional
+        DESCRIPTION. The default is None.
+    config : TYPE, optional
+        DESCRIPTION. The default is None.
+
+    Returns
+    -------
+    None.
+
+    '''
+   
+    if config.get("run"):
+       jEP = JuMEG_PIPELIENS_EPOCHER()
+       jEP.run(stage=stage,subject_id=subject_id,experiment=experiment,path=path,fname=fname,config=config)    
+
 #---------------------------------------------------
 #--- apply_report
 #---------------------------------------------------
 def apply_report(stage=None,subject_id=None,experiment=None,path=None,fname=None,config=None):
-    """
+    '''
         
     :param stage:
     :param subject_id:
@@ -316,7 +339,7 @@ def apply_report(stage=None,subject_id=None,experiment=None,path=None,fname=None
            run: true
     
     :return:
-    """
+    '''
     if config.get("run"):
        jReport = JuMEG_REPORT()
        jReport.run(stage=stage,subject_id=subject_id,experiment=experiment,path=path,fname=fname,config=config)
@@ -326,13 +349,13 @@ def apply_report(stage=None,subject_id=None,experiment=None,path=None,fname=None
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_filter(raw_fname,raw=None,config=None,label="filter",fname_out=None):
-    """
+    '''
     :param raw_fname:
     :param raw:
     :param cfg:
     :return:
      filename,raw-obj,True
-    """
+    '''
     #--- ini MNE_Filter class
     jfi = JuMEG_MNE_FILTER( flow=config.get("flow"),fhigh=config.get("fhigh") )
 
@@ -354,14 +377,14 @@ def apply_filter(raw_fname,raw=None,config=None,label="filter",fname_out=None):
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_resample(raw_fname,raw=None,config=None,label="resample",fname_out=None):
-    """
+    '''
     ToDo implement call to mne resample
     :param raw_fname:
     :param raw:
     :param cfg:
     :return:
      filename,raw-obj
-    """
+    '''
     return fname_out,raw,True,None
 
 

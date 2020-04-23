@@ -301,8 +301,34 @@ def compare_data(d1,d2,picks=None,verbose=False):
     if dif_idx.shape[0]:
        return False
     return True
-     
+
+def compare_data_shapes(shapes,labels,verbose=False):
+    '''
+    wrapper <compare_data_shapes>
+
+    Parameters
+    ----------
+    shapes : list of np.arrays e.g. data.shape 
+    labels : list of strings, shape label
+      
+    Returns
+    -------
+    True/False
+    '''      
+    ck_shape = True
+    msg = ["Check data shapes"]
+  
+    for label,shape in zip(labels,shapes): 
+        if ( shapes[0] != shape ): ck_shape = False
+        msg.append(" --> {} compare: {} shapes: {} ".format(label,ck_shape,shape))
     
+    if not ck_shape:
+       raise ValueError(" ERROR in <compare data shapes>\n".join(msg))
+    elif verbose:
+       logger.info( "\n".join(msg) )
+ 
+    return ck_shape
+           
 class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
     '''
     estimate ica chops based on chop-length,
@@ -698,7 +724,69 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
        #--- show plot
         if self.show:
            self.show_chops() 
+   
+    def copy_crop_and_chop(self,raw=None,chop=None):
+        '''
+        wrapper call <copy_crop_and_chop>
+
+        Parameters
+        ----------
+        raw  : rawobj, optional
+        chop : np.array[2], optional
+       
+        Returns
+        -------
+         raw chop
+        '''
+        if not raw:
+           raw = self.raw 
+        if chop is None:
+           logger.exception("ERROR chop is None")   
+           return None
+       
+        return copy_crop_and_chop(raw=raw,chop=chop,verbose=self.verbose) 
+    
+    def concat_and_save(self,raws,fname=None,annotations=None,save=False,clear=True):
+        '''
+        wrapper <concat_and_save>
+        Parameters
+        ----------
+        raws : TYPE
+            DESCRIPTION.
+        fname : TYPE, optional
+            DESCRIPTION. The default is None.
+        annotations : TYPE, optional
+            DESCRIPTION. The default is None.
+        save : TYPE, optional
+            DESCRIPTION. The default is False.
+        clear : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        '''
         
+        return concat_and_save(raws,fname=fname,save=save,
+                               annotations=annotations,clear=clear)
+        
+    def compare_data_shapes(self,shapes,labels):
+        '''
+        wrapper <compare_data_shapes>
+
+        Parameters
+        ----------
+        shapes : list of np.arrays e.g. data.shape 
+        labels : list of strings, shape label
+      
+        Returns
+        -------
+         True/False
+        '''
+        
+        return compare_data_shapes(shapes,labels,verbose=self.verbose)
         
     def show_chops(self,raw=None,time_window_sec=None,description=None,picks=None):
         """
@@ -761,10 +849,10 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
            logger.info("\n".join(msg))
         
         for onset in chop_onsets:
+            logger.info("plot raw chop offset [sec]: {:0.3f}".format(onset))
             stim_raw.plot(show=True,block=True,scalings=scalings,duration=time_window_sec[0] + time_window_sec[1],
                           start=onset - time_window_sec[0])
         
-       
         
     def GetInfo(self):
         msg = ["Info estimated Chops:"]      

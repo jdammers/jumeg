@@ -24,9 +24,9 @@ import mne
 from jumeg.decompose.ica_replace_mean_std import ICA,apply_ica_replace_mean_std
 from jumeg.jumeg_preprocessing            import get_ics_cardiac, get_ics_ocular
 #---
-from jumeg.base                    import jumeg_logger
-from jumeg.base.jumeg_base         import jumeg_base as jb
-from jumeg.base.jumeg_base_config  import JuMEG_CONFIG as jCFG
+from jumeg.base                           import jumeg_logger
+from jumeg.base.jumeg_base                import jumeg_base as jb
+from jumeg.base.jumeg_base_config         import JuMEG_CONFIG as jCFG
 #---
 from jumeg.base.pipelines.jumeg_pipelines_ica_perfromance  import JuMEG_ICA_PERFORMANCE
 from jumeg.base.pipelines.jumeg_pipelines_ica_svm          import JuMEG_ICA_SVM
@@ -201,18 +201,20 @@ class JuMEG_PIPELINES_ICA(object):
     def __init__(self,**kwargs):
         super().__init__()
         
-        self._CFG           = jCFG(**kwargs)
         self.PreFilter      = JuMEG_MNE_FILTER()
         self.Chopper        = JuMEG_PIPELINES_CHOPPER()
         self.ICAPerformance = JuMEG_ICA_PERFORMANCE()
         self.SVM            = JuMEG_ICA_SVM()
-       
+        
         self.useSVM         = False
-        self.report_key     = "ica"
-        self._plot_dir      = None
-        self._ics_found_svm = None
         self.verbose        = False
         self.debug          = False
+        self.report_key     = "ica"
+        
+        self._CFG           = jCFG(**kwargs)
+        self._plot_dir      = None
+        self._ics_found_svm = None
+        
         self._clear()
         
     @property
@@ -291,8 +293,6 @@ class JuMEG_PIPELINES_ICA(object):
         
         self._ica_obj   = None
         self._picks     = None
-        #self._chop_times   = None
-        #self._chop_indices = None
         
         self._filter_prefix = ""
         self._filter_fname  = ""
@@ -319,7 +319,6 @@ class JuMEG_PIPELINES_ICA(object):
         """
         n = str(n)
         return (n if not n.find('.') + 1 else n[:n.find('.') + d + 1])
-
    
     def _initRawObj(self):
         """
@@ -397,12 +396,14 @@ class JuMEG_PIPELINES_ICA(object):
 
         fname_ica,fname = self._get_chop_name(raw_chop,chop=None)
       
-        logger.info("start ICA FIT chop: {} / {}\n".format(idx + 1,self._chop_times.shape[0]) +
-                    " --> chop id      : {}\n".format(chop) +
-                    "  -> ica fname    : {}\n".format(fname_ica) +
-                    "  -> ica chop path: {}\n".format(self.path_ica_chops) +
-                    "  -> raw filename : {}\n".format(fname))
-     
+        msg=["start ICA FIT chop: {} / {}".format(idx + 1,self.Chopper.n_chops),
+             " --> chop id      : {}".format(chop),
+             "  -> ica fname    : {}".format(fname_ica),
+             "  -> ica chop path: {}".format(self.path_ica_chops),
+             "  -> raw filename : {}".format(fname)
+             ]
+        logger.info("\n".join(msg))
+        
        #--- ck for ovewrite & ICA exist
         load_from_disk = False
         if not self.cfg.fit.overwrite:
@@ -501,35 +502,7 @@ class JuMEG_PIPELINES_ICA(object):
             
         return raw_clean
 
-    def concat_and_save(self,raws,fname=None,save=False,annotations=None):
-        """
-        concat a list of raw obj
-        call to mne.concatenate_raw
-        
-        :param raws:
-        :param save: save concat raw
-        :return:
-         concat raw obj
-        """
-        raw_concat = None
-    
-        if raws:
-           raw_concat = mne.concatenate_raws(raws)
-           while raws:
-                 raws.pop().close()
-            
-           if annotations:
-              raw_concat.set_annotations(annotations)
-           
-           if fname:
-              jb.set_raw_filename(raw_concat,fname)
-           if save:
-              if not fname.startswith(self.path):
-                 fname = os.path.join(self.path,fname)
-              jb.apply_save_mne_data(raw_concat,fname=fname)
-                  
-        return raw_concat
-     
+
     def _update_report(self,data):
         """
         
@@ -616,7 +589,7 @@ class JuMEG_PIPELINES_ICA(object):
                   fname_clean = os.path.join(self.path_ica_chops,fname_clean)
                   raw_chops_clean_list[-1].save(fname_clean,overwrite=True)
                
-            logger.info("done ICA FIT & transform chop: {} / {}\n".format(idx + 1,self._chop_times.shape[0]))
+            logger.info("done ICA FIT & transform chop: {} / {}\n".format(idx + 1,self.Chopper.n_chops))
         
       #--- concat & save raw chops to raw_clean
         if raw_chops_clean_list:
@@ -624,10 +597,12 @@ class JuMEG_PIPELINES_ICA(object):
            fname_clean = fname_raw.replace("-raw.fif",",ar-raw.fif")
            if not fname_clean.endswith(",ar-raw.fif"):
               fname_clean += ",ar-raw.fif"
-           raw_clean = self.concat_and_save(raw_chops_clean_list,
-                                            fname       = fname_clean,
-                                            annotations = raw.annotations,
-                                            save        = save_clean)
+           
+           raw_clean = self.Chopper.concat_and_save(raw_chops_clean_list,
+                                                    fname       = fname_clean,
+                                                    annotations = raw.annotations,
+                                                    save        = save_clean)
+            
            del( raw_chops_clean_list )
            
         return raw_clean,ICA_objs,fimages
@@ -664,8 +639,8 @@ class JuMEG_PIPELINES_ICA(object):
             "  -> filename      : {}".format(self._raw_fname),
             "  -> ica chop path : {}".format(self.path_ica_chops),
             "-" * 40,
-            "  -> chops [sec]    : {}".format(self.Chopper.chops_as_string() ),
-            "  -> chops [indices]: {}".format(self.Chopper.indices_as_string() ),
+            "  -> chops [sec]    : {}".format(self.Chopper.chops_as_string ),
+            "  -> chops [indices]: {}".format(self.Chopper.indices_as_string ),
             "-" * 40
             ]
         
@@ -730,34 +705,21 @@ class JuMEG_PIPELINES_ICA(object):
                                     plot_path=self.plot_dir,fout=self.raw_fname.rsplit("-",1)[0] + "-ar")
            data["ICA-AR"] = [self.ICAPerformance.Plot.fout,*fimages_unfiltered]
         
-       #-- check data size orig and transformed
-        ds_in = self._raw._data.shape
-        msg = ["Check data size"," --> raw          orig: {}".format(ds_in)]
         
-        ck_size   = False
-        ck_size_u = False
-        
+       #-- check data shapes orig and transformed
+        shapes=[self._raw._data.shape]
+        labels=["raw original"]
+     
         if raw_unfiltered_clean:
-           ds_uout = raw_unfiltered_clean._data.shape
-           msg.append(" --> raw-ar unfiltered: {}".format(ds_uout))
-           if ( ds_in[1] == ds_uout[1] ):
-               ck_size_u = True
-        else:
-           ck_size_u = True 
-               
+           shapes.append(raw_unfiltered_clean._data.shape)
+           labels.append("raw unfiltered_clean")
         if raw_filtered_clean:
-           ds_out = raw_filtered_clean._data.shape
-           msg.append(" --> raw-ar   filtered: {}".format(ds_out))
-           if ( ds_in[1] == ds_out[1] ):
-               ck_size = True
-        else:
-           ck_size = True
-        
-        if (ck_size and ck_size_u):
-            logger.info( "\n".join(msg) )
-        else:     
-           raise ValueError(" ERROR chop crop data\n".join(msg))
-        
+           shapes.append(raw_filtered_clean._data.shape)
+           labels.append("raw filtered_clean")
+                      
+        if not self.Chopper.compare_data_shapes(shapes,labels):
+           raise ValueError(" ERROR in chop & crop data: shapes not equal\n")
+           
         self._update_report(data)
         
         self.clear(objects=ICA_objs)
