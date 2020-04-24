@@ -630,7 +630,7 @@ class JuMEG_PIPELINES_ICA(object):
        #--- find & store ECG/EOG events in raw.annotations
         self._set_ecg_eog_annotations()
        #--- chop times
-        self.Chopper.update(raw=self.raw,length=self.cfg.chops.length,
+        self.Chopper.update(raw=self.raw,length=self.cfg.chops.length,and_mask=self.cfg.chops.and_mask,
                             description=self.cfg.chops.description,time_window_sec=self.cfg.chops.time_window,
                             show=self.cfg.chops.show,verbose=self.verbose,debug=self.debug)
             

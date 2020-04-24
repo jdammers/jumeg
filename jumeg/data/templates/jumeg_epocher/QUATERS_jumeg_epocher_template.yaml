@@ -1,0 +1,344 @@
+#=========================================
+# default parameter
+#=========================================
+default:
+  version: "2020-01-08-001"
+  author: "fb"
+  experiment: "QUATERS"
+  postfix: "test"
+  time_pre: -0.5
+  time_post: 1.0
+
+#--- baseline
+  baseline:
+    method": "mean"
+    type_input": "iod_onset"
+    baseline: [null,0]
+
+#--- marker
+  marker:
+    channel: "StimImageOnset"
+    type_input: "iod_onset"
+    type_output: "iod_onset"
+    prefix: "iod"
+    type_result: "hit"
+
+#--- response
+  response:
+    matching: True
+    channel: "FeedBackOnset"
+    type_input: "fb_onset"
+    type_offset: "fb_offset"
+    prefix: "fb"
+
+#--- iod matching
+  iod:
+    marker:
+      channel: "StimImageOnset"
+      type_input: "img_onset"
+      prefix: "img"
+
+    response:
+      matching: True
+      channel: "IOD"
+      type_input: "iod_onset"
+      type_offset: "iod_onset"
+      prefix: "iod"
+
+#--- reject mne find events
+  reject:
+    mag: 5e-9
+
+#---------------------------------------
+# channel definitions
+#---------------------------------------
+  StimImageOnset:
+    events:
+      stim_channel: "STI 014"
+      output: "onset"
+      consecutive: True
+      min_duration: 0.0005
+      shortest_event: 1
+      mask: null
+      initial_event: True
+
+    event_id: 5
+    and_mask: 255
+    system_delay_ms: 0.0
+    early_ids_to_ignore: null
+
+  IOD:
+    events:
+      stim_channel: "STI 013"
+      output: "onset"
+      consecutive: True
+      min_duration: 0.0005
+      shortest_event: 1
+      initial_event: True
+      mask: null
+
+    window: [0.0,0.6]
+    counts: "first"
+    system_delay_ms: 0.0
+    early_ids_to_ignore: null
+    event_id: 128
+    and_mask: 128
+
+  RESPONSE:
+    events:
+      stim_channel: "STI 013"
+      output: "onset"
+      consecutive: True
+      min_duration: 0.0005
+      shortest_event: 1
+      initial_event": True
+      mask: null
+
+    window: [0.0,3.0]
+    counts: "first"
+    system_delay_ms: 0.0
+    early_ids_to_ignore: Null
+    event_id: "1,2"
+    and_mask: 3
+
+  FeedBackOnset:
+    events:
+      stim_channel: "STI 014"
+      output: "onset"
+      consecutive: True
+      min_duration: 0.0005
+      shortest_event: 1
+      initial_event: True
+      mask: null
+
+    window: [0.0,15.0]
+    counts: "first"
+    system_delay_ms: 0.0
+
+    early_ids_to_ignore: null
+    event_ids_to_ignore: [7,8]
+    event_prefix: "fb"
+    event_id: 11
+
+    and_mask: 255
+
+  FeedBackWindow:
+    events:
+      stim_channel: "STI 014"
+      output: "onset"
+      consecutive: True
+      min_duration: 0.0005
+      shortest_event: 1
+      initial_event: True
+      mask: null
+
+    window: [0.0,2.0]
+    counts: "first"
+    system_delay_ms: 0.0
+    early_ids_to_ignore: null
+    event_id: 11
+    and_mask: 255
+
+
+#===========================================
+# CONDITIONS
+#===========================================
+#--------------------------------
+#--- conditions
+#---  2 x 2 x 4  => 16
+#  response (RE) not implemented
+#--------------------------------
+#--- type of card
+# R : reward card
+# P : punishment card
+#--- type of feedback
+# CC: correct, correct
+# CI: correct,incorrect
+# II: incorrect,incorrect
+# IC: incorrect,correct
+#--- type of event
+# ST: stimulus, card  (iod onset)
+# RE: response onset, button press left,right
+# FB: feedback (iod onset) emotji
+#--------------------------------
+#--- example for reward card & CC
+# RCC_ST
+# RCC_RE
+# RCC_FB
+#--- example for punish card & CC
+# PCC_ST
+# PCC_RE
+# PCC_FB
+#---
+
+
+#--- RCC_ST
+RCC_ST:
+  postfix: "rcc_st"
+  info: "reward card|correct|correct,reward card iod onset"
+  StimImageOnset:
+    event_id: 5
+    event_prefix: "img"
+  FeedBackOnset:
+    event_id: 11
+
+#---RCC_FB
+RCC_FB:
+  postfix: "rcc_fb"
+  time_pre: -0.5
+  time_post: 1.0
+  info: "reward card|correct|correct,feedback iod onset"
+  response:
+    matching: False
+  StimImageOnset:
+    event_id: 11
+
+#--- RCI_ST
+RCI_ST:
+  postfix: "rci_st"
+  info: "reward card|correct|incorrect,reward card iod onset"
+  StimImageOnset:
+    event_id: 5
+    event_prefix: "img"
+  FeedBackOnset:
+    event_id: 12
+
+#--- RCI_FB
+RCI_FB:
+  postfix: "rci_fb"
+  time_pre: -0.5
+  time_post: 1.0
+  info: "reward card|correct|incorrect,feedback iod onset"
+  response:
+    matching: False
+  StimImageOnset:
+    event_id: 12
+
+#--- RII_ST
+RII_ST:
+  postfix: "rii_st"
+  info: "reward card|incorrect|incorrect,reward card iod onset"
+  StimImageOnset:
+    event_id: 5
+    event_prefix: "img"
+  FeedBackOnset:
+    event_id: 13
+
+#--- RII_FB
+RII_FB:
+  postfix: "rii_fb"
+  time_pre: -0.5
+  time_post: 1.0
+  info: "reward card|incorrect|incorrect,feedback iod onset"
+  response:
+    matching: False
+  StimImageOnset:
+    event_id: 13
+
+#--- RIC_ST
+RIC_ST:
+  postfix: "ric_st"
+  info: "reward card|incorrect|correct,reward card iod onset"
+  StimImageOnset:
+    event_id: 5
+    event_prefix: "img"
+  FeedBackOnset:
+    event_id: 14
+
+#--- RIC_FB
+RIC_FB:
+  postfix: "ric_fb"
+  time_pre: -0.5
+  time_post: 1.0
+  info: "reward card|incorrect|correct,feedback iod onset"
+  response:
+    matching: False
+  StimImageOnset:
+    event_id: 14
+
+#=========================================================================
+#=== PUNISHMENT TASK
+#=========================================================================
+#--- PCC_ST
+PCC_ST:
+  postfix: "pcc_st"
+  info: "punish card|correct|correct,punish card iod onset"
+  StimImageOnset:
+    event_id: 6
+    event_prefix: "img"
+  FeedBackOnset:
+    event_id: 21
+
+#--- PCC_FB
+PCC_FB:
+  postfix: "pcc_fb"
+  time_pre: -0.5
+  time_post: 1.0
+  info: "punish card|correct|correct,feedback iod onset"
+  response:
+    matching: False
+  StimImageOnset:
+    event_id: 21
+
+#--- PCI_ST
+PCI_ST:
+  postfix: "pci_st"
+  info: "punish card|correct|incorrect,punish card iod onset"
+  StimImageOnset:
+    event_id: 6
+    event_prefix: "img"
+  FeedBackOnset:
+    event_id: 22
+
+#--- PCI_FB
+PCI_FB:
+  postfix: "pci_fb"
+  time_pre: -0.5
+  time_post: 1.0
+  info: "punish card|correct|incorrect,feedback iod onset"
+  response:
+    matching: False
+  StimImageOnset:
+    event_id: 22
+
+#--- PII_ST
+PII_ST:
+  postfix: "pii_st"
+  info: "punish card|incorrect|incorrect,punish card iod onset"
+  StimImageOnset:
+    event_id: 6
+    event_prefix: "img"
+  FeedBackOnset:
+    event_id: 23
+
+#--- PII_FB
+PII_FB:
+  postfix: "pii_fb"
+  time_pre: -0.5
+  time_post: 1.0
+  info: "punish card|incorrect|incorrect,feedback iod onset"
+  response:
+    matching: False
+  StimImageOnset:
+    event_id: 23
+
+#--- PIC_ST
+PIC_ST:
+  postfix: "pic_st"
+  info: "punish card|incorrect|correct,punish card iod onset"
+  StimImageOnset:
+    event_id: 6
+    event_prefix: "img"
+  FeedBackOnset:
+    event_id: 24
+
+#--- PIC_FB
+PIC_FB:
+  postfix: "pic_fb"
+  time_pre: -0.5
+  time_post: 1.0
+  info: "punish card|incorrect|correct,feedback iod onset"
+  response:
+    matching: False
+  StimImageOnset:
+    event_id: 24

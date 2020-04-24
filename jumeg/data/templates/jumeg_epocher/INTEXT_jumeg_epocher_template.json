@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Apr 24 15:36:17 2020
+
+@author: fboers
+"""
+{
+"default":{
+           "version"          :"2019-08-14-19-001",
+           "experiment"       : "INTEXT",
+           "postfix"          : "test",
+           "time_pre"         : -0.2,
+           "time_post"        :  0.4,
+        
+           "baseline" :{"method":"mean","type_input":"iod_onset","baseline": [null,0]},
+           
+           "marker"   :{"channel":"StimImageOnset","type_input":"iod_onset","type_output":"iod_onset","prefix":"iod","type_result":"hit"},
+           "response" :{"matching":false,"channel":"ResponseOnset","type_input":"resp_onset","type_offset":"resp_offset","prefix":"resp"},
+           
+           "iod"      :{"marker"  :{"channel":"StimImageOnset","type_input":"img_onset","prefix":"img"},
+                        "response":{"matching":true,"channel":"IOD","type_input":"iod_onset","type_offset":"iod_onset","prefix":"iod"}},
+
+           "reject"   : {"mag": 5e-9},
+          
+
+           "StimImageOnset":{
+                       "events":{
+                                  "stim_channel"   : "STI 014",
+                                  "output"         : "onset",
+                                  "consecutive"    : true,
+                                  "min_duration"   : 0.0005,
+                                  "shortest_event" : 1,
+                                  "mask"           : null,
+                                  "initial_event"  : true
+
+                                 },
+                        
+                        "event_id"           : 84,        
+                        "and_mask"           : 255,
+                        "system_delay_ms"    : 0.0,
+                        "early_ids_to_ignore" : null
+                        },                                                
+           "ResponseOnset":{
+                       "events":{
+                                  "stim_channel"   : "STI 013",
+                                  "output"         : "onset",
+                                  "consecutive"    : true,
+                                  "min_duration"   : 0.0005,
+                                  "shortest_event" : 1,
+                                  "mask"           : null,
+                                  "initial_event"  : true
+
+                                 },
+
+                        "window"             : [0.0,2.0],
+                        "counts"             : "first",
+                        "event_id"           : 84,
+                        "and_mask"           : 255,
+                        "system_delay_ms"    : 0.0,
+                        "early_ids_to_ignore" : null
+                        },
+
+
+           "IOD":{
+                        "events":{
+                                  "stim_channel"   : "STI 013",
+                                  "output"         : "onset",
+                                  "consecutive"    : true,
+                                  "min_duration"   : 0.0005,
+                                  "shortest_event" : 1,
+                                  "mask"           : null,
+                                  "initial_event"  : true
+                                 },
+                        
+                        "window"               : [0.0,0.2],
+                        "counts"               : "first",
+                        "system_delay_ms"      : 0.0,
+                        "early_ids_to_ignore"  : null,
+                        "event_id"             : 128,
+                        "and_mask"             : 128
+                       }
+             },
+
+"NoMoveLeftStimIodBc":{
+         "postfix"   : "NoMoveLeftStimIod",
+         "info"      : "cude left, image onset <=, iod onset, with baseline correction",
+
+         "marker"    : {"channel":"StimImageOnset","type_input":"iod_onset","type_output":"iod_onset","prefix":"iod","type_result":"hit"},
+         "response" :  {"matching":false},
+
+         "ResponseOnset" : {"event_id":"128","window":[0.0,1.0],"counts": "first"},
+         "StimImageOnset": {"event_id":"33"}
+         },
+
+"NoMoveRightStimIodBc":{
+         "postfix"   : "NoMoveRightStimIod",
+         "info"      : "cude right, image onset =>, iod onset, with baseline correction",
+
+         "marker"    : {"channel":"StimImageOnset","type_input":"iod_onset","type_output":"iod_onset","prefix":"iod","type_result":"hit"},
+         "response" :  {"matching":false},
+
+         "ResponseOnset" : {"event_id":"128","window":[0.0,1.0],"counts": "first"},
+         "StimImageOnset": {"event_id":"44"},
+         "IOD"           : {"event_id":128}
+         },
+
+"CuedLeftStimIodBc":{
+         "postfix"   : "CuedLeftStimIod",
+         "info"      : "cude left, image onset <=, iod onset, with baseline correction",
+
+         "marker"    : {"channel":"StimImageOnset","type_input":"iod_onset","type_output":"iod_onset","prefix":"iod","type_result":"hit"},
+         "response" :  {"matching":true,"channel":"ResponseOnset","type_input":"resp_onset","type_offset":"resp_offset","prefix":"resp"},
+
+         "ResponseOnset" : {"event_id":"2","window": [0.0,1.00],"counts": "first","and_mask":3},
+         "StimImageOnset": {"event_id":"11"},
+         "IOD"           : {"event_id":128}
+         },
+
+"CuedRightStimIodBc":{
+         "postfix"   : "CuedRightStimIod",
+         "info"      : "cude right, image onset =>, iod onset, with baseline correction",
+
+         "marker"    : {"channel":"StimImageOnset","type_input":"iod_onset","type_output":"iod_onset","prefix":"iod","type_result":"hit"},
+         "response" :  {"matching":true,"channel":"ResponseOnset","type_input":"resp_onset","type_offset":"resp_offset","prefix":"resp"},
+
+         "ResponseOnset" : {"event_id":"1","window": [0.0,1.00],"counts": "first","and_mask":3},
+         "StimImageOnset": {"event_id":"22"},
+         "IOD"           : {"event_id":128}
+         },
+
+"CuedLeftResIodBc":{
+         "postfix"   : "CuedLeftResIod",
+         "info"      : "cude left, respone onset <=, iod onset, with baseline correction",
+
+         "marker"    : {"channel":"StimImageOnset","type_input":"iod_onset","type_output":"resp_onset","prefix":"iod","type_result":"hit"},
+         "response" :  {"matching":true,"channel":"ResponseOnset","type_input":"resp_onset","type_offset":"resp_offset","prefix":"resp"},
+
+         "ResponseOnset" : {"event_id":"2","window": [0.0,1.00],"counts": "first","and_mask":3},
+         "StimImageOnset": {"event_id":"11"},
+         "IOD"           : {"event_id":128}
+         },
+
+"CuedRightResIodBc":{
+         "postfix"   : "CuedRightresIod",
+         "info"      : "cude right, response onset =>, iod onset, with baseline correction",
+
+         "marker"    : {"channel":"StimImageOnset","type_input":"iod_onset","type_output":"resp_onset","prefix":"iod","type_result":"hit"},
+         "response" :  {"matching":true,"channel":"ResponseOnset","type_input":"resp_onset","type_offset":"resp_offset","prefix":"resp"},
+
+         "ResponseOnset" : {"event_id":"1","window": [0.0,1.00],"counts": "first","and_mask":3},
+         "StimImageOnset": {"event_id":"22"},
+         "IOD"           : {"event_id":128}
+         },
+
+
+
+"SelfLeftRes":{
+         "postfix"   : "SelfLeftRes",
+         "info"      : "self pasting left, response onset <=, with baseline correction, time window end onset stim S50"
+         "time_pre"         : -0.05,
+         "time_post"        :  0.1,
+
+         "marker"    : {"channel":"ResponseOnset","type_input":"resp_onset","type_output":"resp_onset","prefix":"resp","type_result":"hit"},
+         "response"  :  {"matching":false},
+         "baseline"  : null,
+         "iod"       : null,
+
+         "ResponseOnset" : {"event_id":"1", "window" : [0.0,"S50"]}
+         },
+"SelfRightRes":{
+         "postfix"   : "SelfRightRes",
+         "info"      : "self pasting right, response onset =>, with baseline correction, time window end onset stim S50"
+
+         "marker"    : {"channel":"ResponseOnset","type_input":"resp_onset","type_output":"resp_onset","prefix":"resp","type_result":"hit"},
+         "response"  :  {"matching":false},
+         "baseline"  : null,
+         "iod"       : null,
+         "ResponseOnset" : {"event_id":"2","window" : [0.0,"S50"]}
+         }
+}
+ 
+
+
+    © 2020 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Status
+    Help
+
+    Contact GitHub
+    Pricing
+    API
+    Training
+    Blog
+    About
+

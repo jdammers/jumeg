@@ -46,7 +46,7 @@ __version__= "2020.04.22.001"
 
 
 class JuMEG_PIPELIENS_EPOCHER(JUMEG_SLOTS):
-    __slots__=["stage","subject_id","experiment","plot_dir","report_key","path","fname","config",
+    __slots__=["stage","path","subject_id","experiment","_plot_dir","report_key","path","fname","config",
                "do_events","do_epochs","do_filter","verbose","debug","show",
                "_raw","_JuMEG_EPOCHER","_CFG"]
      
@@ -62,14 +62,18 @@ class JuMEG_PIPELIENS_EPOCHER(JUMEG_SLOTS):
         self._init(**kwargs)
         self._JuMEG_EPOCHER = JuMEG_Epocher()
         
-        self._CFG           = jCFG(**kwargs)
-        self._plot_dir      = None
-        self.report_key     = "epocher"
-        
+        self._CFG       = jCFG(**kwargs)
+        self.plot_dir   = "report"
+        self.report_key = "epocher"
+     
+    
     @property
     def CFG(self): return self._CFG
     @property
     def cfg(self): return self._CFG._data
+  
+    @property
+    def plot_dir(self): return os.path.join(self.path,self.cfg.plot_dir)
   
     @property
     def JuMEG_Epocher(self): return self._JuMEG_EPOCHER     
@@ -197,6 +201,23 @@ def test():
     
      
     jEP = JuMEG_PIPELIENS_EPOCHER()
+                   
+    ep_param = {
+                "condition_list": condition_list,
+                "template_path": template_path,
+                "template_name": template_name,
+                "hdf_path"     : hdf_path,
+                "save_raw"     : True, 
+                "verbose"      : True,
+                "debug"        : False,
+                "event_extention": ".eve",
+                "output_mode":{ "events":True,"epochs":True,"evoked":True,"annotations":True,"stage":epocher_path,"use_condition_in_path":True}
+              # "weights"       :{"mode":"equal","method":"median","skip_first":null}
+              # "exclude_events":{"eog_events":{"tmin":-0.4,"tmax":0.6} } },
+                }
+           
+    
+    
     jEP.run(raw=raw,verbose=True,debug=False,show=True)
    #---ToDo
    # use mne plots

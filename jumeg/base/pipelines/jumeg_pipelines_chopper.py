@@ -36,7 +36,7 @@ logger = jumeg_logger.get_logger()
 __version__= "2020.04.24.001"
 
 #@jit (nopython=True)
-def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False):
+def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False,exit_on_error=False):
     """
     calculate chop times for every X s
     where X=interval.
@@ -56,6 +56,9 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
                   the last chop is combined with the penultimate chop.
             False: (default) the full time is equally distributed across chops
                    The last chop will only have a few samples more
+    
+    exit_on_error: boolean <False>
+                   exit on ERROR e.g: if chop_length < times              
 
     Returns
     -------
@@ -81,11 +84,22 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
         dt = times[1] - times[0]  # time period between two time samples
         n_chops, t_rest = np.divmod(times[-1], chop_length)
         n_chops = int(n_chops)
+      
         # chop duration in s
         if strict:
             chop_len = chop_length
         else:
-            chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
+            try:
+               chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
+            except ZeroDivisionError: # n_chops => integer division or modulo by zero
+               msg="ERROR numer of chops: {} chop length: {} numer of timepoints:{}\n".format(n_chops,chop_length,n_times)  
+               if exit_on_error:    
+                  assert (n_chops > 0), msg  
+               else:
+                  chop_len = times.shape[-1] 
+                  msg+="  --> setting <chop_len> to number of timepoints!!!"
+                  logger.error(msg)
+                  
         n_times_chop = int(chop_len / dt)
         # check if chop length is larger than max time (e.g. if strict=True)
         if n_times_chop > n_times:
@@ -106,6 +120,7 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
     chop_times[:, 1] = times[ix_end]
 
     return chop_times, chop_indices
+
 
 
 @jit (nopython=True)
@@ -393,13 +408,15 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
     
     '''
         
-    __slots__=["length","verbose","debug","show","_time_window_sec","_raw","_description",
+    __slots__=["length","verbose","debug","show","and_mask",
+               "_time_window_sec","_raw","_description",
                "_estimated_chops","_estimated_indices","_chops","_indices"]
     
     
     def __init__(self,**kwargs):
         self._init(**kwargs)
         
+        self.and_mask        = 255
         self.length          = 120.0
         self.description     = "ica-chops"
         self.time_window_sec = np.array([5.0,5.0])
@@ -514,7 +531,7 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
         if self.times[-1] <= self.length:
            logger.warning("<Raw Times> : {} smaler than <Chop Times> : {}\n\n".format(self.times[-1],self.length))
                        
-        self._estimated_chops,self._estimated_indices = get_chop_times_indices(self.times,chop_length=self.length) 
+        self._estimated_chops,self._estimated_indices = get_chop_times_indices(self.times,chop_length=self.length,exit_on_error=True) 
         
         if self.verbose:
            self.GetInfo()
@@ -607,7 +624,8 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
            #--- find ECG,EOG hor, EOG ver 1,2,3 in window 
             evt_artifacts = find_events_in_window(anno_evt,window_tsl)
            #--- get onset & offset from stim,response and artifacts events
-            evt = get_events_in_window(data=self.raw._data,window_tsl=window_tsl,picks=picks,events=evt_artifacts)
+            evt = get_events_in_window(data=self.raw._data,window_tsl=window_tsl,picks=picks,
+                                       events=evt_artifacts,and_mask=self.and_mask)
            
             if self.debug:
                logger.debug("idx: {}\n Chops:\n{}\n indices:\n{}\n events:\n{}\n".format(idx,chops,indices,evt) )
