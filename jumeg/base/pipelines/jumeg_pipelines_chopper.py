@@ -33,7 +33,7 @@ from jumeg.base.jumeg_base         import JUMEG_SLOTS
      
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.22.001"
+__version__= "2020.04.24.001"
 
 #@jit (nopython=True)
 def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False):
@@ -135,55 +135,70 @@ def find_events_in_window(events,window_tsl,ids=None):
     return evt
 
 #@jit (nopython=True)
-def get_events_in_window(window_tsl=None,data=None,picks=None,events=None):
+def get_events_in_window(window_tsl=None,data=None,picks=None,events=None,and_mask=255):
     """
    
     Parameters
     ----------
     window_tsl : TYPE, optional
         DESCRIPTION. The default is None.
-    raw : TYPE, optional
+    data : np.array
         DESCRIPTION. The default is None.
-    picks : TYPE, optional
-        DESCRIPTION. The default is None.
+    picks : list,np.array, optional
+        DESCRIPTION.  channels to pick The default is None.
     events : TYPE, optional
         DESCRIPTION. The default is None.
-
+    and_mask: int, The default is 255
+        
     Returns
     -------
     evt : TYPE
         DESCRIPTION.
 
     """
-    evt = None   
+    dtsl = 2
+    evt  = None   
+   
+   #--ToDo warning
+    if data.ndim > 2: return
+   
+   #--- make np.array
+    if data.ndim > 1:  # [picks,:]
+       if picks is not None:
+          d = np.zeros([len(picks),window_tsl[1] - window_tsl[0]])
+          d[:,:] += data[picks,window_tsl[0]:window_tsl[1] ]   
+       else:
+          d = np.zeros([data.shape[0],window_tsl[1] - window_tsl[0]])
+          d[:,:] += data[:,window_tsl[0]:window_tsl[1] ]   
+    else:
+          d = np.zeros(window_tsl[1] - window_tsl[0])
+          d[:] += data[window_tsl[0]:window_tsl[1] ]   
     
-       #--- stim data  
+    if and_mask:
+       d = np.bitwise_and(d.astype(np.int),and_mask)
+   
+   #--- add events      
     if events is not None:
-       d = np.zeros([len(picks) +1, window_tsl[1] - window_tsl[0] ],dtype=np.float)
-       d[0:-1,:] += data[picks,window_tsl[0]:window_tsl[1] ]
-    
-      #--- ToDo vectorize NUMA 
-       onset  = events[:,0] - window_tsl[0] -2
+       onset = events[:,0] - window_tsl[0] - dtsl       
+      #--- evt onset < window set onset= 0
        idx = np.where(onset<0)[0]
        if idx.shape[0]:
-           onset[idx] = 0
+          onset[idx] = 0
        
-       offset = onset + 4
-       idx    = np.where(offset > data.shape[-1])[0]
+       offset = onset + dtsl *2  # 4
+       idx    = np.where(offset > d.shape[-1])[0]
+      #--- evt onset > window set onset= max data.shape  
        offset[idx] = d.shape[-1] 
        
        for idx in range( onset.shape[0] ):
            d[ -1,onset[idx]:offset[idx] ]+=1
-           
-       d = d.sum(axis=0).astype(np.int)
-    else:
-       d = data[picks,window_tsl[0]:window_tsl[1] ].sum(axis=0).astype(np.int)
-  
+       
+    d    = d.sum(axis=0).astype(np.int)
     didx = np.where( d[0:-1] - d[1:] )[0]+1
 
-    #--- if codes in window -> find events in window
+   #--- if codes in window -> find events in window
     if didx.shape[0]: 
-       #--- mne event array
+      #--- mne event array
        evt        = np.zeros( [ didx.shape[0],3 ],dtype=np.int) 
        evt[:,0]  += didx + window_tsl[0]
        evt[:,2]  += d[didx]
@@ -886,6 +901,9 @@ def test():
 
     stage= "$JUMEG_TEST_DATA/mne/201772/INTEXT01/190212_1334/2"
     fn   = "201772_INTEXT01_190212_1334_2_c,rfDC,meeg,nr,bcc,int-raw.fif"
+    
+    stage="/media/fboers/USB_2TB/exp/INTEXT/mne/208548/INTEXT01/181023_1355/1"
+    fn="208548_INTEXT01_181023_1355_1_c,rfDC,meeg,nr,bcc,int-raw.fif"
     fin  = os.path.join(stage,fn)
 
 
@@ -906,7 +924,7 @@ def test():
     
      
     jCP = JuMEG_PIPELINES_CHOPPER()
-    jCP.update(raw=raw,verbose=True,debug=False,show=True)
+    jCP.update(raw=raw,verbose=True,debug=True,show=True)
    
    #---  test chop crop
     raw_chops=[]

@@ -200,17 +200,17 @@ def test():
     jEP.run(raw=raw,verbose=True,debug=False,show=True)
    #---ToDo
    # use mne plots
-   '''
-   https://mne.tools/dev/auto_tutorials/preprocessing/plot_70_fnirs_processing.html#extract-epochs
-   
-   https://mne.tools/dev/auto_examples/visualization/plot_roi_erpimage_by_rt.html#sphx-glr-auto-examples-visualization-plot-roi-erpimage-by-rt-py
-   
-    epochs['Control'].plot_image(combine='mean', vmin=-30, vmax=30,
-                             ts_args=dict(ylim=dict(hbo=[-15, 15],
-                                                    hbr=[-15, 15])))
-
-   '''
+    '''
+       https://mne.tools/dev/auto_tutorials/preprocessing/plot_70_fnirs_processing.html#extract-epochs
+       
+       https://mne.tools/dev/auto_examples/visualization/plot_roi_erpimage_by_rt.html#sphx-glr-auto-examples-visualization-plot-roi-erpimage-by-rt-py
+       
+        epochs['Control'].plot_image(combine='mean', vmin=-30, vmax=30,
+                                 ts_args=dict(ylim=dict(hbo=[-15, 15],
+                                                        hbr=[-15, 15])))
     
+    '''
+        
     
 if __name__ == "__main__":
     
