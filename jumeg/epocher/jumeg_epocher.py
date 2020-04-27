@@ -133,13 +133,13 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
         """
         #print("LOGlevel")
        # print( logger.getEffectiveLevel() )
-        logger.info( "---> START  apply events to HDF  fname: {}\n".format(fname))
+        logger.info("START  apply events to HDF  fname: {}\n".format(fname))
         try:
             raw,fname = self.events_store_to_hdf(fname=fname,raw=raw,**kwargs)
         except:
-            logger.exception( "---> apply_events:\n  -> parameter:\n" +self.pp_list2str(kwargs))
+            logger.exception("apply_events:\n  -> parameter:\n" +self.pp_list2str(kwargs))
             sys.exit()
-        logger.info( "---> DONE  apply events to HDF: {}\n".format(self.hdf_filename))
+        logger.info("DONE apply events to HDF: {}\n".format(self.hdf_filename))
         
         return (raw,fname)
     
@@ -197,14 +197,14 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
             
         """
         
-        logger.info("---> START apply epocher => fname   : {}\n".format(fname))
+        logger.info("START apply epocher => fname   : {}\n".format(fname))
        
         try:
             raw,fname = self.apply_hdf_to_epochs(fname=fname,raw=raw,**kwargs)
         except:
-            logger.exception( "---> apply_epochs:\n  -> parameter:\n" +self.pp_list2str(kwargs))
+            logger.exception("apply_epochs:\n  -> parameter:\n" +self.pp_list2str(kwargs))
             sys.exit()
-        logger.info("---> DONE apply epocher  => hdf name: {}\n".format(self.hdf_filename))
+        logger.info("DONE apply epocher  => hdf name: {}\n".format(self.hdf_filename))
         return (raw,fname)
      
         

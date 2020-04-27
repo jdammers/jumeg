@@ -512,7 +512,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         HDFobj key  e.g.: /epocher/< condition name >
         """
 
-        logger.info("---> HDF Start extract condition for epocher: {}".format(condi))
+        logger.info("HDF Start extract condition for epocher: {}".format(condi))
         if condi.startswith('epocher'):
            ep_key = '/'+condi
         else:

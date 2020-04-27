@@ -46,7 +46,9 @@ __version__= "2020.04.22.001"
 
 
 class JuMEG_PIPELIENS_EPOCHER(JUMEG_SLOTS):
-    __slots__=["stage","path","subject_id","experiment","_plot_dir","report_key","path","fname","config",
+    __slots__=["stage","path","subject_id","experiment",
+               "ep_param","evt_param",
+               "_plot_dir","report_key","path","fname","config","fname",
                "do_events","do_epochs","do_filter","verbose","debug","show",
                "_raw","_JuMEG_EPOCHER","_CFG"]
      
@@ -63,7 +65,7 @@ class JuMEG_PIPELIENS_EPOCHER(JUMEG_SLOTS):
         self._JuMEG_EPOCHER = JuMEG_Epocher()
         
         self._CFG       = jCFG(**kwargs)
-        self.plot_dir   = "report"
+        self._plot_dir   = "report"
         self.report_key = "epocher"
      
     
@@ -111,7 +113,14 @@ class JuMEG_PIPELIENS_EPOCHER(JUMEG_SLOTS):
         #  jEP.run(stage=stage,subject_id=subject_id,experiment=experiment,path=path,fname=fname,config=config)    
 
         self._update_from_kwargs(**kwargs)
-        self._CFG.update(**kwargs )
+        # self._CFG.update(**kwargs )
+      
+       
+        
+        raw, fname = self.JuMEG_Epocher.apply_events(self.fname,raw=self.raw, **self.evt_param)
+     
+        raw, fname = self.JuMEG_Epocher.apply_epochs(self.fname,raw=self.raw, **self.ep_param)
+       
         '''
        #--- Epocher events
         if self.do_events:
@@ -178,7 +187,12 @@ def test():
     from jumeg.base.pipelines.jumeg_base_pipelines_chopper import JuMEG_PIPELINES_CHOPPER,copy_crop_and_chop,concat_and_save
     
     '''
-
+   #---
+    from jumeg.base.jumeg_base_config         import JuMEG_CONFIG as jCFG
+    
+    verbose=True
+    debug=False
+    
     stage= "$JUMEG_TEST_DATA/mne/201772/INTEXT01/190212_1334/2"
     fn   = "201772_INTEXT01_190212_1334_2_c,rfDC,meeg,nr,bcc,int-raw.fif"
     fn   = "201772_INTEXT01_190212_1334_2_c,rfDC,meeg,nr,bcc,int,fibp0.10-45.0,ar-raw.fif"
@@ -199,26 +213,61 @@ def test():
       IP.EOG.find_events(raw=raw)
       IP.EOG.GetInfo(debug=True)
     
-     
-    jEP = JuMEG_PIPELIENS_EPOCHER()
-                   
+   #--- read epocher config 
+   
+   #--- define template
+    template_path      = "$JUMEG_PATH_TEMPLATE_EPOCHER"
+    template_name      = "INTEXT"
+    template_extention = "jumeg_epocher_template.yaml"
+   
+   #--- CFG 
+    CFG  = jCFG()
+    fcfg = os.path.join(template_path, template_name + "_" + template_extention )
+    
+    CFG.update(config=fcfg)
+    condition_list=[]
+    
+    for k,itm in CFG.config.items():
+        if itm.get("run"):
+           condition_list.append(k)
+    
+    if not condition_list: return
+
+    epocher_path = os.path.join(os.path.dirname(fname),"epocher")
+    hdf_path     = epocher_path
+    
+    evt_param = {"condition_list": condition_list,
+                 "template_path": template_path,
+                 "template_name": template_name,
+                 "use_yaml"     : True,
+                 "hdf_path"     : hdf_path,
+                 "verbose"      : verbose,
+                 "debug"        : debug
+                }               
+    
     ep_param = {
-                "condition_list": condition_list,
-                "template_path": template_path,
-                "template_name": template_name,
-                "hdf_path"     : hdf_path,
-                "save_raw"     : True, 
-                "verbose"      : True,
-                "debug"        : False,
+                "condition_list" : condition_list,
+                "template_path"  : template_path,
+                "template_name"  : template_name,
+                "hdf_path"       : hdf_path,
+                "save_raw"       : True, 
+                "verbose"        : verbose,
+                "debug"          : debug,
                 "event_extention": ".eve",
-                "output_mode":{ "events":True,"epochs":True,"evoked":True,"annotations":True,"stage":epocher_path,"use_condition_in_path":True}
+                "output_mode"    :{"events":True,"epochs":True,"evoked":True,
+                                   "annotations":True,
+                                   "stage": epocher_path,
+                                   "use_condition_in_path":True
+                                  }
               # "weights"       :{"mode":"equal","method":"median","skip_first":null}
               # "exclude_events":{"eog_events":{"tmin":-0.4,"tmax":0.6} } },
                 }
-           
-    
-    
-    jEP.run(raw=raw,verbose=True,debug=False,show=True)
+     
+    jEP = JuMEG_PIPELIENS_EPOCHER()
+   
+    jEP.run(raw=raw,fname=fname,ep_param=ep_param,evt_param=evt_param,verbose=True,debug=False,show=True)
+   
+   
    #---ToDo
    # use mne plots
     '''

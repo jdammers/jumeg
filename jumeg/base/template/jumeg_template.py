@@ -113,7 +113,7 @@ def _decode_dict(data):
 
 class JuMEG_Template(JuMEG_Base_Basic):
     def __init__ (self,template_name='DEFAULT'):
-        super(JuMEG_Template,self).__init__()
+        super().__init__()
 
         self._template_path     = "." #None  # os.getenv('JUMEG_PATH_TEMPLATE',self.__JUMEG_PATH_TEMPLATE)
         self._template_name     = template_name
@@ -252,19 +252,22 @@ class JuMEG_Template(JuMEG_Base_Basic):
               self.template_data = dict2obj(self.template_data)
               self._template_isUpdate = True
         except json.decoder.JSONDecodeError as e:
-               logger.exception("---> Error in json template file format:\n   -> use yaml: {}\n  -> file: {}\n".format(self.use_yaml,self.template_full_filename))
+               logger.exception("Error in json template file format:\n  -> use yaml: {}\n  -> file: {}\n".format(self.use_yaml,self.template_full_filename))
                status=False
         except ValueError as e:
-               logger.exception("---> Value Error in json template file: " + self.template_full_filename)
+               logger.exception("Value Error in json template file: " + self.template_full_filename)
         except FileNotFoundError as e:
-               logger.exception("---> Error open template file:\n  -> use yaml: {}\n  -> file: {}\n".format(self.use_yaml,self.template_full_filename))
+               logger.exception("Error open template file:\n  -> use yaml: {}\n  -> file: {}\n".format(self.use_yaml,self.template_full_filename))
                status = False
 
         if status:
            return status
         
         if exit_on_error:
-           assert self.template_data,"-\n--> ERROR in template file format [json]: {}\n".format(self.template_full_filename)
+           msg=["\n---> ERROR in template file format",
+                "  -> use yaml: {}".format(self.use_yaml), 
+                "  -> {}\n".format(self.template_full_filename)]
+           assert self.template_data,"\n".join(msg)
            return status
           
     def template_get_as_obj(self):

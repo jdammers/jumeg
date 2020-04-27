@@ -136,7 +136,7 @@ class JuMEG_Epocher_Basic(JuMEG_Base_Basic):
     
     """
     def __init__(self):
-        super(JuMEG_Epocher_Basic,self).__init__()
+        super().__init__()
         self._rt_type_list             = ['MISSED', 'TOEARLY', 'WRONG', 'HIT']
         self._data_frame_stimulus_cols = ['id','onset','offset']
         self._data_frame_response_cols = ['rt_type','rt','rt_id','rt_onset','rt_offset','rt_index','rt_counts','bads','selected','weighted_selected']
@@ -1271,7 +1271,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
 #---
     def __init__(self):
 
-        super(JuMEG_Epocher_Events, self).__init__()
+        super().__init__()
       
         self.parameter= None
         self.iod      = None
@@ -1444,7 +1444,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         self.iod       = JuMEG_Epocher_Events_Channel_IOD(label="iod",parameter=self.parameter)
            
 #---
-    def events_store_to_hdf(self,fname=None,raw=None,condition_list=None,overwrite_hdf=False,
+    def events_store_to_hdf(self,fname=None,raw=None,condition_list=None,overwrite_hdf=False,use_yaml=True,
                             template_path=None,template_name=None,hdf_path=None,verbose=False,debug=False):
         """
         find & store epocher data to hdf5:
@@ -1466,6 +1466,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
          
          template_path : path to jumeg epocher templates
          template_name : name of template e.g: experimnet name 
+         use_yaml      : True; yaml format or json
          hdf_path      : path to hdf file <None> if None use fif-file path
          verbose       : flag, <False>
          debug         : flag, <False>
@@ -1478,10 +1479,13 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         """
        
       #--- read template file  
+        self.use_yaml = use_yaml
+         
         if template_name:
            self.template_name = template_name
         if template_path:
            self.template_path = template_path
+    
         if verbose:
            self.verbose = verbose
         if debug:

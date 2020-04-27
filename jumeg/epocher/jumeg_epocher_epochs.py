@@ -110,7 +110,7 @@ class JuMEG_Epocher_OutputMode(object):
            try:
               os.makedirs(self.path,exist_ok=True)
            except:
-              msg=[" --> can not create epocher epochs output path: {}".format(self.path),"  -> ouput mode parameter: "]
+              msg=["can not create epocher epochs output path: {}".format(self.path),"  -> ouput mode parameter: "]
               for k in self.__slots__:
                   msg.append("  -> {} : {}".format(k,self.__getattribute__(k)))
               logger.exception("\n".join(msg))
@@ -178,7 +178,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
                   exclude_events = {"eog_events":None,"ecg_events":None},
                   verbose=False):
 
-        super(JuMEG_Epocher_Epochs, self).__init__()
+        super().__init__()
        
       #--- obj for dict from parameter[condi][marker] or[response]  
         self.marker         = None
@@ -282,7 +282,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
         
       #--- 
         if self.verbose:
-           msg=["---> Export Events from HDF to MNE-Events for condition: " + condi,
+           msg=["Export Events from HDF to MNE-Events for condition: " + condi,
                 "  -> number of original events   : {}".format(event_cnts),
                 "  -> number of events            : {}".format( evt['events'].shape[0]),
                 "  -> check weights to skip first : {}".format(ck_weights_skip_first),
@@ -303,13 +303,13 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
         self.event_id = dict()
      
         if not self.hdf_obj_is_open():
-           logger.exception(" --> no <HDF obj> defined please call <apply_epocher> first\n"+
+           logger.exception(" no <HDF obj> defined please call <apply_epocher> first\n"+
                         "  -> HDF filename: {}\n".format(self.fhdf)+
                         "  -> FIF filename: {}\n".format(self.fname))
            return
        #----
         for condi in self.condition_list:
-            logger.info( "---> JuMEG EpocherEpochs Apply condition: "+condi)
+            logger.info( "JuMEG EpocherEpochs Apply condition: "+condi)
           #---
             result = self._epochs_get_events(condi,ck_weights_skip_first=True,ck_weights_equalize=False)
             if not result: continue
@@ -341,7 +341,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
       #--- "weights":{"mode":"equal","selection":"median","skipp_first":null},
         if self.weights:
            if self.weights.get('mode') == 'equal':
-              self.Log.info("\n ---> Applying Weighted Export Events")
+              self.Log.info("Applying Weighted Export Events")
               
               self.weights['min_counts'] = self.event_id[ self.event_id.keys()[0] ]['trials'] 
               for condi in self.event_id.keys() :
@@ -396,12 +396,12 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
      
         self.marker = None
         
-        logger.info("---> EPOCHER HDF to MNE events -> extract condition : " + condi)
+        logger.info("EPOCHER HDF to MNE events -> extract condition : " + condi)
       
        #--- check and get hdf key make node
         ep_key = self.hdf_get_hdf_key(condi)
         if not ep_key :
-           logger.exception("  -> No HDF-key found for condition: {}\n".format(condi)+
+           logger.exception("No HDF-key found for condition: {}\n".format(condi)+
                             "  -> HDF file: {}".format(self.hdf_filename))
            #sys.exit()
            return
@@ -413,7 +413,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
         info_param = self.hdf_obj_get_attributes(key=ep_key,attr=self.hdf_obj_attribute_info)   
         
         if self.debug:
-           logger.debug("  -> HDF attr: epoch parameter <ep_param>  : {}\n".format(self.pp_list2str(ep_param) )+
+           logger.debug("HDF attr: epoch parameter <ep_param>  : {}\n".format(self.pp_list2str(ep_param) )+
                         "  -> HDF attr: info  parameter <info_param>: {}\n".format(self.pp_list2str(info_param)))
         
         if "marker" in ep_param:  
@@ -465,7 +465,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
            df.loc[event_idx,'weighted_selected'] = 1
        
         if self.verbose:
-           logger.info("---> input DataFrame:\n {}\n".format(df)+
+           logger.info("input DataFrame:\n {}\n".format(df)+
                        "\n  -> Matching event index counts: {}\n  -> event idx: {}\n".format(event_idx.size,event_idx)+
                        "  -> matched events in DataFrame:\n {}\n".format( df.loc[event_idx])+
                        "\n --> epocher_hdf_data_get_event_index:\n"+
@@ -570,7 +570,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
         events_idx = np.where( df['weighted_selected'] > 0 )[0] #.index
         
         if self.verbose:
-           msg=["---> Weighted Marker => event index => method:" + method]
+           msg=["Weighted Marker => event index => method:" + method]
            if self.is_number(w_value):
               msg.append("   -> value           : %0.3f" % (w_value))
 
@@ -674,7 +674,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
        #--- get hdf key make node  
         ep_key = self.hdf_get_hdf_key(condi)
         if not ep_key :
-           logger.info(" --> ERROR in <epocher_save_hdf_data> !!!"+
+           logger.info("ERROR in <epocher_save_hdf_data> !!!"+
                        " --> no HDF-key found for condition: "+ condi)
            return
        
@@ -710,7 +710,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
             ep_bads_cnt1 = df['bads'][df['bads'] == self.idx_bad].size 
                
             if self.verbose:
-               logger.info("---> Exclude artefacts {} : {}\n".format(condi,kbad)+
+               logger.info("Exclude artefacts {} : {}\n".format(condi,kbad)+
                            "  -> Tmin: {0.3f} Tmax {0.3f}\n".format(exclude_events[kbad]['tmin'],exclude_events[kbad]['tmax'])+
                            "  -> bad epochs     : {}\n".format(ep_bads_cnt0)+
                            "  -> artefact epochs: {}\n".format(ep_bads_cnt1 - ep_bads_cnt0)+
@@ -801,7 +801,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
             ep = mne.Epochs(self.raw,evt['events'],event_id=evt['event_id'],tmin=self.marker.time_pre,tmax=self.marker.time_post,
                             baseline=None,picks=picks,reject=self.reject,proj=self.proj,preload=True,verbose=False)
         except:
-            logger.exception("---> Error\nevents:\n{}\nevent id: {}\n".format(evt['events'],evt['event_id']))
+            logger.exception("Error\nevents:\n{}\nevent id: {}\n".format(evt['events'],evt['event_id']))
             
         if self.verbose: # for later show difference min max with and without bc
            meg_picks = jumeg_base.picks.meg_nobads(self.raw)
@@ -831,7 +831,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
               ep_max =  "{:0.15f}".format( evt['epochs']._data[:,meg_picks,:].max())
            else:
               ep_min=ep_max="None"
-           msg=["---> Epocher apply epoch and baseline -> mne epochs:",
+           msg=["Epocher apply epoch and baseline -> mne epochs:",
                 " --> fname     : {}".format(self.fname),
                 " --> ids       : {} ".format(evt['event_id']),
                 " --> <pre time>: {:0.3f} <post time>: {:0.3f}".format(self.marker.time_pre,self.marker.time_post),
@@ -874,7 +874,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
         default bbaseline correction type is <marker.baseline.method> or mean
         
         """
-        logger.info(" --> Epocher baseline correction for events")
+        logger.info("Epocher baseline correction for events")
         
         ep_bc_cor_values = np.array([])
         
@@ -912,7 +912,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
       
        #---Test for equal drops
         if self.verbose:
-           logger.debug("---> Epochs :\n"
+           logger.debug("Epochs :\n"
                         "  --> epochs : {}\n".format(ep)+
                         "   -> epoch selection:\n{}\n".format(ep.selection)+
                         "   -> epoch events   :\n{}\n".format(ep.events)+
@@ -931,7 +931,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
 
            try:
                ck = (ep.selection - ep_bc.selection).max()
-               logger.info("---> Epochs check equal number of epoch and baseline-epoch events => errors: {}".format( ck) )
+               logger.info("Epochs check equal number of epoch and baseline-epoch events => errors: {}".format( ck) )
            except:  # if ck != 0:
                  logger.exception( "ERROR and EXIT no equal number of epoch events for epoch and baseline-epochs !!!")
                  sys.exit()
@@ -940,7 +940,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
        
         ep._data[:,picks_bc,:] -= ep_bc_cor_values[:,:,np.newaxis]
        
-        logger.info("  -> Done Epocher baseline correction for events\n  -> baseline intervall :[ %3.3f , %3.3f] " %(tmin,tmax))
+        logger.info("Done Epocher baseline correction for events\n  -> baseline intervall :[ %3.3f , %3.3f] " %(tmin,tmax))
         return ep 
     
 #---
@@ -1017,9 +1017,9 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
             idx_bc+=1
     
         if self.verbose:                      
-           logger.info(" --> Baseline correction for unique basline epochs: {}".format(ep))
+           logger.info("Baseline correction for unique basline epochs: {}".format(ep))
 
-        logger.info("  -> Done Epocher baseline correction for unique events\n  -> baseline intervall :[ %3.3f , %3.3f] " %(tmin,tmax))
+        logger.info("Done Epocher baseline correction for unique events\n  -> baseline intervall :[ %3.3f , %3.3f] " %(tmin,tmax))
         return ep
     
 #---
@@ -1120,7 +1120,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
        if self.OutputMode.events:
           fname = jumeg_base.get_fif_name(raw=self.raw,postfix=postfix,extention=".eve",update_raw_fname=False,path=self.OutputMode.path)
           mne.event.write_events( fname,evt['events'] )
-          logger.info(" ---> done jumeg epocher save events as => EVENTS :{}\n".format(fname)+
+          logger.info("done jumeg epocher save events as => EVENTS :{}\n".format(fname)+
                       "   -> number of events : %d" %(evt['events'].shape[0]))
       #--- save epoch data
        if self.OutputMode.epochs:
@@ -1128,13 +1128,13 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
           evt['epochs'].save( fname )
           # evt['epochs'].plot_image(combine='gfp',sigma=2.,cmap="YlGnBu_r")
           
-          logger.info("---> done jumeg epocher save events as => EPOCHS : " +fname)
+          logger.info("done jumeg epocher save events as => EPOCHS : " +fname)
           
       #--- save averaged data
        if self.OutputMode.evoked:
           fname = jumeg_base.get_fif_name(raw=self.raw,postfix=postfix,extention="-ave.fif",update_raw_fname=False,path=self.OutputMode.path)
           mne.write_evokeds( fname,evt['epochs'].average( picks = jumeg_base.picks.all(self.raw) ) ) # in case avg only trigger or response
-          logger.info("---> done jumeg epocher save events as => EVOKED (averaged) : " +fname)
+          logger.info("done jumeg epocher save events as => EVOKED (averaged) : " +fname)
           fname = jumeg_base.get_fif_name(raw=self.raw,postfix=postfix,extention="-ave",update_raw_fname=False,path=self.OutputMode.path)
        
         #--- store event info into raw.anotations
@@ -1143,7 +1143,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
        
          #--- plot evoked
           fname = jplt.plot_evoked(evt,fname=fname,condition=condition,show_plot=False,save_plot=True,plot_dir='plots')
-          logger.info("---> done jumeg epocher plot evoked (averaged) :" +fname)
+          logger.info("done jumeg epocher plot evoked (averaged) :" +fname)
          
 
     def set_anotations(self,events=None,condition=None):
@@ -1154,7 +1154,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
         :param condition:
         :return:
         """
-        msg = ["---> update raw.annotations: {}".format(condition)]
+        msg = ["update raw.annotations: {}".format(condition)]
 
         raw_annot = None
         evt_annot = None
@@ -1175,11 +1175,11 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
                                    orig_time   = orig_time)
        
         if raw_annot:
-           msg.append(" --> found mne.annotations in RAW:\n  -> {}".format(raw_annot))
+           msg.append("found mne.annotations in RAW:\n  -> {}".format(raw_annot))
          #--- clear old annotations
            kidx = np.where(raw_annot.description == condition)[0]  # get index
            if kidx.any():
-              msg.append("  -> delete existing annotation {} counts: {}".format(condition,kidx.shape[0]))
+              msg.append("delete existing annotation {} counts: {}".format(condition,kidx.shape[0]))
               raw_annot.delete(kidx)
               self.raw.set_annotations(raw_annot + ep_annot)
               raw_annot = self.raw.annotations
@@ -1187,7 +1187,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
               self.raw.set_annotations(ep_annot)
               raw_annot = self.raw.annotations
     
-        msg.append(" --> storing mne.annotations in RAW:\n  -> {}".format(self.raw.annotations))
+        msg.append("storing mne.annotations in RAW:\n  -> {}".format(self.raw.annotations))
         logger.info("\n".join(msg))
 
     #---
@@ -1270,7 +1270,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
     
         if self.verbose:
            logger.info("\n".join([
-                         "---> Epocher Epochs condition list form HDF:",
+                         "Epocher Epochs condition list form HDF:",
                          "  -> HDF isOpen: {}".format(self.hdf_obj_is_open()),
                          "   "+"-"*40,
                          "  -> raw file: {}".format(self.fname),

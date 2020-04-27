@@ -304,12 +304,16 @@ class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
        '''
        updates the time,version and user
        '''
-       self._info["user"]=getpass.getuser()
-       now=datetime.datetime.now()
-       dt=now.strftime('%Y-%m-%d')+" "+now.strftime('%H:%M')
-       self._info["time"]=dt
-       self._info["gui-version"] = __version__
-       self._info["python-version"]=platform.python_version()
+       now = datetime.datetime.now()
+       dt  = now.strftime('%Y-%m-%d')+" "+now.strftime('%H:%M')
+       
+       self._info={
+                   "user": getpass.getuser(),
+                   "time": dt,
+                   "gui-version": __version__,
+                   "python-version": platform.python_version()
+                  }
+       
        return self._info
        
    def update_used_dict(self):

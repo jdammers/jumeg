@@ -631,6 +631,7 @@ class JuMEG_PIPELINES_ICA(object):
         self._set_ecg_eog_annotations()
        #--- chop times
         self.Chopper.update(raw=self.raw,length=self.cfg.chops.length,and_mask=self.cfg.chops.and_mask,
+                            exit_on_error=self.cfg.chops.exit_on_error,
                             description=self.cfg.chops.description,time_window_sec=self.cfg.chops.time_window,
                             show=self.cfg.chops.show,verbose=self.verbose,debug=self.debug)
             

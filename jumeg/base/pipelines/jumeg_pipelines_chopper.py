@@ -58,7 +58,10 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
                    The last chop will only have a few samples more
     
     exit_on_error: boolean <False>
-                   exit on ERROR e.g: if chop_length < times              
+                   error occures if chop_length < times 
+                    -> if True : exit on ERROR  
+                    -> if False: try to adjust chop_time
+                       e.g. chop_times: is one chop with [ times[0],times[-1] ]                                      
 
     Returns
     -------
@@ -85,22 +88,48 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
         n_chops, t_rest = np.divmod(times[-1], chop_length)
         n_chops = int(n_chops)
       
+      
         # chop duration in s
         if strict:
+          #--- ToDo ck for times[-1] < chop_length
             chop_len = chop_length
         else:
+            chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
+            
+            msg1=[
+                  "  -> number of chops      : {}".format(n_chops),
+                  "  -> calculated chop legth: {}".format(chop_len),
+                  "  -> rest [s]             : {}".format(t_rest),
+                  "-"*40,
+                  "  -> chop length          : {}".format(chop_length),
+                  "  -> numer of timepoints  : {}".format(n_times),
+                  "  -> strict               : {}".format(strict),
+                  "-"*40,
+                  "  -> exit on error        : {}\n".format(exit_on_error)
+                 ]
+           #---
             try:
-               chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
-            except ZeroDivisionError: # n_chops => integer division or modulo by zero
-               msg="ERROR numer of chops: {} chop length: {} numer of timepoints:{}\n".format(n_chops,chop_length,n_times)  
-               if exit_on_error:    
-                  assert (n_chops > 0), msg  
-               else:
-                  chop_len = times.shape[-1] 
-                  msg+="  --> setting <chop_len> to number of timepoints!!!"
-                  logger.error(msg)
+               n_times_chop = int(chop_len / dt)
+            except:
+               if exit_on_error:   
+                  msg=["EXIT on ERROR"]
+                  msg.extend( msg1 )
+                  logger.exception("\n".join(msg))
+                  assert (chop_len > 0),"Exit => chop_len: {}\n".format(chop_len)
+               else: # data size < chop_length
+                  msg=["setting <chop_len> to number of timepoints!!!"]
+                  msg.extend(msg1)
+                  logger.error( "\n".join(msg) )  
+                 #--- fix  
+                  n_times_chop = n_times
+                  n_chops = 1
+                  msg=["data length smaller then chop length !!!",
+                       " --> Adjusting:",
+                       "  -> number of chops: {}".format(n_chops),
+                       "  -> chop time      : {}".format(n_times_chop)
+                       ]
+                  logger.warning("\n".join(msg))
                   
-        n_times_chop = int(chop_len / dt)
         # check if chop length is larger than max time (e.g. if strict=True)
         if n_times_chop > n_times:
             n_times_chop = n_times
@@ -408,7 +437,7 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
     
     '''
         
-    __slots__=["length","verbose","debug","show","and_mask",
+    __slots__=["length","verbose","debug","show","and_mask","exit_on_error",
                "_time_window_sec","_raw","_description",
                "_estimated_chops","_estimated_indices","_chops","_indices"]
     
@@ -418,6 +447,7 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
         
         self.and_mask        = 255
         self.length          = 120.0
+        self.exit_on_error   = True
         self.description     = "ica-chops"
         self.time_window_sec = np.array([5.0,5.0])
         
@@ -430,6 +460,7 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
            self.time_window_sec = kwargs.get("time_window_sec")
         if "description" in kwargs:   
            self.description = kwargs.get("description")    
+        
         
     @property
     def description(self): return self._description
@@ -531,7 +562,9 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
         if self.times[-1] <= self.length:
            logger.warning("<Raw Times> : {} smaler than <Chop Times> : {}\n\n".format(self.times[-1],self.length))
                        
-        self._estimated_chops,self._estimated_indices = get_chop_times_indices(self.times,chop_length=self.length,exit_on_error=True) 
+        self._estimated_chops,self._estimated_indices = get_chop_times_indices(self.times,
+                                                                               chop_length=self.length,
+                                                                               exit_on_error=self.exit_on_error) 
         
         if self.verbose:
            self.GetInfo()
