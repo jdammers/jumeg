@@ -204,7 +204,7 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
         except:
             logger.exception("apply_epochs:\n  -> parameter:\n" +self.pp_list2str(kwargs))
             sys.exit()
-        logger.info("DONE apply epocher  => hdf name: {}\n".format(self.hdf_filename))
+        logger.info("DONE apply epocher hdf file:\n  -> {}\n".format(self.hdf_filename))
         return (raw,fname)
      
         

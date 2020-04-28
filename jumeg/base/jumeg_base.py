@@ -58,7 +58,7 @@ import logging
 logger = logging.getLogger("jumeg")
 #logger.setLevel('DEBUG')
 
-__version__="2020.03.27.001"
+__version__="2020.04.28.001"
 
 '''
 class AccessorType(type):
@@ -1483,12 +1483,47 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
         self.picks = JuMEG_Base_PickChannels()
 
-      #--- ToDo --- start implementig BV support may new CLS
         self.brainvision_response_shift = 1000
         self.brainvision_extention      = '.vhdr'
         self.ctf_extention              = ".ds"
         self.ica_extention              = 'ica.fif'
+    
+    #-- helper function
+    def _get_ica_raw_obj(self,fname,raw=None,path=None):
+        """check for <ica filename> or <ica raw obj>
+        if <ica_raw> obj is None load <ica raw obj> from <ica filename>
 
+        Parameters:
+        -----------  
+        fname: ica filename
+        raw  : ica raw obj <None>
+        path : <None>
+        
+        Returns:
+        --------
+        <ica raw obj>,ica raw obj filename
+        
+        """
+        if raw is None:
+           if fname is None:
+              assert "---> ERROR no file foumd!!\n\n"
+              if self.verbose:
+                 logger.info("<<<< Reading ica raw data ...")
+        if fname:
+           fn = self.expandvars( fname )
+           if path:
+              path = self.expandvars(path)
+              fn   = os.path.join(path,fn)
+        else:
+           fn = self.get_raw_filename(raw)
+   
+           raw = mne.preprocessing.read_ica(fn)
+         
+           if raw is None:
+              assert "---> ERROR in jumeg.jumeg_base.get_ica_raw_obj => could not get ica raw obj:\n ---> FIF name: " + fname
+   
+        return raw,self.get_raw_filename(raw)
+  
     def get_fif_name(self, fname=None, raw=None,path=None, prefix=None,postfix=None, extention="-raw.fif", update_raw_fname=False):
         """
         changing filename with prefix postfix path and option to update filename in raw-obj
@@ -1620,49 +1655,12 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                " --> BADs : {}".format(raw.info['bads'])]))
            raw.interpolate_bads()
      
-      #--- save raw as bads-raw.fif
+      #-- save raw as bads-raw.fif
         if save:
            raw.save( fif_out,overwrite=True)
         self.set_raw_filename(raw,fif_out)
              
         return raw,raw.info['bads']
-
-#--- helper function
-    def _get_ica_raw_obj(self,fname,raw=None,path=None):
-        """check for <ica filename> or <ica raw obj>
-        if <ica_raw> obj is None load <ica raw obj> from <ica filename>
-
-        Parameters:
-        -----------  
-        fname: ica filename
-        raw  : ica raw obj <None>
-        path : <None>
-        
-        Returns:
-        --------
-        <ica raw obj>,ica raw obj filename
-        
-        """
-        if raw is None:
-           if fname is None:
-              assert "---> ERROR no file foumd!!\n\n"
-              if self.verbose:
-                 logger.info("<<<< Reading ica raw data ...")
-        if fname:
-           fn = self.expandvars( fname )
-           if path:
-              path = self.expandvars(path)
-              fn   = os.path.join(path,fn)
-        else:
-           fn = self.get_raw_filename(raw)
-   
-           raw = mne.preprocessing.read_ica(fn)
-         
-           if raw is None:
-              assert "---> ERROR in jumeg.jumeg_base.get_ica_raw_obj => could not get ica raw obj:\n ---> FIF name: " + fname
-   
-        return raw,self.get_raw_filename(raw)
-    
             
     def get_raw_obj(self,fname,raw=None,path=None,preload=True,reload_raw=False,reset_bads=False,clean_names=False,
                     system_clock='truncate'):
@@ -1968,6 +1966,68 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
            self.set_raw_filename(raw,fname)
         return fname,raw
 
+    def update_annotations(self,raw,description="TEST",onsets=None,duration=None,verbose=False):
+        '''
+        update annotations in raw
+
+        Parameters
+        ----------
+        raw         : raw obj
+        description : string, description/label for event in anotation <TEST>
+        onsets      : np.array of ints,  onsets in samples <None>
+        duration    : length in samples
+
+        Returns
+        -------
+        raw with new annotation
+        '''
+        
+        try:
+           raw_annot = raw.annotations
+           orig_time = raw_annot.orig_time 
+        except:
+           raw_annot = None
+           orig_time = None
+        
+        if not duration:
+           duration = np.ones( onsets.shape[0] ) / raw.info["sfreq"]
+        
+        annot = mne.Annotations(onset       = onsets.tolist(),
+                                duration    = duration.tolist(),
+                                description = description,
+                                orig_time   = orig_time)
+        
+        #logger.info("description  : {}\n".format(description)+
+        #            "  -> onsets  : {}\n".format(onsets)+
+        #            "  -> duration: {}".format(duration)+
+        #            " annot:\n {}".format(annot)
+        #           )   
+                 
+        msg = ["Update Annotations with description: <{}>".format(description)]
+         
+        if raw_annot:
+           #-- clear old annotations
+           kidx = np.where( raw_annot.description == description)[0] # get index
+           if kidx.any():
+              msg.append("  -> delete existing annotation <{}> counts: {}".format(description,kidx.shape[0]) )
+              raw_annot.delete(kidx)
+           raw_annot += annot # pointer to raw.anotations; add new annot
+        else:
+           raw.set_annotations(annot)
+       
+        if verbose:
+           idx = np.where(raw.annotations.description == description)[0]
+           
+           msg.extend([
+                       " --> mne.annotations in RAW:\n  -> {}".format(raw.annotations),
+                       "-"*40,
+                       "  -> <{}> onsets:\n{}".format(description,raw.annotations.onset[idx]),
+                       "-"*40])
+               
+           logger.info("\n".join(msg))
+        return raw
+   
+  
     def apply_save_mne_data(self,raw,fname=None,overwrite=True):
         """saving mne raw obj to fif format
         

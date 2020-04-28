@@ -196,7 +196,10 @@ def test():
     stage= "$JUMEG_TEST_DATA/mne/201772/INTEXT01/190212_1334/2"
     fn   = "201772_INTEXT01_190212_1334_2_c,rfDC,meeg,nr,bcc,int-raw.fif"
     fn   = "201772_INTEXT01_190212_1334_2_c,rfDC,meeg,nr,bcc,int,fibp0.10-45.0,ar-raw.fif"
-    fin  = os.path.join(stage,fn)
+    
+    stage = '$JUMEG_TEST_DATA/mne/212842/INTEXT01/190430_1001/4'
+    fn    = '212842_INTEXT01_190430_1001_4_c,rfDC,meeg,nr,bcc,int,fibp0.10-45.0,ar-raw.fif'
+    fin   = os.path.join(stage,fn)
 
     raw,fname = jb.get_raw_obj(fname=fin)
  

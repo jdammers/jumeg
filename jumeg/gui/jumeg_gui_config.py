@@ -32,7 +32,7 @@ from jumeg.base.jumeg_base_config import JuMEG_CONFIG
 from jumeg.base import jumeg_logger
 logger = logging.getLogger('jumeg')
 
-__version__= "2020.03.11.001" # platform.python_version()
+__version__= "2020.04.28.001" # platform.python_version()
 
 class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
    def __init__(self,parent,**kwargs):
@@ -118,7 +118,7 @@ class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
            else:
                try:
                   #--- ck for list as data type and convert str in list to orig data types
-                   if (v.GetName().startswith("list")):
+                   if v.GetName().startswith("list"):
                       dtype = v.GetName().split("_")[1]
                       # d = v.GetLineText(lineNo=0).split(self._list_seperator)
                       d = v.GetValue()
@@ -131,9 +131,24 @@ class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
                             item_data[k]=d
                       else: # str
                          item_data[k]=list()
+                 #--- None        
+                   elif v.GetName().startswith("NoneStr"):# check for "None" or "None,0"
+                   
+                      d = v.GetValue().strip()
+                      if d.upper() == "NONE" or d.upper()=="NULL":
+                         item_data[k] = None
+                      else:
+                         d = [ x.strip() for x in d.split(",") ]
+                         for i in range(len(d)):
+                             if (d[i].upper() == "NONE") or (d[i].upper()=="NULL"):
+                                 d[i] = None
+                         item_data[k] = d
+                             
                    else:
                       item_data[k]=v.GetValue()
+                      
                except:
+                   logger.exception("ERROR")
                    continue # info, _keys
                    
         return item_data
@@ -163,8 +178,10 @@ class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
        if data==None:
            logger.exception("data is None")
            return
-       txt_size = 10
-
+       
+       txt_size = 30
+       style    = wx.TE_RIGHT
+             
        if not root:
            root = self.root
        
@@ -209,14 +226,12 @@ class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
               continue
            
            elif isinstance(v,(bool)):
-               ctrl=wx.CheckBox(self,-1,label=k,name="bool")
+               ctrl=wx.CheckBox(self,-1,name="bool") #label=k
                ctrl.SetValue(v)
                child = self.AppendItem(root,"{}".format(k),wnd=ctrl)
                self.SetItemBold(child,True)
         
            elif isinstance(v,(str)):
-                txt_size = 30
-                style = wx.TE_RIGHT
                 if os.path.dirname(v):
                    ctrl = JuMEG_wxSTXTBTCtrl(self,name="TEST",label=v,cmd=self.ClickOnShowDLG,textlength=txt_size,style=style)
                 else:
@@ -268,8 +283,17 @@ class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
                ctrl.Value = v
                child = self.AppendItem(root,"{}".format(k),wnd=ctrl)
            
+           else: # None => txt
+               ctrl = wx.TextCtrl(self,-1,style=wx.TE_LEFT,value="None",name="NoneStr")
+               sz = ctrl.GetSizeFromTextSize(ctrl.GetTextExtent("W" * txt_size))
+               ctrl.SetInitialSize(sz)
+               child = self.AppendItem(root,"{}".format(k),wnd=ctrl,ct_type=0)     
+        
            item_data[k]=ctrl
-           self.SetPyData(child,data[k])
+           try:
+              self.SetPyData(child,data[k])
+           except:
+              logger.exception("key: {}\n -> data: {}".format(k,data.get(k))) 
   
    def ClickOnShowDLG(self,evt):
        """
@@ -321,6 +345,7 @@ class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
       updates the used_dict i.e. the dict used for process
       '''
       self._used_dict=self.GetData()
+      
    
    def info(self):
        logger.info("config info:\n {}\n".format(pprint.pformat(self.GetData(),indent=4)))

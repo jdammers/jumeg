@@ -912,19 +912,21 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
       
        #---Test for equal drops
         if self.verbose:
-           logger.debug("Epochs :\n"
-                        "  --> epochs : {}\n".format(ep)+
-                        "   -> epoch selection:\n{}\n".format(ep.selection)+
-                        "   -> epoch events   :\n{}\n".format(ep.events)+
-                        "   -> epoch event_id : {}\n".format(ep.event_id)+
-                        "    "+"-"*40+"\n"+
-                        "  --> Baseline epochs:\n"+
-                        "   -> bc epochs : {}\n".format(ep_bc) +
-                        "   -> bc epoch selection:\n{}\n".format(ep_bc.selection) +
-                        "   -> bc epoch events   :\n{}\n".format(ep_bc.events) +
-                        "   -> bc epoch event_id : {}".format(ep_bc.event_id) )
+           msg=[ 
+                "Epochs :",
+                " --> epochs : {}".format(ep),
+                "  -> epoch selection:\n{}".format(ep.selection),
+                "  -> epoch events   :\n{}".format(ep.events),
+                "  -> epoch event_id : {}".format(ep.event_id),
+                "-"*40,
+                " --> Baseline epochs:\n"+
+                "  -> bc epochs : {}\n".format(ep_bc),
+                "  -> bc epoch selection:\n{}\n".format(ep_bc.selection),
+                "  -> bc epoch events   :\n{}\n".format(ep_bc.events),
+                "  -> bc epoch event_id : {}".format(ep_bc.event_id)
+               ]
 
-           
+           logger.debug("\n".join(msg)) 
            #for epoch and baseline - epochs: "+
            #ep.save("epoch_test-epo.fif")
            #ep_bc.save("epoch_test_bc-epo.fif")
@@ -1124,8 +1126,9 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
                       "   -> number of events : %d" %(evt['events'].shape[0]))
       #--- save epoch data
        if self.OutputMode.epochs:
-          fname = jumeg_base.get_fif_name(raw=self.raw,postfix=postfix,extention="-epo.fif",update_raw_fname=False,path=self.OutputMode.path)
-          evt['epochs'].save( fname )
+          fname = jumeg_base.get_fif_name(raw=self.raw,postfix=postfix,extention="-epo.fif",
+                                          update_raw_fname=False,path=self.OutputMode.path)
+          evt['epochs'].save( fname,overwrite=True )
           # evt['epochs'].plot_image(combine='gfp',sigma=2.,cmap="YlGnBu_r")
           
           logger.info("done jumeg epocher save events as => EPOCHS : " +fname)
@@ -1139,30 +1142,41 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
        
         #--- store event info into raw.anotations
           if self.OutputMode.annotations:
-             self.set_anotations(evt)
+             self.set_anotations(evt,condition)
        
          #--- plot evoked
           fname = jplt.plot_evoked(evt,fname=fname,condition=condition,show_plot=False,save_plot=True,plot_dir='plots')
           logger.info("done jumeg epocher plot evoked (averaged) :" +fname)
          
 
-    def set_anotations(self,events=None,condition=None):
+    def set_anotations(self,events,condition):
         """
-        update raw.anotattions with condition events
+        update raw.anotattions with events for condition
         
-        :param events:
-        :param condition:
+        :param events: dict with key "events" as mne.events or mne.events
+        :param condition: annotation description
         :return:
         """
-        msg = ["update raw.annotations: {}".format(condition)]
-
-        raw_annot = None
+        #logger.info("update raw.annotations:\n{}\n".format(condition)+
+        #            "  -> events:\n{}\n".format(events) )
+                             
+        if isinstance(events,(dict)):
+           evts = events.get("events")
+        else:       
+           evts = events
+       
+        #logger.info("evts:\n{}\n".format(evts[:,0]))
+        
+        jumeg_base.update_annotations(self.raw,description=condition,onsets=evts[:,0],verbose=self.verbose)
+    
+        '''
+       #--- annotations
         evt_annot = None
         try:
             raw_annot = self.raw.annotations
         except:
-            pass
-    
+            raw_annot = None
+       
         #--- store event info into raw.anotations
         time_format = '%Y-%m-%d %H:%M:%S.%f'
         orig_time = self.raw.info.get("meas_date",self.raw.times[0])
@@ -1189,7 +1203,7 @@ class JuMEG_Epocher_Epochs(JuMEG_Epocher_Events):
     
         msg.append("storing mne.annotations in RAW:\n  -> {}".format(self.raw.annotations))
         logger.info("\n".join(msg))
-
+        '''
     #---
     def __clear(self):
         """ clear all CLs parameter"""

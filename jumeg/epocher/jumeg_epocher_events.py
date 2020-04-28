@@ -1357,7 +1357,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                ids   = pd.unique(df.iloc[:,0])
                label = df.columns[0]
                ids.sort()
-               msg = [ "---> Events in DataFrame column: {}".format(label) ]
+               msg = [ "Events in DataFrame column: {}".format(label) ]
                for id in ids:
                    df_id = df[ df[ label ] == id ]
                    msg.append("  -> id: {:4d} counts: {:5d}".format(id,len(df_id.index)) )
@@ -1393,11 +1393,11 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         if not self.iod.iod_matching: return None,None
         
       #--- marker events .e.g. STIMULUS
-        # logger.info(self.iod.marker_channel_parameter)
+        logger.info(self.iod.marker_channel_parameter)
         try:
-            mrk_df,mrk_info = self.events_find_events(raw,prefix=self.iod.marker.prefix,**self.iod.marker_channel_parameter)
+           mrk_df,mrk_info = self.events_find_events(raw,prefix=self.iod.marker.prefix,**self.iod.marker_channel_parameter)
         except:
-           logger.warning(" --> WARNING: IOD Matching: no events found: \n{}\n ".format(self.event_data_parameter))
+           logger.warning("WARNING: IOD Matching: no events found: \n{}\n ".format(self.event_data_parameter))
            return None,None
         
       #--- resonse eventse.g. IOD
@@ -1418,7 +1418,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
          
         if self.verbose:
            if "iod_div" in df.columns:
-              logger.info("  -> Stimulus Onset and IOD div [tsl] mean: {0:3.1f}  std:{1:3.1f}".format(df["iod_div"].mean(),df["iod_div"].std()))
+              logger.info("Stimulus Onset and IOD div [tsl] mean: {0:3.1f}  std:{1:3.1f}".format(df["iod_div"].mean(),df["iod_div"].std()))
             
         return df,mrk_info  
     
@@ -1528,7 +1528,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
             
             iod_data_frame = None
             
-            logger.info("---> Epocher start store events into HDF\n --> condition: "+ condi)
+            logger.info("Epocher start store events into HDF\n --> condition: "+ condi)
                         
             if not self.marker.channel_parameter: continue
          
@@ -1541,7 +1541,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
             window_info         = dict()
             
             if self.verbose:
-               logger.info(' --> EPOCHER  Template: %s  Condition: %s' %(self.template_name,condi)+
+               logger.info('EPOCHER  Template: %s  Condition: %s' %(self.template_name,condi)+
                            '\n  -> find events and epochs, save epocher output in HDF5 format')
                #self.pp(self.parameter,head="  -> parameter")               
             
@@ -1560,7 +1560,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                     
            #--- ck if not stimulus_data_frame        
             if marker_data_frame.empty : 
-               logger.info("  -> MARKER CHANNEL -> find events => condition: "+ condi +"\n ---> marker channel: "+ self.marker.channel)
+               logger.info("MARKER CHANNEL -> find events => condition: "+ condi +"\n ---> marker channel: "+ self.marker.channel)
                if self.verbose:
                   logger.info(self.pp_list2str( self.marker.parameter,head="  -> Marker Channel parameter:"))
                marker_data_frame,marker_info = self.events_find_events(self.raw,prefix=self.marker.prefix,**self.marker.channel_parameter)
@@ -1572,14 +1572,14 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
             marker_data_frame['weighted_selected']= 0 
            
             if self.verbose:
-               logger.info("  -> Marker Epocher Events Data Frame [marker channel]: "+ condi)
+               logger.info("Marker Epocher Events Data Frame [marker channel]: "+ condi)
                
            #--- Marker Matching task
            #--- match between stimulus and response or vice versa
            #--- get all response events for condtion e.g. button press 4
            #--- apply window mathing : find first,all responses in window
             if self.response.matching :
-               logger.info(" --> Marker Matching -> matching marker & response channel: {}\n".format(condi)+
+               logger.info("Marker Matching -> matching marker & response channel: {}\n".format(condi)+
                            "  -> marker   channel : {}\n".format(self.marker.channel)+
                            "  -> response channel : {}".format(self.response.channel) )
              #--- look for all responses => 'event_id' = None
@@ -1612,10 +1612,10 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
 
               #--- window matching, find events in window
                if self.window.matching:
-                  logger.info("---> window matching => marker data frame:\n{}".format( marker_data_frame.to_string() ))
+                  logger.info("window matching => marker data frame:\n{}".format( marker_data_frame.to_string() ))
 
                   event_df = self.hdf_obj_get_channel_dataframe(self.window.stim_channel)
-                  logger.info("---> window matching => event type: {}\n  -> DataFrame:\n{}".format(self.window.event_type,event_df.to_string()))
+                  logger.info("window matching => event type: {}\n  -> DataFrame:\n{}".format(self.window.event_type,event_df.to_string()))
                   if event_df.any:
                      window_data_frame = self.WindowMatching.apply(raw=self.raw,verbose=self.verbose,
                                                                    marker_df     = marker_data_frame,
@@ -1629,7 +1629,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                   type = self.response.prefix +'_type'
                   hits = marker_data_frame[type]
                   idx = np.where( hits == self.rt_type_as_index( self.marker.type_result ) )[0]
-                  msg=["  -> Response Matching DataFrame : " + condi,
+                  msg=["Response Matching DataFrame : " + condi,
                        "  -> correct     : {:d} / {:d}".format(len(idx),len(marker_data_frame.index)),
                        "  -> marker type : {}".format(type),
                        "-"*40,
@@ -1648,7 +1648,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                   mrk_type = self.marker.prefix +'_type'
                   hits = marker_data_frame[mrk_type]
                   idx = np.where( hits == self.rt_type_as_index( self.marker.type_result ) )[0]
-                  msg=["  -> Marker Matching DataFrame : " + condi,
+                  msg=["Marker Matching DataFrame : " + condi,
                        "  -> correct     : {:d} / {:d}".format(len(idx),len(marker_data_frame.index)),
                        "  -> marker type : {}".format(mrk_type),
                        "-"*40,
@@ -1666,7 +1666,7 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
                self.hdf_obj_update_dataframe(marker_data_frame.astype(np.int32),key=key,**storer_attrs )
             
         self.HDFobj.close()
-        logger.info("---> DONE save epocher data into HDF5 : " + self.hdf_filename)
+        logger.info("DONE save epocher data into HDF5 : " + self.hdf_filename)
         return self.raw,fname
 
 #---
@@ -1726,13 +1726,15 @@ class JuMEG_Epocher_Events(JuMEG_Epocher_HDF,JuMEG_Epocher_Basic):
         events           = deepcopy(param['events'])
         events['output'] = 'step'
        # self.pp( events )
-     
-      #--- check if channel label in raw
+        
+        logger.info(events)
+      
+       #--- check if channel label in raw
         if not jumeg_base.picks.labels2picks(raw,events["stim_channel"]):
            return df,dict()
      
         if self.verbose:
-           logger.debug("---> mne.find_events:\n"+ self.pp_list2str(events))
+           logger.debug("mne.find_events:\n"+ self.pp_list2str(events))
         ev = mne.find_events(raw, **events) #-- return int64
      
         # self.pp(ev)

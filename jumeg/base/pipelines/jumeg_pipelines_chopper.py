@@ -33,7 +33,7 @@ from jumeg.base.jumeg_base         import JUMEG_SLOTS
      
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.24.001"
+__version__= "2020.04.28.001"
 
 #@jit (nopython=True)
 def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False,exit_on_error=False):
@@ -731,44 +731,10 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
         None.
 
         '''
-        
-        try:
-           raw_annot = self.raw.annotations
-           orig_time = raw_annot.orig_time 
-        except:
-           raw_annot = None
-           orig_time = None
-     
-        duration   = np.ones( self.chops.shape[0] ) / self.sfreq  # one line in raw.plot
-        chop_annot = mne.Annotations(onset      = self.chops[:,1].tolist(),
-                                     duration   = duration.tolist(),
-                                     description=self.description,
-                                     orig_time  = orig_time)
-                     
-        msg = ["Update Annotations with description: <{}>".format(self.description)]
-      
-         
-        if raw_annot:
-      
-          #--- clear old annotations
-            kidx = np.where( raw_annot.description == self.description)[0] # get index
-            if kidx.any():
-                msg.append("  -> delete existing annotation <{}> counts: {}".format(self.description,kidx.shape[0]) )
-                raw_annot.delete(kidx)
        
-            self.raw.set_annotations( raw_annot + chop_annot)
-        else:
-            self.raw.set_annotations(chop_annot)
-       
-        if self.verbose:
-           idx = np.where(self.raw.annotations.description == self.description)[0]
-           msg.extend([
-                       " --> mne.annotations in RAW:\n  -> {}".format(self.raw.annotations),
-                       "-"*40,
-                       "  -> <{}> onsets:\n{}".format(self.description,self.raw.annotations.onset[idx]),
-                       "-"*40])
-               
-           logger.info("\n".join(msg))
+        jb.update_annotations(self.raw,description=self.description,onsets=self.chops[:,1],verbose=self.verbose)
+            
+      
         
   
     def update(self,**kwargs):

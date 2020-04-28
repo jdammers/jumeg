@@ -141,7 +141,9 @@ NoMoveRightStimIodBc:
 SelfLeftRes:
   ResponseOnset:
     event_id: 1
-  baseline: null
+  baseline:
+  - None
+  - '0'
   info: self pasting left, response onset <=, with baseline correction, time window
     end onset stim S50
   iod: null
@@ -240,8 +242,8 @@ default:
     system_delay_ms: 0.0
   baseline:
     baseline:
-    - null
-    - 0
+    - None
+    - '0'
     method: mean
     type_input: iod_onset
   experiment: INTEXT
@@ -276,5 +278,5 @@ default:
 info:
   gui-version: 2020.03.11.001
   python-version: 3.6.10
-  time: 2020-04-28 07:49
+  time: 2020-04-28 16:56
   user: fboers
