@@ -70,15 +70,14 @@ with warnings.catch_warnings():
      warnings.simplefilter("ignore", category=PendingDeprecationWarning)
      import mne
 
-import logging
 
 from jumeg.base.jumeg_base     import JuMEG_Base_IO
 from jumeg.base.jumeg_base     import jumeg_base as jb
 from jumeg.base                import jumeg_logger
 from jumeg.filter.jumeg_filter import jumeg_filter
 
-logger = logging.getLogger('jumeg')
-__version__= '2019.09.30.001'
+logger = jumeg_logger.get_logger('jumeg')
+__version__= '2020.04.22.001'
 
 class JuMEG_MergeMEEG_HiLoRate(object):
     """

@@ -14,10 +14,491 @@ from pubsub import pub
 #except ImportError: # if it's not there locally, try the wxPython lib.
 
 import wx.lib.agw.floatspin as FS
+from   wx.adv import EditableListBox
 
-__version__='2019.09.30.001'
+import logging
+from jumeg.base import jumeg_logger
+logger = logging.getLogger('jumeg')
+
+__version__='2020.03.12.001'
+
+LEA=wx.LEFT|wx.EXPAND|wx.ALL
+
+class EditableListBoxPanel(wx.Panel):
+    """
+     wx.adv.EditableListBox within a in Panel in order to use
+     with wx.lib.agw.customtreectrl
+     
+    """
+    def __init__(self,parent,**kwargs):
+        """
+        
+        :param parent:
+        :param label: label
+        :param name : name of ctrl
+        :param bg   : background colour
+       
+       
+        Example
+        -------
+        from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import EditableListBoxPanel
+       
+        items = [ 1,2,"A","b","C","HELLO World"]
+        ctrl = EditableListBoxPanel(self,label="TEST",name="WxTEST",size=(-1,150) )
+        ctrl.Value = items
+   
+        items = ctrl.Value
+   
+        """
+        super().__init__(parent)
+        self._etb  = None
+        self._lbox = None
+        
+        self._wx_init(**kwargs)
+        self._ApplayLayout()
+        
+    @property
+    def EditableListBox(self): return self._etb
+    @property
+    def ListBox(self): return self._lbox
+
+    @property
+    def Value(self): return self._etb.Strings
+    @Value.setter
+    def Value(self,v):
+        self.SetValue(v)
+        
+    def GetValue(self): return self._etb.Strings
+
+    def SetValue(self,v):
+        if isinstance( v,(list) ):
+           self._etb.Strings=[str(x) for x in v]
+        else:
+           self._etb.Strings = [v]
+
+    def _wx_init(self,**kwargs):
+        self.SetBackgroundColour(kwargs.get("bg","GREY95"))
+        style = wx.adv.EL_ALLOW_NEW | wx.adv.EL_ALLOW_EDIT | wx.adv.EL_ALLOW_DELETE | wx.adv.EL_NO_REORDER
+        self._etb  = EditableListBox(self,id=wx.ID_ANY,label=kwargs.get("label",""),style=style,size=kwargs.get("size",(-1,100 )) )
+        self._lbox = self._etb.GetListCtrl()
+    
+    def _ApplayLayout(self):
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        hbox.Add(self._etb,1,LEA,5)
+        self.SetAutoLayout(True)
+        self.SetSizer(hbox)
+        self.Fit()
+        self.Layout()
+
+class SpinCtrlScientific(wx.Panel):
+    """
+    min,max,initial,inc,name
+    Digits,Increment
+    Min,Max,Range,Value
+    """
+    def __init__(self,parent,**kwargs):
+        super().__init__(parent)
+        self.SetName("SpinCtrlScientific")
+        self._SpinMantisse = None
+        self._SpinExponent = None
+        
+        self._min = [-10000,-100]
+        self._max = [ 10000, 100]
+        self._inc = 1
+        self._initial = 0
+        
+        self._wx_init(**kwargs)
+        self._ApplayLayout()
+   
+  
+    @property
+    def Mantisse(self): return self._SpinMantisse
+    @property
+    def Exponent(self): return self._SpinExponent
+
+    @property
+    def Digits(self): return self.Mantisse.Digits
+    @Digits.setter
+    def Digits(self,v):
+        if self.Mantisse:
+           self.Mantisse.Digits=v
+        
+    @property
+    def Increment(self):
+        return self._inc
+
+    @Increment.setter
+    def Increment(self,v):
+        self.SetIncrement(v)
+
+    def GetIncrement(self):
+        return self._inc
+
+    def SetIncrement(self,v):
+        self._inc = v
+        if self.Mantisse:
+           self.Mantisse.Increment = self._inc
+        
+    @property
+    def initial(self):
+        return self._initial
+
+    @initial.setter
+    def initial(self,v):
+        if isinstance(v,(list,tuple)):
+            self._initial = v
+        else:
+            self._initial = [v,v]
+    @property
+    def Value(self): return self.GetValue()
+    @Value.setter
+    def Value(self,v):
+        self.SetValue(v)
+        
+    def GetValue(self):
+       # https://stackoverflow.com/questions/29849445/convert-scientific-notation-to-decimals
+        return float( self.Mantisse.Value * 10.0 **  self.Exponent.Value )
+        
+   
+    def _update_ctrl(self,ctrl,v,idx):
+        ctrl.Min = self._min[idx]
+        ctrl.Max = self._max[idx]
+    
+        if v < ctrl.Min:
+            ctrl.Min = abs(v) * -2.0
+        if v > ctrl.Max:
+            ctrl.Max = abs(v) * 2.0
+    
+        ctrl.Value = v
+
+    def SetValue(self,v):
+        if not self._SpinMantisse: return
+        
+        v = str(v)
+        if v.find("e")>0: # 5.123e-11
+           m,ex = v.split("e")
+        else:
+           m,rest= v.split(".")
+           m += rest
+           ex = -len(rest)
+        
+        digs = 1
+        if m.find(".") > -1:
+           _,rest = m.split(".")
+           if rest:
+              digs: len(rest) + 1
+              
+        self.Mantisse.Digits = digs
+        
+        self._update_ctrl(self.Mantisse,float(m),0)
+        self._update_ctrl(self.Exponent,int(ex), 1)
+
+     
+    def update(self,**kwargs):
+        
+        self._min      = kwargs.get("min",self._min)
+        self._max      = kwargs.get("max",self._max)
+        self.Digits    = kwargs.get("digits",self.Digits)
+        self.Increment = kwargs.get("inc",self._inc)
+        
+        v = kwargs.get("value",0.0)
+        self.Value = kwargs.get("Value",v)
+        
+    
+    def _wx_init(self,**kwargs):
+        """
+        < spin ctrl double> <e> < spin ctrl double >
+        :param kwargs:
+        :return:
+        """
+        self.SetName(kwargs.get("name",self.GetName()))
+        self.Increment = kwargs.get("inc",self._inc)
+        
+        style=kwargs.get("style",wx.SP_ARROW_KEYS)
+        self.SetBackgroundColour(kwargs.get("bg","GREY90"))
+       #---5.123 e-11  mantisse 5.123
+        self._SpinMantisse = wx.SpinCtrlDouble(self,inc=self._inc,name="mantisse",style=style)
+       #--- e
+        self._txt= wx.StaticText(self,label="exp") #,style=wx.ALIGN_CENTRE_HORIZONTAL)
+       #---5.123 e-11  exponent -11
+        style = wx.SP_ARROW_KEYS | wx.SP_WRAP | wx.TE_PROCESS_ENTER | wx.ALIGN_RIGHT
+        self._SpinExponent = wx.SpinCtrl(self,wx.ID_ANY,name="exponent",style=style)
+       #---
+        self.update(**kwargs)
+        
+        
+    def _ApplayLayout(self):
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        hbox.Add(self._SpinMantisse,1,LEA,2)
+        hbox.Add(self._txt,0,wx.LEFT|wx.RIGHT,5)
+        hbox.Add(self._SpinExponent,0,wx.LEFT|wx.ALL,2)
+    
+        self.SetAutoLayout(True)
+        self.SetSizer(hbox)
+        self.Fit()
+        self.Layout()
+        
+
+class CheckBoxPopup(wx.PopupTransientWindow):
+    """
+    controls & flags e.g.: verbose,debug ...
+    
+    :param parent:
+    :param kwargs:
+       position: fixed position
+       popup: do popup window
+    
+    Example:
+    --------
+     ctrls =[ ["verbose",self._verbose,self.ClickOnPopupCtrl],
+              ["debug",  self._debug,  self.ClickOnPopupCtrl]
+            ]
+     win = MiscPopup(self,ctrls=ctrls)
+
+    """
+    
+    def __init__(self,parent,**kwargs):
+        """
+
+        :param parent:
+        :param kwargs:
+        """
+        wx.PopupTransientWindow.__init__(self,parent)
+        mpos = wx.GetMousePosition()
+      
+        panel = wx.Panel(self)
+        panel.SetBackgroundColour(kwargs.get("bg","GREY90"))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        for ctrl in kwargs.get("ctrls"):
+            if len(ctrl):
+                ckb = wx.CheckBox(self,wx.NewId(),ctrl[0])
+                ckb.SetName(ctrl[0])
+                ckb.SetValue(ctrl[1])
+                ckb.Bind(wx.EVT_CHECKBOX,ctrl[2])
+                sizer.Add(ckb,0,LEA,5)
+            else:
+                stl = wx.StaticLine(self,style=wx.LI_HORIZONTAL)
+                stl.SetBackgroundColour("GREY60")
+                sizer.Add(stl,0,LEA,5)
+        
+        panel.SetSizer(sizer)
+        sizer.Fit(panel)
+        sizer.Fit(self)
+        self.Layout()
+
+        if kwargs.get("position",None):
+           pos = kwargs.get("position")
+        else:
+            pos = mpos
+            pos[0] -= panel.GetSize()[0]
+            pos[1] += 24
+
+        self.Position(pos,(-1,-1))
+        
+        if kwargs.get("popup",False):
+            self.Popup()
 
 
+class JuMEG_wxSTXTBTCtrl(wx.Panel):
+    """
+    TextCtrl and Bitmap Button
+    send command to show ListBox under TextCtrl
+    :param   name: name of ctrl window
+    :param   label: text in text ctrl
+    :param   bg: background colour
+    :param   textlength: number of chars to calculate textfield size
+    :param   cmd: command to bind with buton press
+    
+    Example:
+    --------
+    from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxPopUpListBox,JuMEG_wxSTXTBTCtrl
+    
+    
+    data=["A","B","c"]
+    txtlen=10 # 10 chars
+    ctrl = JuMEG_wxSTXTBTCtrl(self,name="TEST",label=data[0],cmd=self.ClickOnShowList,textlength=txtlen)
+    
+    def ClickOnShowList(self,evt):
+        try:
+            obj = evt.GetEventObject()
+        except:
+            obj=evt
+           
+       #--- Lbox
+        win = JuMEG_wxPopUpListBox(self,choices=data,caller=obj)
+        win.Popup()
+        
+    """
+    __slots__=["_STXT","_BT","_CMD"]
+    def __init__(self,parent,**kwargs):
+        super().__init__(parent)
+        
+        self._TXT = None
+        self._BT   = None
+        
+        self._wx_init(**kwargs)
+        self._ApplyLayout()
+    
+    @property
+    def Text(self): return  self._TXT
+    
+    def _wx_init(self,**kwargs):
+        style     = kwargs.get("style",wx.TE_RIGHT|wx.TE_READONLY)
+        self._CMD = kwargs.get("cmd",None)
+        self.SetName( kwargs.get("name","JuMEG_WX_STXT_BT"))
+        
+        txt = wx.TextCtrl(self,-1,style=style)
+        txt.AppendText( str( kwargs.get("label","") ) )
+        txt.SetBackgroundColour(wx.WHITE)
+        txt.SetName( "TXT."+self.GetName() )
+        txtlen = kwargs.get("textlength",10)
+        
+        sz = txt.GetSizeFromTextSize( txt.GetTextExtent("W" * txtlen ))
+        txt.SetInitialSize(sz)
+        self._TXT= txt
+        
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_GO_DOWN,wx.ART_BUTTON)
+        w=sz[1]
+        self._BT = wx.BitmapButton( self, -1, bmp, size=(w,w),style=wx.BU_LEFT )
+        self._BT.SetBackgroundColour( kwargs.get("bg","GREY80"))
+        self._BT.SetName("BT." + self.GetName())
+        self.Bind(wx.EVT_BUTTON,self.ClickOnButton)
+        
+    def _ApplyLayout(self):
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        hbox.Add(self._TXT,1,wx.ALL,2)
+        hbox.Add(self._BT,0,wx.ALL,1)
+
+        self.SetAutoLayout(True)
+        self.SetSizer(hbox)
+        self.Fit()
+        self.Layout()
+        
+    def SetValue(self,v):
+        #self._STXT.Clear()
+        self._STXT.SetValue( str(v))
+    def GetValue(self,v):
+        return self._STXT.GetValue()
+
+    def ClickOnButton(self,evt):
+        if self._CMD:
+           self._CMD(self._TXT)
+           return
+        evt.Skip()
+
+    
+class JuMEG_wxPopUpListBox(wx.PopupTransientWindow):
+    """
+     :param parent:
+     :param **kwargs:
+            bg            : background colour
+            size,position : wx parameter
+            choices,style : listbox parameter
+            caller        : calling ctrl
+            cmd           : function to execute keys:
+                            cmd( obj= caller,index= index of listbox selection)
+      
+    Example: show triggered by EVT
+    from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxPopUpListBox
+    --------
+    def ClickOnShowList(self,evt):
+        obj = evt.GetEventObject()
+        pos = obj.GetScreenPosition()
+ 
+        win = JuMEG_wxPopUpCkBox(self,choices=data,position=None,size=None,caller=calling obj)
+      
+       #--- or set pos
+        win.Position( wx.GetMousePosition(),(-1,-1))
+        win.Position(pos,(-1,-1))
+        
+        win.Popup()
+      """
+    def __init__(self, parent, **kwargs):
+        """
+        
+        :param parent:
+        :param kwargs:
+        bg,size,position,choices,style
+        caller: calling ctrl
+        """
+        wx.PopupTransientWindow.__init__(self, parent)
+        self._lb     = None
+        self._caller = None
+        self._cmd    = None
+        self._wx_init(**kwargs)
+     
+    @property
+    def ListBox(self):
+        return self._lb
+    
+    def _wx_init(self,**kwargs):
+        
+        self._caller = kwargs.get("caller",None)
+        self._cmd    = kwargs.get("cmd",None)
+        try:
+           sz    = self._caller.GetSize()
+           sz[1] = 100
+           self.SetSize(kwargs.get("size",sz))
+        except:
+           pass
+       
+        lb_idx = None
+        choices = kwargs.get("choices",[])
+        
+        if self._caller:
+           sz  = self._caller.GetSize()
+           pos = self._caller.GetScreenPosition()
+           pos[1] += sz[1]  # show LB at bottom of caller
+           
+           v = self._caller.GetValue()
+           if v in choices:
+              lb_idx = choices.index( v )
+           
+        if "position" in kwargs:
+           pos = kwargs.get("position",wx.DefaultPosition)
+        self.SetPosition(pos)
+
+       #--- ListBox
+        self._lb = wx.ListBox(self,-1,choices=choices,style=kwargs.get("style",wx.LB_SINGLE)) # |wx.TE_RIGHT))
+        self._lb.SetSize(self.GetClientSize())
+        if lb_idx != None:
+           self._lb.SetSelection(lb_idx)
+        
+        self.Bind(wx.EVT_LISTBOX,self.ClickOnListBox)
+        self.Bind(wx.EVT_LISTBOX_DCLICK,self.DoubleClickOnListBox)
+        
+    def ClickOnListBox(self,evt):
+        #obj = evt.GetEventObject()
+        #logger.info("OnListBox: %s\n" % obj)
+        #logger.info('Selected: %s\n' % obj.GetString(evt.GetInt()))
+        idx = self._lb.GetSelection()
+        v   = self._lb.GetString(idx)
+        try:
+           self._caller.SetValue(v) # get index
+        except:
+           self._caller.SetLabel(v)
+        if self._cmd:
+           self._cmd(obj=self._caller,value=v,index=idx)
+
+    def DoubleClickOnListBox(self,evt):
+        self.Hide()
+        self.Destroy()
+        
+    def SetValue(self,v):
+        lb_idx = self._lb.GetItems().index(str(v))
+        self._lb.SetSelection(lb_idx)
+        
+    def _ApplyLayout(self):
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(self._lb,1,wx.ALL,5)
+        self.SetAutoLayout(True)
+        self.SetSizer(vbox)
+        self.Fit()
+        self.Layout()
+        self._lb.SetFocus()
+        
 class JuMEG_wxPopUpCkBox(wx.PopupTransientWindow):
    """
    
@@ -80,7 +561,6 @@ class JuMEG_wxPopUpCkBox(wx.PopupTransientWindow):
        self.Fit()
        self.Update()
        self.Refresh()
-
 
 
 class JuMEG_wxMultiChoiceDialog(wx.Dialog):
@@ -168,6 +648,46 @@ class JuMEG_wxSplitterWindow(wx.SplitterWindow):
          listener      : name of pubsub listener to subscribe <SPLITTER>
          flip_position : key word for pubsub listener to flip position <FLIP_POSITION>
          split_min_max : key word for pubsub listener to reise windows <SPLIT_MIN_MAX>
+        
+         Example:
+         --------
+           import wx
+           from jumeg.gui.wxlib.utils.jumeg_gui_wxlib_utils_controls import JuMEG_wxSplitterWindow
+        
+           class Test( wx.Panel):
+                def __init__(self,parent,**kwargs):
+                    super().__init__(parent,**kwargs)
+                    self.pnl_left = None
+                    self.pnl_right= None
+                    self._wx_init(**kwargs)
+                    self._ApplyLayout()
+                
+                def _wx_init(self,**kwargs):
+                    self._splitter = JuMEG_wxSplitterWindow(self,label="TEST",name=self.GetName() + ".SPLITTER")
+                    self._pnl_left = wx.Panel(self._splitter,name="LEFT")
+                    self._pnl_left.SetBackgroundColour("green")
+                    self._pnl_right= wx.Panel(self._splitter,name="RIGHT")
+                    self._pnl_right.SetBackgroundColour("blue")
+               
+                def _ApplyLayout(self):
+                    LEA = wx.LEFT|wx.EXPAND|wx.ALL
+                    vbox = wx.BoxSizer(wx.VERTICAL)
+                    self._splitter.SplitVertically(self._pnl_left,self._pnl_right)
+                    self._splitter.SetMinimumPaneSize(150)
+                    self._splitter.SetSashGravity(1.0)
+                    vbox.Add(self._splitter, 1, wx.ALIGN_CENTER | wx.EXPAND | wx.ALL, 5)
+                   
+                    self.SetAutoLayout(True)
+                    self.SetSizer(vbox)
+                    self.Fit()
+                    self.Layout()
+                    
+           if __name__ == '__main__':
+              app = wx.App()
+              frame = wx.Frame(None, -1, "Test", size=(640, 480))
+              win = Test(frame)
+              frame.Show(True)
+              app.MainLoop()
         """
         super().__init__(parent=parent, id=wx.ID_ANY,style=wx.SP_3DSASH|wx.SP_3DBORDER|wx.SUNKEN_BORDER)
         self._flip_position = "FLIP_POSITION"
@@ -276,7 +796,7 @@ class JuMEG_wxCMDButtons(wx.Panel):
            prefix:"CMD_BUTTONS"
            ShowClose:True,ShowCancel:True,ShowApply:True
            verbose: False, debug: False
-          """
+                """
           super(JuMEG_wxCMDButtons,self).__init__(parent=parent, id=wx.ID_ANY,style=wx.SUNKEN_BORDER)
           self._init(**kwargs)
 
@@ -355,6 +875,7 @@ class JuMEG_wxCMDButtons(wx.Panel):
 class JuMEG_wxControlUtils(object):
     def __init__(self, parent):
         super (JuMEG_wxControlUtils,self).__init__()
+        
         # self._init()
 
     #def __init(self):
@@ -372,8 +893,22 @@ class JuMEG_wxControlUtils(object):
 
         """
         return self.FindWindowByName(obj.GetName().replace("BT","TXT",1))
-
-    # ---
+     
+    def FindObjIndexByObjID(self,id,objs=None):
+        """
+        find ctrl by ID from objs list
+        :param objs: the <objs> to serach
+        :return: index
+        """
+        
+        for idx in range(len(objs)):
+            try:
+                if id == objs[idx].GetId():
+                   return idx
+            except:
+                pass
+        
+   # ---
     def FindControlByObjName(self, obj, prefix="", sep=None):
         """
         finds a obj ctrl by an other object and prefix to change
@@ -514,8 +1049,23 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
      self.add_controls(vbox)  
      
     """
-    def __init__(self, parent,control_list=None,label='TEST',drawline=True,bg="grey90",boxsizer=wx.VERTICAL,
+    def __init__(self, parent,control_list=None,label='TEST',drawline=True,bg="grey90",boxsizer=wx.VERTICAL,init=True,
                  AddGrowableCol=None,AddGrowableRow=None,cols=4,rows=1,separator = ".",set_ctrl_prefix=True):
+        """
+        
+        :param parent:
+        :param control_list:
+        :param label:
+        :param drawline:
+        :param bg:
+        :param boxsizer:
+        :param AddGrowableCol:
+        :param AddGrowableRow:
+        :param cols:
+        :param rows:
+        :param separator:
+        :param set_ctrl_prefix:
+        """
         super ().__init__(parent,id=wx.ID_ANY,style=wx.SUNKEN_BORDER)
         self.box = wx.BoxSizer(boxsizer)
         self.SetBackgroundColour(bg)
@@ -603,8 +1153,8 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
      
     def _gs_add_add_first_text_info(self,d):
         """ add text in front of control """
-        if d[1]:
-           self.GS.Add( wx.StaticText(self,-1,label=d[1],style=wx.ALIGN_LEFT),0,wx.LEFT,self.gap) 
+        if len(d) >1:
+           self.GS.Add( wx.StaticText(self,-1,label=d[1],style=wx.ALIGN_LEFT),0,wx.LEFT,self.gap)
    
     def _gs_add_add_last_obj(self):
         """ helper fct: add last obj to add """
@@ -627,9 +1177,9 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
     def _gs_add_Button(self,d):
         """ add Button"""
         try:
-           style= d[5]
+           style = d[5]
         except:
-            style=wx.BU_EXACTFIT
+           style=wx.BU_EXACTFIT
         self._obj.append(wx.Button(self,wx.ID_ANY,label=d[2],style=style))
         self._gs_add_init_last_obj(d,evt=wx.EVT_BUTTON)
 
@@ -659,9 +1209,14 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
         #   s=(-1,-1)
         
         # self._obj.append(wx.ComboBox(self,wx.ID_ANY,choices=d[3],size=s,style=wx.CB_READONLY))
-        self._obj.append(wx.ComboBox(self,wx.ID_ANY,choices=d[3],style=wx.CB_READONLY))
-        self._obj[-1].SetValue(d[2])
+        cb = wx.ComboBox(self,wx.ID_ANY,choices=d[3],style=wx.CB_READONLY)
+        cb.SetValue(d[2])
+        if d[3]:
+           cnts = len( max(d[3],key=len))  # fix text length for max choices
+           sz = cb.GetSizeFromTextSize(cb.GetTextExtent("W" * cnts))
+           cb.SetInitialSize(sz)
         
+        self._obj.append(cb)
         self._gs_add_init_last_obj(d,evt=wx.EVT_COMBOBOX)
         
     def _gs_add_TextCtrl(self,d):
@@ -706,6 +1261,10 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
         self._obj[-1].Bind(wx.EVT_SPINCTRL, d[-1])  #6 
         #self.GS.Add(self._obj[-1],0,wx.LEFT|wx.EXPAND,self.gap)
         self.GS.Add(self._obj[-1],0,wx.LEFT,self.gap)
+    
+    def _gs_add_Ctrl(self,d):
+        self._obj.append(d.pop())
+        self.GS.Add(self._obj[-1],0,wx.LEFT,self.gap)
 
     def add_controls(self,**kwargs):
        #--- Label + line 
@@ -719,7 +1278,7 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
            gap=15
            self.Sizer.Add( wx.StaticText(self,0,label=self.label),0,wx.LEFT,5)
 
-        self.Sizer.Add( self.initControl(),0,wx.EXPAND|wx.ALL,gap)
+        self.Sizer.Add( self.initControl(**kwargs),0,wx.EXPAND|wx.ALL,gap)
         
         self.SetSizer(self.Sizer)   
         self.SetAutoLayout(1)
@@ -750,49 +1309,80 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
 
         self.init_growable()
   
-    def initControl(self):
-        """generate and pack wx controls into a wx.FlexGridSizer
+    def initControl(self,**kwargs):
+        """
+        generate and pack wx controls into a wx.FlexGridSizer via list of controls
+        :param control_list: list of list with controls or [list of args]
+        :param cols = None
+        :param rows = None
+      
+        arg[0] <str>
+         BT   : Button
+         FLBT : FlatButton
+         CK   : CheckBox
+         COMBO: ComboBox
+         TXT  : TextCtrl
+         STXT : StaticText
+         BTBMP: BitmapButton
+         SP   : SpinCtrl
+         SPF  : FloatSpin(
+         OBJ, CTRL: add Ctrl Obj
+    
         
         Results:
         ---------
          wx.FlexGridSizer with controls
          
         """
+        if kwargs.get("control_list"):
+           self.list_of_controls = kwargs.get("control_list")
+        if kwargs.get("cols",None):
+           self._cols=kwargs.get("cols")
+        if kwargs.get("rows",None):
+           self.rows=kwargs.get("rows")
+           
         self._obj=[]
-        self.init_GridSizer()           
-          
+        self.init_GridSizer()
+        
         for d in self.list_of_controls:
-            
-            self._gs_add_add_first_text_info(d)
-           
-           #--- Button
-            if   d[0] == "BT"   : self._gs_add_Button(d)
-           #--- FlatButton
-            elif d[0] == "FLBT" : self._gs_add_FlatButton(d)
-           #--- CheckButton
-            elif d[0] == 'CK'   : self._gs_add_CheckBox(d)  
-           #---ComboBox      
-            elif d[0] == "COMBO": self._gs_add_ComboBox(d)
-           #---wx.TextCtrl     
-            elif d[0] == 'TXT'  : self._gs_add_TextCtrl(d)
-           #---wx.StaticText     
-            elif d[0] == 'STXT' : self._gs_add_StaticText(d)
-          #--- wx BitmapButton
-            elif d[0] == 'BTBMP': self._gs_add_BitmapButton(d)
-         
-           #---  MIN/MAXSpin Buttons
-            elif d[0].startswith('SP'):
-           #--- min button 
-                 self._gs_add_min_max_button("|<","MIN")
-           #---SpinCrtl     
-                 if d[0] == 'SP'   : self._gs_add_SpinCtrl(d)
-           #---FloatSpinCrtl      
-                 elif d[0] == "SPF": self._gs_add_FloatSpin(d)
-           #--- max button   
-                 self._gs_add_min_max_button(">|","MAX")
-           
+            if d:
+               self._gs_add_add_first_text_info(d)
+               
+               if isinstance( d[0],(str) ):
+                 #--- Button
+                   if   d[0] == "BT"   : self._gs_add_Button(d)
+                 #--- FlatButton
+                   elif d[0] == "FLBT" : self._gs_add_FlatButton(d)
+                 #--- CheckButton
+                   elif d[0] == 'CK'   : self._gs_add_CheckBox(d)
+                 #---ComboBox
+                   elif d[0] == "COMBO": self._gs_add_ComboBox(d)
+                  #---wx.TextCtrl
+                   elif d[0] == 'TXT'  : self._gs_add_TextCtrl(d)
+                 #---wx.StaticText
+                   elif d[0] == 'STXT' : self._gs_add_StaticText(d)
+                 #--- wx BitmapButton
+                   elif d[0] == 'BTBMP': self._gs_add_BitmapButton(d)
+                 #---  MIN/MAXSpin Buttons
+                   elif d[0].startswith('SP'):
+                      #--- min button
+                       self._gs_add_min_max_button("|<","MIN")
+                      #---SpinCrtl
+                       if d[0] == 'SP'   : self._gs_add_SpinCtrl(d)
+                      #---FloatSpinCrtl
+                       elif d[0] == "SPF": self._gs_add_FloatSpin(d)
+                      #--- max button
+                       self._gs_add_min_max_button(">|","MAX")
+                   elif d[0] == "OBJ":  self._gs_add_Ctrl(d)
+                   elif d[0] == "CTRL": self._gs_add_Ctrl(d)
+    
+                   else:
+                       self._gs_add_empty_cell()
+               else:
+                    self._gs_add_Ctrl(d)
             else:
                self._gs_add_empty_cell()
+               
                #self.GS.Add(wx.StaticText(self,-1,label="NOT A CONTROLL"),wx.EXPAND,self.gap)
                #self.gs_add_empty_cell()
           # print(self._obj[-1].GetName())
@@ -803,11 +1393,15 @@ class JuMEG_wxControlBase(wx.Panel,JuMEG_wxControlUtils):
           
     #--- get obj SpinCtrl   
         if   obj.GetName() == "MIN":
-             obj_sp = self.FindWindowById( obj.GetId()+1)
-             obj_sp.SetValue( obj_sp.GetMin() )
-        elif obj.GetName() == "MAX": 
-             obj_sp = self.FindWindowById( obj.GetId()-1)
-             obj_sp.SetValue( obj_sp.GetMax() )
+             idx = self.FindObjIndexByObjID(obj.GetId(),objs=self._obj)
+             if idx != None:
+                obj_sp = self._obj[idx+1] #self.FindWindowById( obj.GetId()+1)
+                obj_sp.SetValue( obj_sp.GetMin() )
+        elif obj.GetName() == "MAX":
+             idx = self.FindObjIndexByObjID(obj.GetId(),objs=self._obj)
+             if idx != None:
+                obj_sp = self._obj[idx -1]  #self.FindWindowById( obj.GetId()-1)
+                obj_sp.SetValue( obj_sp.GetMax() )
         else:
             evt.Skip()
             return    
@@ -879,12 +1473,16 @@ class JuMEG_wxControlGrid(JuMEG_wxControlBase):
 
     """
     def __init__(self,parent,**kwargs):
-       super(JuMEG_wxControlGrid,self).__init__(parent,**kwargs)
-       
-      #--- add controls 
-       self.add_controls(**kwargs)
+       super().__init__(parent,**kwargs)
+       self._do_add_controls = kwargs.get("init",True)
+
+      #--- add controls
+       if self._do_add_controls:
+          self.add_controls(**kwargs)
     
-    
+    def update(self,**kwargs):
+        self.add_controls(**kwargs)
+        
     def _gs_add_add_first_text_info(self,d):
         """ add text in front of control """
         pass

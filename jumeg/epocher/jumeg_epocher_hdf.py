@@ -22,7 +22,7 @@ __version__="2019.05.14.001"
 
 class JuMEG_Epocher_Template(JuMEG_Template):
     def __init__ (self):
-        super(JuMEG_Epocher_Template, self).__init__()
+        super().__init__()
         self.template_path    = os.getenv('JUMEG_TEMPLATE_PATH_EPOCHER',self.template_path_default + '/jumeg_epocher')
         self.template_postfix = 'jumeg_epocher_template'
        
@@ -35,7 +35,7 @@ class JuMEG_Epocher_Template(JuMEG_Template):
 class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
     """ HDF I/O"""
     def __init__ (self):
-        super(JuMEG_Epocher_HDF, self).__init__()
+        super().__init__()
 
         self._hdf_obj           = None
         self._hdf_path          = None
@@ -159,7 +159,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
                self._hdf_path = None
 
         if self.verbose:
-           logger.info("  -> setting HDF file name to: {}".format(self.hdf_filename))
+           logger.info("setting HDF file name:\n  -> {}".format(self.hdf_filename))
         
         return self._hdf_filename
 
@@ -214,7 +214,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
             logger.exception(" error open or creating HDFobj; e.g.: release lock?"+
                              "  -> HDF filename: {}".format(fhdf))
         if self.verbose:
-           logger.info("---> Open HDF file: {}".format(self.HDFobj.filename))
+           logger.info("Open HDF file: {}".format(self.HDFobj.filename))
        
         return self.HDFobj
 
@@ -417,10 +417,10 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
 
         if self.verbose :
            msg=[
-            "---> HDFobj store attributes to HDF5",
+            "HDFobj store attributes to HDF5",
             " --> input key   : {}".format(key),
             " --> HDFkey      : {}".format(self.key2hdfkey(key)),
-            " --> HDF filename: {}".format(self.HDFobj.filename)]
+            " --> HDF filename:\n  -> {}".format(self.HDFobj.filename)]
            for atr in storer_attrs :
                msg.append("  -> PARAMETER -> HDF storer attributes: {} \n{}:".format(atr,HStorer.attrs[atr]) )
            logger.debug( "\n".join(msg) )
@@ -512,7 +512,7 @@ class JuMEG_Epocher_HDF(JuMEG_Epocher_Template):
         HDFobj key  e.g.: /epocher/< condition name >
         """
 
-        logger.info("---> HDF Start extract condition for epocher: {}".format(condi))
+        logger.info("HDF Start extract condition for epocher: {}".format(condi))
         if condi.startswith('epocher'):
            ep_key = '/'+condi
         else:

@@ -42,13 +42,20 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
         The modified instance.
 
     """
-
     from mne.channels.interpolation import _interpolate_bads_eeg
 
     if getattr(inst, 'preload', None) is False:
         raise ValueError('Data must be preloaded.')
 
-    _interpolate_bads_eeg(inst)
+    #--- check if EEG in raw
+    picks_eeg = pick_types(inst.info, meg=False, eeg=True, exclude=[])
+    if picks_eeg is not None:
+   #--- ck for origin or mne version
+       if 'origin' in _interpolate_bads_eeg.code.co_varnames:
+           _interpolate_bads_eeg(inst,origin) # mne 0.20
+       else:
+           _interpolate_bads_eeg(inst) # mne <0.20
+   
     _interpolate_bads_meg(inst, origin=origin, mode=mode)
 
     if reset_bads is True:

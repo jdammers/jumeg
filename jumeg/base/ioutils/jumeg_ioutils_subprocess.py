@@ -22,13 +22,15 @@ import threading
 from datetime         import datetime as dt
 from subprocess       import Popen, PIPE,STDOUT
 from pubsub           import pub
-from jumeg.base.jumeg_base import jumeg_base as jb
+from jumeg.base.jumeg_base    import jumeg_base as jb
+from jumeg.base.jumeg_logger  import get_logger
+
 from jumeg.gui.wxlib.jumeg_gui_wxlib_pbshost  import JuMEG_PBSHostsParameter
 
-import logging
-logger = logging.getLogger('jumeg')
+#--- ToDo use WxLog
+logger = get_logger()
 
-__version__="2019.05.14.001"
+__version__="2020.04.22.001"
 
 
 '''

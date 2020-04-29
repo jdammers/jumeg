@@ -203,7 +203,7 @@ class JuMEG_TSV_OGLPlot2D(object):
         super().__init__()
        
       #--- data with RAW obj
-        self.data = JuMEG_TSV_ICA_OGL_Data()
+        self.data = JuMEG_TSV_OGL_Data()
       #---
         self.GLPlot = GLPlotWidget()
 

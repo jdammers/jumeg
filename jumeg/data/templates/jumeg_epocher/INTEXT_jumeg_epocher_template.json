@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Apr 24 15:36:17 2020
+
+@author: fboers
+"""
 {
 "default":{
            "version"          :"2019-08-14-19-001",
@@ -174,4 +181,18 @@
 }
  
 
+
+    © 2020 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Status
+    Help
+
+    Contact GitHub
+    Pricing
+    API
+    Training
+    Blog
+    About
 

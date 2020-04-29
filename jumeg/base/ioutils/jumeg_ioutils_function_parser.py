@@ -14,15 +14,13 @@ from pathlib import Path
 from glob import glob
 import numpy as np
 
-import logging
-logger = logging.getLogger('jumeg')
+from jumeg.base.jumeg_logger  import get_logger
+logger = get_logger()
 
 from jumeg.base.jumeg_base import JuMEG_Base_Basic
 jb = JuMEG_Base_Basic()
 
-
-__version__="2019.05.14.001"
-
+__version__="2020.04.22.001"
 
 class JuMEG_IoUtils_FunctionParserBase(object):
     """
@@ -107,7 +105,6 @@ class JuMEG_IoUtils_FunctionParserBase(object):
 
     def info(self):
         logger.info( jb.pp_list2str( self.command,head="JuMEG Function Command") )
-
        
 
 class JuMEG_IoUtils_FunctionParser(JuMEG_IoUtils_FunctionParserBase):

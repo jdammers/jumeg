@@ -858,8 +858,9 @@ class GLPlotWidget(object):
 
                 c = self.signals.GetColour(cidx)
                 self.GLShader.SetColour(c)
+                #logger.info("DEBUG DC offset ==0")
+                dc = 0.0 # self.signals.GetDCoffset(cidx)
                
-                dc = self.signals.GetDCoffset(cidx)
                 self.GLShader.SetDCoffset(dc)
                 
                 self._vbo_data[:,1] = self.signals.data[cidx]

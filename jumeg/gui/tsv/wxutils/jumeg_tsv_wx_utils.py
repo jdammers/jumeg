@@ -20,7 +20,16 @@ def jumeg_tsv_wxutils_dlg_plot_settings(type="subplot",**kwargs):
     else:
        return None
        
-def jumeg_tsv_wxutils_openfile(w,path=None):
+def jumeg_tsv_wxutils_openfile(w,path=None,
+                               wildcard="Sugested Bads RAW (*bcc-raw.fif)|*bcc-raw.fif|Sugested Bads Empty (*bcc-empty.fif)|*bcc-empty.fif|FIF files (*.fif)|*.fif|All files (*.*)|*.*"):
+    """
+    
+    :param w      :  parent widget
+    :param path   : file dlg start path
+    :param wilcard: file extention search mask
+    :return:
+      selected fname
+    """
 
     fout = None
     path = None

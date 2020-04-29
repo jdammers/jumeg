@@ -265,7 +265,7 @@ class GroupSettingsBase(object):
           '''
           self._grp = {}
          #---fixed pos to display
-          self._default_labels = ['mag','grad','ref_meg', 'ecg','eog','emg','eeg','stim','resp','misc']
+          self._default_labels = ['mag','grad','ref_meg', 'ecg','eog','emg','eeg','stim','resp','misc','ica']
           
           self._default_grp={
                        'mag':    {"selected":True,"colour":"RED",         "prescale":500,"unit":"fT"},
@@ -277,7 +277,9 @@ class GroupSettingsBase(object):
                        'ecg':    {"selected":True,"colour":"MAROON",      "prescale":1,  "unit":"mV"},
                        'stim':   {"selected":True,"colour":"MAGENTA",     "prescale":10, "unit":"bit"},
                        'resp':   {"selected":True,"colour":"NAVYBLUE",    "prescale":10, "unit":"bit"},
+                       'ica':    {"selected":True,"colour":"BLUE",        "prescale":500,"unit":"AU" },
                        'default':{"selected":True,"colour":"PURPLE",      "prescale":1,  "unit":"AU"}
+                       
               }
           for g in self._default_grp.keys():
               self._default_grp[g]["status"]       = 0
@@ -533,7 +535,15 @@ class ChannelSettings(object):
         self._DC_OFFSET_WINDOW = 2
         
         if raw:
-           self.labels    = raw.info['ch_names']
+           try:
+               if raw.isICA:
+                  self.labels = ["IC{:03d}".format(c) for c in range( raw._data.shape[0] )]
+           except:
+               try:
+                  self.labels = raw.info.get('ch_names')
+               except:
+                  self.labels = raw.ch_names
+               
            n_chan         = self.n_channels
            self.bit_index = [] #np.array([],dtype=np.int32)
            self.colour    = np.zeros([n_chan,3],dtype=np.float32)
@@ -777,15 +787,13 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
       def __init__ (self,**kwargs):
           self._Group   = GroupSettings()
           self._Channel = ChannelSettings()
-    
+          
           self.raw          = None
           self.verbose      = False
           self.debug        = False
        
           self._init(**kwargs)
    
-   
-      
       @property
       def Group(self): return self._Group
       @Group.setter
@@ -828,11 +836,23 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
           for g in old_grps:
               raw_grps[g] = False
     
+          #logger.info(self.raw.info)
+          
           #--- set group in new raw true
-          for idx in range(self.Channel.n_channels):
-              g = mne.io.pick.channel_type(self.raw.info,idx)
-              raw_grps[g] = True
-         #--- delete obsolete groups not in new raw
+          try:
+             if self.raw.isICA:
+                for idx in range(self.Channel.n_channels):
+                    raw_grps["ica"] = True
+             else:
+                for idx in range(self.Channel.n_channels):
+                    g = mne.io.pick.channel_type(self.raw.info,idx)
+                    raw_grps[g] = True
+          except:
+              for idx in range(self.Channel.n_channels):
+                  g = mne.io.pick.channel_type(self.raw.info,idx)
+                  raw_grps[g] = True
+
+          #--- delete obsolete groups not in new raw
           grps2del = []
           labels   = []
           for k,v in raw_grps.items():
@@ -847,19 +867,31 @@ class JuMEG_TSV_PLOT2D_DATA_SETTINGS(object):
       def init_group_info(self):
           
           self.Channel.reset( raw=self.raw )
-          
           self._remove_obsolete_groups()
           
+         # logger.info( self.raw.info)
+          #logger.info( self.raw.info.get("sfreq") )
+         
           for idx in range(self.Channel.n_channels):
-             #--- get group for idx meg eeg ...
-              g = mne.io.pick.channel_type(self.raw.info,idx)
-              self.Group.Add(g)
-             #---  numpy arrays in ChannelOption class
-              self.Channel.group_index[idx] = self.Group.GetIndex(g)
+            #--- get group for idx meg eeg ...
+             try:
+                if self.raw.isICA:
+                   g = "ica"
+                else:
+                   g = mne.io.pick.channel_type(self.raw.info,idx)
+             except:
+                   g = mne.io.pick.channel_type(self.raw.info,idx)
+
+             self.Group.Add(g)
+            #---  numpy arrays in ChannelOption class
+             self.Channel.group_index[idx] = self.Group.GetIndex(g)
         
         # logger.info("RAW BADS: {} ".format(self.raw.info['bads']))
           
           bads_idx = jb.picks.bads2picks(self.raw)
+         
+          if isinstance(bads_idx,(list)):
+             bads_idx = np.array( bads_idx,dtype=np.int32)
           
           if isinstance(bads_idx,(np.ndarray)):
              if bads_idx.shape[0]:

@@ -18,12 +18,12 @@
 import os,logging
 import pandas as pd
 
-from jumeg.base.jumeg_base import jumeg_base
+from jumeg.base.jumeg_base   import jumeg_base
+from jumeg.base.jumeg_logger import get_logger
 
-from jumeg.base import jumeg_logger
-logger = logging.getLogger('jumeg')
+logger = get_logger()
 
-__version__="2019.05.16.001"
+__version__="2020.04.20.001"
 
 
 class JuMEG_BadChannelTable(object):
