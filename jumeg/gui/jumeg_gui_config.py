@@ -16,7 +16,7 @@
 #--------------------------------------------
 
 import getpass,datetime,platform
-import os,sys,argparse,logging,pprint
+import os,sys,argparse,pprint
 # from ruamel.ordereddict import ordereddict
 from collections import OrderedDict
 from copy import  deepcopy
@@ -30,11 +30,11 @@ from jumeg.base.jumeg_base import jumeg_base as jb
 from jumeg.base.jumeg_base_config import JuMEG_CONFIG
 
 from jumeg.base import jumeg_logger
-logger = logging.getLogger('jumeg')
+logger = jumeg_logger.get_logger()
 
 __version__= "2020.04.28.001" # platform.python_version()
 
-class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
+class JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
    def __init__(self,parent,**kwargs):
        style = (CT.TR_DEFAULT_STYLE| CT.TR_SINGLE
                |CT.TR_HAS_VARIABLE_ROW_HEIGHT
@@ -394,7 +394,7 @@ class  JuMEG_ConfigTreeCtrl(CustomTreeCtrl):
        
        self.Expand(self.root)
 
-class CtrlPanel(wx.Panel):
+class JuMEG_wxConfig(wx.Panel):
     def __init__(self,parent,**kwargs):
         super().__init__(parent)
         self.root_name="jumeg"
@@ -586,7 +586,7 @@ class MainWindow(wx.Frame):
         self._STB = self.CreateStatusBar()
         self._STB.SetStatusStyles([wx.SB_SUNKEN])
         
-        self._PNL = CtrlPanel(self,**kwargs)
+        self._PNL = JuMEG_wxConfig(self,**kwargs)
         
         self.Bind(wx.EVT_BUTTON,self.ClickOnButton)
         self.Bind(wx.EVT_CLOSE,self.ClickOnClose)

@@ -35,7 +35,7 @@ logger = jumeg_logger.get_logger()
 
 __version__= "2020.04.28.001"
 
-#@jit (nopython=True)
+
 def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False,exit_on_error=False):
     """
     calculate chop times for every X s
