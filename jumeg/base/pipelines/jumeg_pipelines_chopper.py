@@ -919,8 +919,8 @@ def test():
     stage= "$JUMEG_TEST_DATA/mne/201772/INTEXT01/190212_1334/2"
     fn   = "201772_INTEXT01_190212_1334_2_c,rfDC,meeg,nr,bcc,int-raw.fif"
     
-    stage="/media/fboers/USB_2TB/exp/INTEXT/mne/208548/INTEXT01/181023_1355/1"
-    fn="208548_INTEXT01_181023_1355_1_c,rfDC,meeg,nr,bcc,int-raw.fif"
+    #stage="/media/fboers/USB_2TB/exp/INTEXT/mne/208548/INTEXT01/181023_1355/1"
+    #fn="208548_INTEXT01_181023_1355_1_c,rfDC,meeg,nr,bcc,int-raw.fif"
     fin  = os.path.join(stage,fn)
 
 

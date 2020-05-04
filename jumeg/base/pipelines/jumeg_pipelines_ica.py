@@ -443,7 +443,7 @@ class JuMEG_PIPELINES_ICA(object):
                  self._ica_obj,_ = self.SVM.run(raw=self.raw,ICA=self._ica_obj,picks=self.picks,do_crop=False,do_copy=True)
                  logger.info('DONE SVM ICA FIT: apply ICA.fit')
 
-        #--- save ica object
+        #-- save ica object
         if self.cfg.fit.save and not load_from_disk:
            logger.info("saving ICA chop: {}\n".format(idx + 1,self._chop_times.shape[0]) +
                        "  -> ica filename   : {}".format(fname_ica))
@@ -567,7 +567,8 @@ class JuMEG_PIPELINES_ICA(object):
             #--- ICA Transform chop
             if run_transform:
                fout = jb.get_raw_filename(raw_chop)
-               raw_chops_clean_list.append(self.apply_ica_artefact_rejection(raw_chop,ICA,reject=self.CFG.GetDataDict(key="reject")))
+               raw_chops_clean_list.append(self.apply_ica_artefact_rejection(raw_chop,ICA,
+                                                                             reject=self.CFG.GetDataDict(key="reject")))
              
               #--- plot performance
                txt = "ICs JuMEG/MNE: "

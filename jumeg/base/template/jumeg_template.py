@@ -37,13 +37,14 @@ from jumeg.template.jumeg_template import JuMEG_Template_Experiments
 import glob, os, re, sys
 import json,yaml,time
 
-import logging
-logger = logging.getLogger("jumeg")
-
 from jumeg.base.jumeg_base import JuMEG_Base_Basic
+from jumeg.base            import jumeg_logger
+
+logger = jumeg_logger.get_logger()
 
 __version__='2019.12.19.001'
-logger = logging.getLogger(__name__)
+
+
 
 class dict2obj(dict):
     def __init__(self, dict_):
