@@ -22,7 +22,7 @@ from jumeg.base            import jumeg_logger
 
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.22.001"
+__version__= "2020.05.05.001"
 
 
 
@@ -40,6 +40,7 @@ class JuMEG_MNE_FILTER(object):
     fhigh    : <None> mne <h_freq>
     picks    : <None> => if None then exclude channels from <stim> group
     save     : <False> / True
+    dcoffset : <False> => if True apply DC offset correction , substract mean
     overwrite: <False> if save overwrite existing filtered file
     verbose  : <False> tell me more
     debug    : <False>
@@ -64,7 +65,7 @@ class JuMEG_MNE_FILTER(object):
     fname_fitered_raw = jfi.apply(raw=raw,flow=0.1,fhigh=45.0,picks=None,save=True,verbose=True,overwrite=True)
     
     """
-    __slots__ = ["raw","flow","fhigh","picks","save","overwrite","verbose","debug","_is_filtered","_is_reloaded","_fname_orig","annotations"]
+    __slots__ = ["raw","flow","fhigh","picks","save","overwrite","dcoffset","verbose","debug","_is_filtered","_is_reloaded","_fname_orig","annotations"]
     
     def __init__(self,**kwargs):
         #super().__init__()
@@ -116,7 +117,64 @@ class JuMEG_MNE_FILTER(object):
         # self.postfix = fi_fix
         return fi_fix
 
+    def get_filter_filename(self,raw=None):
+        """
+        
+
+        Parameters
+        ----------
+        raw : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        fname : filename of filtered raw
+        
+        """
+        self._update_postfix()
+        if raw:
+           fname = jb.get_raw_filename(raw,index=0)
+        else:
+           fname = self.fname 
+        
+        fname,ext = fname.rsplit('-',1)
+        fname += "," + self.postfix 
+        if self.dcoffset:
+           fname += "dc" 
+        fname += "-" + ext
+        return fname 
    
+    def apply_dcoffset(self,raw=None,picks=None):
+        '''
+        apply dc offset to data, works in place
+        substract data mean
+
+        Parameters
+        ----------
+        raw : TYPE, optional
+            DESCRIPTION. The default is None.
+        picks : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        data mean
+
+        '''
+        if not picks:
+           picks = self.picks
+        if not raw:
+           raw = self.raw 
+        
+        # logger.debug("Total MEAN RAW Orig: {}".format(self.raw._data.mean() )   )
+        
+        dm = raw._data[picks,:].mean(axis=-1)
+        raw._data[picks,:] -= dm[:, np.newaxis] 
+        # logger.debug("Total MEAN RAW DC: {}".format(self.raw._data.mean() ) )  
+        return dm
+        
+        
+        
     def apply(self,**kwargs):
         """
         wrapper function for MNE filter cls
@@ -126,7 +184,7 @@ class JuMEG_MNE_FILTER(object):
         
         call MNE filter e.g.:
             raw.filter(l_freq=flow,h_freq=fhigh,picks=picks)
-        
+        208497_INTEXT01_190103_1010_1_c,rfDC,meeg,nr,bcc,int,ar
         :param kwargs:
          flow,fhigh,raw,picks
         
@@ -155,14 +213,11 @@ class JuMEG_MNE_FILTER(object):
         self._is_filtered = False
         self._is_reloaded = False
         
-        v = jb.verbose
         jb.verbose = self.verbose
         
         logger.info("Filter start: {}".format(self.fname))
         
-        self._update_postfix()
-        fname,ext = self.fname.rsplit('-',1)  #raw.fif'
-        fname += "," + self.postfix + "-" + ext
+        fname = self.get_filter_filename()
         
         #--- ck if load from disk
         if not self.overwrite:
@@ -184,6 +239,9 @@ class JuMEG_MNE_FILTER(object):
             else:
                logger.warning("WARNING: picks not defined : excluding channel group <stim> and <resp>")
                picks = jb.picks.exclude_trigger(self.raw)
+               
+            if self.dcoffset:
+               self.apply_dcoffset()
                
             self.raw.filter(l_freq=self.flow,h_freq=self.fhigh,picks=picks)
             self._fname_orig = jb.get_raw_filename(self.raw)
@@ -207,10 +265,11 @@ class JuMEG_MNE_FILTER(object):
         """
         _msg = ["Filter      : {}".format(self.isFiltered),
                 " --> raw filtered: {}".format(self.fname),
-                "  -> postfix: {}".format(self.postfix),
-                "  -> flow   : {}".format(self.flow),
-                "  -> fhigh  : {}".format(self.fhigh),
-                "  -> save   : {}".format(self.save)
+                "  -> postfix : {}".format(self.postfix),
+                "  -> flow    : {}".format(self.flow),
+                "  -> fhigh   : {}".format(self.fhigh),
+                "  -> dcoffset: {}".format(self.dcoffset),
+                "  -> save    : {}".format(self.save)
                 ]
         try:
             annota =self.raw.annotations
@@ -226,8 +285,24 @@ class JuMEG_MNE_FILTER(object):
             msg.extend(_msg)
             return msg
         else:
-            logger.info(_msg)
+            logger.info("\n".join(_msg))
+    
+    def info(self,msg=None):
+        """
+        wrapper for GetInfo()
 
+        Parameters
+        ----------
+        msg : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.GetInfo(msg=msg)
+        
 
 class JuMEG_MNE_NOTCH_FILTER(JuMEG_MNE_FILTER):
     """

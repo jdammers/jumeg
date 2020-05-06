@@ -759,7 +759,7 @@ class JuMEG_Base_PickChannels(object):
         -------
          bad picks as numpy array int64 (index of bad channels)
         """
-       #--- ICA obj get excluded ICs => BADs
+       #-- ICA obj get excluded ICs => BADs
         bads = None
 
         try:
@@ -791,7 +791,7 @@ class JuMEG_Base_PickChannels(object):
     def all_nobads(self, raw):
         """ call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude='bads' """
         return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude='bads')
-  #--- meg
+  #-- meg
     def meg(self,raw):
         """ call with meg=True """
         return mne.pick_types(raw.info,meg=True)      
@@ -932,15 +932,15 @@ class JuMEG_Base_PickChannels(object):
         '''
         if picks is None:
            picks = self.meg_and_ref_nobads(raw)
-       #--- if empty list
+       #-- if empty list
         if not picks.any():
            if self.verbose or verbose:
               logger.warning("looking for dead channels -> no picks defined" )
            return picks
-       #--- idx array: 0:dead 1:ok
+       #-- idx array: 0:dead 1:ok
         idx = np.where( raw._data[picks,:].min(axis=1) == raw._data[picks,:].max(axis=1),0,1 )
        
-       #--- update bads in raw, delete doubles, sort
+       #-- update bads in raw, delete doubles, sort
         if update:
            self.update_bads(raw,bads=self.picks2labels(raw,picks[np.where(idx < 1)[0]]) )
            

@@ -27,17 +27,17 @@ from jumeg.base.pipelines.jumeg_pipelines_report     import JuMEG_REPORT
 #---
 from jumeg.base.plot.jumeg_base_plot_preproc         import JuMEG_PLOT_PSD
 from jumeg.filter.jumeg_mne_filter                   import JuMEG_MNE_FILTER
-#--- preproc
+#-- preproc
 from jumeg.jumeg_noise_reducer     import noise_reducer
 from jumeg.jumeg_suggest_bads      import suggest_bads
 from jumeg.jumeg_interpolate_bads  import interpolate_bads as jumeg_interpolate_bads
 
 logger = jumeg_logger.get_logger()
 
-__version__= '2020.04.23.001'
+__version__= '2020.05.04.001'
 
 #---------------------------------------------------
-#--- apply_noise_reducer
+#-- apply_noise_reducer
 #---------------------------------------------------
 @JuMEG_PipelineFrame # first  call execute __init__; later calls  execute __call__
 def apply_noise_reducer(raw_fname=None,raw=None,config=None,label='noise reducer',fname_out=None):
@@ -164,7 +164,7 @@ def apply_noise_reducer(raw_fname=None,raw=None,config=None,label='noise reducer
     return fname_out,raw,RawIsChanged,None
 
 #---------------------------------------------------
-#--- apply_suggest_bads
+#-- apply_suggest_bads
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_suggest_bads(raw_fname=None,raw=None,config=None,label="suggest_bads",fname_out=None):
@@ -207,7 +207,7 @@ def apply_suggest_bads(raw_fname=None,raw=None,config=None,label="suggest_bads",
     return fname_out,raw,True,None
 
 #---------------------------------------------------
-#--- apply_bads_to_hdf
+#-- apply_bads_to_hdf
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_bads_to_hdf(raw_fname=None,raw=None,config=None,label="bads_to_HDF"):
@@ -232,7 +232,7 @@ def apply_bads_to_hdf(raw_fname=None,raw=None,config=None,label="bads_to_HDF"):
     return raw_fname,raw,True,None
 
 #---------------------------------------------------
-#--- apply_interpolate_bads
+#-- apply_interpolate_bads
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_interpolate_bads(raw_fname=None,raw=None,config=None,label="interpolate bads",fname_out=None):
@@ -254,7 +254,7 @@ def apply_interpolate_bads(raw_fname=None,raw=None,config=None,label="interpolat
     return fname_out,raw,True,None
 
 #---------------------------------------------------
-#--- apply_ica
+#-- apply_ica
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_ica(raw_fname=None,raw=None,path=None,config=None,label="ica",fname_out=None):
@@ -275,7 +275,9 @@ def apply_ica(raw_fname=None,raw=None,path=None,config=None,label="ica",fname_ou
        path = os.path.dirname(raw_fname)
 
     raw,raw_filtered_clean = jICA.run(raw=raw,raw_fname=raw_fname,path=path,config=config)
-    raw_filtered_clean.close()
+    
+    if raw_filtered_clean:
+       raw_filtered_clean.close()
     
     fname_out = jb.get_raw_filename(raw)
   
@@ -283,7 +285,7 @@ def apply_ica(raw_fname=None,raw=None,path=None,config=None,label="ica",fname_ou
 
     
 #---------------------------------------------------
-#--- apply_epocher
+#-- apply_epocher
 #---------------------------------------------------
 def apply_epocher(stage=None,subject_id=None,experiment=None,path=None,fname=None,config=None):
     '''
@@ -314,7 +316,7 @@ def apply_epocher(stage=None,subject_id=None,experiment=None,path=None,fname=Non
        jEP.run(stage=stage,subject_id=subject_id,experiment=experiment,path=path,fname=fname,config=config)    
 
 #---------------------------------------------------
-#--- apply_report
+#-- apply_report
 #---------------------------------------------------
 def apply_report(stage=None,subject_id=None,experiment=None,path=None,fname=None,config=None):
     '''
@@ -345,7 +347,7 @@ def apply_report(stage=None,subject_id=None,experiment=None,path=None,fname=None
        jReport.run(stage=stage,subject_id=subject_id,experiment=experiment,path=path,fname=fname,config=config)
  
 #---------------------------------------------------
-#--- apply_filter
+#-- apply_filter
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_filter(raw_fname,raw=None,config=None,label="filter",fname_out=None):
@@ -356,24 +358,24 @@ def apply_filter(raw_fname,raw=None,config=None,label="filter",fname_out=None):
     :return:
      filename,raw-obj,True
     '''
-    #--- ini MNE_Filter class
+   #-- ini MNE_Filter class
     jfi = JuMEG_MNE_FILTER( flow=config.get("flow"),fhigh=config.get("fhigh") )
 
     if not config.get("run"):
-       return fname_out,raw,False,jfi.postfix
+       return jfi.get_filter_filename(raw=raw),None,False,jfi.postfix
     
    
-   #--- filter inplace ; update file name in raw
+   #-- filter inplace ; update file name in raw
     jfi.apply(raw=raw,flow=config.get("flow"),fhigh=config.get("fhigh"),picks=None,save=False,
               verbose=config.get("verbose"),overwrite=config.get("overwrite"))
     
     fname_out = jb.get_raw_filename(raw)
     
-   #--- add new postfix from filter e.g: fibp01.0-45.0
+   #-- add new postfix from filter e.g: fibp01.0-45.0
     return fname_out,raw,True,jfi.postfix
 
 #---------------------------------------------------
-#--- apply_resample
+#-- apply_resample
 #---------------------------------------------------
 @JuMEG_PipelineFrame
 def apply_resample(raw_fname,raw=None,config=None,label="resample",fname_out=None):

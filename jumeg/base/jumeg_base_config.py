@@ -146,12 +146,9 @@ class JuMEG_CONFIG_Info():
     def __init__(self,user=None,date=None,version=None,comments=None):
         self._param={"user":None,"date":None,"version":version,"comments":comments}
         if user==None:
-            user=getpass.getuser()
-            self._param["user"]=user
-        else:
-            self._param["user"]=user
-        if date!=None:
-            self._param["date"]=date
+           user=getpass.getuser()
+        self._param["user"] = user
+        self._param["date"] = date
         
     def reload_date(self):
         '''returns the actual date and time'''
@@ -167,7 +164,7 @@ class JuMEG_CONFIG_Info():
         
         
     def get_param(self):
-        d=copy(self._param)
+        d = self._param.copy()
         d["date"]=self.date
         return d
     
@@ -183,8 +180,8 @@ class JuMEG_CONFIG_Info():
     
     @property
     def date(self):
-        if self._param["date"]==None:
-            return self.reload_date()
+        if not self._param.get("date"):
+           return self.reload_date()
         return self._get_param("date")
         
     @property
@@ -304,7 +301,7 @@ class JuMEG_CONFIG(object):
                   self._cfg = yaml.load( FH ,Loader=loader)
                else:
                   self._cfg = yaml.load(FH)
-            elif fname.endswith(".json"):
+            elif self.fname.endswith(".json"):
                self._cfg = json.load( FH )
 
         if kwargs.get("key",None):

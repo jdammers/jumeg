@@ -32,7 +32,7 @@ from jumeg.base.jumeg_base_config  import JuMEG_CONFIG as jCFG
 from jumeg.base                    import jumeg_logger
 
 
-__version__= "2020.04.22.001"
+__version__= "2020.05.05.001"
 
 logger = jumeg_logger.get_logger()
 
@@ -183,17 +183,19 @@ class MNE_REPORT(JUMEG_SLOTS):
     
         if isinstance(data,(dict)):
            for k in data.keys():
-               files = []
-               fimgs = []
+               files    = []
+               fimgs    = []
                captions = []
-               files.extend( data.get(k) )
-               section = k
+               section  = k
+               
+               if data.get(k):
+                  files.extend( data.get(k) )
                for f in files:
                    fimgs.append( os.path.join(path,f.rstrip()) )
                    captions.append( prefix+"-" + os.path.basename(f.rstrip().rsplit(self.image_extention,1)[0]) )
-                   if self.debug:
-                      logger.debug("update MNE report: {}\n counts: {} ->\n {}".format(section,len(fimgs),fimgs) )
-                   self.MNEreport.add_images_to_section(fimgs,captions=captions,section=section,replace=replace)
+               if self.debug:
+                  logger.debug("update MNE report: {}\n counts: {} ->\n {}".format(section,len(fimgs),fimgs) )
+               self.MNEreport.add_images_to_section(fimgs,captions=captions,section=section,replace=replace)
                    
            return True
         

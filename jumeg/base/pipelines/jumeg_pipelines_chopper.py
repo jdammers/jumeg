@@ -33,7 +33,7 @@ from jumeg.base.jumeg_base         import JUMEG_SLOTS
      
 logger = jumeg_logger.get_logger()
 
-__version__= "2020.04.28.001"
+__version__= "2020.05.06.001"
 
 
 def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False,exit_on_error=False):
@@ -472,6 +472,9 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
     def time_window_sec(self): return self._time_window_sec
     @time_window_sec.setter
     def time_window_sec(self,v):
+        if v is None:
+           self._time_window_sec = None
+           return   
         self._time_window_sec = np.zeros(2,dtype=np.float)
         if isinstance(v,(list,tuple,np.ndarray)):
            self._time_window_sec[0] = v[0]
@@ -609,6 +612,8 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
     def _adjust_chops_for_stimulus_response(self,chops=None):
         """
         adjust chop onset not in stimulus / response window 
+        only if <time_window_sec> is not None
+        
         chops: TYPE, optional
             DESCRIPTION. The default is None.
 
@@ -617,7 +622,18 @@ class JuMEG_PIPELINES_CHOPPER(JUMEG_SLOTS):
          chops,indices
        
         """
-     
+       #-- ck no stimulus adjustment 
+        if self.time_window_sec is None:
+           self._chops   = self._estimated_chops.copy()
+           self._indices = self._estimated_indices.copy() 
+           msg=["Warning: chops not adjusted for stimulus,response and artefacts",
+                "  -> using time estimated chops & indices: <time_window_sec> is <None>"
+                "  -> chops  :\n{}".format(self.chops),
+                "  -> indices:\n{}".format(self.indices),
+               ]           
+           logger.warning("\n".join(msg))  
+           return self._chops,self._indices
+       
        #--- define search window for events 
         time_window_tsl = np.array(self.time_window_sec * self.sfreq).astype(np.int)
        
@@ -919,8 +935,8 @@ def test():
     stage= "$JUMEG_TEST_DATA/mne/201772/INTEXT01/190212_1334/2"
     fn   = "201772_INTEXT01_190212_1334_2_c,rfDC,meeg,nr,bcc,int-raw.fif"
     
-    stage="/media/fboers/USB_2TB/exp/INTEXT/mne/208548/INTEXT01/181023_1355/1"
-    fn="208548_INTEXT01_181023_1355_1_c,rfDC,meeg,nr,bcc,int-raw.fif"
+    #stage="/media/fboers/USB_2TB/exp/INTEXT/mne/208548/INTEXT01/181023_1355/1"
+    #fn="208548_INTEXT01_181023_1355_1_c,rfDC,meeg,nr,bcc,int-raw.fif"
     fin  = os.path.join(stage,fn)
 
 
