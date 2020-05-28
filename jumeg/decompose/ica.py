@@ -794,3 +794,27 @@ def ica2data_single_components(sources, ica, pca, picks=None):
     # x_mean_comp[:, icomp] = data.mean(axis=1)
 
     return data
+
+
+#######################################################
+#                                                     #
+# apply ICA based on filtered data to unfiltered raw  #
+#                                                     #
+#######################################################
+def ica_apply_unfiltered(raw_unfilt, ica_filt, picks):
+
+    data = raw_unfilt.get_data(picks, None, None, None)
+
+    # compute pre-whitener and PCA data mean
+    pre_whiten = np.atleast_2d(np.ones(len(picks)) * data.std()).T
+    data, _ = ica_filt._pre_whiten(data, raw_unfilt.info, picks)
+    pca_mean_ = np.mean(data, axis=1)
+
+    # apply ICA on unfiltered data and preserve
+    # original mean and stddev
+    ica_unfilt = ica_filt.copy()
+    ica_unfilt.pca_mean_ = pca_mean_
+    ica_unfilt._pre_whitener = pre_whiten
+    raw_unfilt_clean = ica_unfilt.apply(raw_unfilt)
+
+    return raw_unfilt_clean
