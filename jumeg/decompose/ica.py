@@ -29,6 +29,9 @@ from sys import stdout
 from scipy.linalg import pinv
 from copy import deepcopy
 
+from mne.preprocessing.ica import _check_start_stop
+from mne.utils.check import _check_preload
+
 
 #######################################################
 #                                                     #
@@ -794,3 +797,65 @@ def ica2data_single_components(sources, ica, pca, picks=None):
     # x_mean_comp[:, icomp] = data.mean(axis=1)
 
     return data
+
+
+#######################################################
+#                                                     #
+# apply ICA based on filtered data to unfiltered raw  #
+#                                                     #
+#######################################################
+def ica_apply_unfiltered(raw_unfilt, ica_filt, picks,
+                         n_pca_components=None, reject_by_annotation=None,
+                         start=None, stop=None):
+
+    """Remove selected components from the unfiltered signal
+       and preserve the original mean and standard deviation
+
+    Note:
+    this is needed when ICA was trained on filtered data
+    but the cleaning will be applied on unfiltered data.
+    After cleaning the original (unfiltered) mean and standard
+    deviation is restored.
+
+    Parameters
+    ----------
+    raw_unfilt : instance of Raw
+        The data to be processed (works inplace).
+    n_pca_components : int | float | None
+        The number of PCA components to be kept, either absolute (int)
+        or percentage of the explained variance (float). If None (default),
+        all PCA components will be used.
+    start : int | float | None
+        First sample to include. If float, data will be interpreted as
+        time in seconds. If None, data will be used from the first sample.
+    stop : int | float | None
+        Last sample to not include. If float, data will be interpreted as
+        time in seconds. If None, data will be used to the last sample.
+
+    Returns
+    -------
+    raw_unfilt_clean : instance of Raw after cleaning
+
+    """
+
+    _check_preload(raw_unfilt, "ica.apply")
+
+    start, stop = _check_start_stop(raw_unfilt, start, stop)
+
+    data = raw_unfilt.get_data(picks, picks=picks, start=start, stop=stop,
+                               reject_by_annotation=reject_by_annotation)
+
+    # compute pre-whitener and PCA data mean
+    pre_whiten = np.atleast_2d(np.ones(len(picks)) * data.std()).T
+    data, _ = ica_filt._pre_whiten(data, raw_unfilt.info, picks)
+    pca_mean_ = np.mean(data, axis=1)
+
+    # apply ICA on unfiltered data and preserve
+    # original mean and stddev
+    ica_unfilt = ica_filt.copy()
+    ica_unfilt.pca_mean_ = pca_mean_
+    ica_unfilt._pre_whitener = pre_whiten
+    raw_unfilt_clean = ica_unfilt.apply(raw_unfilt, start=start, stop=stop,
+                                        n_pca_components = n_pca_components)
+
+    return raw_unfilt_clean
