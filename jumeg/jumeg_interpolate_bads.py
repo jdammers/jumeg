@@ -43,18 +43,51 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
 
     """
 
-    from mne.channels.interpolation import _interpolate_bads_eeg
-
     if getattr(inst, 'preload', None) is False:
         raise ValueError('Data must be preloaded.')
 
-    _interpolate_bads_eeg(inst)
+    if origin is None:
+        picks_meg = pick_types(inst.info, meg=True, eeg=False, exclude=[])
+        origin = _estimate_origin(inst.info, picks_meg)
+    else:
+        origin = origin
+
+    from mne.channels.interpolation import _interpolate_bads_eeg
+
+    _interpolate_bads_eeg(inst, origin=origin)
     _interpolate_bads_meg(inst, origin=origin, mode=mode)
 
     if reset_bads is True:
         inst.info['bads'] = []
 
     return inst
+
+
+def _estimate_origin(info, picks_meg):
+    posvec = np.array([info['chs'][p]['loc'][0:3] for p in picks_meg])
+    norvec = np.array([info['chs'][p]['loc'][9:12] for p in picks_meg])
+    cogpos = np.mean(posvec, axis=0)
+    norsum = np.mean(norvec, axis=0)
+    anorm = np.sqrt(np.dot(norsum, norsum.T))
+    ndir = norsum / anorm
+    # push the position slightly (4cm) away from the helmet:
+    altpos = cogpos - 0.04 * ndir
+    print(">_interpolate_bads_meg\\DBG> cog(sens) = [%8.5f  %8.5f  %8.5f]" % \
+          (cogpos[0], cogpos[1], cogpos[2]))
+    print(">_interpolate_bads_meg\\DBG> alt(sens) = [%8.5f  %8.5f  %8.5f]" % \
+          (altpos[0], altpos[1], altpos[2]))
+    cogposhd = apply_trans(info['dev_head_t']['trans'], cogpos, move=True)
+    altposhd = apply_trans(info['dev_head_t']['trans'], altpos, move=True)
+    print(">_interpolate_bads_meg\\DBG> cog(hdcs) = [%8.5f  %8.5f  %8.5f]" % \
+          (cogposhd[0], cogposhd[1], cogposhd[2]))
+    print(">_interpolate_bads_meg\\DBG> alt(hdcs) = [%8.5f  %8.5f  %8.5f]" % \
+          (altposhd[0], altposhd[1], altposhd[2]))
+    print(">_interpolate_bads_meg\\DBG> calling _map_meg_channels(..., origin=(%8.5f  %8.5f  %8.5f))" % \
+          (altposhd[0], altposhd[1], altposhd[2]))
+
+    origin = (altposhd[0], altposhd[1], altposhd[2])
+
+    return origin
 
 
 def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
@@ -92,34 +125,6 @@ def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
         return
     info_from = pick_info(inst.info, picks_good)
     info_to = pick_info(inst.info, picks_bad)
-
-    if origin is None:
-
-        posvec = np.array([inst.info['chs'][p]['loc'][0:3] for p in picks_meg])
-        norvec = np.array([inst.info['chs'][p]['loc'][9:12] for p in picks_meg])
-        cogpos = np.mean(posvec, axis=0)
-        norsum = np.mean(norvec, axis=0)
-        anorm = np.sqrt(np.dot(norsum, norsum.T))
-        ndir = norsum / anorm
-        # push the position slightly (4cm) away from the helmet:
-        altpos = cogpos - 0.04 * ndir
-        print(">_interpolate_bads_meg\\DBG> cog(sens) = [%8.5f  %8.5f  %8.5f]" % \
-              (cogpos[0], cogpos[1], cogpos[2]))
-        print(">_interpolate_bads_meg\\DBG> alt(sens) = [%8.5f  %8.5f  %8.5f]" % \
-              (altpos[0], altpos[1], altpos[2]))
-        cogposhd = apply_trans(inst.info['dev_head_t']['trans'], cogpos, move=True)
-        altposhd = apply_trans(inst.info['dev_head_t']['trans'], altpos, move=True)
-        print(">_interpolate_bads_meg\\DBG> cog(hdcs) = [%8.5f  %8.5f  %8.5f]" % \
-              (cogposhd[0], cogposhd[1], cogposhd[2]))
-        print(">_interpolate_bads_meg\\DBG> alt(hdcs) = [%8.5f  %8.5f  %8.5f]" % \
-              (altposhd[0], altposhd[1], altposhd[2]))
-        print(">_interpolate_bads_meg\\DBG> calling _map_meg_channels(..., origin=(%8.5f  %8.5f  %8.5f))" % \
-              (altposhd[0], altposhd[1], altposhd[2]))
-
-        origin = (altposhd[0], altposhd[1], altposhd[2])
-
-    else:
-        origin = origin
 
     mapping = _map_meg_channels(info_from, info_to, mode=mode, origin=origin)
     _do_interp_dots(inst, mapping, picks_good, picks_bad)
