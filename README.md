@@ -34,7 +34,7 @@ Developer Installation
    git clone https://github.com/your_username/jumeg
 4. Add it to your local python site-packages using the below commands from the same directory as above:
 
-   ```   site_dir=`python -c'import site; print site.getusersitepackages()'` ```
+   ```   site_dir=`python -c'import site; print(site.getusersitepackages())'` ```
 
    ```   present_dir=`pwd` ```
    

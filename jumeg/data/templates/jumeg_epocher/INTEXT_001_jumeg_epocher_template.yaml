@@ -1,0 +1,280 @@
+CuedLeftResIodBc:
+  ResponseOnset:
+    and_mask: 3
+    counts: first
+    event_id: 2
+    window:
+    - 0.0
+    - 1.0
+  StimImageOnset:
+    event_id: 11
+  info: cude left, respone onset <=, iod onset, with baseline correction
+  marker:
+    channel: StimImageOnset
+    prefix: iod
+    type_input: iod_onset
+    type_output: resp_onset
+    type_result: hit
+  postfix: CuedLeftResIod
+  response:
+    channel: ResponseOnset
+    matching: true
+    prefix: resp
+    type_input: resp_onset
+    type_offset: resp_offset
+  run: false
+CuedLeftStimIodBc:
+  ResponseOnset:
+    and_mask: 3
+    counts: first
+    event_id: 2
+    window:
+    - 0.0
+    - 1.0
+  StimImageOnset:
+    event_id: 11
+  info: cude left, image onset <=, iod onset, with baseline correction
+  marker:
+    channel: StimImageOnset
+    prefix: iod
+    type_input: iod_onset
+    type_output: iod_onset
+    type_result: hit
+  postfix: CuedLeftStimIod
+  response:
+    channel: ResponseOnset
+    matching: true
+    prefix: resp
+    type_input: resp_onset
+    type_offset: resp_offset
+  run: false
+CuedRightResIodBc:
+  ResponseOnset:
+    and_mask: 3
+    counts: first
+    event_id: 1
+    window:
+    - 0.0
+    - 1.0
+  StimImageOnset:
+    event_id: 22
+  info: cude right, response onset =>, iod onset, with baseline correction
+  marker:
+    channel: StimImageOnset
+    prefix: iod
+    type_input: iod_onset
+    type_output: resp_onset
+    type_result: hit
+  postfix: CuedRightresIod
+  response:
+    channel: ResponseOnset
+    matching: true
+    prefix: resp
+    type_input: resp_onset
+    type_offset: resp_offset
+  run: false
+CuedRightStimIodBc:
+  ResponseOnset:
+    and_mask: 3
+    counts: first
+    event_id: 1
+    window:
+    - 0.0
+    - 1.0
+  StimImageOnset:
+    event_id: 22
+  info: cude right, image onset =>, iod onset, with baseline correction
+  marker:
+    channel: StimImageOnset
+    prefix: iod
+    type_input: iod_onset
+    type_output: iod_onset
+    type_result: hit
+  postfix: CuedRightStimIod
+  response:
+    channel: ResponseOnset
+    matching: true
+    prefix: resp
+    type_input: resp_onset
+    type_offset: resp_offset
+  run: false
+NoMoveLeftStimIodBc:
+  ResponseOnset:
+    counts: first
+    event_id: 128
+    window:
+    - 0.0
+    - 1.0
+  StimImageOnset:
+    event_id: 33
+  info: cude left, image onset <=, iod onset, with baseline correction
+  marker:
+    channel: StimImageOnset
+    prefix: iod
+    type_input: iod_onset
+    type_output: iod_onset
+    type_result: hit
+  postfix: NoMoveLeftStimIod
+  response:
+    matching: false
+  run: true
+NoMoveRightStimIodBc:
+  ResponseOnset:
+    counts: first
+    event_id: 128
+    window:
+    - 0.0
+    - 1.0
+  StimImageOnset:
+    event_id: 44
+  info: cude right, image onset =>, iod onset, with baseline correction
+  marker:
+    channel: StimImageOnset
+    prefix: iod
+    type_input: iod_onset
+    type_output: iod_onset
+    type_result: hit
+  postfix: NoMoveRightStimIod
+  response:
+    matching: false
+  run: false
+SelfLeftRes:
+  ResponseOnset:
+    event_id: 1
+  baseline: null
+  info: self pasting left, response onset <=, with baseline correction, time window
+    end onset stim S50
+  iod: null
+  marker:
+    channel: ResponseOnset
+    prefix: resp
+    type_input: resp_onset
+    type_output: resp_onset
+    type_result: hit
+  postfix: SelfLeftRes
+  response:
+    matching: false
+  run: false
+  time_post: 0.1
+  time_pre: -0.15
+SelfRightRes:
+  ResponseOnset:
+    event_id: 2
+  baseline: null
+  info: self pasting right, response onset =>, with baseline correction, time window
+    end onset stim S50
+  iod: null
+  marker:
+    channel: ResponseOnset
+    prefix: resp
+    type_input: resp_onset
+    type_output: resp_onset
+    type_result: hit
+  postfix: SelfRightRes
+  response:
+    matching: false
+  run: false
+_keys:
+  _root_keys:
+  - default
+  _sorted_keys:
+  - experiment
+  - run
+  - postfix
+  - time_pre
+  - time_post
+  - info
+  - baseline
+  - marker
+  - response
+  - iod
+  - ResponseOnset
+  - StimImageOnset
+default:
+  IOD:
+    and_mask: 128
+    counts: first
+    early_ids_to_ignore: null
+    event_id: 128
+    events:
+      consecutive: true
+      initial_event: true
+      mask: null
+      min_duration: 0.001
+      output: onset
+      shortest_event: 1
+      stim_channel: STI 013
+    system_delay_ms: 0.0
+    window:
+    - 0.0
+    - 0.2
+  ResponseOnset:
+    and_mask: 255
+    counts: first
+    early_ids_to_ignore: null
+    event_id: 84
+    events:
+      consecutive: true
+      initial_event: true
+      mask: null
+      min_duration: 0.001
+      output: onset
+      shortest_event: 1
+      stim_channel: STI 013
+    system_delay_ms: 0.0
+    window:
+    - 0.0
+    - 2.0
+  StimImageOnset:
+    and_mask: 255
+    early_ids_to_ignore: null
+    event_id: 84
+    events:
+      consecutive: true
+      initial_event: true
+      mask: null
+      min_duration: 0.001
+      output: onset
+      shortest_event: 1
+      stim_channel: STI 014
+    system_delay_ms: 0.0
+  baseline:
+    baseline:
+    - null
+    - 0
+    method: mean
+    type_input: iod_onset
+  experiment: INTEXT
+  iod:
+    marker:
+      channel: StimImageOnset
+      prefix: img
+      type_input: img_onset
+    response:
+      channel: IOD
+      matching: true
+      prefix: iod
+      type_input: iod_onset
+      type_offset: iod_onset
+  marker:
+    channel: StimImageOnset
+    prefix: iod
+    type_input: iod_onset
+    type_output: iod_onset
+    type_result: hit
+  postfix: test
+  reject:
+    mag: 5e-9
+  response:
+    channel: ResponseOnset
+    matching: false
+    prefix: resp
+    type_input: resp_onset
+    type_offset: resp_offset
+  time_post: 1.0
+  time_pre: -0.5
+info:
+  gui-version: 2020.03.11.001
+  python-version: 3.6.10
+  time: 2020-04-28 07:49
+  user: fboers

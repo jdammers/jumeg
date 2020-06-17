@@ -137,6 +137,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
         :param condition:
         :param plot_dir:
         :param info:
+      
         
         plot subplots evoked/average
         MEG
@@ -150,9 +151,13 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
         ep   = evt["epochs"]
         name = 'test'
         subject_id = name
+     
         if fname:
            fout_path = os.path.dirname(fname)
-           name      = os.path.splitext( os.path.basename(fname) )[0]
+           n = os.path.basename(fname).split(".")
+           n.pop()
+           #name      = os.path.splitext( os.path.basename(fname) )[0]
+           name  = ".".join(n)
            subject_id = name.split('_')[0]
         else:
            name      = "test.png"
@@ -251,7 +256,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
         
       #---
         if save_plot:
-           fout += self.file_extention              
+           fout += ","+condition + self.file_extention
            pl.savefig(fout, dpi=self.dpi)
            if self.verbose:
               logger.info("---> done saving plot: " +fout)
@@ -264,5 +269,6 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
            pl.close()            
          
         return fout
+    
 
 jumeg_epocher_plot = JuMEG_Epocher_Plot()

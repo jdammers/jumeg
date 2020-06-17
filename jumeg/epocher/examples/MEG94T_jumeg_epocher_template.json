@@ -1,0 +1,104 @@
+{
+"default":{
+           "experiment"       : "MEG94T",
+           "postfix"          : "test",
+           "time_pre"         : -0.20,
+           "time_post"        :  0.65,
+           
+           "baseline" :{"method":"mean", "type_input":"img_onset","baseline": [null,0]},
+           "marker"   :{"channel":"Stim","type_input":"img_onset","type_output":"img_onset","prefix":"img","type_result":"hit"},
+           "response" :{"matching":false},         
+           "iod"      : null,
+           "reject"   : {"mag": 5e-9},
+                    
+           "Stim":{
+                       "events":{
+                                  "stim_channel"   : "STI 014",
+                                  "output"         : "onset",
+                                  "consecutive"    : true,
+                                  "min_duration"   : 0.0005,
+                                  "shortest_event" : 1,
+                                  "mask"           : 0
+                                 },
+                        
+                        "event_id"           : 1,        
+                        "and_mask"           : 255,
+                        "system_delay_ms"    : 0.0,
+                        "early_ids_to_ignore" : null
+                        }                                               
+           },
+          
+          
+"URon":{
+         "info"      : "upper right down",
+         "postfix"   : "URon",
+         "Stim"      : {"event_id":10}
+       },             
+"URoff":{
+         "postfix"   : "URoff",
+         "marker"    : {"type_output":"img_offset"},
+         "stim"      : {"event_id":10}
+        },
+"ULon":{
+         "postfix"   : "ULon",
+         "stim"      : {"event_id":20}
+       },
+"ULoff":{
+         "postfix"   : "ULoff",
+         "marker"    : {"type_output":"img_offset"},
+         "Sim"      : {"event_id":20}
+       },
+"LLon":{
+         "baseline" :null,
+         "postfix"   : "LLon",
+         "Stim"      : {"event_id":30}
+       },
+"LLoff":{
+         "postfix"   : "LLoff",
+         "marker"    : {"type_output":"img_offset"},
+         "Stim"      : {"event_id":30}
+       },
+"LRon":{
+         "postfix"   : "LRon",
+         "Stim"      : {"event_id":40}
+       },       
+"LRoff":{
+         "postfix"   : "LRoff",
+         "marker "   : {"type_output":"img_offset"},
+         "Stim"      : {"event_id":40}
+       },
+       
+       
+"LLsst":{         
+         "postfix"   : "LLsst",
+         "time_pre"  : -1.0,
+         "time_post" :  3.0,
+         "baseline"  : null,
+         "Stim"      : {"event_id":37}         
+       },
+"LLsstBC":{
+         "postfix"   : "LLsstBC",
+         "time_pre"  : -1.0,
+         "time_post" :  3.0,
+         "baseline"  : null, 
+         "Stim"      : {"event_id":36}         
+       },
+       
+"LRsst":{
+         "postfix"   : "LRsst",
+         "time_pre"  : -1.0,
+         "time_post" :  3.0,
+         "baseline"  : null,
+         "Stim"      : {"event_id":47}         
+       },
+"LRsstBC":{
+         "condition" : "LRsstBC",
+         "postfix"   : "LRsstBC",
+         "time_pre"  : -1.0,
+         "time_post" :  3.0,
+         "baseline"  : null,
+         "Stim"      : {"event_id":46}         
+       }       
+} 
+ 
+ 

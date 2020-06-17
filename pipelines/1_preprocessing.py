@@ -30,13 +30,13 @@ Examples:
 call script with parameter or -h for help
 
 #--- run for id(s)
-1_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 211747 -c config0.yaml -log -v -d -r
+1_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 0815 -c jumeg_config0.yaml -log -v -d -r
 
 #--- run for id, recursive looking into subdirs, overwrite logfile
-1_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 211747 -c config0.yaml -log -v -d -r -rec --logoverwrite
+1_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 0815 -c jumeg_config0.yaml -log -v -d -r -rec --logoverwrite
 
 #--- run for ids, recursive looking into subdirs, overwrite logfile
-1_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 211747,211890 -c config0.yaml -log -v -d -r -rec --logoverwrite
+1_preprocessing.py -s $JUMEG_TEST_DATA/mne -subj 0815,0816,0817 -c jumeg_config0.yaml -log -v -d -r -rec --logoverwrite
 
 List Example:
 -------------
@@ -50,30 +50,25 @@ find | grep empty.fif > empty_filelist.txt
 
 #--- call preproc 1 for empty-room data
 1_preprocessing.py -c preproc_config01.yaml -lname empty_filelist.txt -lpath ${MNE_DATA_PATH} -v -r
-
-
-#--- INTEXT
-1_preprocessing.py -c intext_config01.yaml -subj 201772,203404 -v -r
 """
 
-import os,sys,logging
+import os,sys
 
 from jumeg.base import jumeg_logger
-from jumeg.base.pipelines.jumeg_pipeline_looper import JuMEG_PipelineLooper
+from jumeg.base.pipelines.jumeg_pipelines_looper import JuMEG_PipelineLooper
 
 import jumeg.base.pipelines.jumeg_pipelines_utils1 as utils
 
-logger = logging.getLogger("jumeg")
+logger = jumeg_logger.get_logger()
 
-__version__= "2019.08.07.001"
+__version__= "2020.04.23.001"
 
 #--- parameter / argparser defaults
 defaults={
           "stage"         : None,
-          "file_extention": None, # ["meeg-raw.fif","c,rfDC-raw.fif","rfDC-empty.fif"],
-          "config"        : "1_preprocessing_config.yaml",
-          #"subjects"      : None,
-          "list_path"     : None, #"$JUMEG_PATH_MNE_IMPORT2/MEG94T/source/jumeg/pipelines",
+          "file_extention": None,
+          "config"        : None,
+          "list_path"     : None,
           "list_name"     : None,
           "fpath"         : None,
           "fname"         : None,
@@ -104,37 +99,56 @@ def apply(name=None,opt=None,defaults=None,logprefix="preproc"):
    #---
     raw = None
     
-   #--- init/update logger
-    jumeg_logger.setup_script_logging(name=name,opt=opt,logger=logger)
  
     jpl = JuMEG_PipelineLooper(options=opt,defaults=defaults)
     jpl.ExitOnError=True
-    
+ 
+   #--- init/update logger
+   #--- logfile
+    opt.log2file     = jpl.log2file
+    opt.logprefix    = jpl.logprefix
+    opt.logoverwrite = jpl.logoverwrite
+    if opt.debug:
+       level = "DEBUG"
+    else:
+       level = "INFO"
+    jumeg_logger.setup_script_logging(name=name,opt=opt,logger=logger,version=__version__,level=level)
+
     for fname,subject_id,raw_dir in jpl.file_list():
       
         if not opt.run: continue
-           
-        raw = None # !!! important  !!!
+       
+        raw = None # !!!
+        
        #--- call noise reduction
         raw_fname,raw = utils.apply_noise_reducer(raw_fname=fname,raw=None,config=jpl.config.get("noise_reducer"))
 
        #--- call suggest_bads
         raw_fname,raw = utils.apply_suggest_bads(raw_fname=raw_fname,raw=raw,config=jpl.config.get("suggest_bads"))
        
+       #--- call bads to HDF
+        raw_fnamee,raw = utils.apply_bads_to_hdf(raw_fname=raw_fname,raw=raw,config=jpl.config.get("bads_to_hdf"))
+    
        #--- call interploate_bads
         raw_fname,raw = utils.apply_interpolate_bads(raw_fname=raw_fname,raw=raw,config=jpl.config.get("interpolate_bads") )
         
-       #--- call filter
-       # raw_fname,raw = utils.apply_filter(raw_fname,raw=raw,config=jpl.config.get("filtering") )
+       #--- call ica
+        raw_fname,raw = utils.apply_ica(raw_fname=raw_fname,path=raw_dir,raw=raw,config=jpl.config.get("ica") )
+
+       #--- call filter 1
+        raw_fname,raw = utils.apply_filter(raw_fname=raw_fname,raw=raw,config=jpl.config.get("filter_1"))
+     
+       #--- call epocher
+        utils.apply_epocher(stage=jpl.stage,subject_id=subject_id,experiment=jpl.experiment,
+                           path=raw_dir,fname=raw_fname,
+                           config=jpl.config.get("epocher") )
 
        #--- call resample
-       # raw_fname,raw = utils.apply_resample(raw_fname,raw=raw,config=jpl.config.get("resampling"))
+        utils.apply_report(stage=jpl.stage,subject_id=subject_id,experiment=jpl.experiment,
+                           path=raw_dir,fname=raw_fname,
+                           config=jpl.config.get("report") )
 
-       #--- call interploate_bads
-        raw_fname,raw = utils.apply_ica(raw_fname=raw_fname,raw=raw,config=jpl.config.get("ica") )
-      
-
-        logger.info(" --> DONE preproc subject id: {}\n".format(subject_id)+
+        logger.info("DONE preproc subject id: {}\n".format(subject_id)+
                     "  -> input  file: {}\n".format(fname)+
                     "  -> output file: {}\n".format(raw_fname))
         

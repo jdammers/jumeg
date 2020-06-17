@@ -58,7 +58,7 @@ import logging
 logger = logging.getLogger("jumeg")
 #logger.setLevel('DEBUG')
 
-__version__="2019.09.13.001"
+__version__="2020.04.28.001"
 
 '''
 class AccessorType(type):
@@ -84,6 +84,45 @@ class AccessorType(type):
             setattr(self, name, property(getter, setter, deler, ""))
 
 '''
+
+class JUMEG_SLOTS(object):
+    __slots__ = []
+    
+    def __init__(self,**kwargs):
+        super().__init__()
+    
+    def _init(self):
+        #--- init slots
+        for k in self.__slots__:
+            self.__setattr__(k,None)
+        # self._update_from_kwargs(**kwargs)
+    
+    def init(self,**kwargs):
+        self._init()
+        self._update_from_kwargs(**kwargs)
+        
+    def _update_from_kwargs(self,**kwargs):
+        if not kwargs: return
+        for k in kwargs:
+            try:
+                if k in self.__slots__:
+                    self.__setattr__(k,kwargs.get(k))
+            except:
+                pass
+    
+    def clear(self,**kwargs):
+        """
+        set all values to None
+        :param kwargs:
+        :return:
+        """
+        #--- clear slots
+        for k in self.__slots__:
+            self.__setattr__(k,None)
+    
+    def update(self,**kwargs):
+        self._update_from_kwargs(**kwargs)
+
 
 class JuMEG_Base_Basic(object):
     def __init__ (self):
@@ -144,6 +183,23 @@ class JuMEG_Base_Basic(object):
     @plot.setter
     def plot(self,v): self._do_plot=v   
    
+    def time2string(self,t):
+        """
+        
+        :param t: time in sec
+        :return:
+        """
+        #import datetime
+        #s = 12345
+        #x = datetime.timedelta(seconds=s)
+        if t // 3600:
+           tout ='{:2.0f}:{:02.0f}:{:02.3}'.format(t // 3600,t % 3600 // 60,t % 60)
+        elif t % 3600 // 60:
+           tout = '{: 5.0f}:{:02.3}'.format(t % 3600 // 60,t % 60)
+        elif t %  60:
+           tout = '{: 6.3}'.format(t % 60)
+
+
     def line(self,n=40,char="-"):
         """ line: prints a line for nice printing  and separate
         Parameters:
@@ -297,10 +353,10 @@ class JuMEG_Base_Basic(object):
         # f = os.path.abspath(os.path.expandvars(os.path.expanduser(fin)))
         if os.path.isfile(f):
            if logmsg:
-              logger.info( "---> " +head+"\n --> file exist: {}\n  -> abs file{:>18} {}".format(fck,':',f))
+              logger.info( head+"\n --> file exist: {}\n  -> abs file{:>18} {}".format(fck,':',f))
            return f
        #--- error no such file
-        logger.error("---> " +head+"\n --> no such file or directory: {}\n  -> abs file{:>18} {}".format(fck,':',f))
+        logger.warning( head+"\n --> no such file or directory: {}\n  -> abs file{:>18} {}".format(fck,':',f))
         if exit_on_error:
            raise SystemError(self.__MSG_CODE_FILE_NOT_EXIST)
         return False
@@ -317,7 +373,7 @@ class JuMEG_Base_Basic(object):
         if os.path.isdir(v): return v
         return False
    
-    def isPath(self,pin,head="check path exist",exit_on_error=False,logmsg=False):
+    def isPath(self,pin,head="check path exist",exit_on_error=False,logmsg=False,mkdir=False):
         """
         check if file exist
 
@@ -326,6 +382,7 @@ class JuMEG_Base_Basic(object):
         :param <string>     : full path to check
         :param head         : log msg/error title
         :param logmsg       : log msg <False>
+        :param mkdir        : makedir <False>
         :param exit_on_error: will exit pgr if not file exist <False>
 
         :return:
@@ -335,10 +392,15 @@ class JuMEG_Base_Basic(object):
         p = os.path.abspath(self.expandvars(pin))
         if os.path.isdir(p):
            if logmsg:
-              logger.info("--->"+head+"\n --> dir exist: {}\n  -> abs dir{:>18} {}".format(pin,':',p))
+              logger.info(head+"\n --> dir exist: {}\n  -> abs dir{:>18} {}".format(pin,':',p))
            return p
+        elif mkdir:
+            os.makedirs(p)
+            if logmsg:
+               logger.info(head+"\n --> make dirs: {}\n  -> abs dir{:>18} {}".format(pin,':',p))
+            return p
        #--- error no such file
-        logger.error("---> "+head+"\n --> no such directory: {}\n  -> abs dir{:>18} {}".format(pin,':',p))
+        logger.error(head+"\n --> no such directory: {}\n  -> abs dir{:>18} {}".format(pin,':',p))
         if exit_on_error:
            raise SystemError(self.__MSG_CODE_PATH_NOT_EXIST)
         return False
@@ -413,7 +475,7 @@ class JuMEG_Base_Basic(object):
     
     
         if debug or self.debug:
-            logging.debug("  -> start dir      : {}\n".format(start_dir) +
+            logging.debug("start dir      : {}\n".format(start_dir) +
                           "  -> glob pattern   : {}\n".format(pattern) +
                           "  -> file extention : {}\n".format(file_extention) +
                           "  -> glob recursive : {}\n".format(recursive) +
@@ -466,7 +528,7 @@ class JuMEG_Base_Basic(object):
            file_extention.append(s)
     
         if debug or self.debug:
-            logging.debug("  -> start dir      : {}\n".format(start_dir) +
+            logging.debug("start dir      : {}\n".format(start_dir) +
                           "  -> glob pattern   : {}\n".format(pattern) +
                           "  -> file extention : {}\n".format(file_extention) +
                           "  -> glob recursive : {}\n".format(recursive) +
@@ -685,21 +747,34 @@ class JuMEG_Base_PickChannels(object):
     def bads2picks(self,raw):
         """
         mne wrapper
-        get picks from bad channel labels
+        get picks from bad channel labels or ICA obj excluded ICs index
         call to < mne.pick_channels >
         picks = mne.pick_channels(raw.info['ch_names'], include=raw.info['bads'])
 
         Parameter
         ---------
-         raw obj
+         raw obj with BADs or ica obj=>exclude ICs
          
         Result
         -------
          bad picks as numpy array int64 (index of bad channels)
         """
-        if raw.info['bads']:
-           return  mne.pick_channels(raw.info['ch_names'],include=raw.info['bads'])
-        return None
+       #-- ICA obj get excluded ICs => BADs
+        bads = None
+
+        try:
+            if raw.info.get('bads'):
+                bads = mne.pick_channels(raw.info['ch_names'],include=raw.info['bads'])
+        except:
+            try:
+                bads = raw.exclude  # ICA obj
+            except AttributeError:
+                try:
+                   bads = raw.GetBadsAsIndex()  # JuMEG IOdata OBJ
+                except:
+                   pass
+        
+        return bads
 
     def channels(self,raw):
         """ call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True,stim=False,resp=False,exclude=None """
@@ -716,7 +791,7 @@ class JuMEG_Base_PickChannels(object):
     def all_nobads(self, raw):
         """ call with meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude='bads' """
         return mne.pick_types(raw.info, meg=True,ref_meg=True,eeg=True,ecg=True,eog=True,emg=True,misc=True, stim=True,resp=True,exclude='bads')
-  #--- meg
+  #-- meg
     def meg(self,raw):
         """ call with meg=True """
         return mne.pick_types(raw.info,meg=True)      
@@ -857,27 +932,27 @@ class JuMEG_Base_PickChannels(object):
         '''
         if picks is None:
            picks = self.meg_and_ref_nobads(raw)
-       #--- if empty list
+       #-- if empty list
         if not picks.any():
            if self.verbose or verbose:
-              logger.warning("  -> looking for dead channels -> no picks defined" )
+              logger.warning("looking for dead channels -> no picks defined" )
            return picks
-       #--- idx array: 0:dead 1:ok
+       #-- idx array: 0:dead 1:ok
         idx = np.where( raw._data[picks,:].min(axis=1) == raw._data[picks,:].max(axis=1),0,1 )
        
-       #--- update bads in raw, delete doubles, sort
+       #-- update bads in raw, delete doubles, sort
         if update:
            self.update_bads(raw,bads=self.picks2labels(raw,picks[np.where(idx < 1)[0]]) )
            
         if self.verbose or verbose:
           # logger.setLevel("DEBUG")
            bads_idx = np.where(idx < 1)[0]
-           logger.info("  -> looking for dead channels\n"+
+           logger.info("looking for dead channels\n"+
                        "  -> dead channels :  {}\n".format(self.picks2labels(raw,picks[bads_idx]))+
                        "  ->      index    :  {}\n".format(bads_idx)+
                        "  -> update bads in raw.info: {}".format(update)
                        )
-        logger.info("  -> bads: {}\n".format(self.bads(raw) ))
+        logger.info("bads: {}\n".format(self.bads(raw) ))
         
         return picks[ np.where(idx)[0] ]
 
@@ -941,9 +1016,66 @@ class JuMEG_Base_StringHelper(JuMEG_Base_Basic):
         if self.isString(s):
            if s.strip(): return True
         return False
-         
+
+    def range_to_list(self,seq):
+        """
+        make a list or a string of inergers to a list
+        ref:
+        http://stackoverflow.com/questions/6405208/how-to-convert-numeric-string-ranges-to-a-list-in-python
+
+        Parameters
+        ----------
+        seq_str: string/list
+
+        Returns
+        --------
+        list of numbers
+
+        Example
+        --------
+        from jumeg.jumeg_base import jumeg_base as jb
+
+        jb.range_to_list("1,2,3-6,8,111")
+
+        "1,3,5"         => [1,3,5]
+        "1-5"           => [1,2,3,4,5]
+        "1,2,3-6,8,111" => [1,2,3,4,5,6,8,111]
+        
+        jb.range_to_list([1,2,"3-6",8,])
+        "1,3,5"         => [1,3,5]
+        "1-5"           => [1,2,3,4,5]
+        "1,2,3-6,8,111" => [1,2,3,4,5,6,8,111]
+        
+        """
+        #xranges = [(lambda l: range(l[0], l[-1]+1))(map(int, r.split('-'))) for r in seq_str.split(',')]
+        #--- py3 range instead of xrange
+    
+       
+        if self.isString(seq):
+           return self.str_range_to_list(seq)
+        if isinstance(seq,(int)):
+           return [seq]
+        
+        xrange = []
+        for r in seq:
+            if self.isString(str):
+               for s in r.split(','):
+                   l = s.split('-')
+                   if len(l) > 1:
+                      xrange += list(range(int(l[0]),int(l[-1]) + 1))
+                   else:
+                      xrange.append(int(l[0]))
+            else:
+               xrange.append(int(r))
+       #--- mk unique & list & sort
+        xrange = list(set(xrange))
+        xrange.sort()
+        # flatten list of xranges
+        #return [y for x in xranges for y in x]
+        return xrange
+    
     def str_range_to_list(self, seq_str):
-        """make a list of inergers from string
+        """make a list of inergers from string 
         ref:
         http://stackoverflow.com/questions/6405208/how-to-convert-numeric-string-ranges-to-a-list-in-python
            
@@ -982,7 +1114,7 @@ class JuMEG_Base_StringHelper(JuMEG_Base_Basic):
         #return [y for x in xranges for y in x]
         return xrange
     
-    def str_range_to_numpy(self, seq_str,exclude_zero=False,unique=False): 
+    def str_range_to_numpy(self, seq,exclude_zero=False,unique=False):
         """converts integer string to numpy array 
         Parameters
         ----------
@@ -1016,19 +1148,66 @@ class JuMEG_Base_StringHelper(JuMEG_Base_Basic):
         """
         import numpy as np
 
-        if seq_str is None:
+        if seq is None:
            return np.unique( np.asarray( [ ] ) )
-        if self.isString(seq_str):
-           s = re.sub(r",+",",",seq_str.replace(" ",",") )
-           anr = np.asarray (self.str_range_to_list( s ) )
+        if self.isString(seq):
+           s = re.sub(r",+",",",seq.replace(" ",",") )
+           anr = np.asarray (self.range_to_list( s ) )
         else:
-           anr = np.asarray( [seq_str] )
+           anr = np.asarray (self.range_to_list( seq ) )
            
         if unique:
            anr = np.unique( anr ) 
         if exclude_zero:
            return anr[ np.where(anr) ] 
         return anr
+
+    def range_to_numpy(self,seq,exclude_zero=False,unique=False):
+        """converts integer string or a list to numpy array
+        Parameters
+        ----------
+        input       : integer numbers as string
+        exclude_zero: exclude 0  <False>
+        unique      : return only unique numbers <False>
+
+        Returns
+        --------
+        integer numbers as numpy array dtype('int64')
+
+        Example
+        --------
+
+        from jumeg.jumeg_base import jumeg_base as jb
+
+        s = "0,1,2,3,0,1,4,3,0"
+
+        jb.range_to_numpy(s)
+          array([0, 1, 2, 3, 0, 1, 4, 3, 0])
+
+        jb.range_to_numpy(s,unique=True)
+          array([0, 1, 2, 3, 4])
+
+        jb.range_to_numpy(s,exclude_zero=True)
+          array([1, 2, 3, 1, 4, 3])
+
+        jb.range_to_numpy(s,unique=True,exclude_zero=True)
+          array([1, 2, 3, 4])
+
+        """
+        import numpy as np
+    
+        if seq is None:
+            return np.unique(np.asarray([]))
+        if self.isString(seq):
+            seq = re.sub(r",+",",",seq.replace(" ",","))
+        anr = np.asarray(self.range_to_list(seq))
+    
+        if unique:
+            anr = np.unique(anr)
+        if exclude_zero:
+            return anr[np.where(anr)]
+        return anr
+
 
 class JuMEG_Base_FIF_IO(JuMEG_Base_StringHelper):
     """ handels mne fif I/O for meg and eeg [BrainVision] data
@@ -1304,11 +1483,47 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
         self.picks = JuMEG_Base_PickChannels()
 
-      #--- ToDo --- start implementig BV support may new CLS
         self.brainvision_response_shift = 1000
         self.brainvision_extention      = '.vhdr'
-        self.ica_extention              = '-ica.fif'
+        self.ctf_extention              = ".ds"
+        self.ica_extention              = 'ica.fif'
+    
+    #-- helper function
+    def _get_ica_raw_obj(self,fname,raw=None,path=None):
+        """check for <ica filename> or <ica raw obj>
+        if <ica_raw> obj is None load <ica raw obj> from <ica filename>
 
+        Parameters:
+        -----------  
+        fname: ica filename
+        raw  : ica raw obj <None>
+        path : <None>
+        
+        Returns:
+        --------
+        <ica raw obj>,ica raw obj filename
+        
+        """
+        if raw is None:
+           if fname is None:
+              assert "---> ERROR no file foumd!!\n\n"
+              if self.verbose:
+                 logger.info("<<<< Reading ica raw data ...")
+        if fname:
+           fn = self.expandvars( fname )
+           if path:
+              path = self.expandvars(path)
+              fn   = os.path.join(path,fn)
+        else:
+           fn = self.get_raw_filename(raw)
+   
+           raw = mne.preprocessing.read_ica(fn)
+         
+           if raw is None:
+              assert "---> ERROR in jumeg.jumeg_base.get_ica_raw_obj => could not get ica raw obj:\n ---> FIF name: " + fname
+   
+        return raw,self.get_raw_filename(raw)
+  
     def get_fif_name(self, fname=None, raw=None,path=None, prefix=None,postfix=None, extention="-raw.fif", update_raw_fname=False):
         """
         changing filename with prefix postfix path and option to update filename in raw-obj
@@ -1429,63 +1644,31 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         fif_out = self.get_fif_name(raw=raw,postfix=postfix)
 
         if self.verbose:
-           logger.info(" --> Update bad-channels\n"+
+           logger.info("Update bad-channels\n"+
                        " --> FIF in  : {}\n".format(self.get_raw_filename(raw))+
                        " --> FIF out : {}\n".format(fif_out)+
                        " --> bads    : {}\n".format(raw.info['bads']))
               
         if ( interpolate and raw.info['bads'] ) :
            logger.info( self.pp_list2str(
-              [" --> Update BAD channels => interpolating: {}".format(raw.info['filename']),
+              ["Update BAD channels => interpolating: {}".format(raw.info['filename']),
                " --> BADs : {}".format(raw.info['bads'])]))
            raw.interpolate_bads()
      
-      #--- save raw as bads-raw.fif
+      #-- save raw as bads-raw.fif
         if save:
            raw.save( fif_out,overwrite=True)
         self.set_raw_filename(raw,fif_out)
              
         return raw,raw.info['bads']
-
-#--- helper function
-    def _get_ica_raw_obj(self,fname,raw=None):
-        """check for <ica filename> or <ica raw obj>
-        if <ica_raw> obj is None load <ica raw obj> from <ica filename>
-
-        Parameters:
-        -----------  
-        fname: ica filename
-        raw  : ica raw obj <None>
-        
-        Returns:
-        --------
-        <ica raw obj>,ica raw obj filename
-        
-        """
-        if raw is None:
-           if fname is None:
-              assert "---> ERROR no file foumd!!\n\n"
-              if self.verbose:
-                 logger.info("<<<< Reading ica raw data ...")
-        if fname:
-           fn = self.expandvars( fname )
-           if path:
-              path = self.expandvars(path)
-              fn   = os.path.join(path,fn)
-        else:
-           fn = self.get_raw_filename(raw)
-   
-           raw = mne.preprocessing.read_ica(fn)
-         
-           if raw is None:
-              assert "---> ERROR in jumeg.jumeg_base.get_ica_raw_obj => could not get ica raw obj:\n ---> FIF name: " + fname
-   
-        return raw,self.get_raw_filename(raw)
-    
             
-    def get_raw_obj(self,fname,raw=None,path=None,preload=True,reload_raw=False,reset_bads=False):
+    def get_raw_obj(self,fname,raw=None,path=None,preload=True,reload_raw=False,reset_bads=False,clean_names=False,
+                    system_clock='truncate'):
         """
-        load file in fif format <*.raw> or brainvision eeg data
+        load file in
+          fif format <*.raw>
+          brainvision eeg data
+          CTF  <*.ds>
         check for filename or raw obj
         check for meg or brainvision eeg data *.vhdr
         if filename -> load fif file
@@ -1499,6 +1682,10 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
          reload_raw: reload raw-object via raw.filename <False>
          reset_bads: reset bads <False>
          
+         CTF parameter:
+           clean_names = False,
+           system_clock = 'truncate'
+           
         Results
         ----------
          raw obj,fname from raw obj
@@ -1506,15 +1693,16 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         
         
         if self.verbose:
-           logger.info("<<<< Reading raw data ...")
+           logger.info(" <<<< Reading raw data ...")
            
         if self.debug:
-           msg= [" --> start reading raw data:\n",
+           msg= ["start reading raw data:\n",
                  "  -> raw : {}\n".format(raw),
                  "  -> file: {}\n".format(fname),
                  "  -> path: {}\n".format(path)]
            if raw:
-               msg.append("  -> Bads: {}".format(str(raw.info.get('bads'))))
+               msg.append("  -> Bads: {}\n".format(str(raw.info.get('bads'))))
+      
            logger.debug("".join(msg) )
 
         if raw:
@@ -1547,21 +1735,40 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
                #raw.info['bads'] = []
             elif (fn.endswith(self.ica_extention)):
                 raw = mne.preprocessing.read_ica(fn)
+            elif ( fn.endswith(self.ctf_extention) ):
+                raw = mne.io.read_raw_ctf(fn,system_clock=system_clock,preload=preload,clean_names=clean_names,verbose=self.debug)
             else:
                raw = mne.io.Raw(fn,preload=preload)
     
             if not raw:
                raise FileNotFoundError("ERROR could not load RAW object: {}".format(fn))
         except:
-            logger.exception("---> could not get raw obj from file:\n --> FIF name: {}\n  -> file not exist".format(fn))
+            logger.exception("ERROR: could not get raw obj from file:\n --> FIF name: {}\n  -> file not exist".format(fn))
             return None,None
         
         if reset_bads:
-           if "bads" in raw.info:
-              raw.info["bads"] = []
-           logger.debug("  -> resetting bads in raw")
-           
+           try:
+              if "bads" in raw.info:
+                 raw.info["bads"] = []
+                 logger.debug("  -> resetting bads in raw")
+           except AttributeError:
+                logger.exception("ERROR -> cannot reset bads in raw: {}".format(fn))
+
+        if raw:
+           msg = ["done loading raw data:",
+                  "  -> raw : {}".format(raw),
+                  "  -> file: {}".format(fname),
+                  "  -> path: {}".format(path),
+                  "  -> Bads: {}".format(str(raw.info.get('bads')))]
+
+           try:
+              msg.append(" --> mne.annotations in RAW:\n  -> {}\n".format(raw.annotations))
+           except:
+              msg.append(" --> mne.annotations in RAW: None\n")
+           logger.info("\n".join(msg))
+
         return raw,fn #self.get_raw_filename(raw)
+    
 
     def get_files_from_list(self, fin):
         """ get filename or filenames from a list
@@ -1648,11 +1855,11 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         try:           
             fh.close()
         except:
-            logger.exception("  -> UP`s error: can not close list-file:" +fin,exc_info=True)
+            logger.exception("UP`s error: can not close list-file:" +fin,exc_info=True)
         
         if self.verbose :
            logger.info(self.pp_list2str(
-               [" --> INFO << get_filename_list_from_file >> Files found: %d" % ( len(found_list) ),
+               ["INFO << get_filename_list_from_file >> Files found: %d" % ( len(found_list) ),
                 found_list,"\n --> BADs: ",opt_dict,"\n"]) )
 
         return found_list,opt_dict
@@ -1698,7 +1905,8 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
 
           # channel_type = mne.io.pick.channel_type(raw.info, 75)
 
-    def update_and_save_raw(self,raw,fin=None,fout=None,save=False,overwrite=True,postfix=None,separator="-",update_raw_filenname=False):
+    def update_and_save_raw(self,raw,fin=None,fout=None,save=False,overwrite=True,postfix=None,separator="-",
+                            update_raw_filename=False): #,include_path=False):
         """
         new filename from fin or fout with postfix
         saving mne raw obj to fif format
@@ -1713,12 +1921,15 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
          separator : split to generate output filename with postfix  <"-">
          save      : save raw to disk
          overwrite : if overwrite  save <raw obj> to existing <raw file>  <True>
-         update_raw_filenname: <False>
-
+        
+         update_raw_filename: <False>
+         
         Returns
         --------
          filename,raw-obj
         """
+        #  include_path        : include alsolute path in raw.filename <False>
+        
         from distutils.dir_util import mkpath
         #--- use full filname
         if fout:
@@ -1737,19 +1948,86 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         if save:
             try:
                 if (os.path.isfile(fname) and (not overwrite)):
-                    logger.info(" --> File exist => skip saving data to : " + fname)
+                    logger.info("File exist => skip saving data to : " + fname)
                 else:
                     logger.info(">>>> writing data to disk...\n --> saving: " + fname)
                     mkpath(os.path.dirname(fname))
                     raw.save(fname,overwrite=True)
-                    logger.info(' --> Bads:' + str(raw.info['bads']) + "\n --> Done writing data to disk...")
+                    msg=['Done writing data to disk ...',' --> Bads:' + str(raw.info['bads'])]
+                    try:
+                        msg.append(" --> mne.annotations in RAW:\n  -> {}".format(self.raw.annotations))
+                    except:
+                        msg.append(" --> mne.annotations in RAW: None")
+                    logger.info("\n".join(msg))
             except:
-                logger.exception("---> error in saving raw object:\n  -> file: {}".format(fname))
+                logger.exception("error in saving raw object:\n  -> file: {}".format(fname))
     
-        if update_raw_filenname:
+        if update_raw_filename:
            self.set_raw_filename(raw,fname)
         return fname,raw
 
+    def update_annotations(self,raw,description="TEST",onsets=None,duration=None,verbose=False):
+        '''
+        update annotations in raw
+
+        Parameters
+        ----------
+        raw         : raw obj
+        description : string, description/label for event in anotation <TEST>
+        onsets      : np.array of ints,  onsets in samples <None>
+        duration    : length in samples
+
+        Returns
+        -------
+        raw with new annotation
+        '''
+        
+        try:
+           raw_annot = raw.annotations
+           orig_time = raw_annot.orig_time 
+        except:
+           raw_annot = None
+           orig_time = None
+        
+        if not duration:
+           duration = np.ones( onsets.shape[0] ) / raw.info["sfreq"]
+        
+        annot = mne.Annotations(onset       = onsets.tolist(),
+                                duration    = duration.tolist(),
+                                description = description,
+                                orig_time   = orig_time)
+        
+        #logger.info("description  : {}\n".format(description)+
+        #            "  -> onsets  : {}\n".format(onsets)+
+        #            "  -> duration: {}".format(duration)+
+        #            " annot:\n {}".format(annot)
+        #           )   
+                 
+        msg = ["Update Annotations with description: <{}>".format(description)]
+         
+        if raw_annot:
+           #-- clear old annotations
+           kidx = np.where( raw_annot.description == description)[0] # get index
+           if kidx.any():
+              msg.append("  -> delete existing annotation <{}> counts: {}".format(description,kidx.shape[0]) )
+              raw_annot.delete(kidx)
+           raw_annot += annot # pointer to raw.anotations; add new annot
+        else:
+           raw.set_annotations(annot)
+       
+        if verbose:
+           idx = np.where(raw.annotations.description == description)[0]
+           
+           msg.extend([
+                       " --> mne.annotations in RAW:\n  -> {}".format(raw.annotations),
+                       "-"*40,
+                       "  -> <{}> onsets:\n{}".format(description,raw.annotations.onset[idx]),
+                       "-"*40])
+               
+           logger.info("\n".join(msg))
+        return raw
+   
+  
     def apply_save_mne_data(self,raw,fname=None,overwrite=True):
         """saving mne raw obj to fif format
         
@@ -1770,14 +2048,21 @@ class JuMEG_Base_IO(JuMEG_Base_FIF_IO):
         fname = os.path.expandvars(fname)  # expand envs
         try:
            if ( os.path.isfile(fname) and ( not overwrite) ) :
-              logger.info(" --> File exist => skip saving data to : " + fname)
+              logger.info("File exist => skip saving data to : " + fname)
            else:
               logger.info(">>>> writing data to disk...\n --> saving: "+ fname)
               mkpath( os.path.dirname(fname) )
               raw.save(fname,overwrite=True)
-              logger.info(' --> Bads:' + str( raw.info['bads'] ) +"\n --> Done writing data to disk...")
+              msg= []
+              try:
+                 msg.append("mne.annotations in RAW:\n  -> {}".format(raw.annotations))
+              except:
+                 logger.exception(raw.annotations() )
+                 msg.append("mne.annotations in RAW: not found")
+              msg.extend( [' --> Bads:' + str( raw.info['bads'] )," --> Done writing data to disk..."])
+              logger.info("\n".join(msg))
         except:
-           logger.exception("---> error in saving raw object:\n  -> file: {}".format(fname))
+           logger.exception("error in saving raw object:\n  -> file: {}".format(fname))
            
         return fname
 

@@ -18,11 +18,11 @@
 import os,sys,copy
 from pubsub                             import pub
 from jumeg.base.template.jumeg_template import JuMEG_Template
+from jumeg.base.jumeg_logger            import get_logger
 
-import logging
-logger = logging.getLogger("jumeg")
+logger = get_logger()
 
-__version__="2019.05.14.001"
+__version__="2020.04.22.001"
 
 __DEFAULT_EXPERIMENT_TEMPLATE__={
 "info":{
@@ -34,8 +34,8 @@ __DEFAULT_EXPERIMENT_TEMPLATE__={
               "name" : "default",
               #"ids"  : [], not used jet
               "scans": [],
-              "stages":["${JUMEG_PATH_MNE_IMPORT}/exp","${JUMEG_PATH_MNE_IMPORT2}/exp","${JUMEG_PATH_LOCAL_DATA}/exp"],
-              "bads_list":["MEG 010","MEG 142","MEG 156","RFM 011"], # MEG 007,MEG 042
+              "stages":["${JUMEG_PATH_MNE_IMPORT1}/exp","${JUMEG_PATH_MNE_IMPORT2}/exp","${JUMEG_PATH_LOCAL_DATA}/exp"],
+              "bads_list":[], #"MEG 010","MEG 142","MEG 156","RFM 011"],
               "segmentation":{
                               "path":{
                                       "mrdata"     : "mrdata",
@@ -47,6 +47,7 @@ __DEFAULT_EXPERIMENT_TEMPLATE__={
                        "mne"        : "mne",
                        "eeg"        : "eeg",
                        "mft"        : "mft",
+                       "report"     : "report",
                        "doc"        : "doc",
                        "source"     : "source",
                        "stimuli"    : "stimuli"
@@ -56,13 +57,13 @@ __DEFAULT_EXPERIMENT_TEMPLATE__={
 "bti_export": {
               "bti_path"          : ["${JUMEG_PATH_BTI_EXPORT}","${JUMEG_PATH_LOCAL_DATA}/megdaw_data21"],
               "pdf_name"          : "c,rfDC",
-              "config_fname"      :"config",
-              "head_shape_fname"  :"hs_file",
+              "config_fname"      : "config",
+              "head_shape_fname"  : "hs_file",
               "rotation_x"        : None,
               "translation"       : None,
-              "ecg_ch"           : None,
-              "eog_ch"           : None,
-              "fif_extention"     :"-raw.fif",
+              "ecg_ch"            : None,
+              "eog_ch"            : None,
+              "fif_extention"     : "-raw.fif",
               "emptyroom"         : "-empty.fif",
               "overwrite"         : False,
               "fakesHS"           : False

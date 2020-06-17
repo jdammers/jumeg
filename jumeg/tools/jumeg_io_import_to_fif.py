@@ -20,14 +20,13 @@ JuMEG interface to export 4D/BTi data into fif format using mne-python
 
 import os,sys,argparse,re
 import numpy as np
-import logging
 import mne
 
 from jumeg.base.jumeg_base  import jumeg_base as jb
 from jumeg.base import jumeg_logger
-logger = logging.getLogger('jumeg') # init a logger
+logger = jumeg_logger.get_logger()
 
-__version__= "2019.05.14.001"
+__version__= "2020.04.22.001"
 
 #=========================================================================================
 #==== script part

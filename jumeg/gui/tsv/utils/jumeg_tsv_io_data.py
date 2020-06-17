@@ -89,8 +89,7 @@ class JuMEG_TSV_Utils_IO_Data(JuMEG_Base_IO):
     def info(self):
         logger.info("---> JuMEG TSV IO data loaded\n" +
                     "  -> path : {}\n".format(self.path) +
-                    "  -> file : {}\n".format(self.fname) +
-                    "  -> ICA  : {}\n".format(ica))
+                    "  -> file : {}\n".format(self.fname))
 
     def load_data(self,raw=None,fname=None,path=None,ica=False):
         """
@@ -179,8 +178,8 @@ class JuMEG_TSV_Utils_IO_ICAData(JuMEG_TSV_Utils_IO_Data):
     """
     def __init__(self,**kwargs):
         super().__init__()
-        self._RAW = JuMEG_TSV_Utils_IO_Data(**kawargs)
-        self._ICA = JuMEG_TSV_Utils_IO_ICAChop(**kawargs)
+        self._RAW = JuMEG_TSV_Utils_IO_Data(**kwargs)
+        self._ICA = JuMEG_TSV_Utils_IO_ICAChop(**kwargs)
 
         self._init(**kwargs)
 

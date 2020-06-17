@@ -88,16 +88,20 @@ if DO_EPOCHS:
 
 '''
 
-import os,sys,logging,argparse
+import sys
+import numpy as np
+import pandas as pd
+
+from jumeg.base                         import jumeg_logger
 from jumeg.epocher.jumeg_epocher_epochs import JuMEG_Epocher_Epochs
 
-logger = logging.getLogger("jumeg")
-__version__= "2019.05.14.001"
+logger = jumeg_logger.get_logger()
+__version__= "2020.04.23.001"
 
 class JuMEG_Epocher(JuMEG_Epocher_Epochs):
     def __init__ (self,template_path=None,template_name="DEFAULT",verbose=False):
 
-        super(JuMEG_Epocher, self).__init__()
+        super().__init__()
         
         if template_path:
            self.template_path = template_path
@@ -129,13 +133,13 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
         """
         #print("LOGlevel")
        # print( logger.getEffectiveLevel() )
-        logger.info( "---> START  apply events to HDF  fname: {}\n".format(fname))
+        logger.info("START  apply events to HDF  fname: {}\n".format(fname))
         try:
             raw,fname = self.events_store_to_hdf(fname=fname,raw=raw,**kwargs)
         except:
-            logger.exception( "---> apply_events:\n  -> parameter:\n" +self.pp_list2str(kwargs))
+            logger.exception("apply_events:\n  -> parameter:\n" +self.pp_list2str(kwargs))
             sys.exit()
-        logger.info( "---> DONE  apply events to HDF: {}\n".format(self.hdf_filename))
+        logger.info("DONE apply events to HDF: {}\n".format(self.hdf_filename))
         
         return (raw,fname)
     
@@ -193,14 +197,14 @@ class JuMEG_Epocher(JuMEG_Epocher_Epochs):
             
         """
         
-        logger.info("---> START apply epocher => fname   : {}\n".format(fname))
+        logger.info("START apply epocher => fname   : {}\n".format(fname))
        
         try:
             raw,fname = self.apply_hdf_to_epochs(fname=fname,raw=raw,**kwargs)
         except:
-            logger.exception( "---> apply_epochs:\n  -> parameter:\n" +self.pp_list2str(kwargs))
+            logger.exception("apply_epochs:\n  -> parameter:\n" +self.pp_list2str(kwargs))
             sys.exit()
-        logger.info("---> DONE apply epocher  => hdf name: {}\n".format(self.hdf_filename))
+        logger.info("DONE apply epocher hdf file:\n  -> {}\n".format(self.hdf_filename))
         return (raw,fname)
      
         

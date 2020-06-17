@@ -1,15 +1,16 @@
 {
     "info": {
-        "time": "2019-10-25 14:38:31",
+        "time": "2020-04-08 14:27:32",
         "user": "fboers",
-        "version": "2019-10-25-0.001",
-        "jumeg_template_version": "2019.05.14.001",
+        "version": "2020-04-08-0.001",
+        "jumeg_template_version": "2019.12.19.001",
         "jumeg_gui_version": "2019.05.14.001"
     },
     "experiment": {
         "name": "INTEXT",
         "stages": [
-            "${JUMEG_PATH_MNE_IMPORT}",
+            "${JUMEG_PATH_MNE_IMPORT1}",
+            "${JUMEG_PATH_MNE_IMPORT2}",
             "${JUMEG_PATH_LOCAL_DATA}/exp"
         ],
         "scans": [
@@ -21,6 +22,7 @@
             "mne": "mne",
             "eeg": "eeg",
             "mft": "mft",
+            "report": "report",
             "doc": "doc",
             "source": "source",
             "stimuli": "stimuli"
