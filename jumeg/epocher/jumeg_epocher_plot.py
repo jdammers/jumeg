@@ -154,7 +154,7 @@ class JuMEG_Epocher_Plot(JuMEG_Base_IO):
      
         if fname:
            fout_path = os.path.dirname(fname)
-           name = os.path.basename(fname).split(".")
+           name = os.path.basename(fname)
            subject_id = name.split('_')[0]
         else:
            name      = "test.png"
