@@ -657,7 +657,10 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
         arrays.
     ics : np.array of shape (n_ics, (m_max - m_min) / m_step)
         The information criteria for the different model orders.
-        [AIC1, BIC1, AIC2, BIC2, lnFPE, HQIC]
+        [AIC1, BIC1, AIC2, BIC2, lnFPE, HQIC]]
+    stability : np.array of shape ((m_max - m_min) / m_step), )
+        Indicates if MVAR model describes stable process (covariance
+        stationary).
     p_white_scot : np.array of shape ((m_max - m_min) / m_step), )
         p-value that the residuals are white based on the Li-McLeod Portmanteau test
         implemented in SCoT. Reject hypothesis of white residuals if p is smaller
@@ -702,7 +705,7 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     hqic = []
 
     morders = []
-
+    stability = []
     p_white_scot = []
     p_white_dw = []
     dw = []
@@ -728,6 +731,10 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
         morders.append(m)
         mvar = VAR(m, n_jobs=n_jobs)
         mvar.fit(X)
+
+        stable = mvar.is_stable()
+        stability.append(stable)
+
         p_white_scot_ = mvar.test_whiteness(h=m, repeats=100, get_q=False, random_state=None)
         white_scot_ = p_white_scot_ >= 0.05
 
@@ -779,6 +786,7 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
             results += '    BIC2: %.2f' % m_bic2
             results += '  lnFPE3: %.2f' % m_ln_fpe3
             results += '    HQC3: %.2f' % m_hqc3
+            results += '  stable: %s' % str(stable)
             results += '  white1: %s' % str(white_scot_)
             results += '  white2: %s' % str(white_dw_)
             results += '   DWmin: %.2f' % dw_.min()
@@ -795,10 +803,13 @@ def compute_order_extended(X, m_max, m_min=1, m_step=1, n_jobs=None, verbose=Tru
     ics = [aic1, bic1, aic2, bic2, lnfpe, hqic]
     ics = np.asarray(ics)
 
+    stability = np.array(stability)
+    p_white_scot = np.array(p_white_scot)
+    p_white_dw = np.array(p_white_dw)
     dw = np.array(dw)
     consistency = np.array(consistency)
 
-    return o_m, morders, ics, p_white_scot, p_white_dw, dw, consistency
+    return o_m, morders, ics, stability, p_white_scot, p_white_dw, dw, consistency
 
 
 def compute_order(X, m_max, verbose=True):
