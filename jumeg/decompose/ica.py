@@ -852,6 +852,12 @@ def ica_apply_unfiltered(raw_unfilt, ica_filt, picks,
 
     # apply ICA on unfiltered data and preserve
     # original mean and stddev
+    # Note, in MNE-Python ICA
+    #   pca.mean_
+    #      is the overall mean across all data channels
+    #   ica.pre_whitener_
+    #      is a vector with equal values being the
+    #      overall standard deviation
     ica_unfilt = ica_filt.copy()
     ica_unfilt.pca_mean_ = pca_mean_
     ica_unfilt._pre_whitener = pre_whiten
@@ -859,3 +865,58 @@ def ica_apply_unfiltered(raw_unfilt, ica_filt, picks,
                                         n_pca_components = n_pca_components)
 
     return raw_unfilt_clean
+
+
+# ======================================================
+#
+# transform ICA sources to (MEG) data space
+# Note: this routine makes use of the ICA object
+# as defied by MNE-Python
+#
+# ======================================================
+def transform_mne_ica2data(sources, ica, idx_zero=None, idx_keep=None):
+
+    """
+    performs back-transformation from ICA to Data space using
+    rescaling as used as in MNE-Python
+        sources: shape [n_chan, n_samples]
+        ica: ICA object from MNE-Python
+        idx_zero: list of components to remove (optional)
+        idx_keep: list of components to remove (optional)
+    return: data re-computed from ICA sources
+    """
+
+    import numpy as np
+    from scipy.linalg import pinv
+
+    n_features = len(ica.pca_components_)
+    n_comp, n_samples = sources.shape
+    A = ica.mixing_matrix_.copy()
+
+    # create data with full dimension
+    data = np.zeros((n_samples, n_features))
+
+    # if idx_keep is set it will overwrite idx_zero
+    if idx_keep is not None:
+        idx_all = np.arange(n_comp)
+        idx_zero = np.setdiff1d(idx_all, idx_keep)
+
+    # if idx_zero or idx_keep was set idx_zero is always defined
+    if idx_zero is not None:
+        A[:, idx_zero] = 0.0
+
+    # back transformation to PCA space
+    data[:, :n_comp] = np.dot(sources.T, A.T)  # get PCA data
+
+    # back transformation to Data space
+    # is compatible to MNE-Python, but not to scikit-learn or JuMEG
+    data = (np.dot(data, ica.pca_components_) + ica.pca_mean_).T  # [n_chan, n_samples]
+
+    # restore scaling
+    if ica.noise_cov is None:  # revert standardization
+        data *= ica.pre_whitener_
+    else:
+        data = np.dot(pinv(ica.pre_whitener_, cond=1e-14), data)
+
+    return data
+
