@@ -252,7 +252,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
             node_colors = cycle(node_colors)
     else:
         # assign colors using colormap
-        node_colors = [plt.cm.spectral(i / float(n_nodes))
+        node_colors = [plt.cm.Spectral(i / float(n_nodes))
                        for i in range(n_nodes)]
 
     # handle 1D and 2D connectivity information
@@ -399,7 +399,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
         # End point
         if arrow:
-            # make shorter to accomodate arrowhead
+            # make shorter to accommodate arrowhead
             t1, r1 = node_angles[j], 9
         else:
             t1, r1 = node_angles[j], 10
@@ -1149,7 +1149,7 @@ def plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
 
         # End point
         if arrow:
-            # make shorter to accomodate arrowhead
+            # make shorter to accommodate arrowhead
             t1, r1 = node_angles[j], radsize - 1.
         else:
             t1, r1 = node_angles[j], radsize - 0.05
@@ -1403,7 +1403,7 @@ def _plot_connectivity_circle_group_bars(con, node_names,
             node_colors = cycle(node_colors)
     else:
         # assign colors using colormap
-        node_colors = [plt.cm.spectral(i / float(n_nodes))
+        node_colors = [plt.cm.Spectral(i / float(n_nodes))
                        for i in range(n_nodes)]
 
     # handle 1D and 2D connectivity information
