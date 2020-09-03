@@ -129,7 +129,8 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
                              fontsize_names=8, fontsize_colorbar=8, padding=6.,
                              fig=None, subplot=111, interactive=True,
                              node_linewidth=2., show=True, arrow=False,
-                             arrowstyle='->,head_length=0.7,head_width=0.4', **kwargs):
+                             arrowstyle='->,head_length=0.7,head_width=0.4',
+                             ignore_diagonal=True, **kwargs):
     """Visualize connectivity as a circular graph.
 
     Note: This code is based on the circle graph example by Nicolas P. Rougier
@@ -137,7 +138,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
     Parameters
     ----------
-    con : array
+    con : np.array
         Connectivity scores. Can be a square matrix, or a 1D array. If a 1D
         array is provided, "indices" has to be used to define the connection
         indices.
@@ -149,7 +150,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     n_lines : int | None
         If not None, only the n_lines strongest connections (strength=abs(con))
         are drawn.
-    node_angles : array, shape=(len(node_names,)) | None
+    node_angles : np.array, shape=(len(node_names,)) | None
         Array with node positions in degrees. If None, the nodes are equally
         spaced on the circle. See mne.viz.circular_layout.
     node_width : float | None
@@ -212,6 +213,9 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         Include arrows at end of connection.
     arrowstyle: str
         The style params of the arrow head to be drawn.
+    ignore_diagonal: bool
+        Plot the values on the diagonal (i.e., show intra-
+        node connections).
 
     Returns
     -------
@@ -266,7 +270,10 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
         is_symmetric = np.all(np.abs(con - con.T) < 1e-8)
         if is_symmetric:
-            indices = np.tril_indices(n_nodes, -1)
+            if ignore_diagonal:
+                indices = np.tril_indices(n_nodes, -1)
+            else:
+                indices = np.tril_indices(n_nodes, 0)
         else:
             if not arrow:
                 import warnings
@@ -275,7 +282,10 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
                               'be set to True.', Warning)
                 arrow = True
             # get off-diagonal indices
-            indices = np.where(~np.eye(con.shape[0], dtype=bool))
+            if ignore_diagonal:
+                indices = np.where(~np.eye(con.shape[0], dtype=bool))
+            else:
+                indices = np.where(np.ones(con.shape, dtype=bool))
 
         con = con[indices]
     else:
@@ -394,6 +404,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
     # Finally, we draw the connections
     for pos, (i, j) in enumerate(zip(indices[0], indices[1])):
+
         # Start point
         t0, r0 = node_angles[i], 10
 
@@ -404,11 +415,17 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
         else:
             t1, r1 = node_angles[j], 10
 
-        # Some noise in start and end point
-        t0 += start_noise[pos]
-        t1 += end_noise[pos]
+        if i != j:
+            # Some noise in start and end point
+            t0 += start_noise[pos]
+            t1 += end_noise[pos]
 
-        verts = [(t0, r0), (t0, 5), (t1, 5), (t1, r1)]
+            verts = [(t0, r0), (t0, 5), (t1, 5), (t1, r1)]
+
+        else:
+            verts = [(t0, r0), (t0 + 20 / 180 * np.pi, 5),
+                     (t1 - 20 / 180 * np.pi, 5), (t1, r1)]
+
         codes = [m_path.Path.MOVETO, m_path.Path.CURVE4, m_path.Path.CURVE4,
                  m_path.Path.LINETO]
         path = m_path.Path(verts, codes)

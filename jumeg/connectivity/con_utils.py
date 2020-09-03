@@ -2,6 +2,8 @@
 
 """ Utilities used for connectivity analysis. """
 
+import sys
+import os.path as op
 import numpy as np
 import mne
 
@@ -270,3 +272,147 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
     if return_label_coords:
         # returns the list of labels grown and MNI coords used as seeds
         return all_labels, all_coords, all_foci
+
+
+def expand_con_matrix(con, label_names, full_label_names):
+    """
+    Expand the dimensions of the connectivity matrix from
+    (len(label_names), len(label_names) to
+    (len(full_label_names), len(full_label_names)).
+
+    Parameters:
+    -----------
+    con : np.array of shape (len(label_names), len(label_names)
+        The connectivity matrix to be expanded.
+    label_names : list
+        List containing the label names corresponding to the
+        indices of the connectivity matrix.
+    full_label_names : list
+        Full list containing all label names to be included in the
+        expanded connectivity matrix.
+
+    Returns:
+    --------
+    con_exp : np.array of shape (len(full_label_names), len(full_label_names))
+        The full connectivity matrix after expansion.
+    """
+
+    assert len(con.shape) == 2, 'The con matrix is not 2D.'
+    assert con.shape[0] == con.shape[1], 'The con matrix is not square.'
+    assert con.shape[0] == len(label_names), 'Number of labels and con matrix shape do not match.'
+
+    full_label_names_arr = np.asarray(full_label_names)
+
+    lbl_indices = []
+    for ln in label_names:
+        lbl_indices.append(np.where(full_label_names_arr == ln)[0][0])
+    lbl_indices = np.asarray(lbl_indices)
+
+    if len(label_names) != len(lbl_indices):
+        raise RuntimeError('Not all labels could be matched.')
+
+    con_exp = np.zeros((len(full_label_names), len(full_label_names)))
+
+    for ii in range(lbl_indices.shape[0]):
+
+        for jj in range(lbl_indices.shape[0]):
+            idxi = lbl_indices[ii]
+            idxj = lbl_indices[jj]
+
+            con_exp[idxi, idxj] = con[ii, jj]
+
+    if not np.allclose(con_exp[lbl_indices][:, lbl_indices], con):
+        raise RuntimeError('Expansion failed.')
+
+    return con_exp
+
+
+def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
+    """
+    Group and sum up entries in the connectivity matrix by lobes.
+
+    Parameters:
+    -----------
+    con : np.array of shape (len(label_names), len(label_names)
+        The connectivity matrix to be summed up.
+    label_names : list
+        List containing the label names corresponding to the
+        indices of the connectivity matrix.
+    grouping_yaml_fname : str
+        Path to the file grouping labels by lobes.
+
+    Returns:
+    --------
+    con_grp_exp : np.array of shape (n_lobes, n_lobes)
+        The grouped connectivity matrix.
+    """
+
+    assert len(con.shape) == 2, 'The con matrix is not 2D.'
+    assert con.shape[0] == con.shape[1], 'The con matrix is not square.'
+    assert con.shape[0] == len(label_names), 'Number of labels and con matrix shape do not match.'
+
+    if op.isfile(grouping_yaml_fname):
+        import yaml
+        with open(grouping_yaml_fname, 'r') as f:
+            groupings = yaml.safe_load(f)
+    else:
+        print('%s - File not found.' % grouping_yaml_fname)
+        sys.exit()
+
+    ###########################################################################
+    # Get the indices of the labels belonging to the lobes
+    ###########################################################################
+
+    full_grouping_labels = []
+    grouping_labels = []
+    grouping_indices = []
+    for grouping in groupings:
+
+        for key in grouping:
+            grp_indices_lh = []
+            grp_indices_rh = []
+
+            for label_name in label_names:
+
+                if not (label_name.endswith('-lh') or label_name.endswith('-rh')):
+                    raise RuntimeError('Label is neither left nor right hemisphere.')
+
+                if label_name[:-3] in grouping[key]:
+                    if label_name.endswith('-lh'):
+                        grp_indices_lh.append(label_names.index(label_name))
+                    else:
+                        grp_indices_rh.append(label_names.index(label_name))
+
+            if len(grp_indices_lh) > 0:
+                grouping_labels.append(key + '-lh')
+                grouping_indices.append(np.asarray(grp_indices_lh))
+            if len(grp_indices_rh) > 0:
+                grouping_labels.append(key + '-rh')
+                grouping_indices.append(np.asarray(grp_indices_rh))
+
+            full_grouping_labels.extend([key + '-lh', key + '-rh'])
+
+    ###########################################################################
+    # Create the grouping by lobe in two steps
+    ###########################################################################
+
+    # ensure that diagonal values are 0 before summing
+    con = con.copy()
+    np.fill_diagonal(con, 0)
+
+    # first sum up across rows
+    # then sum up across columns
+
+    con_row = np.empty(shape=(len(grouping_labels), con.shape[1]))
+    for idx in range(len(grouping_indices)):
+        grp_indices = grouping_indices[idx]
+        con_row[idx] = con[grp_indices].sum(axis=0)
+
+    con_grp = np.empty(shape=(len(grouping_labels), len(grouping_labels)))
+    for idx in range(len(grouping_indices)):
+        grp_indices = grouping_indices[idx]
+        con_grp[:, idx] = con_row[:, grp_indices].sum(axis=1)
+
+    con_grp_exp = expand_con_matrix(con_grp, grouping_labels, full_grouping_labels)
+
+    return con_grp_exp, full_grouping_labels
