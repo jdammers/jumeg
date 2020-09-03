@@ -364,6 +364,10 @@ def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
     # Get the indices of the labels belonging to the lobes
     ###########################################################################
 
+    # ensure that diagonal values are 0 before summing
+    con = con.copy()
+    np.fill_diagonal(con, 0)
+
     full_grouping_labels = []
     grouping_labels = []
     grouping_indices = []
