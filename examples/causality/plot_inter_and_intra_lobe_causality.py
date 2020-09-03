@@ -34,11 +34,7 @@ subjects_dir = os.environ['SUBJECTS_DIR']
 full_labels = mne.read_labels_from_annot(subject='fsaverage', parc='aparc',
                                          hemi='both', subjects_dir=subjects_dir)
 
-full_label_names = []
-for full_label in full_labels:
-    if full_label.name.startswith('unknown'):
-        continue
-    full_label_names.append(full_label.name)
+full_label_names = [full_label.name for full_label in full_labels if full_label.name.find('unknown') == -1]
 
 ###############################################################################
 # create random causality matrix
