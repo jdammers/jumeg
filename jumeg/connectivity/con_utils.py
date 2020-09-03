@@ -351,9 +351,8 @@ def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
     assert con.shape[0] == con.shape[1], 'The con matrix is not square.'
     assert con.shape[0] == len(label_names), 'Number of labels and con matrix shape do not match.'
 
-    import yaml
-
     if op.isfile(grouping_yaml_fname):
+        import yaml
         with open(grouping_yaml_fname, 'r') as f:
             groupings = yaml.safe_load(f)
     else:
@@ -363,10 +362,6 @@ def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
     ###########################################################################
     # Get the indices of the labels belonging to the lobes
     ###########################################################################
-
-    # ensure that diagonal values are 0 before summing
-    con = con.copy()
-    np.fill_diagonal(con, 0)
 
     full_grouping_labels = []
     grouping_labels = []
@@ -400,6 +395,10 @@ def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
     ###########################################################################
     # Create the grouping by lobe in two steps
     ###########################################################################
+
+    # ensure that diagonal values are 0 before summing
+    con = con.copy()
+    np.fill_diagonal(con, 0)
 
     # first sum up across rows
     # then sum up across columns
