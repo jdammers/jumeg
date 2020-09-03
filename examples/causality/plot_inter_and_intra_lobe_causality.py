@@ -51,10 +51,6 @@ cau = np.random.uniform(-0.99, 0.01, (len(full_label_names), len(full_label_name
 cau[cau < 0] = 0
 cau = cau / 0.01  # values between 0 and 1
 
-###############################################################################
-# create random causality matrix
-###############################################################################
-
 cau_grp, grp_label_names = group_con_matrix_by_lobe(con=cau, label_names=full_label_names,
                                                     grouping_yaml_fname=grouping_yaml_fname)
 
