@@ -576,9 +576,11 @@ def _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict):
     Parameters:
     -----------
     labels_mode : str | None
-        'blank' mode plots no labels on the circle plot,
-        'cortex_only' plots only the name of the cortex on one representative
-        node and None plots all of the orig_label names provided.
+        'blank': mode plots no labels on the circle plot,
+        'replace': replace original labels with labels in replacer_dict
+        'replace_no_hemi': replace original labels with labels in replacer_dict
+                           without hemisphere indicators
+        None: plots all of the orig_label names provided.
     orig_labels : list of str
         Label names in the order as appears in con.
     replacer_dict :
@@ -596,7 +598,7 @@ def _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict):
         # show nothing, only the empty circle plot
         my_labels = ['' for _ in orig_labels]
 
-    elif labels_mode == 'cortex_only':
+    elif labels_mode == 'replace':
         if isinstance(replacer_dict, dict):
             # show only the names of cortex areas on one representative node
             replacer = replacer_dict
@@ -613,6 +615,24 @@ def _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict):
             else:
                 replaced_labels.append('')
         my_labels = replaced_labels
+
+    elif labels_mode == 'replace_no_hemi':
+        if isinstance(replacer_dict, dict):
+            # show only the names of cortex areas on one representative node
+            replacer = replacer_dict
+        else:
+            raise RuntimeError('Replacer dict with cortex names not set, \
+                                cannot choose cortex_only labels_mode.')
+        replaced_labels = []
+        for myl in orig_labels:
+            if myl.split('-lh')[0] in list(replacer.keys()):
+                replaced_labels.append(replacer[myl.split('-lh')[0]])
+            elif myl.split('-rh')[0] in list(replacer.keys()):
+                replaced_labels.append(replacer[myl.split('-rh')[0]])
+            else:
+                replaced_labels.append('')
+        my_labels = replaced_labels
+
     else:
         # show all the node labels as originally given
         my_labels = orig_labels
