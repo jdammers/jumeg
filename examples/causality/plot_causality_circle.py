@@ -26,7 +26,7 @@ caus[np.diag_indices_from(caus)] = 0.
 caus[caus < 0.7] = 0.
 
 plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=10,
-                              labels_mode='cortex_only', replacer_dict=replacer_dict,
+                              labels_mode='replace', replacer_dict=replacer_dict,
                               out_fname='causality_circle.png',
                               colormap='Blues', colorbar=True,
                               figsize=(6, 6), show=False,

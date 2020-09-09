@@ -30,7 +30,7 @@ con[con < 0.5] = 0.
 
 indices = (np.array((1, 2, 3)), np.array((5, 6, 7)))
 plot_grouped_connectivity_circle(yaml_fname, con, label_names,
-                                 labels_mode='cortex_only',
+                                 labels_mode='replace',
                                  replacer_dict=replacer_dict,
                                  out_fname='example_grouped_con_circle.png',
                                  colorbar_pos=(0.1, 0.1),
