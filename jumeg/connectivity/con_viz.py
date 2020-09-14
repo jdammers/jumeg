@@ -390,7 +390,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     end_noise = rng.uniform(-noise_max, noise_max, n_con)
 
     nodes_n_con_seen = np.zeros_like(nodes_n_con)
-    for i, (start, end) in enumerate(zip(indices[0], indices[1])):
+    for i, (end, start) in enumerate(zip(indices[0], indices[1])):
         nodes_n_con_seen[start] += 1
         nodes_n_con_seen[end] += 1
 
@@ -403,17 +403,18 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     con_val_scaled = (con - vmin) / vrange
 
     # Finally, we draw the connections
+    # in SCoT, cau_ij represents causal influence from j to i
     for pos, (i, j) in enumerate(zip(indices[0], indices[1])):
 
         # Start point
-        t0, r0 = node_angles[i], 10
+        t0, r0 = node_angles[j], 10
 
         # End point
         if arrow:
             # make shorter to accommodate arrowhead
-            t1, r1 = node_angles[j], 9
+            t1, r1 = node_angles[i], 9
         else:
-            t1, r1 = node_angles[j], 10
+            t1, r1 = node_angles[i], 10
 
         if i != j:
             # Some noise in start and end point
