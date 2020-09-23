@@ -43,6 +43,9 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
 
     """
 
+    from mne.channels.interpolation import _interpolate_bads_eeg
+    from mne.utils import check_version
+
     if getattr(inst, 'preload', None) is False:
         raise ValueError('Data must be preloaded.')
 
@@ -52,9 +55,12 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
     else:
         origin = origin
 
-    from mne.channels.interpolation import _interpolate_bads_eeg
+    if check_version('mne', '0.20'):
+        _interpolate_bads_eeg(inst, origin=origin)
+    else:
+        # workaround for compatibility with 0.19, should be removed soon
+        _interpolate_bads_eeg(inst)
 
-    _interpolate_bads_eeg(inst, origin=origin)
     _interpolate_bads_meg(inst, origin=origin, mode=mode)
 
     if reset_bads is True:
