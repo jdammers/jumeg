@@ -43,18 +43,29 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
 
     """
 
+    from mne.channels.interpolation import _interpolate_bads_eeg
+    from mne.utils import check_version
+
     if getattr(inst, 'preload', None) is False:
         raise ValueError('Data must be preloaded.')
 
-    if origin is None:
-        picks_meg = pick_types(inst.info, meg=True, eeg=False, exclude=[])
-        origin = _estimate_origin(inst.info, picks_meg)
+    picks_meg = pick_types(inst.info, meg=True, eeg=False, exclude=[])
+    if len(picks_meg) != 0:
+        if origin is None:
+            origin = _estimate_origin(inst.info, picks_meg)
+        else:
+            origin = origin
+
+    if check_version('mne', '0.20'):
+        _interpolate_bads_eeg(inst, origin=origin)
     else:
-        origin = origin
+        # workaround for compatibility with 0.19, should be removed soon
+        import warnings
+        warnings.warn('EEG channels may be interpolated with an incorrect origin,'
+                       'leading to inaccurate interpolation. Please update mne'
+                       'to the latest version for best results.', Warning)
+        _interpolate_bads_eeg(inst)
 
-    from mne.channels.interpolation import _interpolate_bads_eeg
-
-    _interpolate_bads_eeg(inst, origin=origin)
     _interpolate_bads_meg(inst, origin=origin, mode=mode)
 
     if reset_bads is True:

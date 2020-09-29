@@ -5,3 +5,10 @@ replacer_dict_aparc_sub:
 
 replacer_dict_aparc:
     {'caudalanteriorcingulate': 'cingulate', 'insula': 'insula', 'parstriangularis': 'frontal', 'precuneus': 'parietal', 'lingual': 'occipital', 'transversetemporal': 'temporal'}
+
+replacer_dict_schaefer_17N_100P:
+    {'ContB_PFClv_1': 'control', 'DefaultB_PFCv_1': 'default',
+     'DorsAttnB_FEF_1': 'dorsal_attn', 'LimbicA_TempPole_2': 'limbic',
+     'SalVentAttnA_ParMed_1': 'sal_ventattn', 'SomMotB_Cent_1': 'som_motor',
+     'TempPar_1': temporal_parietal, 'VisCent_ExStr_2': 'visual_cent',
+     'VisPeri_ExStrSup_1': 'visual_peri'}

@@ -5,6 +5,8 @@ import os
 import numpy as np
 import mne
 
+import matplotlib.pyplot as plt
+
 from .jumeg_utils import (get_files_from_list, thresholded_arr,
                                triu_indices, check_read_raw)
 from .base.jumeg_base import jumeg_base
@@ -18,7 +20,6 @@ def plot_powerspectrum(fname, raw=None, picks=None, dir_plots='plots',
         '''
 
         '''
-        import matplotlib.pyplot as pl
         from distutils.dir_util import mkpath
 
         if raw is None:
@@ -42,13 +43,13 @@ def plot_powerspectrum(fname, raw=None, picks=None, dir_plots='plots',
         file_name = fname.split('/')[-1]
         fnfig = dir_plots + '/' + base_fname + '-psds.png'
 
-        # pl.figure()
-        pl.ioff()
+        # plt.figure()
+        plt.ioff()
         fig = raw.plot_psd(fmin=fmin, fmax=fmax, n_fft=n_fft, picks=picks,
                            **kwargs)
         fig.suptitle('PSDS ' + file_name)
         fig.savefig(fnfig)
-        pl.close(fig)
+        plt.close(fig)
 
         return fname
 
@@ -59,9 +60,8 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
 
     fname = get_files_from_list(filenames)
 
-    import matplotlib.pyplot as pl
     # plot averages
-    pl.ioff()  # switch off (interactive) plot visualisation
+    plt.ioff()  # switch off (interactive) plot visualisation
     factor = 1e15
     for fnavg in fname:
         name = fnavg[0:len(fnavg) - 4]
@@ -73,18 +73,18 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
         ymin, ymax = avg.data.min(), avg.data.max()
         ymin *= factor * 1.1
         ymax *= factor * 1.1
-        fig = pl.figure(basename, figsize=(10, 8), dpi=100)
-        pl.clf()
-        pl.ylim([ymin, ymax])
-        pl.xlim([avg.times.min(), avg.times.max()])
-        pl.plot(avg.times, avg.data.T * factor, color='black')
-        pl.title(basename)
+        fig = plt.figure(basename, figsize=(10, 8), dpi=100)
+        plt.clf()
+        plt.ylim([ymin, ymax])
+        plt.xlim([avg.times.min(), avg.times.max()])
+        plt.plot(avg.times, avg.data.T * factor, color='black')
+        plt.title(basename)
 
         # save figure
         fnfig = os.path.splitext(fnavg)[0] + '.png'
-        pl.savefig(fnfig, dpi=dpi)
+        plt.savefig(fnfig, dpi=dpi)
 
-    pl.ion()  # switch on (interactive) plot visualisation
+    plt.ion()  # switch on (interactive) plot visualisation
 
 
 def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
@@ -96,7 +96,6 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     and after the cleaning process.
     '''
 
-    import matplotlib.pyplot as pl
     from mne.preprocessing import find_ecg_events, find_eog_events
     from jumeg import jumeg_math as jmath
 
@@ -143,9 +142,9 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
     perf_art_rej = np.zeros(2)
 
     # ToDo:  How can we avoid popping up the window if show=False ?
-    pl.ioff()
-    pl.figure('performance image', figsize=(12, y_figsize))
-    pl.clf()
+    plt.ioff()
+    plt.figure('performance image', figsize=(12, y_figsize))
+    plt.clf()
 
     # ECG, EOG:  loop over all artifact events
     for i in range(nstart, nrange):
@@ -199,27 +198,27 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         ymax = np.max(raw_epochs_avg.data) * factor
 
         # plotting data before cleaning
-        pl.subplot(pl1)
-        pl.plot(times, raw_epochs_avg.data.T * factor, 'k')
-        pl.title(text1)
+        plt.subplot(pl1)
+        plt.plot(times, raw_epochs_avg.data.T * factor, 'k')
+        plt.title(text1)
         # plotting reference signal
-        pl.plot(times, jmath.rescale(ref_epochs_avg, ymin, ymax), 'r')
-        pl.xlim(times[0], times[len(times) - 1])
-        pl.ylim(1.1 * ymin, 1.1 * ymax)
+        plt.plot(times, jmath.rescale(ref_epochs_avg, ymin, ymax), 'r')
+        plt.xlim(times[0], times[len(times) - 1])
+        plt.ylim(1.1 * ymin, 1.1 * ymax)
         # print some info
         textstr1 = 'num_events=%d\nEpochs: tmin, tmax = %0.1f, %0.1f' \
                    % (len(idx_event), tmin, tmax)
-        pl.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
+        plt.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
                 verticalalignment='top', bbox=props)
 
         # plotting data after cleaning
-        pl.subplot(pl2)
-        pl.plot(times, cleaned_epochs_avg.data.T * factor, 'k')
-        pl.title(text2)
+        plt.subplot(pl2)
+        plt.plot(times, cleaned_epochs_avg.data.T * factor, 'k')
+        plt.title(text2)
         # plotting reference signal again
-        pl.plot(times, jmath.rescale(ref_epochs_avg, ymin, ymax), 'r')
-        pl.xlim(times[0], times[len(times) - 1])
-        pl.ylim(1.1 * ymin, 1.1 * ymax)
+        plt.plot(times, jmath.rescale(ref_epochs_avg, ymin, ymax), 'r')
+        plt.xlim(times[0], times[len(times) - 1])
+        plt.ylim(1.1 * ymin, 1.1 * ymax)
         # print some info
         perf_art_rej[i] = calc_performance(raw_epochs_avg, cleaned_epochs_avg)
         # ToDo: would be nice to add info about ica.excluded
@@ -233,16 +232,16 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
                           calc_frequency_correlation(raw_epochs_avg, cleaned_epochs_avg),
                           ica.n_components_, ica.n_components * 100)
 
-        pl.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
+        plt.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
                 verticalalignment='top', bbox=props)
 
     if show:
-        pl.show()
+        plt.show()
 
     # save image
-    pl.savefig(fnout_fig + '.png', format='png')
-    pl.close('performance image')
-    pl.ion()
+    plt.savefig(fnout_fig + '.png', format='png')
+    plt.close('performance image')
+    plt.ion()
 
     return perf_art_rej
 
@@ -261,10 +260,9 @@ def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
     show: bool (default False)
     '''
 
-    import matplotlib.pyplot as pl
-    pl.ioff()
+    plt.ioff()
     if show:
-        pl.ion()
+        plt.ion()
 
     # Get the stimulus channel for special event from the fname_new
     # make a judgment, whether this raw data include more than one kind of event.
@@ -317,32 +315,32 @@ def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
     ymax = np.max(evoked_orig.data) * factor
 
     # Make the comparison plot.
-    pl.figure('Compare raw data', figsize=(14, 5))
-    pl.subplot(1, 2, 1)
-    pl.plot(times, evoked_orig.data.T * factor, 'k', linewidth=0.5)
-    pl.plot(times, evoked_br.data.T * factor, 'r', linewidth=0.5)
-    pl.title('Signal before (black) and after (red) cleaning')
-    pl.xlim(times[0], times[len(times) - 1])
-    pl.ylim(1.1 * ymin, 1.1 * ymax)
+    plt.figure('Compare raw data', figsize=(14, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(times, evoked_orig.data.T * factor, 'k', linewidth=0.5)
+    plt.plot(times, evoked_br.data.T * factor, 'r', linewidth=0.5)
+    plt.title('Signal before (black) and after (red) cleaning')
+    plt.xlim(times[0], times[len(times) - 1])
+    plt.ylim(1.1 * ymin, 1.1 * ymax)
 
     # print out some information
     textstr1 = 'Performance: %d\nFrequency Correlation: %d'\
                % (calc_performance(evoked_orig, evoked_br),
                   calc_frequency_correlation(evoked_orig, evoked_br))
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    pl.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
+    plt.text(times[10], 1.09 * ymax, textstr1, fontsize=10,
             verticalalignment='top', bbox=props)
 
-    pl.subplot(1, 2, 2)
+    plt.subplot(1, 2, 2)
     evoked_diff = evoked_orig - evoked_br
-    pl.plot(times, evoked_diff.data.T * factor, 'k', linewidth=0.5)
-    pl.title('Difference signal')
-    pl.xlim(times[0], times[len(times) - 1])
-    pl.ylim(1.1 * ymin, 1.1 * ymax)
+    plt.plot(times, evoked_diff.data.T * factor, 'k', linewidth=0.5)
+    plt.title('Difference signal')
+    plt.xlim(times[0], times[len(times) - 1])
+    plt.ylim(1.1 * ymin, 1.1 * ymax)
 
-    pl.savefig(fnout_fig, format='png')
-    pl.close('Compare raw data')
-    pl.ion()
+    plt.savefig(fnout_fig, format='png')
+    plt.close('Compare raw data')
+    plt.ion()
 
 
 ###########################################################
@@ -399,7 +397,7 @@ def drawmatrix_channels(in_m, channel_names=None, fig=None, x_tick_rot=0,
         cmap = cm.RdBu_r
 
     if fig is None:
-        fig = pl.figure()
+        fig = plt.figure()
 
     if size is not None:
 
@@ -507,15 +505,15 @@ def drawmatrix_channels(in_m, channel_names=None, fig=None, x_tick_rot=0,
 def draw_matrix(mat, th1=None, th2=None, clim=None, cmap=None):
     """Draw a matrix, optionally thresholding it.
     """
-    import matplotlib.pyplot as pl
+
     if th1 is not None:
         m2 = thresholded_arr(mat, th1, th2)
     else:
         m2 = mat
-    ax = pl.matshow(m2, cmap=cmap)
+    ax = plt.matshow(m2, cmap=cmap)
     if clim is not None:
         ax.set_clim(*clim)
-    pl.colorbar()
+    plt.colorbar()
     return ax
 
 
@@ -525,7 +523,7 @@ def plot_intersection_matrix(mylabels):
     in the same hemisphere, all the labels are unique
     this means that no labels reduction is possible.
     '''
-    import matplotlib.pyplot as pl
+
     import itertools
 
     length = len(mylabels)
@@ -536,8 +534,8 @@ def plot_intersection_matrix(mylabels):
                                                        mylabels[j].vertices).size
         else:
             intersection_matrix[i][j] = 0
-    pl.spy(intersection_matrix)
-    pl.show()
+    plt.spy(intersection_matrix)
+    plt.show()
     return intersection_matrix
 
 
@@ -546,14 +544,14 @@ def plot_matrix_with_values(mat, cmap='seismic', colorbar=True):
     Show a matrix with text inside showing the values of the matrix
     may be useful for showing connectivity maps.
     '''
-    import matplotlib.pyplot as pl
-    fig, ax = pl.subplots()
+
+    fig, ax = plt.subplots()
     im = ax.matshow(mat, cmap=cmap)
     if colorbar:
-        pl.colorbar(im)
+        plt.colorbar(im)
     for (a, b), z in np.ndenumerate(mat):
         ax.text(b, a, z, ha='center', va='center')
-    pl.show()
+    plt.show()
 
 
 def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
@@ -590,7 +588,6 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
         is always in femtoTesla (fT) (1e15)
     '''
 
-    import matplotlib.pyplot as pl
     from mne.preprocessing import create_ecg_epochs, create_eog_epochs
 
     raw = check_read_raw(raw_orig, preload=True)
@@ -686,12 +683,12 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
     # plot the overview
     if resp_ch:
         nrows, ncols = 5, 2
-        fig = pl.figure('Overview', figsize=(10, 20))
+        fig = plt.figure('Overview', figsize=(10, 20))
     else:
         nrows, ncols = 4, 2
-        fig = pl.figure('Overview', figsize=(10, 16))
+        fig = plt.figure('Overview', figsize=(10, 16))
 
-    ax1 = pl.subplot(nrows, ncols, 1)
+    ax1 = plt.subplot(nrows, ncols, 1)
     ax1.set_title('ECG - before (b) / after (r). %d events.' % len(ecg_epochs),
                   fontdict=dict(fontsize='medium'))
     ecg_evoked = ecg_epochs.average()
@@ -704,11 +701,11 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                  ecg_evoked_clean.data[j] * 1e15, color='r', label='after')
     ylim_ecg = dict(mag=ax1.get_ylim())
     ax1.set_xlim(ecg_tmin * 1e3, ecg_tmax * 1e3)
-    ax2 = pl.subplot(nrows, ncols, 2)
+    ax2 = plt.subplot(nrows, ncols, 2)
     stim_diff_ecg.plot(axes=ax2, ylim=ylim_ecg,
                        titles=dict(mag='Difference'))
 
-    ax3 = pl.subplot(nrows, ncols, 3)
+    ax3 = plt.subplot(nrows, ncols, 3)
     ax3.set_title('EOG (h) - before (b) / after (r). %d events.' % len(eog1_epochs),
                   fontdict=dict(fontsize='medium'))
     eog1_evoked = eog1_epochs.average()
@@ -721,11 +718,11 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                  eog1_evoked_clean.data[j] * 1e15, color='r', label='after')
     ylim_eog = dict(mag=ax3.get_ylim())
     ax3.set_xlim(eog_tmin * 1e3, eog_tmax * 1e3)
-    ax4 = pl.subplot(nrows, ncols, 4)
+    ax4 = plt.subplot(nrows, ncols, 4)
     stim_diff_eog1.plot(axes=ax4, ylim=ylim_eog,
                         titles=dict(mag='Difference'))
 
-    ax5 = pl.subplot(nrows, ncols, 5)
+    ax5 = plt.subplot(nrows, ncols, 5)
     ax5.set_title('EOG (v) - before (b) / after (r). %d events.' % len(eog2_epochs),
                   fontdict=dict(fontsize='medium'))
     eog2_evoked = eog2_epochs.average()
@@ -738,12 +735,12 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                  eog2_evoked_clean.data[j] * 1e15, color='r', label='after')
     ylim_eog = dict(mag=ax5.get_ylim())
     ax5.set_xlim(eog_tmin * 1e3, eog_tmax * 1e3)
-    ax6 = pl.subplot(nrows, ncols, 6)
+    ax6 = plt.subplot(nrows, ncols, 6)
     stim_diff_eog2.plot(axes=ax6, ylim=ylim_eog,
                         titles=dict(mag='Difference'))
 
     # plot the signal + diff
-    ax7 = pl.subplot(nrows, ncols, 7)
+    ax7 = plt.subplot(nrows, ncols, 7)
     ax7.set_title('MEG Signal around stim. %d events.' % len(epochs.events),
                   fontdict=dict(fontsize='medium'))
     for i in range(len(evoked.data)):
@@ -754,13 +751,13 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                  evoked_clean.data[j] * 1e15, color='r', label='after')
     ax7.set_xlim(stim_tmin * 1e3, stim_tmax * 1e3)
     ylim_diff = dict(mag=ax7.get_ylim())
-    ax8 = pl.subplot(nrows, ncols, 8)
+    ax8 = plt.subplot(nrows, ncols, 8)
     stim_diff_signal.plot(axes=ax8, ylim=ylim_diff,
                           titles=dict(mag='Difference'))
 
     if resp_ch:
         # plot the signal + diff
-        ax9 = pl.subplot(nrows, ncols, 9)
+        ax9 = plt.subplot(nrows, ncols, 9)
         ax9.set_title('MEG Signal around resp. %d events.' % len(resp_epochs.events),
                       fontdict=dict(fontsize='medium'))
         for i in range(len(resp_evoked.data)):
@@ -771,13 +768,13 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                      resp_evoked_clean.data[j] * 1e15, color='r', label='after')
         ax9.set_xlim(resp_tmin * 1e3, resp_tmax * 1e3)
         ylim_diff = dict(mag=ax9.get_ylim())
-        ax10 = pl.subplot(nrows, ncols, 10)
+        ax10 = plt.subplot(nrows, ncols, 10)
         resp_diff_signal.plot(axes=ax10, ylim=ylim_diff,
                               titles=dict(mag='Difference'))
 
-    pl.tight_layout()
-    pl.savefig(overview_fname)
-    pl.close('all')
+    plt.tight_layout()
+    plt.savefig(overview_fname)
+    plt.close('all')
 
 
 def plot_phases_polar(phases):
@@ -798,12 +795,11 @@ def plot_phases_polar(phases):
     plot_phases_polar(von)
     '''
 
-    import matplotlib.pyplot as pl
     # plot circular projection
-    ax = pl.subplot(111, polar=True)
+    ax = plt.subplot(111, polar=True)
     radii = np.ones(phases.shape)
     bars = ax.bar(phases, radii, bottom=0., width=(np.pi/180))
-    pl.show()
+    plt.show()
 
 
 def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
@@ -813,7 +809,6 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     Function to plot a histogram of the data along compared with a standard
     Gaussian.
     """
-    import matplotlib.pyplot as pl
     from scipy import stats
 
     # data will be flattened
@@ -827,22 +822,22 @@ def plot_histo_fit_gaussian(orig_data, nbins=100, facecol='blue',
     mu, sigma = stats.norm.fit(data)  # get mu and sigma from the data
 
     # plot histogram of the data
-    n, bins, patches = pl.hist(data, nbins, normed=True,
+    n, bins, patches = plt.hist(data, nbins, density=True,
                                facecolor=facecol, alpha=0.75)
 
     # add a 'best fit' line
     yfit = stats.norm.pdf(bins, mu, sigma)
 
     # plot Gaussian fit
-    fig = pl.plot(bins, yfit, linecol, linewidth=2)
-    pl.title(title)
-    pl.ylabel('Counts')
-    pl.xlabel('Data')
+    fig = plt.plot(bins, yfit, linecol, linewidth=2)
+    plt.title(title)
+    plt.ylabel('Counts')
+    plt.xlabel('Data')
 
     if show:
-        pl.show()
+        plt.show()
 
     if fnout:
-        pl.savefig(fnout)
+        plt.savefig(fnout)
 
     return fig
