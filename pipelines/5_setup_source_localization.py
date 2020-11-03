@@ -83,7 +83,9 @@ for subj in subjects:
     # If talairach fails use: tkregister2 --mgz --s subj for manual adjustment
     # https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/Talairach_freeview
 
-    call([freesurfer_bin + 'recon-all', '-autorecon-all', '-subjid', subj])
+    njobs = 4
+    call([freesurfer_bin + 'recon-all', '-autorecon-all', '-subjid', subj,
+          '-parallel', '-openmp', str(njobs)])
 
     # Set up the MRI data for forward model.
     call([mne_bin_path + 'mne_setup_mri', '--subject', subj, '--overwrite'])
