@@ -506,22 +506,44 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                      vmin=None, vmax=None, colormap='hot',
                                      colorbar=False, colorbar_pos=(-0.25, 0.05),
                                      symmetric_cbar=False, bbox_inches=None,
-                                     tight_layout=None, **kwargs):
+                                     tight_layout=None, cortex_colors=None,
+                                     **kwargs):
     """
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
 
+    yaml_fname: str
+        A file in the yaml format that provides information on how to group
+        the labels for the circle plot. Soem grouping examples are provided at
+        jumeg/data/*_grouping.yaml.
+
+    con: ndarray
+        Connectivity matrix to be plotted.
+
     orig_labels : list of str
-        Label names in the order as appears in con.
+        The original label names in the order as appears in con.
+
+    replacer_dict: dict
+        A dictionary that provides a one to one match between original label
+        name and a group name. The group name is plotted at the location of the
+        original label name provided.
 
     labels_mode : str | None
-        'blank' mode plots no labels on the circle plot,
-        'cortex_only' plots only the name of the cortex on one representative
-        node and None plots all of the orig_label names provided.
+        'blank': Plots no labels on the circle plot,
+        'replace': Replace original labels with labels in replacer_dict. If
+                   the label is not in replacer_dict it is replaced with a blank.
+        'replace_no_hemi': Same as 'replace' but without hemisphere indicators.
+        None: Plots all of the orig_label names provided.
 
     bbox_inches : None | 'tight'
 
     tight_layout : bool
+
+    out_fname: str
+        Filename of the saved figure.
+
+    For other keyword arguments please refer to docstring for
+    plot_connectivity_circle.
 
     NOTE: yaml order fix helps preserves the order of entries in the yaml file.
     """
@@ -534,7 +556,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         print('%s - File not found.' % yaml_fname)
         sys.exit()
 
-    node_angles, node_colors = _get_group_node_angles_and_colors(labels, orig_labels, node_order_size)
+    node_angles, node_colors = _get_group_node_angles_and_colors(labels, orig_labels,
+                                    node_order_size, cortex_colors=cortex_colors)
 
     my_labels = _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict)
 
