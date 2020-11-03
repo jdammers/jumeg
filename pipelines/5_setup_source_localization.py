@@ -114,9 +114,6 @@ for subj in subjects:
     src_fname = op.join(subjects_dir, subj, 'bem', subj + '-ico-%d-src.fif' % spacing)
     src.save(src_fname, overwrite=True)
 
-    # make lh.smseghead
-    call([freesurfer_bin + 'mkheadsurf', '-subjid', subj])
-
     head = op.join(subjects_dir, subj, 'bem', subj + '-head.fif')
     mne_make_scalp_surfaces._run(subjects_dir=subjects_dir, subject=subj,
                                  force='--force', no_decimate=True, overwrite=True,
