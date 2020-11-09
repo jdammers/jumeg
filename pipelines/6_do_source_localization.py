@@ -97,6 +97,9 @@ for subj in subjects:
 
         else:
             fwd = mne.read_forward_solution(fn_fwd)
+            
+            # convert after reading. when saving fwd solution, it does not save conversions or surface orientations
+            fwd = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=False)
 
         # for evoked data use noise cov based on epochs, however,
         # if there is no baseline, e.g., in resting state data
