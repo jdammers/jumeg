@@ -78,28 +78,21 @@ for subj in subjects:
         # load epochs
         epochs = mne.read_epochs(fn_epo, preload=False)
 
-        if not op.exists(fn_fwd):
 
-            # create forward solution
-            # similar to mne_do_foward_solution (uses MNE-C binaries)
-            fwd = mne.make_forward_solution(epochs.info, trans=fn_trans, src=fn_src,
-                                            bem=fn_bem, mindist=5, eeg=False)
+        # create forward solution
+        # similar to mne_do_foward_solution (uses MNE-C binaries)
+        fwd = mne.make_forward_solution(epochs.info, trans=fn_trans, src=fn_src,
+                                        bem=fn_bem, mindist=5, eeg=False)
+        
+        # https://martinos.org/mne/stable/generated/mne.convert_forward_solution.html
+        # for loose constraint, depth weighted inverse
+        # solution set surf_ofi to True and force_fixed
+        # to False
+        # see https://martinos.org/mne/stable/generated/mne.minimum_norm.make_inverse_operator.html
 
-            # https://martinos.org/mne/stable/generated/mne.convert_forward_solution.html
-            # for loose constraint, depth weighted inverse
-            # solution set surf_ofi to True and force_fixed
-            # to False
-            # see https://martinos.org/mne/stable/generated/mne.minimum_norm.make_inverse_operator.html
+        fwd = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=False)
 
-            fwd = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=False)
-
-            mne.write_forward_solution(fname=fn_fwd, fwd=fwd, overwrite=True)
-
-        else:
-            fwd = mne.read_forward_solution(fn_fwd)
-            
-            # convert after reading. when saving fwd solution, it does not save conversions or surface orientations
-            fwd = mne.convert_forward_solution(fwd, surf_ori=True, force_fixed=False)
+        mne.write_forward_solution(fname=fn_fwd, fwd=fwd, overwrite=True)
 
         # for evoked data use noise cov based on epochs, however,
         # if there is no baseline, e.g., in resting state data
