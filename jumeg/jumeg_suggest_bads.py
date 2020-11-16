@@ -122,7 +122,7 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
 
         # do the clustering for every epoch
         db = DBSCAN(eps=selected_threshold, min_samples=min_samples,
-                    metric='euclidean').fit(afp)
+                    metric='euclidean',njobs = -1).fit(afp)
         core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
         core_samples_mask[db.core_sample_indices_] = True
         suspect = [i for i, x in enumerate(db.labels_) if x]
