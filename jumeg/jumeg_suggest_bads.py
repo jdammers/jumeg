@@ -74,7 +74,7 @@ def compute_euclidean_stats(epoch, sensitivity, mode='adaptive',
 
 
 def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
-                  min_samples=1):
+                  min_samples=1, njobs = None):
     '''
     Perform clustering on difference in signals from one sample to another.
     This method helps us to identify flux jumps and largespikes in the data.
@@ -122,7 +122,7 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
 
         # do the clustering for every epoch
         db = DBSCAN(eps=selected_threshold, min_samples=min_samples,
-                    metric='euclidean',njobs = -1).fit(afp)
+                    metric='euclidean',njobs = njobs).fit(afp)
         core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
         core_samples_mask[db.core_sample_indices_] = True
         suspect = [i for i, x in enumerate(db.labels_) if x]
@@ -136,7 +136,7 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
     return afps, afp_suspects, afp_nearest_neighbour, zlimit_afp
 
 
-def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1):
+def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1, njobs = None):
     '''
     Perform clustering on PSDs to identify bad channels.
 
@@ -170,7 +170,7 @@ def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1):
         psd_nearest_neighbour.append(nearest_neighbour)
         psd_percentiles.append(selected_threshold)
         db = DBSCAN(eps=selected_threshold, min_samples=min_samples,
-                    metric='euclidean').fit(psd)
+                    metric='euclidean', njobs = njobs).fit(psd)
         core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
         core_samples_mask[db.core_sample_indices_] = True
         suspect = [i for i, x in enumerate(db.labels_) if x]
@@ -330,7 +330,7 @@ def plot_autosuggest_summary(afp_nearest_neighbour, psd_nearest_neighbour,
 
 def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
                  fraction=0.001, epoch_length=None, summary_plot=False,
-                 show_raw=False, validation=True):
+                 show_raw=False, njobs = 1, validation=True):
     '''
     Function to suggest bad channels. The bad channels are identified using
     time domain methods looking for sharp jumps in short windows of data and
@@ -379,11 +379,11 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
 
     # compute differences in time domain to identify abrupt jumps in the data
     afps, afp_suspects, afp_nearest_neighbour, zlimit_afp = \
-        clustered_afp(epochs, sensitivity_steps, fraction)
+        clustered_afp(epochs, sensitivity_steps, fraction, njobs = njobs)
 
     # compute the psds and do the clustering to identify unusual channels
     psds, psd_suspects, psd_nearest_neighbour, zlimit_psd = \
-        clustered_psd(epochs, sensitivity_psd, picks)
+        clustered_psd(epochs, sensitivity_psd, picks, njobs = njobs)
 
     # if any of the channels' psds are all zeros, mark as suspect
     zero_suspects = [ind for ind in range(psds.shape[1]) if not np.any(psds[:, ind, :])]
