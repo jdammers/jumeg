@@ -1,0 +1,56 @@
+
+#  gDCNN  config file
+
+version: 'v0.1'
+
+###############################################################################
+# global and path settings
+###############################################################################
+n_jobs: 'cuda'  # use this only if you have installed cuda properly
+#n_jobs: 1
+
+path:
+    basedir: '/home/jdammers/ownCloud/Data/gDCNN/'
+
+    # the following will be relative to basedir
+    data_meg: 'meg_rawdata/Juelich/INTEXT/'  # input directory
+    data_train: 'ica_labelled/Juelich/'       # output directory
+    report: 'report/Juelich/'                # save reports here
+
+
+
+###############################################################################
+# MEG system
+###############################################################################
+meg:
+    # type of MEG system:  4D, CTF, Neuromag
+    vendor: '4D'        #  CTF, MEGIN, 4D
+    system: 'MAGNES3600'     # CTF275, CTF151, Triux, TriuxNeo, MAGNES3600
+    location: 'Juelich'
+
+    # info about experiment: task or rest
+    exp_type: 'task'         # task or rest
+    exp_name: 'INTEXT'       # any meaningful acronym
+    exp_info: ''             # optional free text
+
+    # Auxilliary channels must be of good quality!
+    ecg_ch: 'ECG 001'       # ECG channel
+    eog_ch1: 'EOG 001'      # vertical EOG channel
+    eog_ch2: 'EOG 002'      # horizontal EOG channel (optional, otherwise set eog_ch2: null)
+
+    reject: null        # to be set appropriately or None (null)
+
+    apply_notch: False   # not needed for ICA as filtering is applied
+    line_freqs: [50., 100., 150., 200., 250., 300., 350.]
+
+    apply_noise_reduction: False
+
+
+###############################################################################
+# ica settings
+###############################################################################
+ica:
+    ecg_thresh_ctps: 0.25
+    ecg_thresh_corr: 0.20      # set to null (None) if not to be used
+    eog_thresh_ver: 0.20
+    eog_thresh_hor: 0.20

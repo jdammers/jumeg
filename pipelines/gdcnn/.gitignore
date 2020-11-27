@@ -1,0 +1,13 @@
+/zzz_*
+/config_4D*
+/config_CTF*
+/config_MEGIN*
+/config_test.yaml
+/config_training.yaml
+/SVM_*
+/old/*
+/backup/*
+/testing/*
+/backup/
+/03_gDCNN_train_prepare.py
+/99_*
