@@ -1,9 +1,5 @@
-import numpy as np
 from mne.io.pick import pick_types, pick_channels, pick_info
-from mne.transforms import apply_trans
-from mne.forward import _map_meg_channels
-from mne.channels.interpolation import _do_interp_dots
-
+from mne.utils import check_version
 
 def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbose=None):
     """
@@ -44,7 +40,6 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
     """
 
     from mne.channels.interpolation import _interpolate_bads_eeg
-    from mne.utils import check_version
 
     if getattr(inst, 'preload', None) is False:
         raise ValueError('Data must be preloaded.')
@@ -75,6 +70,10 @@ def interpolate_bads(inst, reset_bads=True, mode='accurate', origin=None, verbos
 
 
 def _estimate_origin(info, picks_meg):
+
+    import numpy as np
+    from mne.transforms import apply_trans
+
     posvec = np.array([info['chs'][p]['loc'][0:3] for p in picks_meg])
     norvec = np.array([info['chs'][p]['loc'][9:12] for p in picks_meg])
     cogpos = np.mean(posvec, axis=0)
@@ -119,6 +118,8 @@ def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
         If not None, override default verbose level (see :func:`mne.verbose`
         and :ref:`Logging documentation <tut_logging>` for more).
     """
+    from mne.channels.interpolation import _do_interp_dots
+
     picks_meg = pick_types(inst.info, meg=True, eeg=False, exclude=[])
     picks_good = pick_types(inst.info, meg=True, eeg=False, exclude='bads')
     meg_ch_names = [inst.info['ch_names'][p] for p in picks_meg]
@@ -137,5 +138,11 @@ def _interpolate_bads_meg(inst, mode='accurate', origin=None, verbose=None):
     info_from = pick_info(inst.info, picks_good)
     info_to = pick_info(inst.info, picks_bad)
 
-    mapping = _map_meg_channels(info_from, info_to, mode=mode, origin=origin)
+    if check_version('mne', min_version='0.21'):
+        from mne.forward import _map_meg_or_eeg_channels
+        mapping = _map_meg_or_eeg_channels(info_from, info_to, mode=mode, origin=origin)
+    else:
+        from mne.forward import _map_meg_channels
+        mapping = _map_meg_channels(info_from, info_to, mode=mode, origin=origin)
+        
     _do_interp_dots(inst, mapping, picks_good, picks_bad)
