@@ -1,0 +1,76 @@
+- control:
+    - ContA_IPS_1
+    - ContA_PFCl_1
+    - ContA_PFCl_2
+    - ContB_PFClv_1
+    - ContB_IPL_1
+    - ContB_PFCld_1
+    - ContB_Temp_1
+    - ContC_Cingp_1
+    - ContC_pCun_1
+    - ContC_pCun_2
+
+- default:
+    - DefaultA_IPL_1
+    - DefaultA_PFCd_1
+    - DefaultA_PFCm_1
+    - DefaultA_pCunPCC_1
+    - DefaultB_Temp_1
+    - DefaultB_Temp_2
+    - DefaultB_IPL_1
+    - DefaultB_PFCd_1
+    - DefaultB_PFCl_1
+    - DefaultB_PFCv_1
+    - DefaultB_PFCv_2
+    - DefaultC_PHC_1
+    - DefaultC_Rsp_1
+
+- dorsal_attn:
+    - DorsAttnA_ParOcc_1
+    - DorsAttnA_SPL_1
+    - DorsAttnA_TempOcc_1
+    - DorsAttnB_FEF_1
+    - DorsAttnB_PostC_1
+    - DorsAttnB_PostC_2
+    - DorsAttnB_PostC_3
+
+- limbic:
+    - LimbicA_TempPole_1
+    - LimbicA_TempPole_2
+    - LimbicB_OFC_1
+
+- sal_ventattn:
+    - SalVentAttnA_FrMed_1
+    - SalVentAttnA_Ins_1
+    - SalVentAttnA_Ins_2
+    - SalVentAttnA_ParMed_1
+    - SalVentAttnA_ParOper_1
+    - SalVentAttnB_IPL_1
+    - SalVentAttnB_PFCl_1
+    - SalVentAttnB_PFCmp_1
+
+- som_motor:
+    - SomMotA_1
+    - SomMotA_2
+    - SomMotA_3
+    - SomMotA_4
+    - SomMotB_Aud_1
+    - SomMotB_Cent_1
+    - SomMotB_S2_1
+    - SomMotB_S2_2
+
+- temporal_parietal:
+    - TempPar_1
+    - TempPar_2
+    - TempPar_3
+
+- visual_cent:
+    - VisCent_ExStr_1
+    - VisCent_ExStr_2
+    - VisCent_ExStr_3
+    - VisCent_Striate_1
+
+- visual_peri:
+    - VisPeri_ExStrInf_1
+    - VisPeri_ExStrSup_1
+    - VisPeri_StriCal_1

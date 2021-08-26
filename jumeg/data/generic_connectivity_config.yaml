@@ -1,0 +1,24 @@
+# generic connectivity configuration file
+# contains typical parameters used for connectivity the_final_analysis_bkp_130917
+
+con_methods: ['coh', 'plv', 'imcoh', 'pli', 'wpli']
+
+fmin: [1., 4., 8., 13., 18., 30., 80.]
+fmax: [4., 8., 13., 18., 30., 80., 200.]
+
+freqs: ['1-4hz', '4-8hz', '8-13hz', '13-18hz', '18-30hz', '30-80hz', '80-200hz']
+freq_band_names: ['delta', 'theta', 'alpha', 'beta1', 'beta2', 'gamma1', 'gamma2']
+
+# method used to extract time series from label
+extract_mode: 'pca_flip'
+
+# the method used for computing connectivity
+con_mode: 'fourier'
+
+# frequency bands used for computation of
+# amplitude envelope correlation
+envxcor_filt_bands: ['1.0-4.0', '4.0-8.0', '8.0-13.0', '13.0-18.0',
+              '18.0-30.0', '30.0-80.0', '80.0-200.0']
+
+envxcorr_filt_epoch_str: ['env1.0-4.0', 'env4.0-8.0', 'env8.0-13.0', 'env13.0-18.0',
+                  'env18.0-30.0', 'env30.0-80.0', 'env80.0-200.0']
