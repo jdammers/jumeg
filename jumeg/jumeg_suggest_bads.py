@@ -106,16 +106,16 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
 
     # statistics for every epoch
     for epoch in epochs:
-        if mode is 'adaptive':
+        if mode == 'adaptive':
             afp, nearest_neighbour, selected_threshold = \
                 compute_euclidean_stats(epoch, sensitivity_steps, mode='adaptive')
             afp_nearest_neighbour.append(nearest_neighbour)
             afp_percentiles.append(selected_threshold)
-        elif mode is 'fixed':
-            #TODO complete fixed threshold computation
+        elif mode == 'fixed':
+            # TODO complete fixed threshold computation
             # statistics and clustering for every epoch for fixed threshold
             afp, selected_threshold = compute_euclidean_stats(epoch, sensitivity_steps,
-                                                      mode='fixed')
+                                                              mode='fixed')
             afp_percentiles.append(selected_threshold)
         else:
             raise RuntimeError('Mode unknown.')
