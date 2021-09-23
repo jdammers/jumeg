@@ -700,22 +700,47 @@ def _get_node_grouping(label_groups, orig_labels):
     return node_order, group_numbers
 
 
-def _get_group_node_angles_and_colors(label_groups, orig_labels, cortex_colors=None):
+def _get_group_node_angles(label_groups, orig_labels):
+    node_order, group_numbers = _get_node_grouping(label_groups, orig_labels)
+
+    # the respective no. of regions in each cortex
+    group_boundaries = np.cumsum([0] + group_numbers)[:-1]
+
+    node_angles = circular_layout(orig_labels, node_order, start_pos=90,
+                                  group_boundaries=group_boundaries)
+
+    return node_angles
+
+
+def _get_node_colors(label_groups, orig_labels, cortex_colors=None):
     if cortex_colors is None:
         cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
                          'g', 'r', 'c', 'y', 'b', 'm']
 
     node_order, group_numbers = _get_node_grouping(label_groups, orig_labels)
 
-    # assign a color and angle to each label based on the group
-    node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
-                                                           node_order, orig_labels)
+    label_colors = []
+    for ind, rep in enumerate(group_numbers):
+        label_colors += [cortex_colors[ind]] * rep
+
+    assert len(label_colors) == len(node_order), 'Number of colours do not match'
+
+    # the order of the node_colors must match that of orig_labels
+    # therefore below reordering is necessary
+
+    node_colors = [label_colors[node_order.index(orig)] for orig in orig_labels]
+
+    return node_colors
+
+
+def _get_group_node_angles_and_colors(label_groups, orig_labels, cortex_colors=None):
+    node_angles = _get_group_node_angles(label_groups, orig_labels)
+    node_colors = _get_node_colors(label_groups, orig_labels, cortex_colors)
 
     return node_angles, node_colors
 
 
 def _get_node_angles_and_colors(group_numbers, cortex_colors, node_order, orig_labels):
-
     # the respective no. of regions in each cortex
     group_boundaries = np.cumsum([0] + group_numbers)[:-1]
 
