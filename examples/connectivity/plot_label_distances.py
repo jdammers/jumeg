@@ -36,7 +36,6 @@ with open(replacer_dict_fname, 'r') as f:
 
 # load the distances matrix
 con = np.load(label_distances_fname)
-node_order_size = con.shape[0]
 
 # forget long range connections, plot short neighbouring connections
 neighbor_range = 30.  # millimetres 
@@ -44,7 +43,6 @@ con[con > neighbor_range] = 0.
 
 plot_grouped_connectivity_circle(yaml_fname, con, label_names,
                                  labels_mode='cortex_only',
-                                 node_order_size=node_order_size,
                                  replacer_dict=replacer_dict,
                                  out_fname='label_com_distances_circle_%0.1f_%s.png' % (neighbor_range, parc),
                                  colorbar_pos=(0.1, 0.1),

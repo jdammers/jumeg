@@ -499,9 +499,8 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
 def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                      replacer_dict, labels_mode=None,
-                                     node_order_size=68, indices=None,
-                                     out_fname='circle.png', title=None,
-                                     subplot=111, include_legend=False,
+                                     indices=None, out_fname='circle.png',
+                                     title=None, subplot=111, include_legend=False,
                                      n_lines=None, fig=None, show=True,
                                      vmin=None, vmax=None, colormap='hot',
                                      colorbar=False, colorbar_pos=(-0.25, 0.05),
@@ -551,13 +550,13 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
-            labels = yaml.safe_load(f)
+            label_groups = yaml.safe_load(f)
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()
 
-    node_angles, node_colors = _get_group_node_angles_and_colors(labels, orig_labels,
-                                    node_order_size, cortex_colors=cortex_colors)
+    node_angles, node_colors = _get_group_node_angles_and_colors(label_groups, orig_labels,
+                                                                 cortex_colors=cortex_colors)
 
     my_labels = _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict)
 
@@ -578,7 +577,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         import matplotlib.patches as mpatches
         # yaml order fix
         legend_patches = [mpatches.Patch(color=col, label=list(llab.keys())[0])
-                          for col, llab in zip(['g', 'r', 'c', 'y', 'b', 'm'], labels)]
+                          for col, llab in zip(['g', 'r', 'c', 'y', 'b', 'm'], label_groups)]
         # legend_patches = [mpatches.Patch(color=col, label=key)
         #                   for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
         #                                       labels.keys())]
@@ -657,47 +656,20 @@ def _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict):
     return my_labels
 
 
-def _get_group_node_angles_and_colors(labels, orig_labels, node_order_size, cortex_colors=None):
-
-    if cortex_colors is None:
-        cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
-                         'g', 'r', 'c', 'y', 'b', 'm']
-
+def _get_node_grouping(label_groups, orig_labels):
     ######################################################################
-    # Get labels in left and right hemisphere
+    # Get labels in left and right hemisphere in the right order for the circular plot
     ######################################################################
+
+    node_order_size = len(orig_labels)
 
     label_names = list()
-    for lab in labels:
+    for lab in label_groups:
         # label_names.extend(labels[lab])
         label_names += list(lab.values())[0]  # yaml order fix
 
     lh_labels = [name + '-lh' for name in label_names if name + '-lh' in orig_labels]
     rh_labels = [name + '-rh' for name in label_names if name + '-rh' in orig_labels]
-
-    ######################################################################
-    # Get number of labels per group in a list
-    ######################################################################
-
-    group_numbers = []
-    # left first in reverse order, then right hemi labels
-    for i in reversed(range(len(labels))):
-        cortical_region = list(labels[i].keys())[0]
-        actual_num_lh = len([rlab for rlab in labels[i][cortical_region] if rlab + '-lh' in lh_labels])
-        # print(cortical_region, actual_num_lh)
-        group_numbers.append(actual_num_lh)
-
-    for i in range(len(labels)):
-        cortical_region = list(labels[i].keys())[0]
-        actual_num_rh = len([rlab for rlab in labels[i][cortical_region] if rlab + '-rh' in rh_labels])
-        # print(cortical_region, actual_num_rh)
-        group_numbers.append(actual_num_rh)
-
-    assert np.sum(group_numbers) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
-
-    ######################################################################
-    # assign a color and angle to each label based on the group
-    ######################################################################
 
     node_order = list()
     node_order.extend(reversed(lh_labels))  # reverse the order
@@ -705,6 +677,37 @@ def _get_group_node_angles_and_colors(labels, orig_labels, node_order_size, cort
 
     assert len(node_order) == node_order_size, 'Node order length is correct.'
 
+    ######################################################################
+    # Get number of labels per group in a list
+    ######################################################################
+
+    group_numbers = []
+    # left first in reverse order, then right hemi labels
+    for i in reversed(range(len(label_groups))):
+        cortical_region = list(label_groups[i].keys())[0]
+        actual_num_lh = len([rlab for rlab in label_groups[i][cortical_region] if rlab + '-lh' in lh_labels])
+        # print(cortical_region, actual_num_lh)
+        group_numbers.append(actual_num_lh)
+
+    for i in range(len(label_groups)):
+        cortical_region = list(label_groups[i].keys())[0]
+        actual_num_rh = len([rlab for rlab in label_groups[i][cortical_region] if rlab + '-rh' in rh_labels])
+        # print(cortical_region, actual_num_rh)
+        group_numbers.append(actual_num_rh)
+
+    assert np.sum(group_numbers) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
+
+    return node_order, group_numbers
+
+
+def _get_group_node_angles_and_colors(label_groups, orig_labels, cortex_colors=None):
+    if cortex_colors is None:
+        cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
+                         'g', 'r', 'c', 'y', 'b', 'm']
+
+    node_order, group_numbers = _get_node_grouping(label_groups, orig_labels)
+
+    # assign a color and angle to each label based on the group
     node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
                                                            node_order, orig_labels)
 
@@ -854,8 +857,7 @@ def plot_grouped_causality_circle(caus, yaml_fname, label_names, n_lines=None,
 
     fig = plot_grouped_connectivity_circle(yaml_fname, caus, label_names,
                                            out_fname=out_fname, labels_mode=labels_mode,
-                                           node_order_size=len(label_names), show=show,
-                                           title=title, fig=fig, subplot=(1, 1, 1),
+                                           show=show, title=title, fig=fig, subplot=(1, 1, 1),
                                            vmin=vmin, vmax=vmax, n_lines=n_lines,
                                            colormap=colormap, colorbar=colorbar,
                                            arrow=True, tight_layout=tight_layout, **kwargs)
