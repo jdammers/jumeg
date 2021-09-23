@@ -56,7 +56,7 @@ _, coords, _, _ = get_label_distances(subject, subjects_dir, parc=parc)
 degs = mne.connectivity.degree(con, threshold_prop=1)
 
 # show the label ROIs using Nilearn plotting
-fig = plotting.plot_connectome(np.zeros((node_order_size, node_order_size)),
+fig = plotting.plot_connectome(np.zeros((con.shape[0], con.shape[0])),
                                coords, node_size=20, edge_threshold='99%',
                                node_color='cornflowerblue',
                                display_mode='ortho',
