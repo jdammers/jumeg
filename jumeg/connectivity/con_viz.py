@@ -505,8 +505,8 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
                                      vmin=None, vmax=None, colormap='hot',
                                      colorbar=False, colorbar_pos=(-0.25, 0.05),
                                      symmetric_cbar=False, bbox_inches=None,
-                                     tight_layout=None, cortex_colors=None,
-                                     **kwargs):
+                                     tight_layout=None, yaml_color_fname=None,
+                                     cortex_colors=None, **kwargs):
     """
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
@@ -547,6 +547,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     NOTE: yaml order fix helps preserves the order of entries in the yaml file.
     """
     import matplotlib.pyplot as plt
+
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
@@ -554,9 +555,18 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()
+    if yaml_color_fname is None:
+        label_color_groups = label_groups
+    else:
+        if op.isfile(yaml_color_fname):
+            with open(yaml_color_fname, 'r') as f:
+                label_color_groups = yaml.safe_load(f)
+        else:
+            print('%s - File not found.' % yaml_color_fname)
+            sys.exit()
 
-    node_angles, node_colors = _get_group_node_angles_and_colors(label_groups, orig_labels,
-                                                                 cortex_colors=cortex_colors)
+    node_angles = _get_group_node_angles(label_groups, orig_labels)
+    node_colors = _get_node_colors(label_color_groups, orig_labels, cortex_colors)
 
     my_labels = _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict)
 
