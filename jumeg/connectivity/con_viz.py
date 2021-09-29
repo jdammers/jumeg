@@ -588,9 +588,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         # yaml order fix
         legend_patches = [mpatches.Patch(color=col, label=list(llab.keys())[0])
                           for col, llab in zip(['g', 'r', 'c', 'y', 'b', 'm'], label_groups)]
-        # legend_patches = [mpatches.Patch(color=col, label=key)
-        #                   for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
-        #                                       labels.keys())]
+
         plt.legend(handles=legend_patches, loc=3, ncol=1,
                    mode=None, fontsize='medium')
 
