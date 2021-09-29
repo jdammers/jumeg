@@ -721,11 +721,15 @@ def _get_group_node_angles(label_groups, orig_labels):
 
 
 def _get_node_colors(label_groups, orig_labels, cortex_colors=None):
-    if cortex_colors is None:
-        cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
-                         'g', 'r', 'c', 'y', 'b', 'm']
 
     node_order, group_numbers = _get_node_grouping(label_groups, orig_labels)
+
+    if cortex_colors is None:
+        from matplotlib.pyplot import cm
+        n_colors = len(group_numbers)
+        cortex_colors = cm.gist_rainbow(np.linspace(0, 1, n_colors))
+        cortex_colors = cortex_colors.tolist()
+        cortex_colors += cortex_colors[::-1]
 
     label_colors = []
     for ind, rep in enumerate(group_numbers):
