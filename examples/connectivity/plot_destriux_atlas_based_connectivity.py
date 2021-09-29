@@ -27,7 +27,6 @@ con[con < 0.5] = 0.
 
 # plot grouped connnectivity
 plot_grouped_connectivity_circle(grouping_yaml_fname, con, label_names,
-                                 labels_mode=None, node_order_size=148,
-                                 colorbar_pos=(0.1, 0.1), replacer_dict=None,
-                                 out_fname='destriux_circle.png',
+                                 labels_mode=None, colorbar_pos=(0.1, 0.1),
+                                 replacer_dict=None, out_fname='destriux_circle.png',
                                  n_lines=50, colorbar=True)
