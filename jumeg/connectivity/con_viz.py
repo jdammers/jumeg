@@ -689,6 +689,7 @@ def _get_node_grouping(label_groups, orig_labels):
     # Get number of labels per group in a list
     ######################################################################
 
+    group_names = []
     group_numbers = []
     # left first in reverse order, then right hemi labels
     for i in reversed(range(len(label_groups))):
@@ -696,20 +697,22 @@ def _get_node_grouping(label_groups, orig_labels):
         actual_num_lh = len([rlab for rlab in label_groups[i][cortical_region] if rlab + '-lh' in lh_labels])
         # print(cortical_region, actual_num_lh)
         group_numbers.append(actual_num_lh)
+        group_names.append(cortical_region)
 
     for i in range(len(label_groups)):
         cortical_region = list(label_groups[i].keys())[0]
         actual_num_rh = len([rlab for rlab in label_groups[i][cortical_region] if rlab + '-rh' in rh_labels])
         # print(cortical_region, actual_num_rh)
         group_numbers.append(actual_num_rh)
+        group_names.append(cortical_region)
 
     assert np.sum(group_numbers) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
 
-    return node_order, group_numbers
+    return node_order, group_numbers, group_names
 
 
 def _get_group_node_angles(label_groups, orig_labels):
-    node_order, group_numbers = _get_node_grouping(label_groups, orig_labels)
+    node_order, group_numbers, _ = _get_node_grouping(label_groups, orig_labels)
 
     # the respective no. of regions in each cortex
     group_boundaries = np.cumsum([0] + group_numbers)[:-1]
@@ -721,15 +724,22 @@ def _get_group_node_angles(label_groups, orig_labels):
 
 
 def _get_node_colors(label_groups, orig_labels, cortex_colors=None):
-
-    node_order, group_numbers = _get_node_grouping(label_groups, orig_labels)
+    node_order, group_numbers, group_names = _get_node_grouping(label_groups, orig_labels)
 
     if cortex_colors is None:
+
         from matplotlib.pyplot import cm
-        n_colors = len(group_numbers)
+        cortex_list = []
+        for group in label_groups:
+            cortex_list.append(list(group.keys())[0])
+        n_colors = len(cortex_list)
+
         cortex_colors = cm.gist_rainbow(np.linspace(0, 1, n_colors))
-        cortex_colors = cortex_colors.tolist()
-        cortex_colors += cortex_colors[::-1]
+        cortex_colors_ = []
+        for gn in group_names:
+            idx = cortex_list.index(gn)
+            cortex_colors_.append(cortex_colors[idx])
+        cortex_colors = cortex_colors_
 
     label_colors = []
     for ind, rep in enumerate(group_numbers):
