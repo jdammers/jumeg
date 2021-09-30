@@ -498,41 +498,54 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
 
 
 def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
-                                     replacer_dict, labels_mode=None,
+                                     replacer_dict=None, labels_mode=None,
                                      indices=None, out_fname='circle.png',
                                      title=None, subplot=111, include_legend=False,
                                      n_lines=None, fig=None, show=True,
                                      vmin=None, vmax=None, colormap='hot',
                                      colorbar=False, colorbar_pos=(-0.25, 0.05),
                                      symmetric_cbar=False, bbox_inches=None,
-                                     tight_layout=None, cortex_colors=None,
-                                     **kwargs):
+                                     tight_layout=None, yaml_color_fname=None,
+                                     cortex_colors=None, **kwargs):
     """
     Plot the connectivity circle grouped and ordered according to
     groups in the yaml input file provided.
 
-    yaml_fname: str
+    Parameters:
+    -----------
+    yaml_fname : str
         A file in the yaml format that provides information on how to group
-        the labels for the circle plot. Soem grouping examples are provided at
+        the labels for the circle plot. Some grouping examples are provided at
         jumeg/data/*_grouping.yaml.
-
-    con: ndarray
+    con : ndarray
         Connectivity matrix to be plotted.
-
     orig_labels : list of str
         The original label names in the order as appears in con.
-
-    replacer_dict: dict
+    replacer_dict : None | dict
         A dictionary that provides a one to one match between original label
         name and a group name. The group name is plotted at the location of the
         original label name provided.
-
     labels_mode : str | None
         'blank': Plots no labels on the circle plot,
         'replace': Replace original labels with labels in replacer_dict. If
                    the label is not in replacer_dict it is replaced with a blank.
         'replace_no_hemi': Same as 'replace' but without hemisphere indicators.
         None: Plots all of the orig_label names provided.
+    yaml_color_fname : None | str
+        If None, all nodes within a group have the same color. If nodes
+        within a group are to have different colors, a second yaml
+        file can be provided. The format is similar to yaml_fname
+    cortex_colors : None | list
+        List with a color for each label group (groups are either from
+        yaml_fname or, if specified, from yaml_color_fname).
+        Generally, twice as many colors as groups in label_groups
+        will have to be supplied to account for both hemispheres.
+
+        E.g., if groups are ['occipital', 'temporal'] cortex_colors
+        should be similar to ['g', 'c', 'c', 'g'].
+
+        If None colors for the label groups are calculated auto-
+        matically.
 
     bbox_inches : None | 'tight'
 
@@ -547,6 +560,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     NOTE: yaml order fix helps preserves the order of entries in the yaml file.
     """
     import matplotlib.pyplot as plt
+
     # read the yaml file with grouping
     if op.isfile(yaml_fname):
         with open(yaml_fname, 'r') as f:
@@ -554,9 +568,18 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     else:
         print('%s - File not found.' % yaml_fname)
         sys.exit()
+    if yaml_color_fname is None:
+        label_color_groups = label_groups
+    else:
+        if op.isfile(yaml_color_fname):
+            with open(yaml_color_fname, 'r') as f:
+                label_color_groups = yaml.safe_load(f)
+        else:
+            print('%s - File not found.' % yaml_color_fname)
+            sys.exit()
 
-    node_angles, node_colors = _get_group_node_angles_and_colors(label_groups, orig_labels,
-                                                                 cortex_colors=cortex_colors)
+    node_angles = _get_group_node_angles(label_groups, orig_labels)
+    node_colors = _get_node_colors(label_color_groups, orig_labels, cortex_colors)
 
     my_labels = _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict)
 
@@ -578,9 +601,7 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
         # yaml order fix
         legend_patches = [mpatches.Patch(color=col, label=list(llab.keys())[0])
                           for col, llab in zip(['g', 'r', 'c', 'y', 'b', 'm'], label_groups)]
-        # legend_patches = [mpatches.Patch(color=col, label=key)
-        #                   for col, key in zip(['g', 'r', 'c', 'y', 'b', 'm'],
-        #                                       labels.keys())]
+
         plt.legend(handles=legend_patches, loc=3, ncol=1,
                    mode=None, fontsize='medium')
 
@@ -657,11 +678,30 @@ def _get_circular_plot_labels(labels_mode, orig_labels, replacer_dict):
 
 
 def _get_node_grouping(label_groups, orig_labels):
+    """
+    Bring the labels in the right order for the circular plot.
+
+    Parameters:
+    -----------
+    label_groups : list of dict
+        Each element of the list contains a dict with a single
+        cortical region and its labels.
+    orig_labels : list
+        Contains the names of all labels.
+
+    Returns:
+    --------
+    labels_ordered : list
+        Contains the names of all labels ordered for the circular plot
+    group_numbers : list
+        Contains the number of labels in each group
+    group_names : list
+        Contains the names of all groups (the keys of the dicts)
+
+    """
     ######################################################################
     # Get labels in left and right hemisphere in the right order for the circular plot
     ######################################################################
-
-    node_order_size = len(orig_labels)
 
     label_names = list()
     for group in label_groups:
@@ -671,16 +711,17 @@ def _get_node_grouping(label_groups, orig_labels):
     lh_labels = [name + '-lh' for name in label_names if name + '-lh' in orig_labels]
     rh_labels = [name + '-rh' for name in label_names if name + '-rh' in orig_labels]
 
-    node_order = list()
-    node_order.extend(reversed(lh_labels))  # reverse the order
-    node_order.extend(rh_labels)
+    labels_ordered = list()
+    labels_ordered.extend(reversed(lh_labels))  # reverse the order
+    labels_ordered.extend(rh_labels)
 
-    assert len(node_order) == node_order_size, 'Node order length is correct.'
+    assert len(labels_ordered) == len(orig_labels), 'Node order length is correct.'
 
     ######################################################################
     # Get number of labels per group in a list
     ######################################################################
 
+    group_names = []
     group_numbers = []
     # left first in reverse order, then right hemi labels
     for i in reversed(range(len(label_groups))):
@@ -688,34 +729,148 @@ def _get_node_grouping(label_groups, orig_labels):
         actual_num_lh = len([rlab for rlab in label_groups[i][cortical_region] if rlab + '-lh' in lh_labels])
         # print(cortical_region, actual_num_lh)
         group_numbers.append(actual_num_lh)
+        group_names.append(cortical_region)
 
     for i in range(len(label_groups)):
         cortical_region = list(label_groups[i].keys())[0]
         actual_num_rh = len([rlab for rlab in label_groups[i][cortical_region] if rlab + '-rh' in rh_labels])
         # print(cortical_region, actual_num_rh)
         group_numbers.append(actual_num_rh)
+        group_names.append(cortical_region)
 
     assert np.sum(group_numbers) == len(orig_labels), 'Mismatch in number of labels when computing group boundaries.'
 
-    return node_order, group_numbers
+    return labels_ordered, group_numbers, group_names
+
+
+def _get_group_node_angles(label_groups, orig_labels):
+    """
+    Get for each label in orig label the angle for the circular plot.
+
+    Parameters:
+    -----------
+    label_groups : list of dict
+        Each element of the list contains a dict with a single
+        cortical region and its labels.
+    orig_labels : list
+        Contains the names of all labels.
+
+    Returns:
+    --------
+    node_angles : np.array of shape (len(orig_labels), )
+        Contains the angle in degree in the circular plot for each label
+        in orig_labels
+    """
+
+    labels_ordered, group_numbers, _ = _get_node_grouping(label_groups, orig_labels)
+
+    # the respective no. of regions in each cortex
+    group_boundaries = np.cumsum([0] + group_numbers)[:-1]
+
+    node_angles = circular_layout(orig_labels, labels_ordered, start_pos=90,
+                                  group_boundaries=group_boundaries)
+
+    return node_angles
+
+
+def _get_node_colors(label_groups, orig_labels, cortex_colors=None):
+    """
+    Get the colors for each node in the circular plot according
+    to the grouping in label_groups and the colors supplied by
+    cortex_colors.
+
+    Parameters:
+    -----------
+    label_groups : list of dict
+        Each element of the list contains a dict with a single
+        cortical region and its labels.
+    orig_labels : list
+        Contains the names of all labels.
+    cortex_colors : None | list
+        List with a color for each group in the circular plot.
+        Generally, twice as many colors as groups in label_groups
+        will have to be supplied to account for both hemispheres.
+
+        E.g., if groups are ['occipital', 'temporal'] cortex_colors
+        should be similar to ['g', 'c', 'c', 'g'].
+
+        If None colors for the label groups are calculated auto-
+        matically.
+
+    Returns:
+    --------
+    node_colors : list
+        Contains for each label in orig_labels the node colors as RGB(A).
+    """
+
+    labels_ordered, group_numbers, group_names = _get_node_grouping(label_groups, orig_labels)
+
+    if cortex_colors is None:
+
+        from matplotlib.pyplot import cm
+        cortex_list = []
+        for group in label_groups:
+            cortex_list.append(list(group.keys())[0])
+        n_colors = len(cortex_list)
+
+        cortex_colors = cm.gist_rainbow(np.linspace(0, 1, n_colors))
+        cortex_colors_ = []
+        for gn in group_names:
+            idx = cortex_list.index(gn)
+            cortex_colors_.append(cortex_colors[idx])
+        cortex_colors = cortex_colors_
+
+    label_colors = []
+    for ind, rep in enumerate(group_numbers):
+        label_colors += [cortex_colors[ind]] * rep
+
+    assert len(label_colors) == len(labels_ordered), 'Number of colours do not match'
+
+    # the order of the node_colors must match that of orig_labels
+    # therefore below reordering is necessary
+
+    node_colors = [label_colors[labels_ordered.index(orig)] for orig in orig_labels]
+
+    return node_colors
 
 
 def _get_group_node_angles_and_colors(label_groups, orig_labels, cortex_colors=None):
-    if cortex_colors is None:
-        cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
-                         'g', 'r', 'c', 'y', 'b', 'm']
+    """
 
-    node_order, group_numbers = _get_node_grouping(label_groups, orig_labels)
+    Parameters:
+    -----------
+    label_groups : list of dict
+        Each element of the list contains a dict with a single
+        cortical region and its labels.
+    orig_labels : list
+        Contains the names of all labels.
+    cortex_colors : None | list
+        List with a color for each group in the circular plot.
+        Generally, twice as many colors as groups in label_groups
+        will have to be supplied to account for both hemispheres.
 
-    # assign a color and angle to each label based on the group
-    node_angles, node_colors = _get_node_angles_and_colors(group_numbers, cortex_colors,
-                                                           node_order, orig_labels)
+        E.g., if groups are ['occipital', 'temporal'] cortex_colors
+        should be similar to ['g', 'c', 'c', 'g'].
+
+        If None colors for the label groups are calculated auto-
+        matically.
+
+    Returns:
+    --------
+    node_angles : np.array of shape (len(orig_labels), )
+        Contains the angle in degree in the circular plot for each label
+        in orig_labels
+    node_colors : list
+        Contains for each label in orig_labels the node colors as RGB(A).
+    """
+
+    node_angles = _get_group_node_angles(label_groups, orig_labels)
+    node_colors = _get_node_colors(label_groups, orig_labels, cortex_colors)
 
     return node_angles, node_colors
 
 
 def _get_node_angles_and_colors(group_numbers, cortex_colors, node_order, orig_labels):
-
     # the respective no. of regions in each cortex
     group_boundaries = np.cumsum([0] + group_numbers)[:-1]
 
