@@ -7,10 +7,8 @@ for the Destriux atlas.
 '''
 
 import numpy as np
-import mne
 from jumeg import get_jumeg_path
 from jumeg.connectivity import plot_grouped_connectivity_circle
-from mne.viz import circular_layout, plot_connectivity_circle
 import yaml
 
 grouping_yaml_fname = get_jumeg_path() + '/data/destriux_aparc_cortex_based_grouping.yaml'
