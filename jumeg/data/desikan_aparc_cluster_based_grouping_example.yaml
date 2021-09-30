@@ -1,0 +1,39 @@
+- cluster1:
+        - lateraloccipital
+        - lingual
+        - pericalcarine
+        - cuneus
+        - precuneus
+        - superiorparietal
+        - inferiorparietal
+        - fusiform
+        - temporalpole
+        - entorhinal
+        - parahippocampal
+        - isthmuscingulate
+        - posteriorcingulate
+        - paracentral
+        - precentral
+
+- cluster2:
+        - supramarginal
+        - postcentral
+        - transversetemporal
+        - superiortemporal
+        - bankssts
+        - middletemporal
+        - inferiortemporal
+        - insula
+
+- cluster3:
+        - caudalanteriorcingulate
+        - rostralanteriorcingulate
+        - caudalmiddlefrontal
+        - parsopercularis
+        - parstriangularis
+        - parsorbitalis
+        - lateralorbitofrontal
+        - medialorbitofrontal
+        - frontalpole
+        - rostralmiddlefrontal
+        - superiorfrontal
