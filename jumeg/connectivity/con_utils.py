@@ -416,3 +416,33 @@ def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
     con_grp_exp = expand_con_matrix(con_grp, grouping_labels, full_grouping_labels)
 
     return con_grp_exp, full_grouping_labels
+
+
+def generate_random_connectivity_matrix(size=(68, 68), symmetric=False,
+                                        random_state=37):
+    """Make a random connectivity matrix with pseudo Gaussian connectivity
+    values between 0 and 1.
+
+    Parameters:
+    -----------
+    size: tuple
+      Size of the matrix. Has to be 2d ndaray.
+    symmetric: bool
+            If True, returns a symmetric matrix.
+    random_state: None | int | array
+            Seed to initialise random state generator.
+
+    Returns:
+    --------
+    con: ndarray
+
+    """
+    rng = np.random.RandomState(random_state)
+    con = rng.normal(loc=0.5, scale=0.2, size=size)
+    con[(con <= 0.) | (con > 1.)] = 0.  # make 0 < con < 1
+    con[np.diag_indices_from(con)] = 0.  # zero diagonal
+    con[np.triu_indices_from(con)] = 0.  # zero upper half
+    if symmetric:
+        return con + con.T
+    else:
+        return con
