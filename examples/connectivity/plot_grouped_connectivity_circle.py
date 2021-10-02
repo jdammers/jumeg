@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-'''
+"""
 Example showing how to read grouped aparc labels from yaml file and plot
 grouped connectivity circle with these labels.
 
 Author: Praveen Sripad <pravsripad@gmail.com>
-'''
+        Christian Kiefer <ch.kiefer@fz-juelich.de>
+"""
 
 import numpy as np
 from jumeg import get_jumeg_path

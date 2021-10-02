@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-""" Visualization functions for connectivity analysis. """
+"""Visualization functions for connectivity analysis."""
 
 import sys
 import os.path as op
@@ -561,22 +561,34 @@ def plot_grouped_connectivity_circle(yaml_fname, con, orig_labels,
     """
     import matplotlib.pyplot as plt
 
-    # read the yaml file with grouping
-    if op.isfile(yaml_fname):
-        with open(yaml_fname, 'r') as f:
-            label_groups = yaml.safe_load(f)
+    if isinstance(yaml_fname, str):
+        # read the yaml file with grouping
+        if op.isfile(yaml_fname):
+            with open(yaml_fname, 'r') as f:
+                label_groups = yaml.safe_load(f)
+        else:
+            print('%s - File not found.' % yaml_fname)
+            sys.exit()
+    elif isinstance(yaml_fname, list):
+        # should be a list of dictionaries
+        label_groups = yaml_fname
     else:
-        print('%s - File not found.' % yaml_fname)
-        sys.exit()
+        raise RuntimeError('yaml_fname should be one of str or list')
+
     if yaml_color_fname is None:
         label_color_groups = label_groups
     else:
-        if op.isfile(yaml_color_fname):
-            with open(yaml_color_fname, 'r') as f:
-                label_color_groups = yaml.safe_load(f)
+        if isinstance(yaml_color_fname, str):
+            if op.isfile(yaml_color_fname):
+                with open(yaml_color_fname, 'r') as f:
+                    label_color_groups = yaml.safe_load(f)
+            else:
+                print('%s - File not found.' % yaml_color_fname)
+                sys.exit()
+        elif isinstance(yaml_color_fname, list):
+            label_color_groups = yaml_color_fname
         else:
-            print('%s - File not found.' % yaml_color_fname)
-            sys.exit()
+            raise RuntimeError('yaml_color_fname should be one of str or list')
 
     node_angles = _get_group_node_angles(label_groups, orig_labels)
     node_colors = _get_node_colors(label_color_groups, orig_labels, cortex_colors)
