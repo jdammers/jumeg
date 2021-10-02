@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 
-'''
-Script to plot label distances on circle and connectome plots.
-'''
-
-import os.path as op
-import numpy as np
+"""Script to plot label distances on circle and connectome plots."""
 
 import mne
 from mne.datasets import sample
@@ -23,8 +18,7 @@ subject = 'sample'
 
 parc = 'aparc'
 
-yaml_fname = get_jumeg_path() + '/data/desikan_%s_cortex_based_grouping.yaml' % parc
-label_distances_fname = get_jumeg_path() + '/data/desikan_%s_label_com_distances.npy' % parc
+yaml_cortex_fname = get_jumeg_path() + '/data/desikan_%s_cortex_based_grouping.yaml' % parc
 
 labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
 with open(labels_fname, 'r') as f:
@@ -32,36 +26,36 @@ with open(labels_fname, 'r') as f:
 
 replacer_dict_fname = get_jumeg_path() + '/data/replacer_dictionaries.yaml'
 with open(replacer_dict_fname, 'r') as f:
-    replacer_dict = yaml.safe_load(f)['replacer_dict_aparc']
+    replacer_dict = yaml.safe_load(f)['replacer_dict_%s' % parc]
 
-# load the distances matrix
-con = np.load(label_distances_fname)
+# compute distances between center of masses (COMs) of the labels
+# we also get the MNI coordinates of the COMs in millimetres
+con, coords, _, _ = get_label_distances(subject, subjects_dir, parc=parc)
 
 # forget long range connections, plot short neighbouring connections
-neighbor_range = 30.  # millimetres 
+neighbor_range = 30.  # millimetres
 con[con > neighbor_range] = 0.
 
-plot_grouped_connectivity_circle(yaml_fname, con, label_names,
-                                 labels_mode='cortex_only',
+cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
+                 'g', 'r', 'c', 'y', 'b', 'm']
+
+out_fname = 'label_com_distances_circle_%0.1f_%s.png' % (neighbor_range, parc)
+plot_grouped_connectivity_circle(yaml_cortex_fname, con, label_names,
                                  replacer_dict=replacer_dict,
-                                 out_fname='label_com_distances_circle_%0.1f_%s.png' % (neighbor_range, parc),
-                                 colorbar_pos=(0.1, 0.1),
+                                 yaml_color_fname=None, labels_mode='replace',
+                                 cortex_colors=cortex_colors,
+                                 out_fname=out_fname, colorbar_pos=(0.1, 0.1),
                                  n_lines=None, colorbar=True,
                                  colormap='Reds')
-
-# compute the distances between COM's of the labels
-_, coords, _, _ = get_label_distances(subject, subjects_dir, parc=parc)
 
 # compute the degree
 degs = mne.connectivity.degree(con, threshold_prop=1)
 
-# show the label ROIs using Nilearn plotting
-fig = plotting.plot_connectome(np.zeros((con.shape[0], con.shape[0])),
-                               coords, node_size=20, edge_threshold='99%',
+# show the label ROIs and short range connections using nilearn glass brain
+fig = plotting.plot_connectome(degs, coords, node_size=20,
+                               edge_threshold='99%',
                                node_color='cornflowerblue',
                                display_mode='ortho',
                                title='%s' % parc)
 
-
-# fig.savefig('%s_label_distances_based_degrees.png' % parc)
-fig.savefig('%s_labels_degrees.png' % parc)
+fig.savefig('%s_labels_distance_degrees.png' % parc)
