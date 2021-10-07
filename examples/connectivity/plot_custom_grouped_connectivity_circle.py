@@ -25,7 +25,6 @@ with open(replacer_dict_fname, 'r') as f:
     replacer_dict = yaml.safe_load(f)['replacer_dict_aparc']
 
 # make a random matrix with 68 nodes
-# use simple seed for reproducibility
 con = generate_random_connectivity_matrix(size=(68, 68), symmetric=True)
 
 # make groups based on lobes

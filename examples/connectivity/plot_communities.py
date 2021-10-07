@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import mne
 from mne.datasets import sample
 from jumeg.connectivity.con_utils import make_communities
+from jumeg.connectivity import generate_random_connectivity_matrix
 
 from nilearn import plotting
 
@@ -22,9 +23,7 @@ aparc = mne.read_labels_from_annot(subject, subjects_dir=subjects_dir,
                                    parc='aparc')
 
 # make a random connectivity matrix
-np.random.seed(42)
-con = np.random.random((34, 34))
-con[con < 0.8] = 0.
+con = generate_random_connectivity_matrix(size=(34, 34), symmetric=True)
 
 top_nodes_list, n_communities = make_communities(con)
 
@@ -45,7 +44,7 @@ for top_nodes, col, cmap in zip(top_nodes_list, color_list, cmaps_list):
     community_ = [aparc[tp] for tp in top_nodes]
 
     for lab in community_:
-        if lab.name is 'unknown-lh':
+        if lab.name == 'unknown-lh':
             continue
         print(lab.name)
         # get the center of mass

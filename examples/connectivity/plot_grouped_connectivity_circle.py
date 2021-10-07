@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
-"""
+"""Plot grouped connectivity circle.
+
 Example showing how to read grouped aparc labels from yaml file and plot
 grouped connectivity circle with these labels.
 
 Author: Praveen Sripad <pravsripad@gmail.com>
         Christian Kiefer <ch.kiefer@fz-juelich.de>
-"""
 
-import numpy as np
+"""
 from jumeg import get_jumeg_path
-from jumeg.connectivity import plot_grouped_connectivity_circle
+from jumeg.connectivity import (plot_grouped_connectivity_circle,
+                                generate_random_connectivity_matrix)
 import yaml
 
 labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
@@ -25,10 +26,7 @@ with open(replacer_dict_fname, 'r') as f:
     replacer_dict = yaml.safe_load(f)['replacer_dict_aparc']
 
 # make a random matrix with 68 nodes
-# use simple seed for reproducibility
-np.random.seed(42)
-con = np.random.random((68, 68))
-con[con < 0.5] = 0.
+con = generate_random_connectivity_matrix(size=(68, 68), symmetric=True)
 
 # plot simple connectivity circle with cortex based grouping and colors
 plot_grouped_connectivity_circle(yaml_cortex_fname, con, label_names,
