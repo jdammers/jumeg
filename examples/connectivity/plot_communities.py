@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
-'''
+"""
 Plot Networkx Communities on a connectome plot.
 
 Author: Praveen Sripad <pravsripad@gmail.com>
-'''
+"""
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 import mne
 from mne.datasets import sample
 from jumeg.connectivity.con_utils import make_communities
 
 from nilearn import plotting
-import nibabel as nib
-
-import matplotlib.pyplot as plt
 
 data_path = sample.data_path()
 subjects_dir = data_path + '/subjects'
@@ -40,7 +38,6 @@ color_list = ['red', 'orange', 'green', 'purple', 'navy', 'blue']
 cmaps_list = ['Reds', 'Oranges', 'Greens', 'Purples', 'PuBu', 'Blues']
 
 fig = plt.figure(facecolor='w', edgecolor='w')
-# fig = None
 
 for top_nodes, col, cmap in zip(top_nodes_list, color_list, cmaps_list):
 
@@ -56,10 +53,10 @@ for top_nodes, col, cmap in zip(top_nodes_list, color_list, cmaps_list):
         if lab.name.endswith('lh'):
             # obtain mni coordinated to the vertex from left hemi
             coords_ = mne.vertex_to_mni(com, hemis=0, subject=subject,
-                                        subjects_dir=subjects_dir)[0]
+                                        subjects_dir=subjects_dir)
         else:
             coords_ = mne.vertex_to_mni(com, hemis=1, subject=subject,
-                                        subjects_dir=subjects_dir)[0]
+                                        subjects_dir=subjects_dir)
         coords.append(coords_)
 
     n_nodes = np.array(coords).shape[0]

@@ -9,7 +9,10 @@ import mne
 
 
 def find_distances_matrix(con, epochs, picks_epochs):
+
     """Calculate distances between sensors.
+
+    Function calculates distances between sensors (distance in mm mostly).
 
     The distances are in millimetres.
 
@@ -165,12 +168,12 @@ def get_label_distances(subject, subjects_dir, parc='aparc'):
         if mylab.name.endswith('-lh'):
             com_lh = mylab.center_of_mass(subject, subjects_dir=subjects_dir)
             coords_ = mne.vertex_to_mni(com_lh, hemis=0, subject=subject,
-                                        subjects_dir=subjects_dir)[0]
+                                        subjects_dir=subjects_dir)
             coms_lh.append(com_lh)
         else:
             com_rh = mylab.center_of_mass(subject, subjects_dir=subjects_dir)
             coords_ = mne.vertex_to_mni(com_rh, hemis=1, subject=subject,
-                                        subjects_dir=subjects_dir)[0]
+                                        subjects_dir=subjects_dir)
             coms_rh.append(com_rh)
 
         coords_all.append(coords_)
@@ -193,7 +196,7 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
                         parc_fname='standard_garces_2016',
                         n_jobs=4, make_annot=False, return_label_coords=False):
     """Make annotations from given csv file.
-
+    
     For a given subject, given a csv file with set of MNI coordinates,
     make an annotation of labels grown from these ROIs.
     Mainly used to generate standard resting state network annotation from

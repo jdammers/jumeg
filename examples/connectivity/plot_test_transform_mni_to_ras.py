@@ -1,13 +1,13 @@
-'''
+"""
 To plot a vertex point, convert it to MNI coordinates and then reconvert it back to RAS to obtain the vertex number.
 
 It works when 'fsaverage' subject is used, but does not when any other subjects are used.
-'''
+"""
 
 import os
 import mne
-import matplotlib.pyplot as plt
 from mne.datasets import sample
+from surfer import utils
 
 print(__doc__)
 
@@ -27,7 +27,8 @@ new_stc = morph.apply(stc)
 subject = 'fsaverage'
 
 # Plot brain in 3D with PySurfer if available
-brain = new_stc.plot(subject, hemi='lh', subjects_dir=subjects_dir)
+brain = new_stc.plot(subject, hemi='lh',
+                     subjects_dir=subjects_dir, backend='mayavi')
 brain.show_view('lateral')
 
 # use peak getter to move vizualization to the time point of the peak
@@ -43,14 +44,13 @@ mni_coords = mne.vertex_to_mni(vertno_max, hemis=0, subject=subject,
                                subjects_dir=subjects_dir)
 print('The MNI coords are ', mni_coords)
 
-#my_trans = mne.read_trans(?)
-#src_pts = apply_trans(trans, some_tgt_pts)
+# my_trans = mne.read_trans(?)
+# src_pts = apply_trans(trans, some_tgt_pts)
 
-from surfer import utils
-utils.coord_to_label(subject, mni_coords[0], label='mycoord',
+utils.coord_to_label(subject, mni_coords, label='mycoord',
                      hemi='lh', n_steps=25, map_surface="white")
 brain.add_label('mycoord-lh.label', color="darkseagreen", alpha=.8)
 
 # if the new mni_coords are computed
-brain.add_foci(mni_coords[0], coords_as_verts=False, hemi='lh', color='red',
+brain.add_foci(mni_coords, coords_as_verts=False, hemi='lh', color='red',
                map_surface='white', scale_factor=0.6)
