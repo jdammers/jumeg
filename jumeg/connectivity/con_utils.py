@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-""" Utilities used for connectivity analysis. """
+"""Utilities used for connectivity analysis."""
 
 import sys
 import os.path as op
@@ -9,11 +9,15 @@ import mne
 
 
 def find_distances_matrix(con, epochs, picks_epochs):
-    """
+
+    """Calculate distances between sensors.
+
     Function calculates distances between sensors (distance in mm mostly).
 
-    Parameters
-    ----------
+    The distances are in millimetres.
+
+    Parameters:
+    -----------
     con : ndarray
         Connectivity matrix.
     epochs : Epochs object.
@@ -21,12 +25,12 @@ def find_distances_matrix(con, epochs, picks_epochs):
     picks_epochs : list
         Picks of epochs to be considered for analysis.
 
-    Returns
-    -------
+    Returns:
+    --------
     con_dist : ndarray
          Connectivity distance matrix. Matrix of distances between various sensors.
-    """
 
+    """
     ch_names = epochs.ch_names
     idx = [ch_names.index(name) for name in ch_names]
     sens_loc = [epochs.info['chs'][picks_epochs[i]]['loc'][:3] for i in idx]
@@ -40,10 +44,10 @@ def find_distances_matrix(con, epochs, picks_epochs):
 
 
 def weighted_con_matrix(con, epochs, picks_epochs, sigma=20):
-    """
-    Function to compute the weighted connectivity matrix.
-    A normalized gaussian weighted matrix is computed and added to
-    the true connectivity matrix.
+    """Compute the weighted connectivity matrix.
+
+    A normalized gaussian weighted matrix is computed and added to the
+    true connectivity matrix.
 
     Parameters
     ----------
@@ -60,6 +64,7 @@ def weighted_con_matrix(con, epochs, picks_epochs, sigma=20):
     -------
     weighted_con_matrix : ndarray (n_channels x n_channels)
         Gaussian distance weighted connectivity matrix.
+
     """
     con_dist = find_distances_matrix(con, epochs, picks_epochs)
 
@@ -85,15 +90,18 @@ def weighted_con_matrix(con, epochs, picks_epochs, sigma=20):
 
 
 def make_communities(con, top_n=3):
-    """
+    """Make communities.
+
     Given an adjacency matrix, return list of nodes belonging to the top_n
     communities based on Networkx Community algorithm.
 
     Returns:
+    --------
     top_nodes_list: list (of length top_n)
         Indices/nodes of the network that belongs to the top_n communities
     n_communities: int
         Total number of communities found by the algorithm.
+
     """
     import networkx as nx
     import community
@@ -117,12 +125,14 @@ def make_communities(con, top_n=3):
 
 
 def get_label_distances(subject, subjects_dir, parc='aparc'):
-    """
-    Get the Eucliden distance between label center of mass and return the
+    """Get Euclidean distance between label center of masses.
+
+    Get the Euclidean distance between label center of mass and return the
     distance matrix. The distance are computed between vertices in the MNI
     coordinates in the subject source space.
 
-    Parameters
+    Parameters:
+    -----------
     subject: str
         Name of the subject.
     subjects_dir: str
@@ -130,13 +140,15 @@ def get_label_distances(subject, subjects_dir, parc='aparc'):
     parc: str
         Name of the parcellation. Default 'aparc'.
 
-    Return
+    Return:
+    -------
     rounded_com: ndarray | (N, N)
         The distance between center of masses of different labels
     coords_all: ndarray | (N, )
         The MNI coordinates of the vertices in the source space.
     coms_lh, coms_rh: list | (N, )
         The centre of masses of labels in left and right hemispheres.
+
     """
     import itertools
     from scipy import linalg
@@ -183,14 +195,15 @@ def get_label_distances(subject, subjects_dir, parc='aparc'):
 def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
                         parc_fname='standard_garces_2016',
                         n_jobs=4, make_annot=False, return_label_coords=False):
-    """
+    """Make annotations from given csv file.
+    
     For a given subject, given a csv file with set of MNI coordinates,
     make an annotation of labels grown from these ROIs.
     Mainly used to generate standard resting state network annotation from
     MNI coordinates provided in literature.
 
-    Parameters
-
+    Parameters:
+    -----------
     subject: str
         The name of the subject.
     subjects_dir: str
@@ -210,6 +223,7 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
         If True, an annotation file is created and written to disk.
     return_label_coords: bool
         If True, the function returns labels and MNI seed coordinates used.
+
     """
     from mne import grow_labels
     import pandas as pd
@@ -277,8 +291,9 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
 
 
 def expand_con_matrix(con, label_names, full_label_names):
-    """
-    Expand the dimensions of the connectivity matrix from
+    """Expand the dimensions of the connectivity matrix.
+
+    The dimensions are expaded from
     (len(label_names), len(label_names) to
     (len(full_label_names), len(full_label_names)).
 
@@ -297,8 +312,8 @@ def expand_con_matrix(con, label_names, full_label_names):
     --------
     con_exp : np.array of shape (len(full_label_names), len(full_label_names))
         The full connectivity matrix after expansion.
-    """
 
+    """
     assert len(con.shape) == 2, 'The con matrix is not 2D.'
     assert con.shape[0] == con.shape[1], 'The con matrix is not square.'
     assert con.shape[0] == len(label_names), 'Number of labels and con matrix shape do not match.'
@@ -330,8 +345,7 @@ def expand_con_matrix(con, label_names, full_label_names):
 
 
 def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
-    """
-    Group and sum up entries in the connectivity matrix by lobes.
+    """Group and sum up entries in the connectivity matrix by lobes.
 
     Parameters:
     -----------
@@ -347,8 +361,8 @@ def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
     --------
     con_grp_exp : np.array of shape (n_lobes, n_lobes)
         The grouped connectivity matrix.
-    """
 
+    """
     assert len(con.shape) == 2, 'The con matrix is not 2D.'
     assert con.shape[0] == con.shape[1], 'The con matrix is not square.'
     assert con.shape[0] == len(label_names), 'Number of labels and con matrix shape do not match.'
@@ -418,3 +432,54 @@ def group_con_matrix_by_lobe(con, label_names, grouping_yaml_fname):
     con_grp_exp = expand_con_matrix(con_grp, grouping_labels, full_grouping_labels)
 
     return con_grp_exp, full_grouping_labels
+
+
+def generate_random_connectivity_matrix(size=(68, 68), symmetric=False,
+                                        random_state=37):
+    """Make a random connectivity matrix.
+
+    A square connectivity style matrix with pseudo Gaussian connectivity
+    values between 0 and 1 is generated.
+
+    Parameters:
+    -----------
+    size: tuple
+      Size of the matrix. Has to be 2d ndaray.
+    symmetric: bool
+            If True, returns a symmetric matrix.
+    random_state: None | int | array
+            Seed to initialise random state generator.
+
+    Returns:
+    --------
+    con: ndarray
+
+    """
+    rng = np.random.RandomState(random_state)
+    con = rng.normal(loc=0.5, scale=0.2, size=size)
+    con[(con <= 0.) | (con > 1.)] = 0.  # make 0 < con < 1
+    con[np.diag_indices_from(con)] = 0.  # zero diagonal
+    con[np.triu_indices_from(con)] = 0.  # zero upper half
+    if symmetric:
+        return con + con.T
+    else:
+        return con
+
+
+def load_grouping_dict(grouping):
+    """Load cortex or cluster based grouping information."""
+    import yaml
+    if isinstance(grouping, str):
+        # read the yaml file with grouping
+        if op.isfile(grouping):
+            with open(grouping, 'r') as f:
+                my_groups = yaml.safe_load(f)
+        else:
+            print('%s - File not found.' % grouping)
+            sys.exit()
+    elif isinstance(grouping, list):
+        # should be a list of dictionaries
+        my_groups = grouping
+    else:
+        raise RuntimeError('yaml_fname should be one of str or list')
+    return my_groups
