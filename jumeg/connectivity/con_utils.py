@@ -9,7 +9,8 @@ import mne
 
 
 def find_distances_matrix(con, epochs, picks_epochs):
-    """ Function to calculate distances between sensors ( distance in mm mostly )
+    """
+    Function calculates distances between sensors (distance in mm mostly).
 
     Parameters
     ----------
@@ -39,9 +40,10 @@ def find_distances_matrix(con, epochs, picks_epochs):
 
 
 def weighted_con_matrix(con, epochs, picks_epochs, sigma=20):
-    """ Function to compute the weighted connectivity matrix.
-        A normalized gaussian weighted matrix is computed and
-        added to the true connectivity matrix.
+    """
+    Function to compute the weighted connectivity matrix.
+    A normalized gaussian weighted matrix is computed and added to
+    the true connectivity matrix.
 
     Parameters
     ----------
@@ -83,7 +85,7 @@ def weighted_con_matrix(con, epochs, picks_epochs, sigma=20):
 
 
 def make_communities(con, top_n=3):
-    '''
+    """
     Given an adjacency matrix, return list of nodes belonging to the top_n
     communities based on Networkx Community algorithm.
 
@@ -92,7 +94,7 @@ def make_communities(con, top_n=3):
         Indices/nodes of the network that belongs to the top_n communities
     n_communities: int
         Total number of communities found by the algorithm.
-    '''
+    """
     import networkx as nx
     import community
     G = nx.Graph(con)
@@ -115,7 +117,7 @@ def make_communities(con, top_n=3):
 
 
 def get_label_distances(subject, subjects_dir, parc='aparc'):
-    '''
+    """
     Get the Eucliden distance between label center of mass and return the
     distance matrix. The distance are computed between vertices in the MNI
     coordinates in the subject source space.
@@ -135,7 +137,7 @@ def get_label_distances(subject, subjects_dir, parc='aparc'):
         The MNI coordinates of the vertices in the source space.
     coms_lh, coms_rh: list | (N, )
         The centre of masses of labels in left and right hemispheres.
-    '''
+    """
     import itertools
     from scipy import linalg
 
@@ -154,12 +156,12 @@ def get_label_distances(subject, subjects_dir, parc='aparc'):
         if mylab.name.endswith('-lh'):
             com_lh = mylab.center_of_mass(subject, subjects_dir=subjects_dir)
             coords_ = mne.vertex_to_mni(com_lh, hemis=0, subject=subject,
-                                        subjects_dir=subjects_dir)[0]
+                                        subjects_dir=subjects_dir)
             coms_lh.append(com_lh)
         else:
             com_rh = mylab.center_of_mass(subject, subjects_dir=subjects_dir)
             coords_ = mne.vertex_to_mni(com_rh, hemis=1, subject=subject,
-                                        subjects_dir=subjects_dir)[0]
+                                        subjects_dir=subjects_dir)
             coms_rh.append(com_rh)
 
         coords_all.append(coords_)
@@ -181,7 +183,7 @@ def get_label_distances(subject, subjects_dir, parc='aparc'):
 def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
                         parc_fname='standard_garces_2016',
                         n_jobs=4, make_annot=False, return_label_coords=False):
-    '''
+    """
     For a given subject, given a csv file with set of MNI coordinates,
     make an annotation of labels grown from these ROIs.
     Mainly used to generate standard resting state network annotation from
@@ -208,7 +210,7 @@ def make_annot_from_csv(subject, subjects_dir, csv_fname, lab_size=10,
         If True, an annotation file is created and written to disk.
     return_label_coords: bool
         If True, the function returns labels and MNI seed coordinates used.
-    '''
+    """
     from mne import grow_labels
     import pandas as pd
     import matplotlib.cm as cmx
