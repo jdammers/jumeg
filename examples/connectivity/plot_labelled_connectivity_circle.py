@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
-'''
+"""
 Example exposing the plot_labelled_group_connectivity_circle function.
 
 Author: Praveen Sripad <pravsripad@gmail.com>
-'''
 
-
-import numpy as np
-from jumeg.connectivity import plot_labelled_group_connectivity_circle
+"""
+from jumeg.connectivity import (plot_labelled_group_connectivity_circle,
+                                generate_random_connectivity_matrix)
 from jumeg import get_jumeg_path
 import yaml
 
@@ -20,13 +19,11 @@ with open(label_names_yaml_fname, 'r') as f:
     label_names = yaml.safe_load(f)['label_names']
 
 # make a random matrix with 68 nodes
-# use simple seed for reproducibility
-np.random.seed(42)
-con = np.random.random((68, 68))
-con[con < 0.5] = 0.
+con = generate_random_connectivity_matrix(size=(68, 68), symmetric=True)
 
 # plotting within a subplot
 plot_labelled_group_connectivity_circle(yaml_fname, con, label_names,
-                                        out_fname='rsn_circle.png',
-                                        show=False, n_lines=20, fontsize_names=6,
+                                        out_fname='fig_rsn_circle.png',
+                                        show=False, n_lines=20,
+                                        fontsize_names=6,
                                         title='test RSN circ labels')

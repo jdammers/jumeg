@@ -15,6 +15,8 @@ from mne.datasets import sample
 
 from nilearn import plotting
 
+from jumeg.connectivity import generate_random_connectivity_matrix
+
 data_path = sample.data_path()
 subjects_dir = data_path + '/subjects'
 subject = 'fsaverage'
@@ -41,11 +43,8 @@ for lab in aparc_lh[:10]:
 n_nodes = np.array(coords).shape[0]
 
 # make a random connectivity matrix
-con = np.random.random((n_nodes, n_nodes))
-con[np.diag_indices(5)] = 0.
-con[np.triu_indices(5, k=1)] = 0.
-con += con.T
-con[con < 0.6] = 0.
+con = generate_random_connectivity_matrix(size=(n_nodes, n_nodes),
+                                          symmetric=True)
 
 # plot the connectome on a glass brain background
 plotting.plot_connectome(con, coords)
