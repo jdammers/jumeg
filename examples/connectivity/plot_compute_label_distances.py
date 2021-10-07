@@ -39,4 +39,4 @@ brain.close()
 fig = plotting.plot_connectome(rounded_coms, coords,
                                edge_threshold='99%', node_color='cornflowerblue',
                                title='%s - label distances' % parc)
-fig.savefig('%s_label_distances.png' % parc)
+fig.savefig('fig_%s_label_distances.png' % parc)

@@ -100,4 +100,5 @@ yaml_fname = get_jumeg_path() + '/data/desikan_aparc_cortex_based_grouping.yaml'
 
 plot_grouped_connectivity_circle(yaml_fname, con, aparc_names, n_lines=12,
                                  labels_mode=None, colormap=cmap, colorbar=True,
-                                 replacer_dict=None, indices=None, out_fname='rsn_circle_plot.png')
+                                 replacer_dict=None, indices=None,
+                                 out_fname='fig_rsn_circle_plot.png')

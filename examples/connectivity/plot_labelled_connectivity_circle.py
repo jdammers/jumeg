@@ -27,6 +27,6 @@ con[con < 0.5] = 0.
 
 # plotting within a subplot
 plot_labelled_group_connectivity_circle(yaml_fname, con, label_names,
-                                        out_fname='rsn_circle.png',
+                                        out_fname='fig_rsn_circle.png',
                                         show=False, n_lines=20, fontsize_names=6,
                                         title='test RSN circ labels')

@@ -29,13 +29,13 @@ with open(labels_fname, 'r') as f:
 # plot the connectivity circle grouped
 plot_generic_grouped_circle(yaml_fname, con, orig_labels,
                             node_order_size=34,
-                            out_fname='fica_circle.png',
+                            out_fname='fig_fica_circle.png',
                             show=False, n_lines=20,
                             title='Groups')
 
 # plot the connectivity circle with outer group labels ring
 plot_fica_grouped_circle(yaml_fname, con, orig_labels,
                          node_order_size=34,
-                         out_fname='fica_circle_with_names.png',
+                         out_fname='fig_fica_circle_with_names.png',
                          show=False, n_lines=20,
                          title='Groups + Labels')

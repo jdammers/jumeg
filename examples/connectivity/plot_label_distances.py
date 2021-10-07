@@ -39,7 +39,7 @@ con[con > neighbor_range] = 0.
 cortex_colors = ['m', 'b', 'y', 'c', 'r', 'g',
                  'g', 'r', 'c', 'y', 'b', 'm']
 
-out_fname = 'label_com_distances_circle_%0.1f_%s.png' % (neighbor_range, parc)
+out_fname = 'fig_label_com_distances_circle_%0.1f_%s.png' % (neighbor_range, parc)
 plot_grouped_connectivity_circle(yaml_cortex_fname, con, label_names,
                                  replacer_dict=replacer_dict,
                                  yaml_color_fname=None, labels_mode='replace',
@@ -52,10 +52,10 @@ plot_grouped_connectivity_circle(yaml_cortex_fname, con, label_names,
 degs = mne.connectivity.degree(con, threshold_prop=1)
 
 # show the label ROIs and short range connections using nilearn glass brain
-fig = plotting.plot_connectome(degs, coords, node_size=20,
+fig = plotting.plot_connectome(con, coords, node_size=degs,
                                edge_threshold='99%',
                                node_color='cornflowerblue',
                                display_mode='ortho',
                                title='%s' % parc)
 
-fig.savefig('%s_labels_distance_degrees.png' % parc)
+fig.savefig('fig_%s_labels_distance_degrees.png' % parc)

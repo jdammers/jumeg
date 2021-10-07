@@ -72,4 +72,4 @@ for top_nodes, col, cmap in zip(top_nodes_list, color_list, cmaps_list):
                              figure=fig, edge_vmin=0., edge_vmax=1.)
 
 plt.show()
-# plt.savefig('communities.png')
+# plt.savefig('fig_communities.png')
