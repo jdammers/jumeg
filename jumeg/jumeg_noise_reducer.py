@@ -438,7 +438,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         if verbose:
             print("########## Read raw data:")
 
-        tc0 = time.clock()
+        tc0 = time.perf_counter()
         tw0 = time.time()
 
         if raw is None:
@@ -456,7 +456,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 warnings.warn('The file name within the Raw object and provided\n   '
                               'fname are not the same. Please check again.')
 
-        tc1 = time.clock()
+        tc1 = time.perf_counter()
         tw1 = time.time()
 
         if verbose:
@@ -555,7 +555,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
             # Adapt followg drop-chans cmd to use 'all-but-refpick'
             droplist = [raw.info['ch_names'][k] for k in range(raw.info['nchan']) if not k in refpick]
-            tct = time.clock()
+            tct = time.perf_counter()
             twt = time.time()
             fltref = raw.copy().drop_channels(droplist)
             if use_refantinotch:
@@ -570,7 +570,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                               fir_window='hann', phase='zero',
                               picks=np.array(list(range(nref))),
                               method='fir')
-            tc1 = time.clock()
+            tc1 = time.perf_counter()
             tw1 = time.time()
             if verbose:
                 print(">>> filtering ref-chans  took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tct)),
@@ -583,7 +583,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         #  but there seems to be no appropriat fct available)
         # Here we copy the idea from compute_raw_data_covariance()
         # and truncate it as appropriate.
-        tct = time.clock()
+        tct = time.perf_counter()
         twt = time.time()
         # The following reject and infosig entries are only
         # used in _is_good-calls.
@@ -659,7 +659,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
         if verbose:
             print(">>> Number of samples used : %d" % n_samples)
-            tc1 = time.clock()
+            tc1 = time.perf_counter()
             tw1 = time.time()
             print(">>> sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
 
@@ -722,7 +722,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             if complementary_signal:
                 print(">>> Caveat: REPLACING signal by compensation signal")
 
-        tct = time.clock()
+        tct = time.perf_counter()
         twt = time.time()
 
         # Work on entire data stream:
@@ -747,7 +747,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
         if verbose:
             print("\nDone.")
-            tc1 = time.clock()
+            tc1 = time.perf_counter()
             tw1 = time.time()
             print(">>> compensation loop took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tct)), (tw1 - twt)))
 
@@ -756,7 +756,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 print("########## Calculating final signal channel covariance:")
             # Calculate final signal channel covariance:
             # (only used as quality measure)
-            tct = time.clock()
+            tct = time.perf_counter()
             twt = time.time()
             sigmean = 0
             sscovdata = 0
@@ -787,7 +787,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 #    print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
                 for i in range(max(0, nsig - 5), nsig):
                     print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
-                tc1 = time.clock()
+                tc1 = time.perf_counter()
                 tw1 = time.time()
                 print(">>> signal covar-calc took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tct)),
                                                                                         (tw1 - twt)))
@@ -807,7 +807,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 print(">>> Saving '%s'..." % fnoutloc)
             raw.save(fnoutloc, overwrite=True)
 
-        tc1 = time.clock()
+        tc1 = time.perf_counter()
         tw1 = time.time()
         if verbose:
             print(">>> Total run took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tc0)), (tw1 - tw0)))
@@ -851,10 +851,10 @@ def test_noise_reducer():
     print("########## behind of noisereducer call ##########")
 
     print("########## Read raw data:")
-    tc0 = time.clock()
+    tc0 = time.perf_counter()
     tw0 = time.time()
     raw = mne.io.Raw(dname, preload=True)
-    tc1 = time.clock()
+    tc1 = time.perf_counter()
     tw1 = time.time()
     print("loading raw data  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0)))
 
@@ -907,10 +907,10 @@ def test_noise_reducer():
         # Adapt followg drop-chans cmd to use 'all-but-refpick'
         droplist = [raw.info['ch_names'][k] for k in range(raw.info['nchan']) if not k in refpick]
         fltref = raw.copy().drop_channels(droplist)
-        tct = time.clock()
+        tct = time.perf_counter()
         twt = time.time()
         fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(list(range(nref))), method='fft')
-        tc1 = time.clock()
+        tc1 = time.perf_counter()
         tw1 = time.time()
         print("filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
 
@@ -920,7 +920,7 @@ def test_noise_reducer():
     #  but there seems to be no appropriat fct available)
     # Here we copy the idea from compute_raw_data_covariance()
     # and truncate it as appropriate.
-    tct = time.clock()
+    tct = time.perf_counter()
     twt = time.time()
     # The following reject and info{sig,ref} entries are only
     # used in _is_good-calls.
@@ -1005,7 +1005,7 @@ def test_noise_reducer():
             for jref in range(nref):
                 rrslopedata[jref][iref] = 0.
     logger.info("Number of samples used : %d" % n_samples)
-    tc1 = time.clock()
+    tc1 = time.perf_counter()
     tw1 = time.time()
     print("sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
 
@@ -1017,7 +1017,7 @@ def test_noise_reducer():
     #  but there seems to be no appropriat fct available)
     # Here we copy the idea from compute_raw_data_covariance()
     # and truncate it as appropriate.
-    tct = time.clock()
+    tct = time.perf_counter()
     twt = time.time()
     # The following reject and info{sig,ref} entries are only
     # used in _is_good-calls.
@@ -1108,7 +1108,7 @@ def test_noise_reducer():
     print("cmp(sscovdata,sscov):", np.allclose(sscov, sscovdata, atol=0.))
     print("cmp(srcovdata,srcov):", np.allclose(srcov, srcovdata, atol=0.))
     print("cmp(rrcovdata,rrcov):", np.allclose(rrcov, rrcovdata, atol=0.))
-    tc1 = time.clock()
+    tc1 = time.perf_counter()
     tw1 = time.time()
     print("sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
 
@@ -1183,7 +1183,7 @@ def test_noise_reducer():
             print('weights[sp(%2d)][r]=[' % i + ' '.join([' %+10.7f' % val for val in weights[sigpick[i]][:]]) + ']')
 
     print("########## Compensating signal channels:")
-    tct = time.clock()
+    tct = time.perf_counter()
     twt = time.time()
     # data,times = raw[:,raw.time_as_index(tmin)[0]:raw.time_as_index(tmax)[0]:]
     # Work on entire data stream:
@@ -1201,7 +1201,7 @@ def test_noise_reducer():
         if isl % 10000 == 0:
             print("\rProcessed slice %6d" % isl)
     print("\nDone.")
-    tc1 = time.clock()
+    tc1 = time.perf_counter()
     tw1 = time.time()
     print("compensation loop took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
 
@@ -1209,7 +1209,7 @@ def test_noise_reducer():
         print("########## Calculating final signal channel covariance:")
         # Calculate final signal channel covariance:
         # (only used as quality measure)
-        tct = time.clock()
+        tct = time.perf_counter()
         twt = time.time()
         sigmean = 0
         sscovdata = 0
@@ -1235,7 +1235,7 @@ def test_noise_reducer():
         print("final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata)))
         for i in range(min(5, nsig)):
             print("final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
-        tc1 = time.clock()
+        tc1 = time.perf_counter()
         tw1 = time.time()
         print("signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
         print(" ")
@@ -1243,6 +1243,6 @@ def test_noise_reducer():
     nrname = dname[:dname.rfind('-raw.fif')] + ',nold-raw.fif'
     print("Saving '%s'..." % nrname)
     raw.save(nrname, overwrite=True)
-    tc1 = time.clock()
+    tc1 = time.perf_counter()
     tw1 = time.time()
     print("Total run         took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0)))
