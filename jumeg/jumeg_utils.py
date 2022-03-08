@@ -14,9 +14,6 @@ import os.path as op
 import fnmatch
 
 import numpy as np
-import scipy as sci
-from sklearn.utils import check_random_state
-import fnmatch
 
 import mne
 from mne.utils import logger
@@ -190,7 +187,8 @@ def check_read_raw(raw_name, preload=True):
 
 def peak_counter(signal):
     ''' Simple peak counter using scipy argrelmax function. '''
-    return sci.signal.argrelmax(signal)[0].shape
+    from scipy.signal import argrelmax
+    return argrelmax(signal)[0].shape
 
 
 def update_description(raw, comment):
