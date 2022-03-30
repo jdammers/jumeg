@@ -36,12 +36,13 @@ logger = jumeg_logger.get_logger()
 __version__= "2020.05.06.001"
 
 
-def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False,exit_on_error=False):
+def get_chop_times_indices(times, chop_length=180., chop_nsamp=None, strict=False, exit_on_error=False):
     """
     calculate chop times for every X s
     where X=interval.
-    
+
     Author: J.Dammers
+    update: F.Boers
 
     Parameters
     ----------
@@ -56,12 +57,12 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
                   the last chop is combined with the penultimate chop.
             False: (default) the full time is equally distributed across chops
                    The last chop will only have a few samples more
-    
+
     exit_on_error: boolean <False>
-                   error occures if chop_length < times 
-                    -> if True : exit on ERROR  
+                   error occures if chop_length < times
+                    -> if True : exit on ERROR
                     -> if False: try to adjust chop_time
-                       e.g. chop_times: is one chop with [ times[0],times[-1] ]                                      
+                       e.g. chop_times: is one chop with [ times[0],times[-1] ]
 
     Returns
     -------
@@ -72,11 +73,11 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
     """
 
     n_times = len(times)
-   
+
     try:
         data_type = times.dtype()
     except:
-        data_type = np.float64 
+        data_type = np.float64
 
     if chop_nsamp:  # compute chop based on number of samples
         n_chops = int(n_times // chop_nsamp)
@@ -87,49 +88,48 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
         dt = times[1] - times[0]  # time period between two time samples
         n_chops, t_rest = np.divmod(times[-1], chop_length)
         n_chops = int(n_chops)
-      
-      
+
         # chop duration in s
         if strict:
-          #--- ToDo ck for times[-1] < chop_length
+            # ToDo check for times[-1] < chop_length
             chop_len = chop_length
         else:
             chop_len = chop_length + t_rest // n_chops  # add rest to chop_length
-            
-            msg1=[
-                  "  -> number of chops      : {}".format(n_chops),
-                  "  -> calculated chop legth: {}".format(chop_len),
-                  "  -> rest [s]             : {}".format(t_rest),
-                  "-"*40,
-                  "  -> chop length          : {}".format(chop_length),
-                  "  -> numer of timepoints  : {}".format(n_times),
-                  "  -> strict               : {}".format(strict),
-                  "-"*40,
-                  "  -> exit on error        : {}\n".format(exit_on_error)
-                 ]
-           #---
-            try:
-               n_times_chop = int(chop_len / dt)
-            except:
-               if exit_on_error:   
-                  msg=["EXIT on ERROR"]
-                  msg.extend( msg1 )
-                  logger.exception("\n".join(msg))
-                  assert (chop_len > 0),"Exit => chop_len: {}\n".format(chop_len)
-               else: # data size < chop_length
-                  msg=["setting <chop_len> to number of timepoints!!!"]
-                  msg.extend(msg1)
-                  logger.error( "\n".join(msg) )  
-                 #--- fix  
-                  n_times_chop = n_times
-                  n_chops = 1
-                  msg=["data length smaller then chop length !!!",
+
+        msg1 = [
+            "  -> number of chops      : {}".format(n_chops),
+            "  -> calculated chop legth: {}".format(chop_len),
+            "  -> rest [s]             : {}".format(t_rest),
+            "-" * 40,
+            "  -> chop length          : {}".format(chop_length),
+            "  -> numer of timepoints  : {}".format(n_times),
+            "  -> strict               : {}".format(strict),
+            "-" * 40,
+            "  -> exit on error        : {}\n".format(exit_on_error)
+        ]
+
+        try:
+            n_times_chop = int(chop_len / dt)
+        except:
+            if exit_on_error:
+                msg = ["EXIT on ERROR"]
+                msg.extend(msg1)
+                logger.exception("\n".join(msg))
+                assert (chop_len > 0), "Exit => chop_len: {}\n".format(chop_len)
+            else:  # data size < chop_length
+                msg = ["setting <chop_len> to number of time points!!!"]
+                msg.extend(msg1)
+                logger.error("\n".join(msg))
+
+                n_times_chop = n_times
+                n_chops = 1
+                msg = ["data length smaller then chop length !!!",
                        " --> Adjusting:",
                        "  -> number of chops: {}".format(n_chops),
                        "  -> chop time      : {}".format(n_times_chop)
                        ]
-                  logger.warning("\n".join(msg))
-                  
+                logger.warning("\n".join(msg))
+
         # check if chop length is larger than max time (e.g. if strict=True)
         if n_times_chop > n_times:
             n_times_chop = n_times
@@ -149,7 +149,6 @@ def get_chop_times_indices(times, chop_length=60., chop_nsamp=None, strict=False
     chop_times[:, 1] = times[ix_end]
 
     return chop_times, chop_indices
-
 
 
 @jit (nopython=True)
