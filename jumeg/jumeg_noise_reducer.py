@@ -4,8 +4,8 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 02.05.2019
- version    : 1.14
+ last update: 05.04.2022
+ version    : 1.17
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -17,7 +17,7 @@ Plenum Press, New York, 1989
 
 ----------------------------------------------------------------------
 
-  s'_i(t) = s_i(t) - sum(w_ij*r_j(t), j=1,nref)
+  s'_i(t) = s_i(t) - sum(w_ij*r_j(t), j=1, nref)
  where
   s_i  are the   signal  traces, i=1,nsig
   r_j  are the reference traces, j=1,nref after DC removal
@@ -310,11 +310,11 @@ def channel_indices_from_list(fulllist, findlist, excllist=None):
                 chnpicktmp = ([fulllist.index(findlist[ir])])
                 chnpick = np.array(np.concatenate((chnpick, chnpicktmp)), dtype=int)
             except:
-                print(">>>>> Channel '%s' not found." % findlist[ir])
+                print((">>>>> Channel '%s' not found." % findlist[ir]))
         else:
             chnpicktmp = (mne.pick_channels_regexp(fulllist, findlist[ir]))
             if len(chnpicktmp) == 0:
-                print(">>>>> '%s' does not match any channel name." % findlist[ir])
+                print((">>>>> '%s' does not match any channel name." % findlist[ir]))
             else:
                 chnpick = np.array(np.concatenate((chnpick, chnpicktmp)), dtype=int)
     if len(chnpick) > 1:
@@ -342,7 +342,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
     Parameters
     ----------
-    fname_raw : (list of) rawfile name(s)
+    fname_raw : None | (list of) rawfile name(s)
     raw : mne Raw objects
         Allows passing of (preloaded) raw object in addition to fname_raw
         or solely (use fname_raw=None in this case).
@@ -424,7 +424,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         if 'filename' in raw.info:
             fnraw = [os.path.basename(raw.filenames[0])]
         else:
-            fnraw = raw._filenames[0]
+            fnraw = [raw._filenames[0]]
         warnings.warn('Setting file name from Raw object')
         have_input_file = False
         if fnout is None and not return_raw:
@@ -509,7 +509,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             raise ValueError("No channel selected as noise reference")
 
         if verbose:
-            print(">>> sigpick: %3d chans, refpick: %3d chans" % (nsig, nref))
+            print((">>> sigpick: %3d chans, refpick: %3d chans" % (nsig, nref)))
         badpick = np.intersect1d(sigpick, refpick, assume_unique=False)
         if len(badpick) > 0:
             raise Warning("Intersection of signal and reference channels not empty")
@@ -549,9 +549,9 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             else:
                 if verbose:
                     if reflp is not None:
-                        print(">>>  low-pass with cutoff-freq %.1f" % reflp)
+                        print((">>>  low-pass with cutoff-freq %.1f" % reflp))
                     if refhp is not None:
-                        print(">>> high-pass with cutoff-freq %.1f" % refhp)
+                        print((">>> high-pass with cutoff-freq %.1f" % refhp))
 
             # Adapt followg drop-chans cmd to use 'all-but-refpick'
             droplist = [raw.info['ch_names'][k] for k in range(raw.info['nchan']) if not k in refpick]
@@ -595,7 +595,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                       eeg=40e-6,  # uV (EEG channels)
                       eog=250e-6)  # uV (EOG channels)
 
-        infosig = copy.copy(raw.info)
+        infosig = copy.deepcopy(raw.info)
         infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
         # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
         infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
@@ -658,21 +658,22 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 rrslope[:, iref] = 0.
 
         if verbose:
-            print(">>> Number of samples used : %d" % n_samples)
+            print((">>> Number of samples used : %d" % n_samples))
             tc1 = time.perf_counter()
             tw1 = time.time()
-            print(">>> sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+            print((">>> sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % \
+                   (1000. * (tc1 - tct), (tw1 - twt))))
 
         if checkresults:
             if verbose:
                 print("########## Calculated initial signal channel covariance:")
                 # Calculate initial signal channel covariance:
                 # (only used as quality measure)
-                print(">>> initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata)))
+                print((">>> initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))))
                 for i in range(min(5, nsig)):
-                    print(">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+                    print((">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
                 for i in range(max(0, nsig - 5), nsig):
-                    print(">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+                    print((">>> initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
                 print(">>>")
 
         U, s, V = np.linalg.svd(rrslope, full_matrices=True)
@@ -690,7 +691,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
         stat = np.allclose(rrslope, np.dot(U, np.dot(np.diag(s), V)))
         if verbose:
-            print(">>> Testing svd-result: %s" % stat)
+            print((">>> Testing svd-result: %s" % stat))
             if not stat:
                 print("    (Maybe due to SV-cutoff?)")
 
@@ -704,7 +705,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                     print(">>> Testing RRinv-result (should be unit-matrix): ok")
             else:
                 print(">>> Testing RRinv-result (should be unit-matrix): failed")
-                print(np.transpose(np.dot(RRinv, rrslope)))
+                print((np.transpose(np.dot(RRinv, rrslope))))
                 print(">>>")
 
         if verbose:
@@ -742,7 +743,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 raw._data[:, isl] = subrefarr
 
             if (isl % 10000 == 0 or isl + 1 == raw._data.shape[1]) and verbose:
-                print("\rProcessed slice %6d" % isl, end=" ")
+                print(("\rProcessed slice %6d" % isl), end=" ")
                 sys.stdout.flush()
 
         if verbose:
@@ -779,14 +780,14 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
             sscovdata -= n_samples * sigmean[:] * sigmean[:]
             sscovdata /= (n_samples - 1)
             if verbose:
-                print(">>> no channel got worse: %s" % str(np.all(np.less_equal(sscovdata, sscovinit))))
-                print(">>> final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata)))
+                print((">>> no channel got worse: %s" % str(np.all(np.less_equal(sscovdata, sscovinit)))))
+                print((">>> final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))))
                 for i in range(min(5, nsig)):
-                    print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+                    print((">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
                 # for i in range(min(5,nsig),max(0,nsig-5)):
-                #    print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+                #    print((">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
                 for i in range(max(0, nsig - 5), nsig):
-                    print(">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+                    print((">>> final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
                 tc1 = time.perf_counter()
                 tw1 = time.time()
                 print(">>> signal covar-calc took {:.1f} ms ({:.2f} s walltime)".format((1000. * (tc1 - tct)),
@@ -804,7 +805,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
         if fnoutloc is not None:
             if verbose:
-                print(">>> Saving '%s'..." % fnoutloc)
+                print((">>> Saving '%s'..." % fnoutloc))
             raw.save(fnoutloc, overwrite=True)
 
         tc1 = time.perf_counter()
@@ -825,6 +826,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 #
 ##################################################
 def test_noise_reducer():
+
     data_path = os.environ['SUBJECTS_DIR']
     subject = os.environ['SUBJECT']
 
@@ -856,7 +858,7 @@ def test_noise_reducer():
     raw = mne.io.Raw(dname, preload=True)
     tc1 = time.perf_counter()
     tw1 = time.time()
-    print("loading raw data  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0)))
+    print(("loading raw data  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))))
 
     # Time window selection
     # weights are calc'd based on [tmin,tmax], but applied to the entire data set.
@@ -866,14 +868,14 @@ def test_noise_reducer():
     itmin = int(floor(tmin * raw.info['sfreq']))
     itmax = int(ceil(tmax * raw.info['sfreq']))
     itstep = int(ceil(tstep * raw.info['sfreq']))
-    print(">>> Set time-range to [%7.3f,%7.3f]" % (tmin, tmax))
+    print((">>> Set time-range to [%7.3f,%7.3f]" % (tmin, tmax)))
 
     if sigchanlist is None:
         sigpick = mne.pick_types(raw.info, meg='mag', eeg=False, stim=False, eog=False, exclude='bads')
     else:
         sigpick = channel_indices_from_list(raw.info['ch_names'][:], sigchanlist)
     nsig = len(sigpick)
-    print("sigpick: %3d chans" % nsig)
+    print(("sigpick: %3d chans" % nsig))
     if nsig == 0:
         raise ValueError("No channel selected for noise compensation")
 
@@ -886,24 +888,24 @@ def test_noise_reducer():
                                  stim=False, eog=False, exclude=refexclude)
     else:
         refpick = channel_indices_from_list(raw.info['ch_names'][:], refchanlist)
-        print("refpick = '%s'" % refpick)
+        print(("refpick = '%s'" % refpick))
     nref = len(refpick)
-    print("refpick: %3d chans" % nref)
+    print(("refpick: %3d chans" % nref))
     if nref == 0:
         raise ValueError("No channel selected as noise reference")
 
     print("########## Refchan geo data:")
     # This is just for info to locate special 4D-refs.
     for iref in refpick:
-        print(raw.info['chs'][iref]['ch_name'], raw.info['chs'][iref]['loc'][0:3])
+        print((raw.info['chs'][iref]['ch_name'], raw.info['chs'][iref]['loc'][0:3]))
     print("")
 
     if use_reffilter:
         print("########## Filter reference channels:")
         if refflt_lpfreq is not None:
-            print(" low-pass with cutoff-freq %.1f" % refflt_lpfreq)
+            print((" low-pass with cutoff-freq %.1f" % refflt_lpfreq))
         if refflt_hpfreq is not None:
-            print("high-pass with cutoff-freq %.1f" % refflt_hpfreq)
+            print(("high-pass with cutoff-freq %.1f" % refflt_hpfreq))
         # Adapt followg drop-chans cmd to use 'all-but-refpick'
         droplist = [raw.info['ch_names'][k] for k in range(raw.info['nchan']) if not k in refpick]
         fltref = raw.copy().drop_channels(droplist)
@@ -912,7 +914,7 @@ def test_noise_reducer():
         fltref.filter(refflt_hpfreq, refflt_lpfreq, picks=np.array(list(range(nref))), method='fft')
         tc1 = time.perf_counter()
         tw1 = time.time()
-        print("filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+        print(("filtering ref-chans  took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))))
 
     print("########## Calculating sig-ref/ref-ref-channel covariances:")
     # Calculate sig-ref/ref-ref-channel covariance:
@@ -932,7 +934,7 @@ def test_noise_reducer():
                   eeg=40e-6,  # uV (EEG channels)
                   eog=250e-6)  # uV (EOG channels)
 
-    infosig = copy.copy(raw.info)
+    infosig = copy.deepcopy(raw.info)
     infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
     # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
     infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
@@ -940,7 +942,7 @@ def test_noise_reducer():
     idx_by_typesig = channel_indices_by_type(infosig)
 
     # inforef not good w/ filtering, but anyway useless
-    inforef = copy.copy(raw.info)
+    inforef = copy.deepcopy(raw.info)
     inforef['chs'] = [raw.info['chs'][k] for k in refpick]
     # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typeref = channel_indices_by_type(inforef)
@@ -1007,7 +1009,7 @@ def test_noise_reducer():
     logger.info("Number of samples used : %d" % n_samples)
     tc1 = time.perf_counter()
     tw1 = time.time()
-    print("sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+    print(("sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))))
 
     print("########## Calculating sig-ref/ref-ref-channel covariances (robust):")
     # Calculate sig-ref/ref-ref-channel covariance:
@@ -1029,7 +1031,7 @@ def test_noise_reducer():
                   eeg=40e-6,  # uV (EEG channels)
                   eog=250e-6)  # uV (EOG channels)
 
-    infosig = copy.copy(raw.info)
+    infosig = copy.deepcopy(raw.info)
     infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
     # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
     infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
@@ -1037,7 +1039,7 @@ def test_noise_reducer():
     idx_by_typesig = channel_indices_by_type(infosig)
 
     # inforef not good w/ filtering, but anyway useless
-    inforef = copy.copy(raw.info)
+    inforef = copy.deepcopy(raw.info)
     inforef['chs'] = [raw.info['chs'][k] for k in refpick]
     # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
     idx_by_typeref = channel_indices_by_type(inforef)
@@ -1103,27 +1105,27 @@ def test_noise_reducer():
             rrslope[:, iref] = 0.
     logger.info("Number of samples used : %d" % n_samples)
     print("Compare results with 'standard' values:")
-    print("cmp(sigmean,smean):", np.allclose(smean, sigmean, atol=0.))
-    print("cmp(refmean,rmean):", np.allclose(rmean, refmean, atol=0.))
-    print("cmp(sscovdata,sscov):", np.allclose(sscov, sscovdata, atol=0.))
-    print("cmp(srcovdata,srcov):", np.allclose(srcov, srcovdata, atol=0.))
-    print("cmp(rrcovdata,rrcov):", np.allclose(rrcov, rrcovdata, atol=0.))
+    print(("cmp(sigmean,smean):", np.allclose(smean, sigmean, atol=0.)))
+    print(("cmp(refmean,rmean):", np.allclose(rmean, refmean, atol=0.)))
+    print(("cmp(sscovdata,sscov):", np.allclose(sscov, sscovdata, atol=0.)))
+    print(("cmp(srcovdata,srcov):", np.allclose(srcov, srcovdata, atol=0.)))
+    print(("cmp(rrcovdata,rrcov):", np.allclose(rrcov, rrcovdata, atol=0.)))
     tc1 = time.perf_counter()
     tw1 = time.time()
-    print("sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+    print(("sigrefchn covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))))
 
     if checkresults:
         print("########## Calculated initial signal channel covariance:")
         # Calculate initial signal channel covariance:
         # (only used as quality measure)
-        print("initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscov)))
+        print(("initl rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscov))))
         for i in range(min(5, nsig)):
-            print("initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscov.flatten()[i])))
+            print(("initl signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscov.flatten()[i]))))
         print(" ")
     if nref < 6:
         print("rrslope-entries:")
         for i in range(nref):
-            print(rrslope[i][:])
+            print((rrslope[i][:]))
 
     U, s, V = np.linalg.svd(rrslope, full_matrices=True)
     print(s)
@@ -1140,7 +1142,7 @@ def test_noise_reducer():
     # sinv = ???
     print(s)
     stat = np.allclose(rrslope, np.dot(U, np.dot(np.diag(s), V)))
-    print(">>> Testing svd-result: %s" % stat)
+    print((">>> Testing svd-result: %s" % stat))
     if not stat:
         print("    (Maybe due to SV-cutoff?)")
 
@@ -1156,7 +1158,7 @@ def test_noise_reducer():
             print(">>> Testing RRinvtr-result (shld be unit-matrix): ok")
         else:
             print(">>> Testing RRinvtr-result (shld be unit-matrix): failed")
-            print(np.dot(rrslope.transpose(), RRinvtr))
+            print((np.dot(rrslope.transpose(), RRinvtr)))
             # np.less_equal(np.abs(np.dot(rrslope.transpose(),RRinvtr)-np.identity(nref)),0.01*np.ones((nref,nref)))
         print("")
 
@@ -1171,16 +1173,16 @@ def test_noise_reducer():
     if np.allclose(np.zeros(weights.shape), np.abs(weights), atol=1.e-8):
         print(">>> all weights are small (<=1.e-8).")
     else:
-        print(">>> largest weight %12.5e" % np.max(np.abs(weights)))
+        print((">>> largest weight %12.5e" % np.max(np.abs(weights))))
         wlrg = np.where(np.abs(weights) >= 0.99 * np.max(np.abs(weights)))
         for iwlrg in range(len(wlrg[0])):
-            print(">>> weights[%3d,%2d] = %12.5e" % (wlrg[0][iwlrg], wlrg[1][iwlrg],
-                                                     weights[wlrg[0][iwlrg], wlrg[1][iwlrg]]))
+            print((">>> weights[%3d,%2d] = %12.5e" % (wlrg[0][iwlrg], wlrg[1][iwlrg],
+                                                      weights[wlrg[0][iwlrg], wlrg[1][iwlrg]])))
 
     if nref < 5:
         print("weights-entries for first sigchans:")
         for i in range(min(5, nsig)):
-            print('weights[sp(%2d)][r]=[' % i + ' '.join([' %+10.7f' % val for val in weights[sigpick[i]][:]]) + ']')
+            print(('weights[sp(%2d)][r]=[' % i + ' '.join([' %+10.7f' % val for val in weights[sigpick[i]][:]]) + ']'))
 
     print("########## Compensating signal channels:")
     tct = time.perf_counter()
@@ -1198,12 +1200,12 @@ def test_noise_reducer():
         subrefarr = np.dot(weights[:], refarr)
         # data[:,isl] -= subrefarr   will not modify raw._data?
         raw._data[:, isl] -= subrefarr
-        if isl % 10000 == 0:
-            print("\rProcessed slice %6d" % isl)
+        if (isl % 10000) == 0:
+            print(("\rProcessed slice %6d" % isl))
     print("\nDone.")
     tc1 = time.perf_counter()
     tw1 = time.time()
-    print("compensation loop took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+    print(("compensation loop took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))))
 
     if checkresults:
         print("########## Calculating final signal channel covariance:")
@@ -1231,18 +1233,18 @@ def test_noise_reducer():
         sigmean /= n_samples
         sscovdata -= n_samples * sigmean[:] * sigmean[:]
         sscovdata /= (n_samples - 1)
-        print(">>> no channel got worse: ", np.all(np.less_equal(sscovdata, sscovinit)))
-        print("final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata)))
+        print((">>> no channel got worse: ", np.all(np.less_equal(sscovdata, sscovinit))))
+        print(("final rt(avg sig pwr) = %12.5e" % np.sqrt(np.mean(sscovdata))))
         for i in range(min(5, nsig)):
-            print("final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i])))
+            print(("final signal-rms[%3d] = %12.5e" % (i, np.sqrt(sscovdata.flatten()[i]))))
         tc1 = time.perf_counter()
         tw1 = time.time()
-        print("signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt)))
+        print(("signal covar-calc took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tct), (tw1 - twt))))
         print(" ")
 
     nrname = dname[:dname.rfind('-raw.fif')] + ',nold-raw.fif'
-    print("Saving '%s'..." % nrname)
+    print(("Saving '%s'..." % nrname))
     raw.save(nrname, overwrite=True)
     tc1 = time.perf_counter()
     tw1 = time.time()
-    print("Total run         took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0)))
+    print(("Total run         took %.1f ms (%.2f s walltime)" % (1000. * (tc1 - tc0), (tw1 - tw0))))
