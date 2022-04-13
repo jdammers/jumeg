@@ -4,8 +4,8 @@
 ----------------------------------------------------------------------
  author     : Eberhard Eich
  email      : e.eich@fz-juelich.de
- last update: 05.04.2022
- version    : 1.17
+ last update: 07.04.2022
+ version    : 1.18
 
 ----------------------------------------------------------------------
  Based on following publications:
@@ -17,7 +17,7 @@ Plenum Press, New York, 1989
 
 ----------------------------------------------------------------------
 
-  s'_i(t) = s_i(t) - sum(w_ij*r_j(t), j=1, nref)
+  s'_i(t) = s_i(t) - sum(w_ij*r_j(t), j=1,nref)
  where
   s_i  are the   signal  traces, i=1,nsig
   r_j  are the reference traces, j=1,nref after DC removal
@@ -47,6 +47,7 @@ jumeg_noise_reducer.noise_reducer(fname_raw)
 #   190103/EE/ fixed infosig-arg for _is_good()
 #   190208/EE/ prep. f. transition to Python3
 #   190502/EE/ Python3-version
+#   220407/EE/ fixed rawsig-arg for _is_good()
 #
 # License: BSD (3-clause)
 # cf. https://www.johndcook.com/blog/2019/01/09/projecting-unicode-to-ascii/
@@ -585,7 +586,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
         # and truncate it as appropriate.
         tct = time.perf_counter()
         twt = time.time()
-        # The following reject and infosig entries are only
+        # The following reject and rawsig.info entries are only
         # used in _is_good-calls.
         # _is_good() from mne-0.9.git-py2.7.egg/mne/epochs.py seems to
         # ignore ref-channels (not covered by dict) and checks individual
@@ -595,12 +596,9 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                       eeg=40e-6,  # uV (EEG channels)
                       eog=250e-6)  # uV (EOG channels)
 
-        infosig = copy.deepcopy(raw.info)
-        infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-        # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
-        infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-        infosig['nchan'] = len(sigpick)
-        idx_by_typesig = channel_indices_by_type(infosig)
+        rawsig = raw.copy()
+        rawsig.pick(sigpick)
+        idx_by_typesig = channel_indices_by_type(rawsig.info)
 
         # Read data in chunks:
         tstep = 0.2
@@ -623,7 +621,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 raw_segmentref, times = raw[refpick, first:last]
 
             if not exclude_artifacts or \
-                    _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
+                    _is_good(raw_segmentsig, rawsig.info['ch_names'], idx_by_typesig, reject, flat=None,
                              ignore_chs=raw.info['bads']):
                 sigmean += raw_segmentsig.sum(axis=1)
                 refmean += raw_segmentref.sum(axis=1)
@@ -769,7 +767,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
                 raw_segmentsig, times = raw[sigpick, first:last]
                 # Artifacts found here will probably differ from pre-noisered artifacts!
                 if not exclude_artifacts or \
-                        _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
+                        _is_good(raw_segmentsig, rawsig.info['ch_names'], idx_by_typesig, reject,
                                  flat=None, ignore_chs=raw.info['bads']):
                     sigmean += raw_segmentsig.sum(axis=1)
                     sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
@@ -826,7 +824,6 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 #
 ##################################################
 def test_noise_reducer():
-
     data_path = os.environ['SUBJECTS_DIR']
     subject = os.environ['SUBJECT']
 
@@ -924,7 +921,7 @@ def test_noise_reducer():
     # and truncate it as appropriate.
     tct = time.perf_counter()
     twt = time.time()
-    # The following reject and info{sig,ref} entries are only
+    # The following reject and raw{sig,ref}.info entries are only
     # used in _is_good-calls.
     # _is_good() from mne-0.9.git-py2.7.egg/mne/epochs.py seems to
     # ignore ref-channels (not covered by dict) and checks individual
@@ -934,18 +931,14 @@ def test_noise_reducer():
                   eeg=40e-6,  # uV (EEG channels)
                   eog=250e-6)  # uV (EOG channels)
 
-    infosig = copy.deepcopy(raw.info)
-    infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-    # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
-    infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-    infosig['nchan'] = len(sigpick)
-    idx_by_typesig = channel_indices_by_type(infosig)
+    rawsig = raw.copy()
+    rawsig.pick(sigpick)
+    idx_by_typesig = channel_indices_by_type(rawsig.info)
 
-    # inforef not good w/ filtering, but anyway useless
-    inforef = copy.deepcopy(raw.info)
-    inforef['chs'] = [raw.info['chs'][k] for k in refpick]
-    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
-    idx_by_typeref = channel_indices_by_type(inforef)
+    # rawref.info not good w/ filtering, but anyway useless
+    rawref = raw.copy()
+    rawref.pick(refpick)
+    idx_by_typeref = channel_indices_by_type(rawref.info)
 
     # Read data in chunks:
     sigmean = 0
@@ -964,12 +957,12 @@ def test_noise_reducer():
         else:
             raw_segmentref, times = raw[refpick, first:last]
         # if True:
-        # if _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
+        # if _is_good(raw_segmentsig, rawsig.info['ch_names'], idx_by_typesig, reject, flat=None,
         #            ignore_chs=raw.info['bads']) and _is_good(raw_segmentref,
-        #              inforef['ch_names'], idx_by_typeref, reject, flat=None,
+        #              rawref.info['ch_names'], idx_by_typeref, reject, flat=None,
         #                ignore_chs=raw.info['bads']):
         if not exclart or \
-                _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
+                _is_good(raw_segmentsig, rawsig.info['ch_names'], idx_by_typesig, reject,
                          flat=None, ignore_chs=raw.info['bads']):
             sigmean += raw_segmentsig.sum(axis=1)
             refmean += raw_segmentref.sum(axis=1)
@@ -1031,18 +1024,14 @@ def test_noise_reducer():
                   eeg=40e-6,  # uV (EEG channels)
                   eog=250e-6)  # uV (EOG channels)
 
-    infosig = copy.deepcopy(raw.info)
-    infosig['chs'] = [raw.info['chs'][k] for k in sigpick]
-    # the below fields are *NOT* (190103) updated automatically when 'chs' is updated
-    infosig['ch_names'] = [raw.info['ch_names'][k] for k in sigpick]
-    infosig['nchan'] = len(sigpick)
-    idx_by_typesig = channel_indices_by_type(infosig)
+    rawsig = raw.copy()
+    rawsig.pick(sigpick)
+    idx_by_typesig = channel_indices_by_type(rawsig.info)
 
-    # inforef not good w/ filtering, but anyway useless
-    inforef = copy.deepcopy(raw.info)
-    inforef['chs'] = [raw.info['chs'][k] for k in refpick]
-    # 'ch_names' and 'nchan' updated automatically when 'chs' is updated
-    idx_by_typeref = channel_indices_by_type(inforef)
+    # rawref.info not good w/ filtering, but anyway useless
+    rawref = raw.copy()
+    rawref.pick(refpick)
+    idx_by_typeref = channel_indices_by_type(rawref.info)
 
     # Read data in chunks:
     smean = np.zeros(nsig)
@@ -1064,12 +1053,12 @@ def test_noise_reducer():
         else:
             raw_segmentref, times = raw[refpick, first:last]
         # if True:
-        # if _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject, flat=None,
+        # if _is_good(raw_segmentsig, rawsig.info['ch_names'], idx_by_typesig, reject, flat=None,
         #            ignore_chs=raw.info['bads']) and _is_good(raw_segmentref,
-        #              inforef['ch_names'], idx_by_typeref, reject, flat=None,
+        #              rawref.info['ch_names'], idx_by_typeref, reject, flat=None,
         #                ignore_chs=raw.info['bads']):
         if not exclart or \
-                _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
+                _is_good(raw_segmentsig, rawsig.info['ch_names'], idx_by_typesig, reject,
                          flat=None, ignore_chs=raw.info['bads']):
             for isl in range(raw_segmentsig.shape[1]):
                 nsl = isl + n_samples + 1
@@ -1176,8 +1165,8 @@ def test_noise_reducer():
         print((">>> largest weight %12.5e" % np.max(np.abs(weights))))
         wlrg = np.where(np.abs(weights) >= 0.99 * np.max(np.abs(weights)))
         for iwlrg in range(len(wlrg[0])):
-            print((">>> weights[%3d,%2d] = %12.5e" % (wlrg[0][iwlrg], wlrg[1][iwlrg],
-                                                      weights[wlrg[0][iwlrg], wlrg[1][iwlrg]])))
+            print((">>> weights[%3d,%2d] = %12.5e" % \
+                   (wlrg[0][iwlrg], wlrg[1][iwlrg], weights[wlrg[0][iwlrg], wlrg[1][iwlrg]])))
 
     if nref < 5:
         print("weights-entries for first sigchans:")
@@ -1223,7 +1212,7 @@ def test_noise_reducer():
             raw_segmentsig, times = raw[sigpick, first:last]
             # Artifacts found here will probably differ from pre-noisered artifacts!
             if not exclart or \
-                    _is_good(raw_segmentsig, infosig['ch_names'], idx_by_typesig, reject,
+                    _is_good(raw_segmentsig, rawsig.info['ch_names'], idx_by_typesig, reject,
                              flat=None, ignore_chs=raw.info['bads']):
                 sigmean += raw_segmentsig.sum(axis=1)
                 sscovdata += (raw_segmentsig * raw_segmentsig).sum(axis=1)
