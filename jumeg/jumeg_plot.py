@@ -90,6 +90,7 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
 def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
                                         meg_clean=None, show=False,
                                         proj=False, verbose=False,
+                                        reject_by_annotation=False,
                                         name_ecg='ECG 001', name_eog='EOG 002'):
     '''
     Creates a performance image of the data before
@@ -152,8 +153,8 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         if i == 0:
             baseline = (None, None)
             event_id = event_id_ecg
-            idx_event, _, _ = find_ecg_events(meg_raw, event_id,
-                                              ch_name=name_ecg,
+            idx_event, _, _ = find_ecg_events(meg_raw, event_id, ch_name=name_ecg,
+                                              reject_by_annotation=reject_by_annotation,
                                               verbose=verbose)
             idx_ref_chan = meg_raw.ch_names.index(name_ecg)
             tmin = tmin_ecg
@@ -166,6 +167,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
             baseline = (None, None)
             event_id = event_id_eog
             idx_event = find_eog_events(meg_raw, event_id, ch_name=name_eog,
+                                        reject_by_annotation=reject_by_annotation,
                                         verbose=verbose)
             idx_ref_chan = meg_raw.ch_names.index(name_eog)
             tmin = tmin_eog
