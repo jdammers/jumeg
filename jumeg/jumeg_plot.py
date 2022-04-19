@@ -241,7 +241,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
         plt.show()
 
     # save image
-    plt.savefig(fnout_fig + '.png', format='png')
+    plt.savefig(fnout_fig, format='png')
     plt.close('performance image')
     plt.ion()
 
