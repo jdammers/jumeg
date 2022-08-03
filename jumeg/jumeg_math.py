@@ -25,9 +25,9 @@ def rescale(data_arr, minval, maxval):
 #
 ##################################################
 def calc_rms(data, average=None, rmsmean=None):
-    ''' Calculate the rms value of the signal.
+    """ Calculate the rms value of the signal.
         Ported from Dr. J. Dammers IDL code.
-    '''
+    """
     # check input
     sz      = np.shape(data)
     nchan   = np.size(sz)
@@ -89,9 +89,9 @@ def calc_tkeo(signal):
 #
 #######################################################
 def calc_performance(evoked_raw, evoked_clean):
-    ''' Gives a measure of the performance of the artifact reduction.
+    """ Gives a measure of the performance of the artifact reduction.
         Percentage value returned as output.
-    '''
+    """
     from jumeg import jumeg_math as jmath
 
     diff = evoked_raw.data - evoked_clean.data
@@ -136,7 +136,7 @@ def calc_frequency_correlation(evoked_raw, evoked_clean):
 #
 ##################################################
 def calc_sliding_window(fmin, fmax, fstep):
-    '''
+    """
     Calculate 50% overlapping frequency windows
     input:
     fmin    : start frequency
@@ -157,7 +157,7 @@ def calc_sliding_window(fmin, fmax, fstep):
        [28, 36],
        [32, 40]])
 
-    '''
+    """
     if fmin > 0:
        return np.array([ np.arange(fmin,fmax+1,fstep/2),np.arange(fmin + fstep,fmax+ fstep+fmin,fstep/2) ]).T
     else:

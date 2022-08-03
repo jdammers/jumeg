@@ -35,7 +35,7 @@ prefix_ctps = ',ctpsbr-'        # e.g.: "...,ica,ctps-trigger.npy"
 #################################################################
 def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 
-    ''' Applies the MNE butterworth filter to a list of raw files. '''
+    """ Applies the MNE butterworth filter to a list of raw files. """
 
     filter_type = 'butter'
     filt_method = 'fft'
@@ -67,8 +67,7 @@ def apply_filter(fname_raw, flow=1, fhigh=45, order=4, njobs=4):
 def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
                   tmin=-0.2, tmax=0.4, baseline=(None, 0), proj=False,
                   save_plot=True, show_plot=False):
-
-    ''' Performs averaging to a list of raw files. '''
+    """ Performs averaging to a list of raw files. """
 
     # Trigger or Response ?
     if name_stim == 'STI 014':      # trigger
@@ -141,8 +140,7 @@ def apply_average(filenames, name_stim='STI 014', event_id=None, postfix=None,
 def apply_ica(fname_filtered, n_components=0.99, decim=None,
               reject={'mag': 5e-12}, ica_method='fastica',
               flow=None, fhigh=None, verbose=True):
-
-    ''' Applies ICA to a list of (filtered) raw files. '''
+    """ Applies ICA to a list of (filtered) raw files. """
 
     from mne.preprocessing import ICA
 
@@ -204,8 +202,7 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
                        flow_eog=1, fhigh_eog=10, threshold=0.3,
                        unfiltered=False, notch_filter=True, notch_freq=50,
                        notch_width=None):
-
-    ''' Performs artifact rejection based on ICA to a list of (ICA) files. '''
+    """ Performs artifact rejection based on ICA to a list of (ICA) files. """
 
     fnlist = get_files_from_list(fname_ica)
 
@@ -305,9 +302,9 @@ def apply_ica_cleaning(fname_ica, n_pca_components=None,
 def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
                    name_eog_hor='EOG 001', name_eog_ver='EOG 002',
                    score_func='pearsonr', thresh=0.3):
-    '''
+    """
     Find Independent Components related to ocular artefacts
-    '''
+    """
 
     # Note: when using the following:
     #   - the filter settings are different
@@ -382,9 +379,9 @@ def get_ics_ocular(meg_raw, ica, flow=1, fhigh=10,
 def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
                     name_ecg='ECG 001', use_CTPS=True, proj=False,
                     score_func='pearsonr', thresh=0.3):
-    '''
+    """
     Identify components with cardiac artefacts
-    '''
+    """
 
     from mne.preprocessing import find_ecg_events
     event_id_ecg = 999
@@ -438,9 +435,9 @@ def get_ics_cardiac(meg_raw, ica, flow=10, fhigh=20, tmin=-0.3, tmax=0.3,
 #
 #######################################################
 def calc_performance(evoked_raw, evoked_clean):
-    ''' Gives a measure of the performance of the artifact reduction.
+    """ Gives a measure of the performance of the artifact reduction.
         Percentage value returned as output.
-    '''
+    """
     from jumeg import jumeg_math as jmath
 
     diff = evoked_raw.data - evoked_clean.data
@@ -486,8 +483,7 @@ def calc_frequency_correlation(evoked_raw, evoked_clean):
 def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
                tmin=-0.2, tmax=0.4, name_stim='STI 014', event_id=None,
                baseline=(None, 0), proj=False):
-
-    ''' Applies CTPS to a list of ICA files. '''
+    """ Applies CTPS to a list of ICA files. """
 
     from jumeg.filter import jumeg_filter
 
@@ -610,8 +606,7 @@ def apply_ctps(fname_ica, freqs=[(1, 4), (4, 8), (8, 12), (12, 16), (16, 20)],
 #######################################################
 def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
                           mode='shuffle', save=True, n_jobs=4):
-
-    '''
+    """
     Perform CTPS surrogate tests to estimate the significance level
     for CTPS anaysis (a proper pK value ist estimated).
 
@@ -637,7 +632,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
     ------
     info string array containing the statistical values about the surrogate analysis
 
-    '''
+    """
     import os, time
     from .jumeg_utils import make_surrogates_ctps, get_stats_surrogates_ctps
 
@@ -741,8 +736,7 @@ def apply_ctps_surrogates(fname_ctps, fnout, nrepeat=1000,
 #
 #######################################################
 def apply_ctps_select_ic(fname_ctps, threshold=0.1):
-
-    ''' Select ICs based on CTPS analysis. '''
+    """ Select ICs based on CTPS analysis. """
 
     fnlist = get_files_from_list(fname_ctps)
 
@@ -819,13 +813,12 @@ def apply_ctps_select_ic(fname_ctps, threshold=0.1):
 #######################################################
 def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
                                     conditions=['trigger'], event_id=1, include=None):
-
-    ''' Performs ICA recomposition with selected brain response components to a list of (ICA) files.
+    """ Performs ICA recomposition with selected brain response components to a list of (ICA) files.
         fname_clean_raw: raw data after ECG and EOG rejection.
         n_pca_commonents: ICA's recomposition parameter.
         conditions: the event kind to recompose the raw data, it can be 'trigger',
                     'response' or include both conditions.
-    '''
+    """
 
     fnlist = get_files_from_list(fname_clean_raw)
 
@@ -879,8 +872,7 @@ def apply_ica_select_brain_response(fname_clean_raw, n_pca_components=None,
 #######################################################
 def apply_create_noise_covariance(fname_empty_room, require_filter=False,
                                   require_noise_reducer=False, verbose=None):
-
-    '''
+    """
     Creates the noise covariance matrix from an empty room file.
 
     Parameters
@@ -901,7 +893,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
         If not None, override default verbose level
         (see mne.verbose).
         default: verbose=None
-    '''
+    """
 
     # -------------------------------------------
     # import necessary modules
@@ -953,7 +945,7 @@ def apply_create_noise_covariance(fname_empty_room, require_filter=False,
 
 
 def apply_empty_room_projections(raw, raw_empty_room):
-    '''
+    """
     Calculates empty room projections from empty room data and applies it to raw.
     Note: Make sure the empty room data is also filtered. This may affect the projections.
 
@@ -968,7 +960,7 @@ def apply_empty_room_projections(raw, raw_empty_room):
         Raw file with projections applied.
     empty_room_proj: projections
         Empty room projection vectors.
-    '''
+    """
     # Add checks to make sure its empty room.
     # Check for events in ECG, EOG, STI.
     print('Empty room projections calculated for %s.'%(raw_empty_room))

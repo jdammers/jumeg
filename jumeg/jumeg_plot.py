@@ -1,6 +1,6 @@
-'''
+"""
 Plotting functions for jumeg.
-'''
+"""
 import os
 import numpy as np
 import mne
@@ -17,9 +17,7 @@ from .jumeg_math import (calc_performance,
 def plot_powerspectrum(fname, raw=None, picks=None, dir_plots='plots',
                        tmin=None, tmax=None, fmin=None, fmax=None, n_fft=4096,
                        area_mode='range', color=(0, 0, 1), **kwargs):
-        '''
 
-        '''
         from distutils.dir_util import mkpath
 
         if raw is None:
@@ -55,8 +53,7 @@ def plot_powerspectrum(fname, raw=None, picks=None, dir_plots='plots',
 
 
 def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
-
-    ''' Plot Signal average from a list of averaged files. '''
+    """ Plot Signal average from a list of averaged files. """
 
     fname = get_files_from_list(filenames)
 
@@ -92,10 +89,10 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
                                         proj=False, verbose=False,
                                         reject_by_annotation=False,
                                         name_ecg='ECG 001', name_eog='EOG 002'):
-    '''
+    """
     Creates a performance image of the data before
     and after the cleaning process.
-    '''
+    """
 
     from mne.preprocessing import find_ecg_events, find_eog_events
     from jumeg import jumeg_math as jmath
@@ -251,8 +248,7 @@ def plot_performance_artifact_rejection(meg_raw, ica, fnout_fig,
 def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
                                  tmin=-0.2, tmax=0.5, stim_name=None,
                                  proj=False, show=False):
-
-    '''
+    """
     Function showing performance of signal with brain responses from
     selected components only. Plots the evoked (avg) signal of original
     data and brain responses only data along with difference between them.
@@ -260,7 +256,7 @@ def plot_compare_brain_responses(fname_orig, fname_new, event_id=1,
     fname_orig, fname_new: str
     stim_ch: str (default STI 014)
     show: bool (default False)
-    '''
+    """
 
     plt.ioff()
     if show:
@@ -520,11 +516,11 @@ def draw_matrix(mat, th1=None, th2=None, clim=None, cmap=None):
 
 
 def plot_intersection_matrix(mylabels):
-    '''
+    """
     Plots matrix showing intersections/ overlaps between labels
     in the same hemisphere, all the labels are unique
     this means that no labels reduction is possible.
-    '''
+    """
 
     import itertools
 
@@ -542,10 +538,10 @@ def plot_intersection_matrix(mylabels):
 
 
 def plot_matrix_with_values(mat, cmap='seismic', colorbar=True):
-    '''
+    """
     Show a matrix with text inside showing the values of the matrix
     may be useful for showing connectivity maps.
-    '''
+    """
 
     fig, ax = plt.subplots()
     im = ax.matshow(mat, cmap=cmap)
@@ -568,7 +564,7 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
                            stim_tmin=-0.2, stim_tmax=0.8,
                            resp_tmin=-0.6, resp_tmax=0.4,
                            eve_output='onset', overview_fname=None):
-    '''
+    """
     Plot an overview of the artefact rejection with ECG, EOG vertical and EOG
     horizontal channels. Shows the data before and after cleaning along with a
     difference plot.
@@ -588,7 +584,7 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
 
     Notes: Time is always shown in milliseconds (1e3) and the MEG data from mag
         is always in femtoTesla (fT) (1e15)
-    '''
+    """
 
     from mne.preprocessing import create_ecg_epochs, create_eog_epochs
 
@@ -780,7 +776,7 @@ def plot_artefact_overview(raw_orig, raw_clean, stim_event_ids=[1],
 
 
 def plot_phases_polar(phases):
-    '''
+    """
     Plot phase values on a polar projection with radius 1.
 
     Parameters
@@ -795,7 +791,7 @@ def plot_phases_polar(phases):
     kappa = np.pi / 2  # circular dispersion
     von = np.random.vonmises(mu, kappa, size=100)
     plot_phases_polar(von)
-    '''
+    """
 
     # plot circular projection
     ax = plt.subplot(111, polar=True)

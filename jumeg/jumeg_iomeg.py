@@ -1,22 +1,22 @@
 #!/usr/bin/env python
-'''
+"""
 Functions to perform IO operations.
 
 Authors: Praveen Sripad  <praveen.sripad@rwth-aachen.de>
          Frank Boers     <f.boers@fz-juelich.de>
 
 License: BSD 3 clause
-'''
+"""
 
 
 def wrapper_brain_vision2fiff(header_fname):
-    '''
+    """
     Python wrapper for mne_brin_vision2fiff binary.
     Please make sure the MNE_BIN_PATH environment variable is set correctly.
     Parameters
     ----------
     header_fname: Header file name. The .eeg data file is automatically found.
-    '''
+    """
 
     import os
 
@@ -45,7 +45,7 @@ def wrapper_brain_vision2fiff(header_fname):
 
 def jumeg_resample(l_sfreq, h_sfreq, samp_length,
                    events=None):
-    '''
+    """
     Downsampling function to resample signal of samp_length from
     higher sampling frequency to lower sampling frequency.
 
@@ -61,7 +61,7 @@ def jumeg_resample(l_sfreq, h_sfreq, samp_length,
     Returns
     -------
     resamp_list: List of time points of downsampled signal.
-    '''
+    """
     import numpy as np
 
     eps_limit = round((0.90 / h_sfreq), 3)
@@ -88,7 +88,7 @@ def jumeg_resample(l_sfreq, h_sfreq, samp_length,
 
 def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200,
                  filter_order=2, njobs=-1):
-    '''
+    """
     Functions combines meg data with eeg data. This is done by: -
         1. Adjust MEG and EEG data length.
         2. Resampling EEG data channels to match sampling
@@ -107,7 +107,7 @@ def combine_meeg(raw_fname, eeg_fname, flow=0.6, fhigh=200,
     Warning: Please make sure that the filter settings provided
              are stable for both MEG and EEG data.
     Only channels ECG 001, EOG 001, EOG 002 and STI 014 are written.
-    '''
+    """
 
     import numpy as np
     import mne

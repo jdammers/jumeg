@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-'''Python wrapper scripts to setup SUBJECTS_DIR for source localization,
+"""Python wrapper scripts to setup SUBJECTS_DIR for source localization,
    compute geometry surfaces and compute the forward operator.
-'''
+"""
 
 import os
 import sys
@@ -16,7 +16,7 @@ from subprocess import call
 
 
 def make_subject_dirs(subjects_list, freesurfer_home=None):
-    ''' Python wrapper for mksubjdirs.'''
+    """ Python wrapper for mksubjdirs."""
 
     freesurfer_home = check_env_variables(freesurfer_home, key='FREESURFER_HOME')
     freesurfer_bin = os.path.join(freesurfer_home, 'bin', '')
@@ -33,14 +33,14 @@ def make_subject_dirs(subjects_list, freesurfer_home=None):
 def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
                        freesurfer_home=None, mri_convert=False, recon_all=False,
                        mri_extn='mri/orig/001.mgz', nii_extn='_1x1x1mm.nii'):
-    '''Function to perform complete surface reconstruction and related operations.
+    """Function to perform complete surface reconstruction and related operations.
        The following commands are executed:
        mksubjdirs, mri_convert, recon-all, mne_setup_mri, mne.setup_source_space,
        mne_watershed_bem, mne_make_scalp_surfaces.
 
        mri_convert is used to convert files from NIFTI (nii) to Freesurfer (mgz) format.
        It is best to run the conversion via command line beforehand.
-    '''
+    """
     from mne.commands import mne_make_scalp_surfaces
 
     subjects_dir = check_env_variables(subjects_dir, key='SUBJECTS_DIR')
@@ -137,7 +137,7 @@ def setup_mri_surfaces(subjects_list, subjects_dir=None, mne_root=None,
 
 
 def setup_forward_model(subjects_list, subjects_dir=None, mne_root=None):
-    '''Setup forward model.
+    """Setup forward model.
 
     Setting up of the forward model - computes Boundary Element Model geometry files.
     Creates the -bem.fif, .surf and -bem-sol.fif files
@@ -148,7 +148,7 @@ def setup_forward_model(subjects_list, subjects_dir=None, mne_root=None):
     The corresponding command to use would be:
     mne_setup_forward_model --subject subj --ico 4 --surf --outershift 10 --scalpshift 10
     mne_setup_forward_model --subject subj --ico 4 --surf --innershift 10
-    '''
+    """
 
     subjects_dir = check_env_variables(subjects_dir, key='SUBJECTS_DIR')
     mne_root = check_env_variables(mne_root, key='MNE_ROOT')
@@ -171,7 +171,7 @@ def setup_forward_model(subjects_list, subjects_dir=None, mne_root=None):
 
 def compute_forward_solution(fname_raw, subjects_dir=None, spacing='ico4',
                              mindist=5, eeg=False, overwrite=False):
-    '''Performs forward solution computation using mne_do_foward_solution
+    """Performs forward solution computation using mne_do_foward_solution
        (uses MNE-C binaries).
 
        Requires bem sol files, and raw meas file)
@@ -184,7 +184,7 @@ def compute_forward_solution(fname_raw, subjects_dir=None, spacing='ico4',
     Returns
     -------
     None. Forward operator -fwd.fif will be saved.
-    '''
+    """
 
     from mne import do_forward_solution
 

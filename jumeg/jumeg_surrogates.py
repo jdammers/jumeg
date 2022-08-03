@@ -1,4 +1,4 @@
-'''
+"""
 Tools to generate surrogates.
 
 # Heavily inspired from the pyunicorn package:
@@ -10,7 +10,7 @@ Tools to generate surrogates.
 # The pyunicorn package, Chaos 25, 113101 (2015), doi:10.1063/1.4934554,
 # Preprint: arxiv.org:1507.01571 [physics.data-an].
 
-'''
+"""
 
 # Authors: Praveen Sripad (pravsripad@gmail.com)
 # License: BSD (3-clause)
@@ -24,9 +24,9 @@ from mne.source_estimate import SourceEstimate
 
 
 def check_power_spectrum(orig, surr):
-    '''
+    """
     Check if power spectrum is conserved up to small numerical deviations.
-    '''
+    """
     assert orig.shape == surr.shape, 'Shape mismatch.'
     # the first sample point and the Nyquist central point of the FFT always
     # differ between the real and the surrogate data
@@ -40,15 +40,15 @@ def check_power_spectrum(orig, surr):
 
 
 class Surrogates(object):
-    '''
+    """
     The Surrogates class.
-    '''
+    """
     def __init__(self, inst, picks=None):
-        '''
+        """
         Initialize the Surrogates object.
 
         #TODO Update documentation.
-        '''
+        """
         from mne.io.pick import _pick_data_channels
 
         # flags
@@ -86,7 +86,7 @@ class Surrogates(object):
             self.instance = inst.copy()
 
     def clear_cache(self):
-        '''Clean up cache.'''
+        """Clean up cache."""
         try:
             del self._original_data_fft
         except AttributeError:
@@ -112,7 +112,7 @@ class Surrogates(object):
 
     @staticmethod
     def shuffle_time_points(original_data, seed=None):
-        '''
+        """
         Shuffling the time points of any data array. The probabiity density
         of the data samples is preserved.
         WARNING: This function simply reorders the time points and does not
@@ -125,7 +125,7 @@ class Surrogates(object):
         Returns
         -------
         shuffled_data : shuffled (time points only) trials
-        '''
+        """
         rng = check_random_state(None)  # for parallel processing => re-initialized
 
         shuffled_data = original_data.copy()
@@ -138,7 +138,7 @@ class Surrogates(object):
     @staticmethod
     def shift_data(original_data, min_shift=0,
                    max_shift=None, seed=None):
-        '''
+        """
         Shifting the time points of any data array.
         The probability density of the data samples are preserved.
         WARNING: This function simply shifts the time points and does not
@@ -152,7 +152,7 @@ class Surrogates(object):
         Returns
         -------
         shifted_data : Time shifted trials.
-        '''
+        """
         rng = check_random_state(None)  # for parallel processing => re-initialized
 
         shifted_data = original_data.copy()
@@ -174,7 +174,7 @@ class Surrogates(object):
 
     @staticmethod
     def randomize_phase_scot(original_data, seed=None):
-        '''
+        """
         Phase randomization. This function randomizes the input array's spectral
         phase along the given dimension.
 
@@ -194,7 +194,7 @@ class Surrogates(object):
 
         Function obtained from scot (https://github.com/scot-dev/scot)
         Used to randomize the phase values of a signal.
-        '''
+        """
         data_freq = np.fft.rfft(np.asarray(original_data))
         rng = check_random_state(seed)  # preferably always None
         # include random phases between 0 and 2 * pi
@@ -205,11 +205,11 @@ class Surrogates(object):
         return np.real(np.fft.irfft(data_freq, original_data.shape[-1]))
 
     def randomize_phase(self, original_data, seed=None):
-        '''
+        """
         Surrogates by applying Fourier transform, randomizing the phases and
         computing the inverse fourier transform. The power spectrum of the data
         and the surrogates will be preserved.
-        '''
+        """
         #  Calculate FFT of original_data time series
         #  The FFT of the original_data data has to be calculated only once,
         #  so it is stored in self._original_data_fft.
@@ -240,9 +240,9 @@ class Surrogates(object):
 
     def _generate_surrogates(self, mode='randomize_phase', n_surr=1,
                              seed=None, min_shift=0, max_shift=None):
-        '''
+        """
         Private function to compute surrogates and return a generator.
-        '''
+        """
         # do this n_surr times
         for i in range(n_surr):
             print('computing surrogate %d ' % i)
@@ -286,7 +286,7 @@ class Surrogates(object):
     def compute_surrogates(self, mode='randomize_phase', n_surr=1,
                            seed=None, min_shift=0, max_shift=None,
                            return_generator=False):
-        '''
+        """
         Compute the surrogates using given method and return the surrogate
         instance.
 
@@ -295,7 +295,7 @@ class Surrogates(object):
         mode: the type of surrogates to compute. One of shuffle, time_shift,
               or phase randomize
         min_shift and max_shift are required only when doing time_shift
-        '''
+        """
         my_surrogate = self._generate_surrogates(mode=mode, n_surr=n_surr,
                                                  seed=seed, min_shift=min_shift,
                                                  max_shift=max_shift)

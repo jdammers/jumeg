@@ -1,13 +1,13 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Contains function to identify bad channels based on time and freq domain
 methods.
 
 authors: Niko Kampel, n.kampel@gmail.com
          Praveen Sripad, pravsripad@gmail.com
-'''
+"""
 
 import numpy as np
 import mne
@@ -18,7 +18,7 @@ from .jumeg_utils import check_read_raw
 
 def compute_euclidean_stats(epoch, sensitivity, mode='adaptive',
                             fraction=None):
-    '''
+    """
     Compute the Euclidean matrix along with necessary statistics for data
     from one single epoch.
 
@@ -47,7 +47,7 @@ def compute_euclidean_stats(epoch, sensitivity, mode='adaptive',
     If mode is nearest, returns the nearest neighbour.
 
     #TODO doc needs to be updated
-    '''
+    """
     if fraction:
         number_of_samples = int(epoch.shape[1]*fraction)
         sorted_peaks = np.sort(np.square(np.diff(epoch)), axis=1)
@@ -75,7 +75,7 @@ def compute_euclidean_stats(epoch, sensitivity, mode='adaptive',
 
 def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
                   min_samples=1, n_jobs = None):
-    '''
+    """
     Perform clustering on difference in signals from one sample to another.
     This method helps us to identify flux jumps and largespikes in the data.
 
@@ -100,7 +100,7 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
     zlimit_afp: float
         A scaling value used for plotting.
 
-    '''
+    """
     # epochs = epochs.get_data()
     afps, afp_suspects, afp_percentiles, afp_nearest_neighbour = [], [], [], []
 
@@ -137,7 +137,7 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
 
 
 def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1, n_jobs = None):
-    '''
+    """
     Perform clustering on PSDs to identify bad channels.
 
     Parameters
@@ -159,7 +159,7 @@ def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1, n_jobs = None):
         The nearest neighbour identified before DBSCAN clustering.
     zlimit_psd: float
         A scaling value used for plotting.
-    '''
+    """
     psds, freqs = mne.time_frequency.psd_welch(epochs, fmin=2., fmax=200.,
                                                picks=picks)
     psd_percentiles, psd_nearest_neighbour, psd_suspects = [], [], []
@@ -182,11 +182,11 @@ def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1, n_jobs = None):
 
 
 def make_minimap(picks, afp_suspects, psd_suspects):
-    '''
+    """
     Make a minimap with bad channels identifed using time domain and freq
     domain methods.
     Helper function for plotting the values
-    '''
+    """
     # values inside minimap are a workaround for colormap 'brg'
     minimap = np.zeros((len(picks), len(afp_suspects)))  # 0 if channel is regular
 
@@ -221,12 +221,12 @@ def make_minimap(picks, afp_suspects, psd_suspects):
 
 
 def validation_marker(minimap, picks_bad, picks_fp):
-    '''
+    """
     Helper function for plotting bad channels identified using time domain (afp)
     or freq domain (psd) methods.
     Using the validation marker helps compare already marked bad channels with
     automatically identified ones for testing purposes.
-    '''
+    """
     x_miss, y_miss, x_hit, y_hit, x_fp, y_fp = [], [], [], [], [], []
     for e in range(0, minimap.shape[1]):
         for c in range(0, len(minimap)):
@@ -246,12 +246,12 @@ def plot_autosuggest_summary(afp_nearest_neighbour, psd_nearest_neighbour,
                              picks, afp_suspects, psd_suspects, picks_bad,
                              picks_fp, zlimit_afp, zlimit_psd,
                              epoch_length, marks, validation=False):
-    '''
+    """
     Plot showing the automated identification of bad channels using time and
     frequency domain methods.
 
     #TODO Improve documentation.
-    '''
+    """
     import matplotlib.pyplot as plt
     plt.style.use(['seaborn-deep'])
 
@@ -331,7 +331,7 @@ def plot_autosuggest_summary(afp_nearest_neighbour, psd_nearest_neighbour,
 def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
                  fraction=0.001, epoch_length=None, summary_plot=False,
                  show_raw=False, n_jobs = 1, validation=True):
-    '''
+    """
     Function to suggest bad channels. The bad channels are identified using
     time domain methods looking for sharp jumps in short windows of data and
     in the frequency domain looking for channels with unusual power
@@ -361,7 +361,7 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
         List of suggested bad channels.
     raw: mne.io.Raw
         Raw object updated with suggested bad channels.
-    '''
+    """
 
     raw = check_read_raw(raw, preload=False)
     picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,

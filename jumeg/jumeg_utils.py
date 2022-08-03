@@ -1,6 +1,6 @@
-'''
+"""
 Utilities module for jumeg
-'''
+"""
 
 # Authors: Jurgen Dammers (j.dammers@fz-juelich.de)
 #          Praveen Sripad (pravsripad@gmail.com)
@@ -20,7 +20,7 @@ from mne.utils import logger
 
 
 def get_files_from_list(fin):
-    ''' Return string of file or files as iterables lists '''
+    """ Return string of file or files as iterables lists """
     if isinstance(fin, list):
         fout = fin
     else:
@@ -37,16 +37,16 @@ def retcode_error(command, subj):
 
 
 def get_jumeg_path():
-    '''Return the path where jumeg is installed.'''
+    """Return the path where jumeg is installed."""
     return os.path.abspath(os.path.dirname(__file__))
 
 
 def check_jumeg_standards(fnames):
-    '''
+    """
     Checks for file name extension and provides information on type of file
 
     fnames: str or list
-    '''
+    """
 
     if isinstance(fnames, list):
         fname_list = fnames
@@ -122,7 +122,7 @@ def get_sytem_type(info):
 
 
 def mark_bads_batch(subject_list, subjects_dir=None):
-    '''
+    """
     Opens all raw files ending with -raw.fif in subjects
     directory for marking bads.
 
@@ -136,7 +136,7 @@ def mark_bads_batch(subject_list, subjects_dir=None):
     ------
     The raw files with bads marked are saved with _bcc (for bad channels checked)
     added to the file name.
-    '''
+    """
     for subj in subject_list:
         print("For subject %s" % (subj))
         if not subjects_dir: subjects_dir = os.environ['SUBJECTS_DIR']
@@ -155,11 +155,11 @@ def mark_bads_batch(subject_list, subjects_dir=None):
 
 
 def rescale_artifact_to_signal(signal, artifact):
-    '''
+    """
     Rescales artifact (ECG/EOG) to signal for plotting purposes
     For evoked data, pass signal.data.mean(axis=0) and
     artifact.data.mean(axis=0).
-    '''
+    """
     b = (signal.max() - signal.min()) / (artifact.max() + artifact.min())
     a = signal.max()
     rescaled_artifact = artifact * b + a
@@ -167,7 +167,7 @@ def rescale_artifact_to_signal(signal, artifact):
 
 
 def check_read_raw(raw_name, preload=True):
-    '''
+    """
     Checks if raw_name provided is a filename of raw object.
     If it is a raw object, simply return, else read and return raw object.
 
@@ -175,7 +175,7 @@ def check_read_raw(raw_name, preload=True):
         Raw object or filename to be read.
     preload: bool
         All data loaded to memory. Defaults to True.
-    '''
+    """
     if isinstance(raw_name, (mne.io.Raw, mne.io.bti.bti.RawBTi)):
         return raw_name
     elif isinstance(raw_name, str):
@@ -186,18 +186,18 @@ def check_read_raw(raw_name, preload=True):
 
 
 def peak_counter(signal):
-    ''' Simple peak counter using scipy argrelmax function. '''
+    """ Simple peak counter using scipy argrelmax function. """
     from scipy.signal import argrelmax
     return argrelmax(signal)[0].shape
 
 
 def update_description(raw, comment):
-    ''' Updates the raw description with the comment provided. '''
+    """ Updates the raw description with the comment provided. """
     raw.info['description'] = str(raw.info['description']) + ' ; ' + comment
 
 
 def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True, return_chop=False):
-    '''
+    """
     This function extracts specified duration of raw data
     and writes it into a fif file.
     Five mins of data will be extracted by default.
@@ -211,7 +211,7 @@ def chop_raw_data(raw, start_time=60.0, stop_time=360.0, save=True, return_chop=
     save: bool, If True the raw file is written to disk. (default: True)
     return_chop: bool, Return the chopped raw object. (default: False)
 
-    '''
+    """
     if isinstance(raw, str):
         print('Raw file name provided, loading raw object...')
         raw = mne.io.Raw(raw, preload=True)
@@ -389,7 +389,7 @@ def get_peak_ecg(ecg, sfreq=1017.25, flow=10, fhigh=20,
 #######################################################
 def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
                          verbose=None):
-    ''' calculate surrogates from an array of (phase) trials
+    """ calculate surrogates from an array of (phase) trials
         by means of shuffling the phase
 
     Parameters
@@ -409,7 +409,7 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
     -------
     pt : shuffled phase trials
 
-    '''
+    """
 
     from joblib import Parallel, delayed
     from mne.parallel import parallel_func
@@ -452,7 +452,7 @@ def make_surrogates_ctps(phase_array, nrepeat=1000, mode='shuffle', n_jobs=4,
 #
 #######################################################
 def get_stats_surrogates_ctps(pksarr, verbose=False):
-    ''' calculates some stats on the CTPS pk values obtain from surrogate tests.
+    """ calculates some stats on the CTPS pk values obtain from surrogate tests.
 
     Parameters
     ----------
@@ -466,7 +466,7 @@ def get_stats_surrogates_ctps(pksarr, verbose=False):
     -------
     stats : stats info stored in a python dictionary
 
-    '''
+    """
 
     import os
     import numpy as np
@@ -760,7 +760,7 @@ def triu_indices(n, k=0):
 
 def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False,
                      raw_fname='output.fif'):
-    '''
+    """
     A function that can be used to quickly create a raw object with the
     data provided.
 
@@ -793,7 +793,7 @@ def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False,
     ch_names = ['MISC {:03d}'.format(i + 1) for i in range(len(ch_types))]
     raw = create_dummy_raw(data, ch_types, sfreq, ch_names)
 
-    '''
+    """
     info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
     raw = mne.io.RawArray(data, info)
     if save:
@@ -803,7 +803,7 @@ def create_dummy_raw(data, ch_types, sfreq, ch_names, save=False,
 
 def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False,
                         epochs_fname='output-epo.fif'):
-    '''
+    """
     A function that can be used to quickly create an Epochs object with the
     data provided.
 
@@ -840,7 +840,7 @@ def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False,
     events = np.array((np.arange(0, 1000, 100), np.zeros((10)), np.array([42] * 10))).T
     epochs = create_dummy_epochs(data, events, ch_types, sfreq, ch_names)
 
-    '''
+    """
     info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
     epochs = mne.EpochsArray(data, info, events)
     if save:
@@ -849,14 +849,14 @@ def create_dummy_epochs(data, events, ch_types, sfreq, ch_names, save=False,
 
 
 def put_pngs_into_html(regexp, html_out='output.html'):
-    '''Lists all files in directory that matches pattern regexp
+    """Lists all files in directory that matches pattern regexp
        and puts it into an html file with filename included.
 
     regexp : str
         String of dir path like '/home/kalka/*.png'
     html_out : str
         Output file name
-    '''
+    """
     import glob
     files =  glob.glob(regexp)
     html_string = ''
@@ -873,7 +873,7 @@ def put_pngs_into_html(regexp, html_out='output.html'):
 
 
 def crop_images(regexp, crop_dims=(150, 150, 1450, 700), extension='crop'):
-    '''Lists all files in directory that matches pattern regexp
+    """Lists all files in directory that matches pattern regexp
        and puts it into an html file with filename included.
 
     regexp : str
@@ -883,7 +883,7 @@ def crop_images(regexp, crop_dims=(150, 150, 1450, 700), extension='crop'):
         (left, upper, right, lower) pixel values
     extension : str
         Output file name will be appended with extension.
-    '''
+    """
     import glob
     try:
         from PIL import Image
@@ -901,7 +901,7 @@ def crop_images(regexp, crop_dims=(150, 150, 1450, 700), extension='crop'):
 
 
 def check_env_variables(env_variable=None, key=None):
-    '''Check the most important environment variables as
+    """Check the most important environment variables as
        (keys) - SUBJECTS_DIR, MNE_ROOT and FREESURFER_HOME.
 
     e.g. subjects_dir = check_env_variable(subjects_dir, key='SUBJECTS_DIR')
@@ -909,7 +909,7 @@ def check_env_variables(env_variable=None, key=None):
     If not, then the environment variable pertaining to the key is returned. If both
     do not exist, then exits with an error message.
     Also checks if the directory exists.
-    '''
+    """
 
     if key is None or not isinstance(key, str):
         print ('Please provide the key. Currently '
@@ -934,7 +934,7 @@ def check_env_variables(env_variable=None, key=None):
 
 def convert_annot2labels(annot_fname, subject='fsaverage', subjects_dir=None,
                          freesurfer_home=None):
-    '''
+    """
     Convert an annotation to labels for a single subject for both hemispheres.
     The labels are written to '$SUBJECTS_DIR/$SUBJECT/label'.
 
@@ -954,7 +954,7 @@ def convert_annot2labels(annot_fname, subject='fsaverage', subjects_dir=None,
     Reference
     ---------
     https://surfer.nmr.mgh.harvard.edu/fswiki/mri_annotation2label
-    '''
+    """
     from subprocess import call
     subjects_dir = check_env_variables(subjects_dir, key='SUBJECTS_DIR')
     freesurfer_home = check_env_variables(freesurfer_home, key='FREESURFER_HOME')
@@ -971,7 +971,7 @@ def convert_annot2labels(annot_fname, subject='fsaverage', subjects_dir=None,
 
 def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
                         subjects_dir=None, freesurfer_home=None):
-    '''
+    """
     Python wrapper for Freesurfer mri_label2label function.
     Converts all labels in annot_fname from source subject to target subject
     given the subjects directory. Both hemispheres are considered.
@@ -996,7 +996,7 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
 
     Reference:
     https://surfer.nmr.mgh.harvard.edu/fswiki/mri_label2label
-    '''
+    """
     if subjects_list:
         subjects_list = get_files_from_list(subjects_list)
     else:
@@ -1031,7 +1031,7 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
 
 
 def get_cmap(N, cmap='hot'):
-    '''Returns a function that maps each index in 0, 1, ... N-1 to a distinct
+    """Returns a function that maps each index in 0, 1, ... N-1 to a distinct
     RGB color. Can be used to generate N unique colors from a colormap.
 
     Usage:
@@ -1040,7 +1040,7 @@ def get_cmap(N, cmap='hot'):
         # print the RGB value of each of the colours
         print my_colours(i)
 
-    '''
+    """
     import matplotlib.cm as cmx
     import matplotlib.colors as colors
 
@@ -1054,7 +1054,7 @@ def get_cmap(N, cmap='hot'):
 
 
 def subtract_overlapping_vertices(label, labels):
-    '''
+    """
     Check if label overlaps with others in labels
     and return a new label without the overlapping vertices.
     The output label contains the original label vertices minus
@@ -1062,7 +1062,7 @@ def subtract_overlapping_vertices(label, labels):
 
     label : instance of mne.Label
     labels : list of labels
-    '''
+    """
     for lab in labels:
         if (lab.hemi == label.hemi and
            np.intersect1d(lab.vertices, label.vertices).size > 0 and
@@ -1077,7 +1077,7 @@ def subtract_overlapping_vertices(label, labels):
 
 
 def apply_percentile_threshold(in_data, percentile):
-    ''' Return ndarray with all values below percentile set to 0. '''
+    """ Return ndarray with all values below percentile set to 0. """
     in_data[in_data <= np.percentile(in_data, percentile)] = 0.
     return in_data
 
@@ -1342,9 +1342,9 @@ def rescale_data(data, times, baseline, mode='mean', copy=True, verbose=None):
 
 
 def rank_estimation(data):
-    '''
+    """
     Function to estimate the rank of the data using different rank estimators.
-    '''
+    """
     from jumeg.decompose.ica import whitening
     from jumeg.decompose.dimension_selection import mibs, gap, aic, mdl, bic
 
@@ -1367,7 +1367,7 @@ def rank_estimation(data):
 
 
 def clip_eog2(eog, clip_to_value):
-    '''
+    """
     Function to clip the EOG channel to a certain clip_to_value.
     All peaks higher than given value are pruned.
     Note: this may be used when peak detection for artefact removal fails due to
@@ -1382,7 +1382,7 @@ def clip_eog2(eog, clip_to_value):
     # saw the raw file
     raw.save(raw.info['filename'].split('-raw.fif')[0] + ',eogclip-raw.fif',
              overwrite=False)
-    '''
+    """
     if clip_to_value < 0:
         eog_clipped = np.clip(eog, clip_to_value, np.max(eog))
     elif clip_to_value > 0:
@@ -1444,9 +1444,9 @@ def loadingBar(count, total, task_part=None):
 
 
 def find_files(rootdir='.', pattern='*', recursive=False):
-    '''
+    """
     Search and get list of filenames matching pattern.
-    '''
+    """
 
     files = []
     for root, dirnames, filenames in os.walk(rootdir):
@@ -1461,9 +1461,9 @@ def find_files(rootdir='.', pattern='*', recursive=False):
 
 
 def find_directories(rootdir='.', pattern='*'):
-    '''
+    """
     Search and get a list of directories matching pattern.
-    '''
+    """
 
     path = rootdir
     if path[-1] != '/':
