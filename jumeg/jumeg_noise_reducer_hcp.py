@@ -333,7 +333,7 @@ def noise_reducer(fname_raw, raw=None, signals=[], noiseref=[], detrending=None,
 
     Parameters
     ----------
-    fname_raw : (list of) rawfile name(s)
+    fname_raw : None | (list of) rawfile name(s)
     raw : mne Raw objects
         Allows passing of (preloaded) raw object in addition to fname_raw
         or solely (use fname_raw=None in this case).

@@ -24,7 +24,7 @@ def wrapper_brain_vision2fiff(header_fname):
         print("MNE_BIN_PATH not correctly set.")
         return
 
-    if header_fname is "" or not header_fname.endswith('vhdr'):
+    if header_fname == "" or not header_fname.endswith('vhdr'):
         print("Usage: .py <header_file>")
         print("Please use the original binary to pass other arguments.")
         return

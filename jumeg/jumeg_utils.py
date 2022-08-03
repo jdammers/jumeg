@@ -1009,7 +1009,7 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
     # obtain the names of labels in parcellation
     from mne.label import read_labels_from_annot
     labels = read_labels_from_annot(srcsubject, parc=annot_fname)
-    lnames = [l.name.rsplit('-')[0] if l.hemi is 'lh' else '' for l in labels]
+    lnames = [l.name.rsplit('-')[0] if l.hemi == 'lh' else '' for l in labels]
     lnames = [_f for _f in lnames if _f]  # remove empty strings
 
     # convert the labels from source subject to target subject
@@ -1364,6 +1364,7 @@ def rank_estimation(data):
     rank7 = np.where(pca.explained_variance_ratio_.cumsum() <= 0.99)[0].size
     rank_all = np.array([rank1, rank2, rank3, rank4, rank5, rank6, rank7])
     return (rank_all, np.median(rank_all))
+
 
 def clip_eog2(eog, clip_to_value):
     '''
