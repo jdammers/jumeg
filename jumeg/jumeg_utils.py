@@ -176,7 +176,7 @@ def check_read_raw(raw_name, preload=True):
     preload: bool
         All data loaded to memory. Defaults to True.
     """
-    if isinstance(raw_name, (mne.io.Raw, mne.io.bti.bti.RawBTi)):
+    if isinstance(raw_name, (mne.io.Raw, mne.io.bti.bti.RawBTi, mne.io.ctf.ctf.RawCTF)):
         return raw_name
     elif isinstance(raw_name, str):
         raw = mne.io.Raw(raw_name, preload=preload)
