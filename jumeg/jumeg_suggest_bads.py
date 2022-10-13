@@ -365,7 +365,7 @@ def suggest_bads(raw, sensitivity_steps=97, sensitivity_psd=95,
 
     raw = check_read_raw(raw, preload=False)
     picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
-                           ecg=False, exclude=[])
+                           ecg=False, ref_meg=False, exclude=[])
     # if epoch length is not provided, chose a suitable length
     if not epoch_length:
         epoch_length = int(raw.n_times/(raw.info['sfreq'] * 20))
