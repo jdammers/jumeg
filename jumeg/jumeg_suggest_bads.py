@@ -136,7 +136,7 @@ def clustered_afp(epochs, sensitivity_steps, fraction, mode='adaptive',
     return afps, afp_suspects, afp_nearest_neighbour, zlimit_afp
 
 
-def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1, n_jobs = None):
+def clustered_psd(epochs, sensitivity_psd, picks=None, min_samples=1, n_jobs=None):
     """
     Perform clustering on PSDs to identify bad channels.
 
@@ -145,7 +145,7 @@ def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1, n_jobs = None):
     sensitivity_psd: float in range of [0,100]
         Percentile to compute threshold used for clustering PSDs,
         which must be between 0 and 100 inclusive.
-    picks: list
+    picks: None | list
         Picks of the channels to be used.
     min_samples: int
         Number of samples to be chosen for DBSCAN clustering.
