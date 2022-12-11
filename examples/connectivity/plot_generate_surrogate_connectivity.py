@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+'''
+Surrogate computation
+'''
 
 import numpy as np
 import matplotlib.pyplot as pl

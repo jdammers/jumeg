@@ -28,13 +28,13 @@ subject = 'fsaverage'
 
 # Plot brain in 3D with PySurfer if available
 brain = new_stc.plot(subject, hemi='lh',
-                     subjects_dir=subjects_dir, backend='mayavi')
+                     subjects_dir=subjects_dir, backend='pyvistaqt')
 brain.show_view('lateral')
 
 # use peak getter to move vizualization to the time point of the peak
 vertno_max, time_idx = new_stc.get_peak(hemi='lh', time_as_index=True)
 
-brain.set_data_time_index(time_idx)
+brain.set_time_point(time_idx)
 
 # draw marker at maximum peaking vertex
 brain.add_foci(vertno_max, coords_as_verts=True, hemi='lh', color='blue',
