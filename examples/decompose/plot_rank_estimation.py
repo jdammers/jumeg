@@ -3,6 +3,7 @@
 Example script to estimate the rank of the given data array.
 '''
 
+import os.path as op
 import mne
 import numpy as np
 from mne.datasets import sample
@@ -16,9 +17,9 @@ from jumeg.decompose.dimension_selection import mibs, bic, gap, aic, mdl, explVa
 # filenames and path
 # ----------------------------------------
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
-fname_raw = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
-fname_event = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
+subjects_dir = op.join(data_path, 'subjects')
+fname_raw = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw.fif')
+fname_event = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw-eve.fif')
 
 # ----------------------------------------
 # read data and crop to speedup the process

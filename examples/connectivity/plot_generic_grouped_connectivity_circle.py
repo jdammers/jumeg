@@ -5,20 +5,21 @@
 Author: Praveen Sripad <pravsripad@gmail.com>
 
 """
+import os.path as op
 from jumeg.connectivity import (plot_generic_grouped_circle,
                                 plot_fica_grouped_circle,
                                 generate_random_connectivity_matrix)
 from jumeg import get_jumeg_path
 
 # load the yaml grouping of Freesurfer labels
-yaml_fname = get_jumeg_path() + '/data/rsn_desikan_aparc_cortex_grouping.yaml'
+yaml_fname = op.join(get_jumeg_path(), 'data/rsn_desikan_aparc_cortex_grouping.yaml')
 
 # make a random matrix
 con = generate_random_connectivity_matrix(size=(34, 34), symmetric=True)
 
 # load the label names in the original order
 # this should be same order as the connectivity matrix
-labels_fname = get_jumeg_path() + '/data/fica_names.txt'
+labels_fname = op.join(get_jumeg_path(), 'data/fica_names.txt')
 with open(labels_fname, 'r') as f:
     orig_labels = [line.rstrip('\n') for line in f]
 

@@ -59,7 +59,7 @@ model = load_model(model_name)
 # read example data file
 # ----------------------------------------------
 path_data = '/data/megraid22/Common/DeepLearning/cau_data_validation/'
-raw_fname = path_data + '109925_CAU01A_100715_0842_2_c,rfDC,t1,n_bcc,nr-raw.fif'
+raw_fname = op.join(path_data, '109925_CAU01A_100715_0842_2_c,rfDC,t1,n_bcc,nr-raw.fif')
 raw = mne.io.Raw(raw_fname, preload=True)
 picks = mne.pick_types(raw.info, meg=True, eeg=False, eog=False,
                        stim=False, exclude='bads')

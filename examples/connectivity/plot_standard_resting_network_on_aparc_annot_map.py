@@ -28,7 +28,7 @@ from jumeg.connectivity import plot_grouped_connectivity_circle
 
 data_path = sample.data_path()
 subject = 'sample'
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 parc_fname = 'standard_garces_2016'
 csv_fname = op.join(get_jumeg_path(), 'data', 'standard_rsns.csv')
 

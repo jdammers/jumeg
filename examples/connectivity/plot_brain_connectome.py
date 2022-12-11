@@ -7,6 +7,7 @@ Nilearn (https://nilearn.github.io/).
 Author: Praveen Sripad <pravsripad@gmail.com>
 """
 
+import os.path as op
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -18,7 +19,7 @@ from nilearn import plotting
 from jumeg.connectivity import generate_random_connectivity_matrix
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 subject = 'fsaverage'
 
 aparc = mne.read_labels_from_annot(subject, subjects_dir=subjects_dir,

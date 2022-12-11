@@ -6,11 +6,12 @@ Find distances between vertices and plot vertices in a small region.
 mainly using functions from within mne.label.grow_labels
 '''
 
+import os.path as op
 import mne
 from mne.datasets import sample
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 
 tris, vert, dist = {}, {}, {}
 hemi = 0  # lh

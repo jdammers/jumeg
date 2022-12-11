@@ -6,14 +6,15 @@ Example exposing the plot_labelled_group_connectivity_circle function.
 Author: Praveen Sripad <pravsripad@gmail.com>
 
 """
+import os.path as op
 from jumeg.connectivity import (plot_labelled_group_connectivity_circle,
                                 generate_random_connectivity_matrix)
 from jumeg import get_jumeg_path
 import yaml
 
 # load the yaml grouping of Freesurfer labels
-yaml_fname = get_jumeg_path() + '/data/rsn_desikan_aparc_cortex_grouping.yaml'
-label_names_yaml_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
+yaml_fname = op.join(get_jumeg_path(), 'data/rsn_desikan_aparc_cortex_grouping.yaml')
+label_names_yaml_fname = op.join(get_jumeg_path(), 'data/desikan_label_names.yaml')
 
 with open(label_names_yaml_fname, 'r') as f:
     label_names = yaml.safe_load(f)['label_names']

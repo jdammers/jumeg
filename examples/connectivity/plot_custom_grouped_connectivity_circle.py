@@ -8,6 +8,7 @@ Author: Praveen Sripad <pravsripad@gmail.com>
         Christian Kiefer <ch.kiefer@fz-juelich.de>
 """
 
+import os.path as op
 import matplotlib.pyplot as plt
 from jumeg import get_jumeg_path
 from jumeg.connectivity import (plot_grouped_connectivity_circle,
@@ -15,8 +16,8 @@ from jumeg.connectivity import (plot_grouped_connectivity_circle,
 
 import yaml
 
-labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
-replacer_dict_fname = get_jumeg_path() + '/data/replacer_dictionaries.yaml'
+labels_fname = op.join(get_jumeg_path(), 'data/desikan_label_names.yaml')
+replacer_dict_fname = op.join(get_jumeg_path(), 'data/replacer_dictionaries.yaml')
 
 with open(labels_fname, 'r') as f:
     label_names = yaml.safe_load(f)['label_names']

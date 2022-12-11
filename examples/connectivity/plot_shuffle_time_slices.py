@@ -8,15 +8,17 @@ Shuffle channels' data in the time domain and plot.
 #
 # License: BSD (3-clause)
 
-import numpy as np
 import os.path as op
+import numpy as np
+
 import mne
+from mne.datasets import sample
+
 from jumeg.jumeg_utils import (get_files_from_list, time_shuffle_slices,
                                channel_indices_from_list)
 
-from mne.datasets import sample
 data_path = sample.data_path()
-raw_fname = str(data_path + '/MEG/sample/sample_audvis_raw.fif')
+raw_fname = op.join(data_path, 'MEG/sample/sample_audvis_raw.fif')
 
 # shuffle all MEG channels that begin with number 11
 shflchanlist = ['MEG 11..']

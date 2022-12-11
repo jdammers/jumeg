@@ -5,6 +5,7 @@
 # Authors : pravsripad@gmail.com
 #           daniel.vandevelden@yahoo.de
 
+import os.path as op
 import sys
 import numpy as np
 import matplotlib.pyplot as pl

@@ -3,22 +3,23 @@
 Surrogate computation
 '''
 
+import os.path as op
 import numpy as np
 import matplotlib.pyplot as pl
 
 from jumeg.jumeg_surrogates import Surrogates
 
-from mne.connectivity import spectral_connectivity
+from mne_connectivity import spectral_connectivity_epochs
 from mne.datasets import sample
 from mne.minimum_norm import read_inverse_operator, apply_inverse_epochs
 import mne
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 
-fname_raw = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
-fname_event = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
-fname_inv = data_path + '/MEG/sample/sample_audvis-meg-oct-6-meg-inv.fif'
+fname_inv = op.join(data_path, 'MEG/sample/sample_audvis-meg-oct-6-meg-inv.fif')
+fname_raw = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw.fif')
+fname_event = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw-eve.fif')
 
 raw = mne.io.read_raw_fif(fname_raw)
 events = mne.read_events(fname_event)
@@ -62,7 +63,7 @@ con_methods = ['coh', 'plv', 'wpli']
 n_rois = len(labels)
 full_surr_con = np.zeros((3, n_rois, n_rois, 1, n_surr))
 
-real_con, freqs, times, n_epochs, n_tapers = spectral_connectivity(
+real_con, freqs, times, n_epochs, n_tapers = spectral_connectivity_epochs(
     label_ts, method=con_methods, mode='fourier', sfreq=sfreq,
     fmin=fmin, fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=4)
 
@@ -74,7 +75,7 @@ surr_label_ts = surr_ts.compute_surrogates(n_surr=n_surr,
                                            return_generator=True)
 
 for ind_surr, surr in enumerate(surr_label_ts):
-    con, freqs, times, n_epochs, n_tapers = spectral_connectivity(
+    con, freqs, times, n_epochs, n_tapers = spectral_connectivity_epochs(
         surr, method=con_methods, mode='fourier', sfreq=sfreq,
         fmin=fmin, fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=4)
 

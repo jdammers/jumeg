@@ -5,6 +5,7 @@ It works when 'fsaverage' subject is used, but does not when any other subjects 
 """
 
 import os
+import os.path as op
 import mne
 from mne.datasets import sample
 from surfer import utils
@@ -12,12 +13,12 @@ from surfer import utils
 print(__doc__)
 
 data_path = sample.data_path()
-fname_inv = data_path + '/MEG/sample/sample_audvis-meg-oct-6-meg-inv.fif'
-fname_evoked = data_path + '/MEG/sample/sample_audvis-ave.fif'
-subjects_dir = data_path + '/subjects'
+fname_inv = op.join(data_path, 'MEG/sample/sample_audvis-meg-oct-6-meg-inv.fif')
+fname_evoked = op.join(data_path, 'MEG/sample/sample_audvis-ave.fif')
+subjects_dir = op.join(data_path, 'subjects')
 os.environ['SUBJECTS_DIR'] = subjects_dir
 
-stc_fname = data_path + '/MEG/sample/sample_audvis-meg'
+stc_fname = op.join(data_path, 'MEG/sample/sample_audvis-meg')
 stc = mne.read_source_estimate(stc_fname)
 
 morph = mne.compute_source_morph(stc, subject_from='sample',
