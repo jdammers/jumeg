@@ -7,6 +7,8 @@ Filtering in jumeg.
 Comparison of the various filters available for use in mne/jumeg.
 '''
 
+import os.path as op
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -16,7 +18,7 @@ from mne.datasets import sample
 from jumeg.filter import jumeg_filter
 
 data_path = sample.data_path()
-raw_fname = data_path + '/MEG/sample/sample_audvis_raw.fif'
+raw_fname = op.join(data_path, 'MEG/sample/sample_audvis_raw.fif')
 
 # load the raw data
 raw = mne.io.Raw(raw_fname, preload=True)
@@ -24,7 +26,7 @@ picks = mne.pick_types(raw.info, meg='mag', exclude='bads')
 print('Sampling frequency is %f' % raw.info['sfreq'])
 
 # plot the raw psd
-fig = raw.plot_psd(tmin=0.0, tmax=160., fmin=0, fmax=np.inf, n_fft=None,
+fig = raw.plot_psd(tmin=0.0, tmax=160., fmin=0, fmax=np.inf,
                    picks=picks, ax=None, color='black', area_mode='std',
                    area_alpha=0.33, n_overlap=0, dB=True, average=True,
                    show=False, n_jobs=4, line_alpha=None,

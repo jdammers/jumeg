@@ -4,16 +4,17 @@ Example script to plot a given data distribution compared with a standard
 Gaussian distribution.
 '''
 
+import os.path as op
 import matplotlib.pyplot as plt
 import mne
 from mne.datasets import sample
 from jumeg.jumeg_plot import plot_histo_fit_gaussian
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 
-fname_raw = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
-fname_event = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
+fname_raw = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw.fif')
+fname_event = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw-eve.fif')
 
 raw = mne.io.read_raw_fif(fname_raw)
 events = mne.read_events(fname_event)

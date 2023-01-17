@@ -2,8 +2,11 @@
 
 """Script to plot label distances on circle and connectome plots."""
 
+import os.path as op
+
 import mne
 from mne.datasets import sample
+from mne_connectivity import degree
 
 from jumeg import get_jumeg_path
 from jumeg.connectivity import (get_label_distances,
@@ -13,18 +16,18 @@ import yaml
 from nilearn import plotting
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 subject = 'sample'
 
 parc = 'aparc'
 
-yaml_cortex_fname = get_jumeg_path() + '/data/desikan_%s_cortex_based_grouping.yaml' % parc
+yaml_cortex_fname = op.join(get_jumeg_path(), 'data/desikan_%s_cortex_based_grouping.yaml' % parc)
 
-labels_fname = get_jumeg_path() + '/data/desikan_label_names.yaml'
+labels_fname = op.join(get_jumeg_path(), 'data/desikan_label_names.yaml')
 with open(labels_fname, 'r') as f:
     label_names = yaml.safe_load(f)['label_names']
 
-replacer_dict_fname = get_jumeg_path() + '/data/replacer_dictionaries.yaml'
+replacer_dict_fname = op.join(get_jumeg_path(), 'data/replacer_dictionaries.yaml')
 with open(replacer_dict_fname, 'r') as f:
     replacer_dict = yaml.safe_load(f)['replacer_dict_%s' % parc]
 
@@ -49,7 +52,7 @@ plot_grouped_connectivity_circle(yaml_cortex_fname, con, label_names,
                                  colormap='Reds')
 
 # compute the degree
-degs = mne.connectivity.degree(con, threshold_prop=1)
+degs = degree(con, threshold_prop=1)
 
 # show the label ROIs and short range connections using nilearn glass brain
 fig = plotting.plot_connectome(con, coords, node_size=degs,

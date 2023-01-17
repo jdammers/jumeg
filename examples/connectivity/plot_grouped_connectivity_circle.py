@@ -9,6 +9,7 @@ Author: Praveen Sripad <pravsripad@gmail.com>
         Christian Kiefer <ch.kiefer@fz-juelich.de>
 
 """
+import os.path as op
 from jumeg import get_jumeg_path
 from jumeg.connectivity import (plot_grouped_connectivity_circle,
                                 generate_random_connectivity_matrix)

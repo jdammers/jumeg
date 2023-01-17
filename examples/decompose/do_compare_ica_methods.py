@@ -5,6 +5,7 @@ Compare pca_mean_ and pre_whitener_ for:
 mne & filtered data, jumeg & filtered data, jumeg & unfiltered data
 """
 
+import os.path as op
 import mne
 from mne.preprocessing.ica import ICA as ICA_mne
 from jumeg.decompose.ica_replace_mean_std import ICA as ICA_jumeg
@@ -17,9 +18,9 @@ fhigh = 45.
 reject = {'mag': 5e-12}
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 
-fname_raw = data_path + '/MEG/sample/sample_audvis_raw.fif'
+fname_raw = op.join(data_path, 'MEG/sample/sample_audvis_raw.fif')
 
 raw = mne.io.Raw(fname_raw, preload=True)
 raw_filt = raw.copy().filter(flow, fhigh, method='fir', n_jobs=2, fir_design='firwin', phase='zero')

@@ -4,6 +4,7 @@ Jumeg MFT example.
 ====================
 """
 
+import os.path as op
 import numpy as np
 import mne
 from mne.datasets import sample
@@ -11,12 +12,12 @@ from jumeg.mft import (apply_mft, jumeg_mft_plot)
 
 data_path = sample.data_path()
 subject = 'sample'
-subjects_dir = data_path + '/subjects'
-fwdname = data_path + '/MEG/sample/sample_audvis-meg-vol-7-fwd.fif'
-evoname = data_path + '/MEG/sample/sample_audvis-ave.fif'
+subjects_dir = op.join(data_path, 'subjects')
+fwdname = op.join(data_path, 'MEG/sample/sample_audvis-meg-vol-7-fwd.fif')
+evoname = op.join(data_path, 'MEG/sample/sample_audvis-ave.fif')
 evocondition = 'Left Auditory'
-rawname = data_path + '/MEG/sample/sample_audvis_10s-raw.fif'
-t1_fname = subjects_dir + '/' + 'sample/mri/T1.mgz'
+rawname = op.join(data_path, 'MEG/sample/sample_audvis_10s-raw.fif')
+t1_fname = op.join(subjects_dir, 'sample/mri/T1.mgz')
 
 # Set up pick list: MEG - bad channels
 want_meg = 'mag'

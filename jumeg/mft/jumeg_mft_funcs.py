@@ -331,7 +331,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
              list of stcs in case of iterlist!=None
     """
     twgbl0 = time.time()
-    tcgbl0 = time.clock()
+    tcgbl0 = time.perf_clock()
 
     # Use mftparm as local copy of mftpar to keep that ro.
     mftparm = {}
@@ -460,7 +460,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     if cdmlabels is not None:
         if verbosity >= 1:
             print("########## Searching for label(s) in source space(s)...")
-        tc0 = time.clock()
+        tc0 = time.perf_clock()
         tw0 = time.time()
 
     numcdmlabels = 0
@@ -517,7 +517,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
                 warnings.warn('NO vertex found for label \'%s\' in any source space' % label.name)
         if verbosity >= 1:
             print("--> sums: %5d verts %4d used" % (labvrtstot, labvrtsusd))
-            tc1 = time.clock()
+            tc1 = time.perf_clock()
             tw1 = time.time()
             print("prep. labels took %.3f" % (1000. * (tc1 - tc0)), "ms (%.3f s walltime)" % (tw1 - tw0))
 
@@ -656,7 +656,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     if verbosity >= 1:
         print("########## Calculate initial prob-dist:")
     tw0 = time.time()
-    tc0 = time.clock()
+    tc0 = time.perf_clock()
     if mftparm['prbfct'] == 'gauss':
         wtmp = np.zeros(n_loc // 3)
         for icnt in range(prbcnt.shape[0]):
@@ -687,7 +687,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     if verbosity >= 2 and mftparm['prbfct'] == 'random':
         wvecnorm = np.sum(np.sqrt(np.sum(np.reshape(wdist3, (wdist3.shape[0] / 3, 3)) ** 2, axis=1)))
         print("sum(||wvec(i)||) = ", wvecnorm)
-    tc1 = time.clock()
+    tc1 = time.perf_clock()
     tw1 = time.time()
     if isinstance(mftparm['prblog'], str):
         wdisttabfile = open(mftparm['prblog'], mode='w')
@@ -708,7 +708,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     if verbosity >= 1:
         print("########## Calculate P-matrix, incl. weights:")
     tw0 = time.time()
-    tc0 = time.clock()
+    tc0 = time.perf_clock()
     # Split the leadfield matrix into submatrices for speed
     # cf. https://www.johndcook.com/blog/2018/08/31/how-fast-can-you-multiply-matrices/
     #     https://en.wikipedia.org/wiki/Matrix_multiplication_algorithm
@@ -726,7 +726,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
     # print "allclose(pmat0,pmat1) = ", np.allclose(pmat0,pmat1)
     # # Avoiding sqrt is expensive!
     # # pmat0 = np.einsum('ik, k, jk -> ij', lfmag, wdist3, lfmag)
-    tc1 = time.clock()
+    tc1 = time.perf_clock()
     tw1 = time.time()
     tptotwall += (tw1 - tw0)
     tptotcpu += (tc1 - tc0)
@@ -889,7 +889,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
                 stcdatalist[iil][iloc, islice] = cdvnorms[iloc]
 
         tlw0 = time.time()
-        tlc0 = time.clock()
+        tlc0 = time.perf_clock()
         for mftiter in range(mftparm['iter']):
             # MFT iteration loop:
 
@@ -906,7 +906,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
 
             # Calculate new P-matrix, incl. weights:
             tw0 = time.time()
-            tc0 = time.clock()
+            tc0 = time.perf_clock()
             rtwd3 = np.repeat(np.sqrt(pscalefct * wdist), 3)
             ilastseg = n_loc - n_loc % ibsize
             lfw = lfmag[:, ilastseg:] * rtwd3[ilastseg:]
@@ -917,7 +917,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
             # lfw = lfmag*np.repeat(np.sqrt(pscalefct*wdist),3)
             # pmat = np.einsum('ik,jk->ij',lfw,lfw)
 
-            tc1 = time.clock()
+            tc1 = time.perf_clock()
             tw1 = time.time()
             tptotwall += (tw1 - tw0)
             tptotcpu += (tc1 - tc0)
@@ -951,7 +951,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
                 for iloc in range(n_loc // 3):
                     stcdatalist[iil][iloc, islice] = cdvnorms[iloc]
 
-        tc1 = time.clock()
+        tc1 = time.perf_clock()
         tw1 = time.time()
         tltotwall += (tw1 - tlw0)
         tltotcpu += (tc1 - tlc0)
@@ -964,7 +964,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         qualdata['rdmerr'][islice] = rdmerr
         qualdata['mag'][islice] = mag
 
-        tc0 = time.clock()
+        tc0 = time.perf_clock()
         tw0 = time.time()
         if 'cdmall' in qualdata:
             (qualdata['cdmall'][islice], qualdata['jlgall'][islice]) = scan_cdm_w_cut(cdv, cdmcut)
@@ -980,7 +980,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
                     scan_cdm_w_cut(cdvecs[labinds[ilab], :], cdmcut)
                 qualdata['jtotlabels'][ilab, islice] = \
                     calc_jtotal_w_cut(cdvecs[labinds[ilab], :], cdmcut)
-        tc1 = time.clock()
+        tc1 = time.perf_clock()
         tw1 = time.time()
         tpcdmwall += (tw1 - tw0)
         tpcdmcpu += (tc1 - tc0)
@@ -1065,7 +1065,7 @@ def apply_mft(fwdspec, dataspec, evocondition=None, meg='mag',
         print("##### done.")
 
     twgbl1 = time.time()
-    tcgbl1 = time.clock()
+    tcgbl1 = time.perf_clock()
     if verbosity >= 1:
         print("calc(lf*w*lf.T) took   total  %9.2f s CPU-time (%9.2f s walltime)" % (tptotcpu, tptotwall))
         print("calc(lf*w*lf.T) took per call %9.2fms CPU-time (%9.2fms walltime)" % \

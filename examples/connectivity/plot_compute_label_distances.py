@@ -6,13 +6,14 @@ masses for a given subject.
 Author: Praveen Sripad <pravsripad@gmail.com>
 """
 
+import os.path as op
 from jumeg.connectivity import get_label_distances
 from surfer import Brain
 from nilearn import plotting
 from mne.datasets import sample
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 subject = 'sample'
 parc = 'aparc_sub'
 

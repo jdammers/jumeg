@@ -5,6 +5,7 @@ Example to show surrogate generation on Epochs using the jumeg Surrogates
 module.
 '''
 
+import os.path as op
 import numpy as np
 import matplotlib.pyplot as pl
 from mne.datasets import sample
@@ -13,10 +14,10 @@ import mne
 from jumeg.jumeg_surrogates import Surrogates, check_power_spectrum
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 
-fname_raw = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
-fname_event = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
+fname_raw = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw.fif')
+fname_event = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw-eve.fif')
 
 epochs_testing = False
 

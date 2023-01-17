@@ -6,13 +6,14 @@ Plot grouped connectivity circle with these grouped labels
 for the Destriux atlas.
 """
 
+import os.path as op
 from jumeg import get_jumeg_path
 from jumeg.connectivity import (plot_grouped_connectivity_circle,
                                 generate_random_connectivity_matrix)
 import yaml
 
-grouping_yaml_fname = get_jumeg_path() + '/data/destriux_aparc_cortex_based_grouping.yaml'
-label_names_yaml_fname = get_jumeg_path() + '/data/destriux_label_names.yaml'
+grouping_yaml_fname = op.join(get_jumeg_path(), 'data/destriux_aparc_cortex_based_grouping.yaml')
+label_names_yaml_fname = op.join(get_jumeg_path(), 'data/destriux_label_names.yaml')
 
 with open(label_names_yaml_fname, 'r') as f:
     label_names = yaml.safe_load(f)['label_names']

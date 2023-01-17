@@ -16,14 +16,16 @@ import matplotlib.pyplot as plt
 import mne
 from mne.datasets import sample
 from mne.minimum_norm import apply_inverse_epochs, read_inverse_operator
-from mne.connectivity import spectral_connectivity
-from mne.viz import circular_layout, plot_connectivity_circle
+from mne.viz import circular_layout
+
+from mne_connectivity import spectral_connectivity_epochs
+from mne_connectivity.viz import plot_connectivity_circle
 
 data_path = sample.data_path()
-subjects_dir = data_path + '/subjects'
-fname_inv = data_path + '/MEG/sample/sample_audvis-meg-oct-6-meg-inv.fif'
-fname_raw = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
-fname_event = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
+subjects_dir = op.join(data_path, 'subjects')
+fname_inv = op.join(data_path, 'MEG/sample/sample_audvis-meg-oct-6-meg-inv.fif')
+fname_raw = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw.fif')
+fname_event = op.join(data_path, 'MEG/sample/sample_audvis_filt-0-40_raw-eve.fif')
 
 # Load data
 inverse_operator = read_inverse_operator(fname_inv)
@@ -69,7 +71,7 @@ fmin = 8.
 fmax = 13.
 sfreq = raw.info['sfreq']  # the sampling frequency
 con_methods = ['coh', 'wpli']
-con, freqs, times, n_epochs, n_tapers = spectral_connectivity(
+con, freqs, times, n_epochs, n_tapers = spectral_connectivity_epochs(
     label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=fmin,
     fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=4)
 
