@@ -1,0 +1,40 @@
+name: jumeg
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - ipython
+  - jupyter
+  - matplotlib
+  - mayavi
+  - mkdocs
+  - mkdocs-material
+  - mne
+  - mne-connectivity
+  - mne-features
+  - networkx
+  - nibabel
+  - nilearn
+  - numpydoc
+  - pandas
+  - pandoc  
+  - pyvista
+  - pyyaml
+  - scikit-image
+  - scikit-learn
+  - scipy
+  - seaborn
+  - yaml
+  - sphinx
+  - pip:
+      - sphinx-gallery
+      - sphinx-bootstrap-theme
+      - jupyter-book
+      - pytest
+      - pytest-cov
+      - python-louvain
+      - pysurfer
+      - git+https://github.com/aestrivex/bctpy
+
