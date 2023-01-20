@@ -20,7 +20,6 @@
 *.old
 *.dat
 *.bak
-test_*.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -77,5 +76,10 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+docs/generated/
+docs/auto_examples/
+docs/auto_tutorials/
+docs/modules/generated/
+docs/sphinxext/cachedir
 
 .DS_Store
