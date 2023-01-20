@@ -1,7 +1,7 @@
 """
 Plotting functions for jumeg.
 """
-import os
+import os.path as op
 import numpy as np
 import mne
 
@@ -21,7 +21,7 @@ def plot_powerspectrum(fname, raw=None, picks=None, dir_plots='plots',
         from distutils.dir_util import mkpath
 
         if raw is None:
-            assert os.path.isfile(fname), 'ERROR: file not found: ' + fname
+            assert op.isfile(fname), 'ERROR: file not found: ' + fname
             raw = mne.io.Raw(fname, preload=True)
 
         if picks is None:
@@ -31,11 +31,11 @@ def plot_powerspectrum(fname, raw=None, picks=None, dir_plots='plots',
         if dir_plots is None:
             dir_plots = '.'
         else:
-            dir_plots = os.path.join(os.path.dirname(fname), dir_plots)
+            dir_plots = op.join(op.dirname(fname), dir_plots)
 
-        base_fname = os.path.basename(fname).strip('.fif')
+        base_fname = op.basename(fname).strip('.fif')
 
-        if not os.path.isdir(dir_plots):
+        if not op.isdir(dir_plots):
             mkpath(dir_plots)
 
         file_name = fname.split('/')[-1]
@@ -62,7 +62,7 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
     factor = 1e15
     for fnavg in fname:
         name = fnavg[0:len(fnavg) - 4]
-        basename = os.path.splitext(os.path.basename(name))[0]
+        basename = op.splitext(op.basename(name))[0]
         print(fnavg)
         # mne.read_evokeds provides a list or a single evoked based on condition.
         # here we assume only one evoked is returned (requires further handling)
@@ -78,7 +78,7 @@ def plot_average(filenames, save_plot=True, show_plot=False, dpi=100):
         plt.title(basename)
 
         # save figure
-        fnfig = os.path.splitext(fnavg)[0] + '.png'
+        fnfig = op.splitext(fnavg)[0] + '.png'
         plt.savefig(fnfig, dpi=dpi)
 
     plt.ion()  # switch on (interactive) plot visualisation

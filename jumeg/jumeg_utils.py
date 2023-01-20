@@ -38,7 +38,7 @@ def retcode_error(command, subj):
 
 def get_jumeg_path():
     """Return the path where jumeg is installed."""
-    return os.path.abspath(os.path.dirname(__file__))
+    return op.abspath(op.dirname(__file__))
 
 
 def check_jumeg_standards(fnames):
@@ -925,7 +925,7 @@ def check_env_variables(env_variable=None, key=None):
         print('Please set the %s' % (key))
         sys.exit()
 
-    if not os.path.isdir(env_variable):
+    if not op.isdir(env_variable):
         print('Path %s is not a valid directory. Please check.' % (env_variable))
         sys.exit()
 
@@ -958,8 +958,8 @@ def convert_annot2labels(annot_fname, subject='fsaverage', subjects_dir=None,
     from subprocess import call
     subjects_dir = check_env_variables(subjects_dir, key='SUBJECTS_DIR')
     freesurfer_home = check_env_variables(freesurfer_home, key='FREESURFER_HOME')
-    freesurfer_bin = os.path.join(freesurfer_home, 'bin', '')
-    outdir = os.path.join(subjects_dir, subject, 'label')
+    freesurfer_bin = op.join(freesurfer_home, 'bin', '')
+    outdir = op.join(subjects_dir, subject, 'label')
     print('Convert annotation %s to labels' % (annot_fname))
     for hemi in ['lh', 'rh']:
         retcode = call([freesurfer_bin + '/mri_annotation2label', '--subject', subject, '--hemi', hemi,
@@ -1004,7 +1004,7 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
 
     subjects_dir = check_env_variables(subjects_dir, key='SUBJECTS_DIR')
     freesurfer_home = check_env_variables(freesurfer_home, key='FREESURFER_HOME')
-    freesurfer_bin = os.path.join(freesurfer_home, 'bin', '')
+    freesurfer_bin = op.join(freesurfer_home, 'bin', '')
 
     # obtain the names of labels in parcellation
     from mne.label import read_labels_from_annot
@@ -1019,8 +1019,8 @@ def convert_label2label(annot_fname, subjects_list, srcsubject='fsaverage',
         print('Converting labels from %s to %s' % (srcsubject, subj))
         for label in lnames:
             for hemi in ['lh', 'rh']:
-                srclabel = os.path.join(subjects_dir, srcsubject, 'label', hemi + '.' + label + '.label')
-                trglabel = os.path.join(subjects_dir, subj, 'label', hemi + '.' + label + '.label')
+                srclabel = op.join(subjects_dir, srcsubject, 'label', hemi + '.' + label + '.label')
+                trglabel = op.join(subjects_dir, subj, 'label', hemi + '.' + label + '.label')
                 retcode = call([freesurfer_bin + 'mri_label2label', '--srclabel', srclabel, '--srcsubject', srcsubject,
                     '--trglabel', trglabel, '--trgsubject', subj, '--regmethod', 'surface', '--hemi', hemi])
                 if retcode != 0:
@@ -1220,8 +1220,8 @@ def time_shuffle_slices(fname_raw, shufflechans=None, tmin=None, tmax=None):
         for isl in range(raw._data.shape[1]):
             raw._data[:, isl] = data[:, isl]
 
-        shflname = os.path.join(os.path.dirname(fname),
-                                os.path.basename(fname).split('-')[0]) + ',tperm-raw.fif'
+        shflname = op.join(op.dirname(fname),
+                                op.basename(fname).split('-')[0]) + ',tperm-raw.fif'
         print("Saving '%s'..." % shflname)
         raw.save(shflname, overwrite=True)
     return
@@ -1453,7 +1453,7 @@ def find_files(rootdir='.', pattern='*', recursive=False):
         if not recursive:
             del dirnames[:]
         for filename in fnmatch.filter(filenames, pattern):
-            files.append(os.path.join(root, filename))
+            files.append(op.join(root, filename))
 
     files = sorted(files)
 
@@ -1472,7 +1472,7 @@ def find_directories(rootdir='.', pattern='*'):
     # search for directories in rootdir
     dirlist=[]
     for filename in os.listdir(rootdir):
-        if os.path.isdir(path+filename) == True:
+        if op.isdir(path+filename) == True:
             dirlist.append(filename)
     dirlist = sorted(dirlist)
 
