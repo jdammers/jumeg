@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
 '''
+=============
+Visualise Standard RSNs
+=============
+
 Grow and visualize standard resting state ROIs from literature.
 
 1. Read ROIs of standard regions involved in resting state networks from literature.
@@ -29,7 +33,7 @@ from surfer import Brain
 
 data_path = sample.data_path()
 subject = 'sample'
-subjects_dir = data_path + '/subjects'
+subjects_dir = op.join(data_path, 'subjects')
 parc_fname = 'standard_garces_2016'
 csv_fname = op.join(get_jumeg_path(), 'data', 'standard_rsns.csv')
 
@@ -47,8 +51,10 @@ plotting.plot_connectome(con, coords)
 plotting.show()
 
 # plot the brain surface, foci and labels
+Brain = mne.viz.get_brain_class()
 brain = Brain(subject, hemi='both', surf='white', subjects_dir=subjects_dir)
+
 for mni_coord, mylabel in zip(coords, labels):
     brain.add_foci(mni_coord, coords_as_verts=False, hemi=mylabel.hemi,
-                   color='red', map_surface='white', scale_factor=0.6)
+                   color='red', scale_factor=0.6)
     brain.add_label(mylabel, hemi=mylabel.hemi)

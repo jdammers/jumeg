@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 '''
+====================
+Plot noise reducer
+====================
+
 Script to show the application of noise reducer on jusample data.
 '''
 

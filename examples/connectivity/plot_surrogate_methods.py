@@ -1,5 +1,11 @@
 #!/usr/bin/env python
-'''Plotting vrious methods used to generate surrogates.'''
+'''
+==========
+Plot surrogate methods
+==========
+
+Plotting vrious methods used to generate surrogates.
+'''
 
 import numpy as np
 import mne

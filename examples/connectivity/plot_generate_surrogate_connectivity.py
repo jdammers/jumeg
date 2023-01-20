@@ -7,12 +7,12 @@ import os.path as op
 import numpy as np
 import matplotlib.pyplot as pl
 
-from jumeg.jumeg_surrogates import Surrogates
-
+import mne
 from mne_connectivity import spectral_connectivity_epochs
 from mne.datasets import sample
 from mne.minimum_norm import read_inverse_operator, apply_inverse_epochs
-import mne
+
+from jumeg.jumeg_surrogates import Surrogates
 
 data_path = sample.data_path()
 subjects_dir = op.join(data_path, 'subjects')
@@ -63,9 +63,12 @@ con_methods = ['coh', 'plv', 'wpli']
 n_rois = len(labels)
 full_surr_con = np.zeros((3, n_rois, n_rois, 1, n_surr))
 
-real_con, freqs, times, n_epochs, n_tapers = spectral_connectivity_epochs(
+real_con = spectral_connectivity_epochs(
     label_ts, method=con_methods, mode='fourier', sfreq=sfreq,
-    fmin=fmin, fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=4)
+    fmin=fmin, fmax=fmax, faverage=True, n_jobs=4)
+
+# get the data from SpectralConnectivity object and expand it
+real_con = np.array([c.get_data(output='dense') for c in real_con])
 
 # loop through each of the label_ts from each epoch (i.e. 71)
 # for my_label_ts in label_ts:
@@ -75,10 +78,13 @@ surr_label_ts = surr_ts.compute_surrogates(n_surr=n_surr,
                                            return_generator=True)
 
 for ind_surr, surr in enumerate(surr_label_ts):
-    con, freqs, times, n_epochs, n_tapers = spectral_connectivity_epochs(
+    con = spectral_connectivity_epochs(
         surr, method=con_methods, mode='fourier', sfreq=sfreq,
-        fmin=fmin, fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=4)
+        fmin=fmin, fmax=fmax, faverage=True, n_jobs=4)
 
+    con = np.array([c.get_data(output='dense') for c in con])
+
+    # con now a list of arrays
     # con shape (method, n_signals, n_signals, n_freqs)
     full_surr_con[:, :, :, :, ind_surr] = con
     assert full_surr_con.flatten().max() <= 1., 'Maximum connectivity is above 1.'

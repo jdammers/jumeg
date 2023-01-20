@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 '''
+=============
+Surrogate Connectivity Generation
+=============
+
 Example to show surrogate generation on Epochs using the jumeg Surrogates
 module.
 '''

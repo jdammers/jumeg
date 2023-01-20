@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 '''
+=============
+Plot degree circle
+=============
+
 Plot degree values for a given set of nodes in a simple circle plot.
 '''
 

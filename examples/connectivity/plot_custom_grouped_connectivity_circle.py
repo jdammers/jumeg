@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 """
+=============
+Plot Custom Grouped Circle
+=============
+
 Example how to create a custom label groups and plot grouped connectivity
 circle with these labels.
 

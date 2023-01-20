@@ -1,6 +1,6 @@
 """
 ====================
-Jumeg MFT example.
+Jumeg MFT volume.
 ====================
 """
 

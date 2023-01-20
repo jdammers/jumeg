@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 
-"""Script show how to compute and visualize distance between label center of
+"""
+=============
+Compute Label Distances
+=============
+
+Script show how to compute and visualize distance between label center of
 masses for a given subject.
 
 Author: Praveen Sripad <pravsripad@gmail.com>

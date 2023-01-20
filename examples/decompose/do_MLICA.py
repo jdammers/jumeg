@@ -1,4 +1,8 @@
 """
+==========
+Do MLICA
+==========
+
 Compute ICA object based on filtered and downsampled data.
 Identify ECG and EOG artifacts using the pre-trained DCNN model
 and compare results using correlation & ctps analysis.

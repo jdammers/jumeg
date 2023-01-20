@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 '''
+====================
+Plot suggest bads.
+====================
+
 Example code to use the jumeg suggest bads functionality.
 '''
 

@@ -10,6 +10,8 @@ Resting-State Functional Connectivity,” Brain Connect., vol. 6, no. 6, pp.
 Author: Praveen sripad <pravsripad@gmail.com>
 '''
 
+import os.path as op
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -71,7 +73,7 @@ fmin = 8.
 fmax = 13.
 sfreq = raw.info['sfreq']  # the sampling frequency
 con_methods = ['coh', 'wpli']
-con, freqs, times, n_epochs, n_tapers = spectral_connectivity_epochs(
+con = spectral_connectivity_epochs(
     label_ts, method=con_methods, mode='multitaper', sfreq=sfreq, fmin=fmin,
     fmax=fmax, faverage=True, mt_adaptive=True, n_jobs=4)
 
@@ -79,7 +81,7 @@ con, freqs, times, n_epochs, n_tapers = spectral_connectivity_epochs(
 # for each method
 con_res = dict()
 for method, c in zip(con_methods, con):
-    con_res[method] = c[:, :, 0]
+    con_res[method] = c.get_data(output='dense')[:, :, 0]
 
 # Now, we visualize the connectivity using a circular graph layout
 # First, we reorder the labels based on their location in the left hemi

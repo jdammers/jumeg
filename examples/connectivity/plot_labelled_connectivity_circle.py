@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
 """
+==========
+Plot labelled connectivity circle
+==========
+
 Example exposing the plot_labelled_group_connectivity_circle function.
 
 Author: Praveen Sripad <pravsripad@gmail.com>

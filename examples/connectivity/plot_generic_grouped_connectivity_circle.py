@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 
-"""Script exposing circle plots with outer ring.
+"""
+=============
+Generic Grouped Connectivity Circle
+=============
+
+Script exposing circle plots with outer ring.
 
 Author: Praveen Sripad <pravsripad@gmail.com>
 

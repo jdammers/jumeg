@@ -2,6 +2,10 @@
 # -*- coding: utf-8 -*-
 
 '''
+==========
+Standard RSNs on the connectivity circle
+==========
+
 Plot the visualization of the standard resting state network on the
 connectivity circle plot showing the Freesurfer aparc annotation map.
 

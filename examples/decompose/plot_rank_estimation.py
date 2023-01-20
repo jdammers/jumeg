@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 '''
+==========
+Plot rank estimation
+==========
+
 Example script to estimate the rank of the given data array.
 '''
 

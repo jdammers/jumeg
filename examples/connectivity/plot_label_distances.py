@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-"""Script to plot label distances on circle and connectome plots."""
+"""
+==========
+Plot label distances
+==========
+
+Script to plot label distances on circle and connectome plots.
+"""
 
 import os.path as op
 

@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 '''
+==========
+Plot vertices around seed.
+==========
+
 Find distances between vertices and plot vertices in a small region.
 
 mainly using functions from within mne.label.grow_labels

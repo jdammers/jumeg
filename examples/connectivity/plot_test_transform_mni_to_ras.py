@@ -53,5 +53,5 @@ utils.coord_to_label(subject, mni_coords, label='mycoord',
 brain.add_label('mycoord-lh.label', color="darkseagreen", alpha=.8)
 
 # if the new mni_coords are computed
-brain.add_foci(mni_coords, coords_as_verts=False, hemi='lh', color='red',
-               map_surface='white', scale_factor=0.6)
+brain.add_foci(mni_coords, coords_as_verts=False, hemi='lh',
+               color='red', scale_factor=0.6)

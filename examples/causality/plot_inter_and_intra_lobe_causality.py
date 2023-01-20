@@ -1,4 +1,8 @@
 """
+=============
+Group Causality Matrix
+=============
+
 Group a causality matrix by lobes and plot the resulting
 inter- and intra-lobe causality.
 

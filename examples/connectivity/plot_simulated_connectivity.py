@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-'''Simple implementations of connectivity measures.'''
+'''
+==========
+Simulating Connectivity 
+==========
+
+Simple implementations of connectivity measures.
+'''
 
 # Authors : pravsripad@gmail.com
 #           daniel.vandevelden@yahoo.de

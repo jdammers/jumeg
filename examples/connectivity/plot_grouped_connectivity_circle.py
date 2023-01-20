@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-"""Plot grouped connectivity circle.
+"""
+=============
+Plot grouped connectivity circle.
+=============
 
 Example showing how to read grouped aparc labels from yaml file and plot
 grouped connectivity circle with these labels.

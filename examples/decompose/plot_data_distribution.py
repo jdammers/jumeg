@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 '''
+==========
+Plot data distribution
+==========
+
 Example script to plot a given data distribution compared with a standard
 Gaussian distribution.
 '''

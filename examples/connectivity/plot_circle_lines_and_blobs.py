@@ -1,4 +1,8 @@
 '''
+=============
+Plot centrality indices on connectivity circle plot
+=============
+
 Script to show functionality to plot centrality indices along with
 connectivity circle plot.
 '''

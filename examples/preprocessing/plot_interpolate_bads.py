@@ -1,4 +1,8 @@
 """
+====================
+Plot and interpolate bads
+====================
+
 Use suggest_bads to automatically identify bad MEG channels
 and use interpolate_bads based on the center of mass of the
 sensors for bad channel correction.

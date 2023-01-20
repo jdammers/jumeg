@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
 '''
+=============
+Granger Causality Analysis
+=============
+
 Perform Granger based causality analysis using Generalized Parital Directed
 Coherence on example dataset.
 

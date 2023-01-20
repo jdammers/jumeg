@@ -2,7 +2,9 @@
 # coding: utf-8
 
 '''
+====================
 Filtering in jumeg.
+====================
 
 Comparison of the various filters available for use in mne/jumeg.
 '''

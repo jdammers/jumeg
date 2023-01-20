@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
 '''
+=============
+Generate surrogate STCs
+=============
+
+
 Example to show surrogate generation on STCs using the jumeg Surrogates
 module.
 '''

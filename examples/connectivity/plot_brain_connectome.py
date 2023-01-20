@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 """
+=============
+Plot brain connectome
+=============
+
 Plot connectivity on a glass brain using 'plot_connectome' function from
 Nilearn (https://nilearn.github.io/).
 

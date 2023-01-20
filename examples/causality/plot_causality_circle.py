@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
-"""Example showing how to plot a causality matrix on a circle plot."""
+"""
+=============
+Plot Causality Matrix
+=============
+
+Example showing how to plot a causality matrix on a circle plot.
+"""
 
 import numpy as np
 
