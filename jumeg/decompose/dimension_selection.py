@@ -463,7 +463,7 @@ def parallel_analysis(X, n_iter, plot_result = False, n_jobs = -1):
     n_iter: number of iterations for the parallel analysis
     Return
     ----------
-    recommended PCA components and FA factors
+    recommended PCA components 
     '''
     def compute_eigen(X_array, surrogate = False):
         """
