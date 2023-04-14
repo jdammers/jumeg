@@ -59,6 +59,8 @@ All methods try to estimate the optimal data dimension:
 import numpy as np
 from sklearn.decomposition import PCA, FactorAnalysis
 from sklearn.model_selection import cross_val_score
+from mne.parallel import parallel_func
+import matplotlib.pyplot as plt
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #  AIC - Akaike's information criterion
@@ -442,4 +444,100 @@ def fa_rank_cv(data, n_comp_list, cv=5):
     return n_components_fa
 
 
+def parallel_analysis(X, n_iter=20, plot_result=False, method="random", n_jobs=-1):
+    '''
+    This function is an adaptation of the fa.parallel included in 'psych' package in R,
+    which is based on the following publication:
+
+    Horn, J. L. (1965). A rationale and test for the number of
+    factors in factor analysis. Psychometrika, 30, 179-185.
+
+    It basically creates surrogate data, extracts eigenvalues and compares them with
+    the eigenvalues of original data.
+
+    Note: Although the function finds the minimum number of components that explain the variance
+          higher than a random data, it is advisable to use a higher number for your analysis. This
+          becomes more important especially when you use PCA for dimension reduction for subsequent ICA.
+          In this case, you might need to use higher number (e.g. twice the number you get from this function)
+          in order to have a good separation that fulfills your needs of the ICA
+
+    :param X: numpy array of size (n_channels, n_times)
+    :param n_iter: number of iterations for the parallel analysis
+    :param plot_result: whether to plot the results or not
+    :param method: method of creating the surrogate data, can be done by creating random data ("random") or
+                   by shuffling the time points within each channel ("shuffle")
+    :param n_jobs: number of cpu threads to be used
+    :return:
+    recommended PCA components
+    '''
+
+    def compute_eigen(X_array, method=None):
+        """
+        compute eigenvalues for the input data X of shape (n_times, n_channels)
+        :param X: Data array to compute eigen values
+        :param method: whether the eigenvalues should be computed for the original data or for a random surrogate
+        :return: eigenvalues
+        """
+        # compute the covariance matrix
+        if method == "random":
+            X_array = np.random.normal(size=X_array.shape)
+        elif method == "shuffle":
+            for col in range(X_array.shape[1]):
+                np.random.shuffle(X_array[:, col])
+        corr_mtx = np.cov(X_array, rowvar=False, ddof=0)
+
+        # compute eigenvalues and rearrange them in descending order
+        e_values, _ = np.linalg.eigh(corr_mtx)
+        e_values = e_values[::-1]
+
+        return e_values
+
+    # make sure the data are normalized
+    X = X.T  # sklearn PCA takes data of shape (n_samples, n_features)
+    X = (X - np.mean(X, axis=0, keepdims=True)) / np.std(X, axis=0, keepdims=True)
+
+    or_eigen = compute_eigen(X)
+
+    # create a parallel function to compute eigenvalues
+    parallel, pfunc, _ = parallel_func(compute_eigen, n_jobs=n_jobs)
+    sur_eigen = np.array(parallel(pfunc(X, method=method) for iter in range(n_iter)))
+
+    # find the number of components that pass the threshold
+    sur_eigen_mean = np.average(sur_eigen, axis=0)
+    n_components = np.sum(or_eigen > sur_eigen_mean)
+
+    if plot_result:
+        title_font = {'family': 'cambria', 'size': 18}
+        axis_font = {'family': 'cambria', 'size': 14}
+
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ax.grid(alpha=0.5, linewidth=0.5, zorder=0)
+        ax.set_title("Parallel Analysis", font=title_font)
+        ax.plot(or_eigen, color="maroon", linewidth=2, markerfacecolor="white", alpha=1, marker="o", zorder=1,
+                label="Original PCA Eigenvalues")
+        ax.scatter(n_components - 1, or_eigen[n_components - 1], facecolors="maroon", alpha=0.75,
+                   edgecolors="maroon", s=60, linewidth=1, zorder=2, label="Threshold PCA Eigenvalue")
+        ax.text(n_components - 1, or_eigen[n_components - 1] + 5, str(n_components), fontfamily="Cambria",
+                fontsize=10, ha="center", va="center", color="black")
+        ax.plot(sur_eigen_mean, color="maroon", linewidth=2, linestyle="dashed", alpha=1, zorder=2,
+                label="Simulated PCA Eigenvalues")
+
+        for tick in ax.get_xticklabels():
+            tick.set_fontname("Cambria")
+            tick.set_fontsize(10)
+        for tick in ax.get_yticklabels():
+            tick.set_fontname("Cambria")
+            tick.set_fontsize(10)
+
+        ax.set_ylabel("Eigenvalues", font=axis_font)
+        ax.set_xlabel("PCA Components", font=axis_font)
+
+        legend = ax.legend()
+        plt.setp(legend.texts, family="Cambria", size=10)
+        frame = legend.get_frame()
+        frame.set_linewidth(0.5)
+        plt.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.15)
+        print(f"Recommended number of components = {n_components}")
+
+    return n_components
 
