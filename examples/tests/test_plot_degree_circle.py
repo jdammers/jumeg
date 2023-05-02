@@ -8,6 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import mne
+
+from mne_connectivity import degree
+
 from jumeg import get_jumeg_path
 from jumeg.connectivity import plot_degree_circle
 
@@ -27,14 +30,14 @@ con_ = con[0, :, :, 2] + con[0, :, :, 2].T
 # con[55, 47] = 0.9  # rostralmiddlefrontal-rh - posteriorcingulate-rh
 # con[46, 22] = 0.6  # lateraloccipital-lh - posteriorcingulate-lh
 # con_ = con + con.T
-# degrees = mne.connectivity.degree(con_, threshold=0.2)
+# degrees = degree(con_, threshold=0.2)
 
 # make a random matrix with 68 nodes
 # use simple seed for reproducibility
 # np.random.seed(42)
 # con = np.random.random((68, 68))
 # con[con < 0.6] = 0.
-degrees = mne.connectivity.degree(con_, threshold=0.2)
+degrees = degree(con_, threshold_prop=0.2)
 
 n_per = 0.2
 n_nodes = 68
@@ -52,7 +55,7 @@ eig_vector_centrality = bct.eigenvector_centrality_und(con_)
 #     fig = plt.figure(i, figsize=(18, 4))
 #     for j in range(7):
 #         con_ = con[i, :, :, j]
-#         degrees = mne.connectivity.degree(con_ + con_.T, threshold=0.2)
+#         degrees = degree(con_ + con_.T, threshold_prop=0.2)
 #         print(degrees.std())
 #         fig, ax = plot_degree_circle(degrees, yaml_fname, orig_labels_fname,
 #                                      radsize=4, degsize=3, tight_layout=True,

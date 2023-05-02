@@ -7,6 +7,8 @@ import numpy as np
 import os.path as op
 import mne
 
+from mne_connectivity import degree
+
 from jumeg import get_jumeg_path
 from jumeg.connectivity import plot_degree_circle, plot_lines_and_blobs
 
@@ -19,7 +21,7 @@ con_fname = get_jumeg_path() + '/data/sample,aparc-con.npy'
 # real connectivity
 con = np.load(con_fname)
 con = con[0, :, :, 2] + con[0, :, :, 2].T
-degrees = mne.connectivity.degree(con, threshold=0.2)
+degrees = degree(con, threshold_prop=0.2)
 
 import bct
 eigenvec_centrality = bct.eigenvector_centrality_und(con)
@@ -37,7 +39,7 @@ fig.tight_layout()
 # con[55, 47] = 0.9  # rostralmiddlefrontal-rh - posteriorcingulate-rh
 # con[46, 22] = 0.6  # lateraloccipital-lh - posteriorcingulate-lh
 # con = con + con.T
-# degrees = mne.connectivity.degree(con, threshold=0.2)
+# degrees = degree(con, threshold_prop=0.2)
 # fig, ax = plot_lines_and_blobs(con, degrees, yaml_fname, orig_labels_fname,
 #                                figsize=(8, 8), node_labels=True,
 #                                out_fname=None)

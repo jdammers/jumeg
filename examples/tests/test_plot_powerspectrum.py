@@ -16,7 +16,7 @@ picks = mne.pick_types(raw.info, meg='mag', exclude='bads')
 raw.crop(0, 60)  # use 60s of data
 
 psd_fname = plot_powerspectrum(raw_fname, raw=raw, picks=None, dir_plots=None,
-                               tmin=None, tmax=None, fmin=0.0, fmax=450.0, n_fft=4096,
+                               tmin=None, tmax=None, fmin=0.0, fmax=None, n_fft=4096,
                                average=True)
 
 print(psd_fname)
