@@ -54,32 +54,8 @@ test-full: in
 	rm -f .coverage
 	$(PYTESTS) jumeg
 
-flake:
-	@if command -v flake8 > /dev/null; then \
-		echo "Running flake8"; \
-		flake8 --count; \
-	else \
-		echo "flake8 not found, please install it!"; \
-		exit 1; \
-	fi;
-	@echo "flake8 passed"
-
-codespell:  # running manually
-	@codespell --builtin clear,rare,informal,names,usage -w -i 3 -q 3 -S $(CODESPELL_SKIPS) --ignore-words=ignore_words.txt --uri-ignore-words-list=bu $(CODESPELL_DIRS)
-
-codespell-error:  # running on travis
-	@codespell --builtin clear,rare,informal,names,usage -i 0 -q 7 -S $(CODESPELL_SKIPS) --ignore-words=ignore_words.txt --uri-ignore-words-list=bu $(CODESPELL_DIRS)
-
-pydocstyle:
-	@echo "Running pydocstyle"
-	@pydocstyle jumeg
-
-pep:
-	@$(MAKE) -k flake pydocstyle docstring codespell-error check-manifest nesting check-readme
-
 build-doc:
 	cd docs; make clean
 	# cd docs; DISPLAY=:1.0 xvfb-run -n 1 -s "-screen 0 1280x1024x24 -noreset -ac +extension GLX +render" make html
 	cd docs; make html
 
-docstyle: pydocstyle
