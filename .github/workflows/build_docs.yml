@@ -25,6 +25,8 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
       - uses: ammaraskar/sphinx-action@master
+        with:
+            docs-folder: "docs/"
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
@@ -35,6 +37,3 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
-
-    with:
-        docs-folder: "docs/"
