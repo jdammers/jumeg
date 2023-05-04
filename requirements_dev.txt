@@ -1,0 +1,16 @@
+jupyter
+jupyter-book
+mayavi
+surfer
+mne
+mne-connectivity
+mne-features
+networkx
+nibabel
+nilearn
+pandas
+python-louvain
+scipy
+sphinx
+sphinx-bootstrap-theme
+sphinx-gallery
