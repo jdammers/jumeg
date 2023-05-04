@@ -1,2 +1,3 @@
 sphinx-gallery
 sphinx-bootstrap-theme
+numpydoc
