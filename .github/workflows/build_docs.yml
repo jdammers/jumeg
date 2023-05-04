@@ -25,7 +25,8 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
       - name: "install jumeg"
-        run: pip install -e jumeg
+        working-directory: $GITHUB_WORKSPACE
+        run: pip install -e .
       - uses: ammaraskar/sphinx-action@master
         with:
             docs-folder: "docs/"
