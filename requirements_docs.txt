@@ -1,3 +1,14 @@
+mayavi
+surfer
+mne
+mne-connectivity
+mne-features
+networkx
+nibabel
+nilearn
+pandas
+python-louvain
+scipy
 sphinx-gallery
 sphinx-bootstrap-theme
 numpydoc
