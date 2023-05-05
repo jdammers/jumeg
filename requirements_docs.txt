@@ -6,6 +6,7 @@ nilearn
 python-louvain
 pyvistaqt
 mayavi
+PyQt5
 pysurfer
 pyyaml
 bctpy

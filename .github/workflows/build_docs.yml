@@ -29,6 +29,7 @@ jobs:
         with:
             docs-folder: "docs/"
             pre-build-command: "pip install -r requirements_docs.txt && pip install -e ."
+            build-command: "sphinx-build -b html docs ./docs/build/html/"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
