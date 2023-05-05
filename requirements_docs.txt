@@ -5,8 +5,8 @@ networkx
 nilearn
 python-louvain
 pyvistaqt
-mayavi
 PyQt5
+mayavi
 pysurfer
 pyyaml
 bctpy

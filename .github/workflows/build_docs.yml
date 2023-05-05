@@ -28,7 +28,7 @@ jobs:
         uses: ammaraskar/sphinx-action@master
         with:
             docs-folder: "docs/"
-            pre-build-command: "pip install -r requirements_docs.txt && pip install -e ."
+            pre-build-command: "pip install -r requirements_docs.txt && pip install -e . && export ETS_TOOLKIT=qt4 && export QT_API=pyqt5"
             build-command: "sphinx-build -b html . docs/build/html/"
 
       - name: Upload artifacts
