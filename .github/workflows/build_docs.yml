@@ -29,6 +29,8 @@ jobs:
         run: |
           echo ${{ env.GITHUB_WORKSPACE }}
           pip install -e .
+          which jumeg
+          python -c "import jumeg; print(jumeg.__path__)"
       - uses: ammaraskar/sphinx-action@master
         with:
             docs-folder: "docs/"
