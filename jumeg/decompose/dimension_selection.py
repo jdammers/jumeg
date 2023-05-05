@@ -414,7 +414,7 @@ def pca_rank_cv(data, n_comp_list, cv=5, whiten=True):
     pca = PCA(svd_solver='auto', whiten=whiten)
     pca_scores = []
     for n in n_comp_list:
-        pca.n_components = np.int(n)
+        pca.n_components = int(n)
         pca_scores.append(np.mean(cross_val_score(pca, data.T, cv=cv)))
     n_components_pca = n_comp_list[np.argmax(pca_scores)]
 
@@ -435,7 +435,7 @@ def fa_rank_cv(data, n_comp_list, cv=5):
     fa = FactorAnalysis()
     fa_scores = []
     for n in n_comp_list:
-        fa.n_components = np.int(n)
+        fa.n_components = int(n)
         fa_scores.append(np.mean(cross_val_score(fa, data.T, cv=cv)))
     n_components_fa = n_comp_list[np.argmax(fa_scores)]
 

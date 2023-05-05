@@ -29,7 +29,7 @@ from jumeg.jumeg_utils import get_jumeg_path
 from jumeg.connectivity import make_annot_from_csv
 
 from nilearn import plotting
-from surfer import Brain
+from mne.viz import Brain
 
 data_path = sample.data_path()
 subject = 'sample'

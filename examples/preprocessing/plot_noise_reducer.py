@@ -18,7 +18,12 @@ import mne
 plt.ion()
 
 # load the jumeg sample data (has to be BTI)
-data_dir = os.environ['JUSAMPLE_MEG_PATH']
+if os.environ.get('JUSAMPLE_MEG_PATH'):
+    data_dir = os.environ['JUSAMPLE_MEG_PATH']
+else:
+    print('Data unavailable, skipping.')
+    sys.exit()
+
 subject = '207184'
 raw_fname = op.join(data_dir, 'recordings', subject,
                     'sample_207184_rest_EC-raw.fif')

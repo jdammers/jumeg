@@ -12,9 +12,15 @@ Author: Christian Kiefer <ch.kiefer@fz-juelich.de>
 import os
 import os.path as op
 
+import numpy as np
 import matplotlib.pyplot as plt
 import mne
-import numpy as np
+
+from mne.datasets import sample
+
+print(__doc__)
+
+data_path = sample.data_path()
 
 from jumeg.connectivity.con_utils import group_con_matrix_by_lobe
 from jumeg.connectivity.con_viz import plot_grouped_causality_circle
@@ -33,7 +39,8 @@ lobe_grouping_yaml_fname = op.join(get_jumeg_path(), 'data',
 # Load anatomical labels
 ###############################################################################
 
-subjects_dir = os.environ['SUBJECTS_DIR']
+subjects_dir = op.join(data_path, 'subjects')
+os.environ['SUBJECTS_DIR'] = subjects_dir
 
 full_labels = mne.read_labels_from_annot(subject='fsaverage', parc='aparc',
                                          hemi='both', subjects_dir=subjects_dir)

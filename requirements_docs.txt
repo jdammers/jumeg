@@ -2,13 +2,14 @@ mne
 mne-connectivity
 mne-features
 networkx
-nibabel
 nilearn
 python-louvain
-bctpy
+pyvistaqt
 mayavi
-surfer
+pysurfer
 pyyaml
+bctpy
+scot
 sphinx-gallery
 sphinx-bootstrap-theme
 numpydoc

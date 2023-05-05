@@ -42,9 +42,9 @@ def compute_mean_psd_csd(x, y, n_epochs, nfft, sfreq):
     x2 = np.array_split(x, n_epochs)
     y2 = np.array_split(y, n_epochs)
 
-    Rxy = np.zeros((n_epochs, n_freqs), dtype=np.complex)
-    Rxx = np.zeros((n_epochs, n_freqs), dtype=np.complex)
-    Ryy = np.zeros((n_epochs, n_freqs), dtype=np.complex)
+    Rxy = np.zeros((n_epochs, n_freqs), dtype=complex)
+    Rxx = np.zeros((n_epochs, n_freqs), dtype=complex)
+    Ryy = np.zeros((n_epochs, n_freqs), dtype=complex)
 
     for i in range(n_epochs):
         Rxy[i], freqs = mlab.csd(x2[i], y2[i], NFFT=nfft, Fs=sfreq)
@@ -87,7 +87,7 @@ def my_cohy(n_freqs, Rxy_mean, Rxx_mean, Ryy_mean):
 def my_plv(n_freqs, Rxy, Rxy_mean):
     ''' Computes PLV. '''
 
-    Rxy_plv = np.zeros((n_epochs, n_freqs), dtype=np.complex)
+    Rxy_plv = np.zeros((n_epochs, n_freqs), dtype=complex)
     for i in range(0, n_epochs):
         Rxy_plv[i] = Rxy[i] / np.abs(Rxy[i])
 
@@ -96,7 +96,7 @@ def my_plv(n_freqs, Rxy, Rxy_mean):
 
 def my_pli(n_freqs, Rxy, Rxy_mean):
     ''' Computes PLI. '''
-    Rxy_pli = np.zeros((n_epochs, n_freqs), dtype=np.complex)
+    Rxy_pli = np.zeros((n_epochs, n_freqs), dtype=complex)
     for i in range(0, n_epochs):
         Rxy_pli[i] = np.sign(np.imag(Rxy[i]))
 
@@ -105,8 +105,8 @@ def my_pli(n_freqs, Rxy, Rxy_mean):
 
 def my_wpli(n_freqs, Rxy, Rxy_mean):
     ''' Computes WPLI. '''
-    Rxy_wpli_1 = np.zeros((n_epochs, n_freqs), dtype=np.complex)
-    Rxy_wpli_2 = np.zeros((n_epochs, n_freqs), dtype=np.complex)
+    Rxy_wpli_1 = np.zeros((n_epochs, n_freqs), dtype=complex)
+    Rxy_wpli_2 = np.zeros((n_epochs, n_freqs), dtype=complex)
     for i in range(0, n_epochs):
         Rxy_wpli_1[i] = np.imag(Rxy[i])
         Rxy_wpli_2[i] = np.abs(np.imag(Rxy[i]))
