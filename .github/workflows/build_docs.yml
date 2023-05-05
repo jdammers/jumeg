@@ -22,15 +22,10 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
-      - name: "install jumeg"
-        working-directory: ${{ env.GITHUB_WORKSPACE }}
-        run: |
-          echo ${{ env.GITHUB_WORKSPACE }}
-          pip install -r requirements_docs.txt
-          pip install -e .
       - uses: ammaraskar/sphinx-action@master
         with:
             docs-folder: "docs/"
+            pre-build-command: "pip install -r ${{ env.GITHUB_WORKSPACE }}/requirements_docs.txt & pip install -e ${{ env.GITHUB_WORKSPACE }}"
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
