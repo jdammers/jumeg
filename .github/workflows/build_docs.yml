@@ -24,20 +24,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v2
-        with:
-            python-version: 3.9
-
-      - name: Install jumeg conda env
-        run: |
-            # $CONDA is an environment variable pointing to the root of the miniconda directory
-            $CONDA/bin/conda env update --file jumeg.yml --name base
-
       - name: Build sphinx docs
         uses: ammaraskar/sphinx-action@master
         with:
             working-directory: ${{ env.GITHUB_WORKSPACE }}
             docs-folder: "docs/"
-            # pre-build-command: "pip install -r requirements_docs.txt && pip install -e ."
+            pre-build-command: "pip install -r requirements_docs.txt && pip install -e ."
 
