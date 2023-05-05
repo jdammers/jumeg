@@ -20,20 +20,24 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
-      - uses: ammaraskar/sphinx-action@master
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+            python-version: 3.9
+
+      - name: Install jumeg conda env
+        run: |
+            # $CONDA is an environment variable pointing to the root of the miniconda directory
+            $CONDA/bin/conda env update --file jumeg.yml --name base
+
+      - name: Build sphinx docs
+        uses: ammaraskar/sphinx-action@master
         with:
             working-directory: ${{ env.GITHUB_WORKSPACE }}
             docs-folder: "docs/"
-            pre-build-command: "pip install -r requirements_docs.txt && pip install -e ."
+            # pre-build-command: "pip install -r requirements_docs.txt && pip install -e ."
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
