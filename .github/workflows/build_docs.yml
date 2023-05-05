@@ -27,7 +27,18 @@ jobs:
       - name: Build sphinx docs
         uses: ammaraskar/sphinx-action@master
         with:
-            working-directory: ${{ env.GITHUB_WORKSPACE }}
             docs-folder: "docs/"
             pre-build-command: "pip install -r requirements_docs.txt && pip install -e ."
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+            name: html-docs
+            path: docs/build/html/
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      # if: github.ref == 'refs/heads/gh-pages'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: dev/html
