@@ -25,12 +25,13 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Build sphinx docs
-        run:  "pip install --upgrade pip"
-        run: "pip install -r requirements_docs.txt"
-        run: "pip install -e ."
-        run: "export ETS_TOOLKIT=qt4"
-        run: "export QT_API=pyqt5"
-        run: "sphinx-build -b html docs docs/build/html/"
+        run: | 
+          "pip install --upgrade pip"
+          "pip install -r requirements_docs.txt"
+          "pip install -e ."
+          "export ETS_TOOLKIT=qt4"
+          "export QT_API=pyqt5"
+          "sphinx-build -b html docs docs/build/html/"
 
           # - name: Build sphinx docs
           # uses: ammaraskar/sphinx-action@master
