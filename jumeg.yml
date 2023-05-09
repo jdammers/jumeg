@@ -5,18 +5,14 @@ dependencies:
   - python=3.9
   - pip
   - ipython
-  - jupyter
   - matplotlib
   - mayavi
-  - mkdocs
-  - mkdocs-material
   - mne
   - mne-connectivity
   - mne-features
   - networkx
-  - nibabel
+  - nibabel=5.0
   - nilearn
-  - numpydoc
   - pandas
   - pandoc  
   - pyvista
@@ -30,7 +26,6 @@ dependencies:
   - pip:
       - sphinx-gallery
       - sphinx-bootstrap-theme
-      - jupyter-book
       - pytest
       - pytest-cov
       - python-louvain

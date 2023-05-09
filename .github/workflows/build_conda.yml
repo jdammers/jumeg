@@ -1,0 +1,31 @@
+# Test conda environments for jumeg
+
+name: "Configure conda"
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main_dev" branch
+  push:
+    branches: [ "main_dev" ]
+  pull_request:
+    branches: [ "main_dev" ]
+
+jobs:
+  setup_conda:
+    name: Setup jumeg environment.
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: jumeg
+          environment-file: jumeg.yml
+          python-version: 3.9
+          condarc-file: 
+          auto-activate-base: false
+      - run: |
+          conda info
+          conda list
