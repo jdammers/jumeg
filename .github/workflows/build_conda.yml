@@ -29,3 +29,18 @@ jobs:
       - run: |
           conda info
           conda list
+      - run:
+          name: Set BASH_ENV
+          command: |
+            echo "set -e" >> $BASH_ENV;
+            echo "export DISPLAY=:99" >> $BASH_ENV;
+            echo "export OPENBLAS_NUM_THREADS=4" >> $BASH_ENV;
+            echo "export PATH=~/.local/bin:$PATH" >> $BASH_ENV;
+      - run:
+          name: Spin up Xvfb
+          command: |
+            /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset;
+      - run:
+          name: Test example
+          command: |
+            /usr/bin/env python ./examples/connectivity/plot_brain_connectome.py
