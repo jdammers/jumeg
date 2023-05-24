@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.causality.prepare\_causality\_matrix
+=======================================================
+
+.. currentmodule:: jumeg.connectivity.causality
+
+.. autofunction:: prepare_causality_matrix

@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.plot\_grouped\_connectivity\_circle
+======================================================
+
+.. currentmodule:: jumeg.connectivity
+
+.. autofunction:: plot_grouped_connectivity_circle

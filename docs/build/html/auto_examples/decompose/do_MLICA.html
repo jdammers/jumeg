@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Do MLICA &#8212; jumeg 0.18 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bootstrap-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html">
+          jumeg</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.18</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../index.html">Examples</a></li>
+                <li><a href="../../api.html">API</a></li>
+                <li><a href="https://github.com/jdammers/jumeg">GitHub</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Do MLICA</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+            
+            
+            
+              <li class="hidden-sm"></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-decompose-do-mlica-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="do-mlica">
+<span id="sphx-glr-auto-examples-decompose-do-mlica-py"></span><h1>Do MLICA<a class="headerlink" href="#do-mlica" title="Permalink to this heading">¶</a></h1>
+<p>Compute ICA object based on filtered and downsampled data.
+Identify ECG and EOG artifacts using the pre-trained DCNN model
+and compare results using correlation &amp; ctps analysis.</p>
+<p>Apply ICA object to filtered and unfiltered data.</p>
+<p>Ahmad Hasasneh, Nikolas Kampel, Praveen Sripad, N. Jon Shah, and Juergen Dammers
+“Deep Learning Approach for Automatic Classification of Ocular and Cardiac
+Artifacts in MEG Data”
+Journal of Engineering, vol. 2018, Article ID 1350692,10 pages, 2018.
+<a class="reference external" href="https://doi.org/10.1155/2018/1350692">https://doi.org/10.1155/2018/1350692</a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pylab</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">mne</span>
+<span class="kn">from</span> <span class="nn">jumeg.decompose.ica_replace_mean_std</span> <span class="kn">import</span> <span class="n">ICA</span><span class="p">,</span> <span class="n">ica_update_mean_std</span>
+<span class="kn">from</span> <span class="nn">keras.models</span> <span class="kn">import</span> <span class="n">load_model</span>
+<span class="kn">from</span> <span class="nn">jumeg.jumeg_noise_reducer</span> <span class="kn">import</span> <span class="n">noise_reducer</span>
+<span class="kn">from</span> <span class="nn">jumeg.jumeg_preprocessing</span> <span class="kn">import</span> <span class="n">get_ics_cardiac</span><span class="p">,</span> <span class="n">get_ics_ocular</span>
+<span class="kn">from</span> <span class="nn">jumeg.jumeg_plot</span> <span class="kn">import</span> <span class="n">plot_performance_artifact_rejection</span>
+<span class="kn">from</span> <span class="nn">jumeg.jumeg_utils</span> <span class="kn">import</span> <span class="n">get_jumeg_path</span>
+
+<span class="c1"># ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<span class="c1"># settings</span>
+<span class="c1"># ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++</span>
+<span class="n">model_thresh</span> <span class="o">=</span> <span class="mf">0.8</span>                        <span class="c1"># &gt;0.5 ..0.9</span>
+<span class="n">n_components</span> <span class="o">=</span> <span class="mi">40</span>                         <span class="c1"># 30 .. 60</span>
+<span class="n">njobs</span> <span class="o">=</span> <span class="s1">&#39;cuda&#39;</span>
+<span class="n">sfreq_new</span> <span class="o">=</span> <span class="mi">250</span>                           <span class="c1"># downsampling to 250 Hz</span>
+<span class="n">flow_raw</span><span class="p">,</span> <span class="n">flow_high</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">45</span>               <span class="c1"># high pass filter prevents from false positives</span>
+<span class="n">flow_ecg</span><span class="p">,</span> <span class="n">fhigh_ecg</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">20</span>
+<span class="n">flow_eog</span><span class="p">,</span> <span class="n">fhigh_eog</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">20</span>
+<span class="n">ecg_thresh</span><span class="p">,</span> <span class="n">eog_thresh</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.3</span>
+<span class="n">ecg_ch</span> <span class="o">=</span> <span class="s1">&#39;ECG 001&#39;</span>
+<span class="n">eog1_ch</span> <span class="o">=</span> <span class="s1">&#39;EOG 001&#39;</span>
+<span class="n">eog2_ch</span> <span class="o">=</span> <span class="s1">&#39;EOG 002&#39;</span>
+<span class="n">reject</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mag&#39;</span><span class="p">:</span> <span class="mf">5e-12</span><span class="p">}</span>
+
+<span class="c1"># number time samples is fixed to 15000</span>
+<span class="n">nsamples_chop</span> <span class="o">=</span> <span class="mi">15000</span>
+<span class="n">ix_t1</span> <span class="o">=</span> <span class="mi">0</span>                              <span class="c1"># time index: here we use the first chop</span>
+<span class="n">ix_t2</span> <span class="o">=</span> <span class="n">ix_t1</span> <span class="o">+</span> <span class="n">nsamples_chop</span>
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># load DCNN model for artifact rejection</span>
+<span class="c1"># the details of the model is provided in:</span>
+<span class="c1">#       x_validation_shuffle_v4_split_23.txt</span>
+<span class="c1"># model was trained on 4D data from Juelich</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="n">model_path</span> <span class="o">=</span> <a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><span class="n">get_jumeg_path</span><span class="p">(),</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
+<span class="n">model_name</span> <span class="o">=</span> <a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><span class="n">model_path</span><span class="p">,</span> <span class="s2">&quot;dcnn_model.hdf5&quot;</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># read example data file</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="n">path_data</span> <span class="o">=</span> <span class="s1">&#39;/data/megraid22/Common/DeepLearning/cau_data_validation/&#39;</span>
+<span class="n">raw_fname</span> <span class="o">=</span> <a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><span class="n">path_data</span><span class="p">,</span> <span class="s1">&#39;109925_CAU01A_100715_0842_2_c,rfDC,t1,n_bcc,nr-raw.fif&#39;</span><span class="p">)</span>
+<span class="n">raw</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">Raw</span><span class="p">(</span><span class="n">raw_fname</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">picks</span> <span class="o">=</span> <span class="n">mne</span><span class="o">.</span><span class="n">pick_types</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">meg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">eeg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">eog</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                       <span class="n">stim</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="s1">&#39;bads&#39;</span><span class="p">)</span>
+
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># filtering and down sampling</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># filter prior to ICA</span>
+<span class="n">raw_filtered</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">flow_raw</span><span class="p">,</span> <span class="n">flow_high</span><span class="p">,</span> <span class="n">picks</span><span class="o">=</span><span class="n">picks</span><span class="p">,</span> <span class="n">filter_length</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+                                 <span class="n">l_trans_bandwidth</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">h_trans_bandwidth</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+                                 <span class="n">n_jobs</span><span class="o">=</span><span class="n">njobs</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;fir&#39;</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s1">&#39;zero&#39;</span><span class="p">,</span>
+                                 <span class="n">fir_window</span><span class="o">=</span><span class="s1">&#39;hamming&#39;</span><span class="p">)</span>
+<span class="c1"># downsample data</span>
+<span class="n">raw_ds</span> <span class="o">=</span> <span class="n">raw_filtered</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">sfreq_new</span><span class="p">,</span> <span class="n">npad</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="s1">&#39;boxcar&#39;</span><span class="p">,</span> <span class="n">stim_picks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">n_jobs</span><span class="o">=</span><span class="n">njobs</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># crop data to get first chop</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># get times to crop</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="n">raw_ds</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>             <span class="c1"># time period between two time samples</span>
+<span class="n">tmin</span> <span class="o">=</span> <span class="n">ix_t1</span> <span class="o">*</span> <span class="n">dt</span>
+<span class="n">tmax</span> <span class="o">=</span> <span class="n">ix_t2</span> <span class="o">*</span> <span class="n">dt</span> <span class="o">-</span> <span class="n">dt</span>           <span class="c1">#  subtract one sample</span>
+<span class="c1"># crop all raw objects</span>
+<span class="n">raw_chop</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">tmin</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="n">tmax</span><span class="p">)</span>                     <span class="c1"># raw</span>
+<span class="n">raw_filtered_chop</span> <span class="o">=</span> <span class="n">raw_filtered</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">tmin</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="n">tmax</span><span class="p">)</span>   <span class="c1"># raw filtered</span>
+<span class="n">raw_ds_chop</span> <span class="o">=</span> <span class="n">raw_ds</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">tmin</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="n">tmax</span><span class="p">)</span>               <span class="c1"># raw filtered downsampled</span>
+<span class="n">raw_filtered</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># apply ICA</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="n">ica</span> <span class="o">=</span> <span class="n">ICA</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;fastica&#39;</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+          <span class="n">max_pca_components</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="c1"># do the ICA decomposition on downsampled raw</span>
+<span class="n">ica</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">raw_ds_chop</span><span class="p">,</span> <span class="n">picks</span><span class="o">=</span><span class="n">picks</span><span class="p">,</span> <span class="n">reject</span><span class="o">=</span><span class="n">reject</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">sources</span> <span class="o">=</span> <span class="n">ica</span><span class="o">.</span><span class="n">get_sources</span><span class="p">(</span><span class="n">raw_ds_chop</span><span class="p">)</span><span class="o">.</span><span class="n">_data</span>                     <span class="c1"># get sources</span>
+<span class="n">sources</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.reshape.html#numpy.reshape" title="numpy.reshape" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">reshape</span></a><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="p">(</span><span class="n">n_components</span><span class="p">,</span><span class="n">nsamples_chop</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>   <span class="c1"># reshape sources</span>
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># model prediction</span>
+<span class="c1"># identification of artifact components</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># compute base functions</span>
+<span class="n">mm</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float32" title="numpy.float32" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">float32</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.dot.html#numpy.dot" title="numpy.dot" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">dot</span></a><span class="p">(</span><span class="n">ica</span><span class="o">.</span><span class="n">mixing_matrix_</span><span class="p">[:,</span> <span class="p">:</span><span class="n">ica</span><span class="o">.</span><span class="n">n_components_</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                       <span class="n">ica</span><span class="o">.</span><span class="n">pca_components_</span><span class="p">[:</span><span class="n">ica</span><span class="o">.</span><span class="n">n_components_</span><span class="p">,</span> <span class="p">:</span><span class="n">ica</span><span class="o">.</span><span class="n">max_pca_components</span><span class="p">]))</span>
+<span class="c1"># get model prediction</span>
+<span class="n">model_scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="n">mm</span><span class="p">,</span> <span class="n">sources</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># get ICs</span>
+<span class="n">bads_MLICA</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.where.html#numpy.where" title="numpy.where" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">where</span></a><span class="p">(</span><span class="n">model_scores</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">model_thresh</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># order ICs for visualization</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="n">var_order</span> <span class="o">=</span> <span class="n">sources</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">good_ics</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.setdiff1d.html#numpy.setdiff1d" title="numpy.setdiff1d" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span></a><span class="p">(</span><span class="n">var_order</span><span class="p">,</span> <span class="n">bads_MLICA</span><span class="p">)</span>
+<span class="n">ic_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.concatenate.html#numpy.concatenate" title="numpy.concatenate" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span></a><span class="p">([</span><span class="n">bads_MLICA</span><span class="p">,</span> <span class="n">good_ics</span><span class="p">]))</span>
+<span class="c1"># store components in ica object</span>
+<span class="n">ica</span><span class="o">.</span><span class="n">exclude</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">bads_MLICA</span><span class="p">)</span>
+
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># compare MLICA results with correlation and ctps</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Identifying components..&#39;</span><span class="p">)</span>
+<span class="c1"># get ECG/EOG related components using JuMEG</span>
+<span class="n">ic_ecg</span> <span class="o">=</span> <span class="n">get_ics_cardiac</span><span class="p">(</span><span class="n">raw_filtered_chop</span><span class="p">,</span> <span class="n">ica</span><span class="p">,</span> <span class="n">flow</span><span class="o">=</span><span class="n">flow_ecg</span><span class="p">,</span> <span class="n">fhigh</span><span class="o">=</span><span class="n">fhigh_ecg</span><span class="p">,</span>
+                         <span class="n">thresh</span><span class="o">=</span><span class="n">ecg_thresh</span><span class="p">,</span> <span class="n">tmin</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                         <span class="n">name_ecg</span><span class="o">=</span><span class="n">ecg_ch</span><span class="p">,</span> <span class="n">use_CTPS</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># returns both ICs and scores (take only ICs)</span>
+<span class="n">ic_eog</span> <span class="o">=</span> <span class="n">get_ics_ocular</span><span class="p">(</span><span class="n">raw_filtered_chop</span><span class="p">,</span> <span class="n">ica</span><span class="p">,</span> <span class="n">flow</span><span class="o">=</span><span class="n">flow_eog</span><span class="p">,</span> <span class="n">fhigh</span><span class="o">=</span><span class="n">fhigh_eog</span><span class="p">,</span>
+                        <span class="n">thresh</span><span class="o">=</span><span class="n">eog_thresh</span><span class="p">,</span> <span class="n">name_eog_hor</span><span class="o">=</span><span class="n">eog1_ch</span><span class="p">,</span>
+                        <span class="n">name_eog_ver</span><span class="o">=</span><span class="n">eog2_ch</span><span class="p">,</span> <span class="n">score_func</span><span class="o">=</span><span class="s1">&#39;pearsonr&#39;</span><span class="p">)</span>
+<span class="n">bads_corr_ctps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ic_ecg</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">ic_eog</span><span class="p">)</span>
+<span class="n">bads_corr_ctps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">bads_corr_ctps</span><span class="p">))</span>  <span class="c1"># remove potential duplicates</span>
+<span class="n">bads_corr_ctps</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Bad components from MLICA:&#39;</span><span class="p">,</span> <span class="n">bads_MLICA</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Bad components from correlation &amp; ctps:&#39;</span><span class="p">,</span> <span class="n">bads_corr_ctps</span><span class="p">)</span>
+
+
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># plot results</span>
+<span class="c1"># ----------------------------------------------</span>
+<span class="c1"># plot sources</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ica</span><span class="o">.</span><span class="n">plot_sources</span><span class="p">(</span><span class="n">raw_filtered_chop</span><span class="p">,</span> <span class="n">picks</span><span class="o">=</span><span class="n">ic_order</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;MLICA&#39;</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="c1">#fig.savefig(&#39;MLICA_ica-sources.png&#39;)</span>
+
+<span class="c1"># plot artifact rejection performance</span>
+<span class="n">fnout_fig</span> <span class="o">=</span> <span class="s1">&#39;109925_CAU01A_100715_0842_2_c,rfDC,0-45hz,ar-perf&#39;</span>
+<span class="n">ica_filtered_chop</span> <span class="o">=</span> <span class="n">ica_update_mean_std</span><span class="p">(</span><span class="n">raw_filtered_chop</span><span class="p">,</span> <span class="n">ica</span><span class="p">,</span> <span class="n">picks</span><span class="o">=</span><span class="n">picks</span><span class="p">,</span> <span class="n">reject</span><span class="o">=</span><span class="n">reject</span><span class="p">)</span>
+<span class="n">raw_filtered_chop_clean</span> <span class="o">=</span> <span class="n">ica_filtered_chop</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">raw_filtered_chop</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="n">ica</span><span class="o">.</span><span class="n">exclude</span><span class="p">,</span>
+                                                  <span class="n">n_pca_components</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">ica_unfiltered_chop</span> <span class="o">=</span> <span class="n">ica_update_mean_std</span><span class="p">(</span><span class="n">raw_chop</span><span class="p">,</span> <span class="n">ica</span><span class="p">,</span> <span class="n">picks</span><span class="o">=</span><span class="n">picks</span><span class="p">,</span> <span class="n">reject</span><span class="o">=</span><span class="n">reject</span><span class="p">)</span>
+<span class="n">raw_unfiltered_chop_clean</span> <span class="o">=</span> <span class="n">ica_unfiltered_chop</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">raw_chop</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="n">ica</span><span class="o">.</span><span class="n">exclude</span><span class="p">,</span> <span class="n">n_pca_components</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">plot_performance_artifact_rejection</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">tmin</span><span class="o">=</span><span class="n">tmin</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="n">tmax</span><span class="p">),</span> <span class="n">ica_unfiltered_chop</span><span class="p">,</span> <span class="n">fnout_fig</span><span class="p">,</span>
+                                    <span class="n">meg_clean</span><span class="o">=</span><span class="n">raw_unfiltered_chop_clean</span><span class="p">,</span>
+                                    <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                    <span class="n">name_ecg</span><span class="o">=</span><span class="n">ecg_ch</span><span class="p">,</span>
+                                    <span class="n">name_eog</span><span class="o">=</span><span class="n">eog2_ch</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.000 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-decompose-do-mlica-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/0502bd09d5a2aa3af6cddc6b74365731/do_MLICA.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">do_MLICA.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/486d9a98fcbfe134cf419c5b5064fe6b/do_MLICA.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">do_MLICA.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2023, JUMEG developers.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 7.0.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.plot\_grouped\_causality\_circle
+===================================================
+
+.. currentmodule:: jumeg.connectivity
+
+.. autofunction:: plot_grouped_causality_circle

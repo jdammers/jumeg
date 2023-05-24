@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.weighted\_con\_matrix
+========================================
+
+.. currentmodule:: jumeg.connectivity
+
+.. autofunction:: weighted_con_matrix

@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.plot\_fica\_grouped\_circle
+==============================================
+
+.. currentmodule:: jumeg.connectivity
+
+.. autofunction:: plot_fica_grouped_circle

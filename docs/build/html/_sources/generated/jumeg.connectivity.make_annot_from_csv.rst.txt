@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.make\_annot\_from\_csv
+=========================================
+
+.. currentmodule:: jumeg.connectivity
+
+.. autofunction:: make_annot_from_csv

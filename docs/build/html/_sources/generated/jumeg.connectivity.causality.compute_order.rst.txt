@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.causality.compute\_order
+===========================================
+
+.. currentmodule:: jumeg.connectivity.causality
+
+.. autofunction:: compute_order

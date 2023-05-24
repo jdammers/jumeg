@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.plot\_lines\_and\_blobs
+==========================================
+
+.. currentmodule:: jumeg.connectivity
+
+.. autofunction:: plot_lines_and_blobs

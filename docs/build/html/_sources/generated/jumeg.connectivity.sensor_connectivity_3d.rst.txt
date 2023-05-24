@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.sensor\_connectivity\_3d
+===========================================
+
+.. currentmodule:: jumeg.connectivity
+
+.. autofunction:: sensor_connectivity_3d

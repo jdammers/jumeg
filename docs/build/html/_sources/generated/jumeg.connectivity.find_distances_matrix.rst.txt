@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.find\_distances\_matrix
+==========================================
+
+.. currentmodule:: jumeg.connectivity
+
+.. autofunction:: find_distances_matrix

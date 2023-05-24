@@ -1,0 +1,76 @@
+
+
+.. _sphx_glr_auto_examples_mft:
+
+MFT
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Perform MFT on a surface based forward solution.">
+
+.. only:: html
+
+  .. image:: /auto_examples/mft/images/thumb/sphx_glr_plot_perform_mft_surface_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_surface.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Jumeg MFT example.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Perform MFT on a surface based forward solution.">
+
+.. only:: html
+
+  .. image:: /auto_examples/mft/images/thumb/sphx_glr_plot_perform_mft_surface_list_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_surface_list.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Jumeg MFT example.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Jumeg MFT volume.">
+
+.. only:: html
+
+  .. image:: /auto_examples/mft/images/thumb/sphx_glr_plot_perform_mft_volume_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_volume.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Jumeg MFT volume.</div>
+    </div>
+
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/mft/plot_perform_mft_surface
+   /auto_examples/mft/plot_perform_mft_surface_list
+   /auto_examples/mft/plot_perform_mft_volume
+
