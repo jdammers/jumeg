@@ -5,10 +5,10 @@
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = .
-BUILDDIR      = _build
+BUILDDIR      = build
 
 GITHUB_PAGES_BRANCH = jumeg_sphinx
-OUTPUTDIR = _build/html
+OUTPUTDIR = build/html
 
 # Put it first so that "make" without argument is like "make help".
 # help:

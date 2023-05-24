@@ -34,7 +34,6 @@ old/
 devel
 env/
 bin/
-build/
 develop-eggs/
 dist/
 eggs/
