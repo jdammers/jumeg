@@ -172,7 +172,7 @@ Leadfield size : n_sen x n_loc = 102 x 11271
 Number of source spaces = 1
 ########## Searching for label(s) in source space(s)...
 --&gt; sums:     0 verts    0 used
-prep. labels took 0.246 ms (0.000 s walltime)
+prep. labels took 0.249 ms (0.000 s walltime)
 Reading evoked data from /Users/praveen.sripad/nanna_data/mne_data/MNE-sample-data/MEG/sample/sample_audvis-ave.fif
 Reading /Users/praveen.sripad/nanna_data/mne_data/MNE-sample-data/MEG/sample/sample_audvis-ave.fif ...
     Read a total of 4 projection items:
@@ -187,9 +187,9 @@ Reading /Users/praveen.sripad/nanna_data/mne_data/MNE-sample-data/MEG/sample/sam
 Projections have already been applied. Setting proj attribute to True.
 Applying baseline correction (mode: mean)
 ########## Calculate initial prob-dist:
-calc(wdist0) took 0.235 ms (0.000 s walltime)
+calc(wdist0) took 0.790 ms (0.001 s walltime)
 ########## Calculate P-matrix, incl. weights:
-calc(lf*w*lf.T) took  58.918792000042686 ms (0.059 s walltime)
+calc(lf*w*lf.T) took  60.00120800001696 ms (0.060 s walltime)
 ln(condno) = -124.486, K_H = 10^( -54.064) =    0.000
 (K_H &lt; 0.01 : bad, K_H &gt; 0.1 : good)
 ########## Create stc data and qual data arrays:
@@ -628,13 +628,13 @@ stcdata from mft-SR and old calc agree.
 ##### Trying to save stc:
 stcmft basefilename: /Users/praveen.sripad/nanna_data/mne_data/MNE-sample-data/MEG/sample/sample_audvismft
 ##### done.
-calc(lf*w*lf.T) took   total      97.62 s CPU-time (    97.62 s walltime)
-calc(lf*w*lf.T) took per call     57.93ms CPU-time (    57.93ms walltime)
-scan_cdm calls  took   total       1.15 s CPU-time (     1.15 s walltime)
-scan_cdm calls  took per call      2.72ms CPU-time (     2.72ms walltime)
-iteration-loops took   total     100.88 s CPU-time (   100.88 s walltime)
-iteration-loops took per call    239.63ms CPU-time (   239.63ms walltime)
-Total mft-call  took   total     103.23 s CPU-time (   103.23 s walltime)
+calc(lf*w*lf.T) took   total      97.88 s CPU-time (    97.89 s walltime)
+calc(lf*w*lf.T) took per call     58.09ms CPU-time (    58.09ms walltime)
+scan_cdm calls  took   total       1.13 s CPU-time (     1.13 s walltime)
+scan_cdm calls  took per call      2.68ms CPU-time (     2.68ms walltime)
+iteration-loops took   total     100.89 s CPU-time (   100.89 s walltime)
+iteration-loops took per call    239.65ms CPU-time (   239.65ms walltime)
+Total mft-call  took   total     103.36 s CPU-time (   103.36 s walltime)
 Reading /Users/praveen.sripad/nanna_data/mne_data/MNE-sample-data/MEG/sample/sample_audvis-ave.fif ...
     Read a total of 4 projection items:
         PCA-v1 (1 x 102) active
@@ -921,7 +921,7 @@ Done.
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done.&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  47.912 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  47.753 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-mft-plot-perform-mft-volume-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/bbd16d5327114c752932eb3a4949b572/plot_perform_mft_volume.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_perform_mft_volume.py</span></code></a></p>

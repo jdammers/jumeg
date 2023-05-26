@@ -64,8 +64,8 @@ Comparison of the various filters available for use in mne/jumeg.
     Effective window size : 3.410 (s)
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
     [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
-    [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.2s remaining:    0.0s
-    [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.2s finished
+    [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
+    [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     NOTE: plot_psd() is a legacy function. New code should use .compute_psd().plot().
     Effective window size : 3.410 (s)
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
@@ -196,7 +196,7 @@ Comparison of the various filters available for use in mne/jumeg.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  4.103 seconds)
+   **Total running time of the script:** ( 0 minutes  3.874 seconds)
 
 
 .. _sphx_glr_download_auto_examples_preprocessing_plot_compare_jumeg_filters.py:

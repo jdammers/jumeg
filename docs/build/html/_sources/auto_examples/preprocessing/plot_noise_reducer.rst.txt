@@ -59,9 +59,9 @@ Script to show the application of noise reducer on jusample data.
     - Filter length: 4477 samples (6.602 s)
 
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done  14 tasks      | elapsed:    1.1s
-    [Parallel(n_jobs=4)]: Done 208 tasks      | elapsed:    1.3s
-    [Parallel(n_jobs=4)]: Done 248 out of 248 | elapsed:    1.3s finished
+    [Parallel(n_jobs=4)]: Done  14 tasks      | elapsed:    1.0s
+    [Parallel(n_jobs=4)]: Done 208 tasks      | elapsed:    1.2s
+    [Parallel(n_jobs=4)]: Done 248 out of 248 | elapsed:    1.2s finished
     NOTE: plot_psd() is a legacy function. New code should use .compute_psd().plot().
     Effective window size : 3.020 (s)
     /Users/praveen.sripad/seafile/repolib/mne/jumeg/examples/preprocessing/plot_noise_reducer.py:46: RuntimeWarning: (X, Y) fit (-0.4, 37.9) more than 20 mm from head frame origin
@@ -225,7 +225,7 @@ Script to show the application of noise reducer on jusample data.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  8.625 seconds)
+   **Total running time of the script:** ( 0 minutes  7.594 seconds)
 
 
 .. _sphx_glr_download_auto_examples_preprocessing_plot_noise_reducer.py:

@@ -6,12 +6,12 @@
 
 Computation times
 =================
-**05:49.906** total execution time for **auto_examples_mft** files:
+**05:49.036** total execution time for **auto_examples_mft** files:
 
 +-----------------------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_surface_list.py` (``plot_perform_mft_surface_list.py``) | 02:02.233 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_surface_list.py` (``plot_perform_mft_surface_list.py``) | 02:01.811 | 0.0 MB |
 +-----------------------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_surface.py` (``plot_perform_mft_surface.py``)           | 01:59.761 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_surface.py` (``plot_perform_mft_surface.py``)           | 01:59.472 | 0.0 MB |
 +-----------------------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_volume.py` (``plot_perform_mft_volume.py``)             | 01:47.912 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_mft_plot_perform_mft_volume.py` (``plot_perform_mft_volume.py``)             | 01:47.753 | 0.0 MB |
 +-----------------------------------------------------------------------------------------------------------+-----------+--------+

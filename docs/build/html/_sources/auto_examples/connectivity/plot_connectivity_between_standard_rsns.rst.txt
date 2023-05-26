@@ -439,7 +439,7 @@ Author: Praveen sripad <pravsripad@gmail.com>
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  2.703 seconds)
+   **Total running time of the script:** ( 0 minutes  2.858 seconds)
 
 
 .. _sphx_glr_download_auto_examples_connectivity_plot_connectivity_between_standard_rsns.py:

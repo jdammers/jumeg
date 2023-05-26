@@ -66,8 +66,8 @@ sensors for bad channel correction.
     Interpolating 1 sensors
         Computing dot products for 299 MEG channels...
     [Parallel(n_jobs=1)]: Using backend SequentialBackend with 1 concurrent workers.
-    [Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    2.3s remaining:    0.0s
-    [Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    2.3s finished
+    [Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    2.2s remaining:    0.0s
+    [Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    2.2s finished
         Computing cross products for 299 → 7 MEG channels...
         Preparing the mapping matrix...
         Truncating at 83/299 components to omit less than 0.0001 (0.0001)
@@ -182,7 +182,7 @@ sensors for bad channel correction.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  11.574 seconds)
+   **Total running time of the script:** ( 0 minutes  10.194 seconds)
 
 
 .. _sphx_glr_download_auto_examples_preprocessing_plot_interpolate_bads.py:

@@ -52,9 +52,9 @@ Author: Praveen Sripad <pravsripad@gmail.com>
 
     Visual Left visual cortex : [-41 -77   3] lh Closest vertex on surface chosen: [6708]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.7s remaining:    0.7s
-    [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.7s remaining:    0.0s
-    [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.7s finished
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.8s remaining:    0.8s
+    [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.8s remaining:    0.0s
+    [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.8s finished
     Right visual cortex : [ 41 -72   1] rh Closest vertex on surface chosen: [10095]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
     [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
@@ -62,7 +62,7 @@ Author: Praveen Sripad <pravsripad@gmail.com>
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Sensorimotor Left primary somatosensory cortex : [-38 -27  52] lh Closest vertex on surface chosen: [62711]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Right primary somatosensory cortex : [ 40 -25  50] rh Closest vertex on surface chosen: [71297]
@@ -87,17 +87,17 @@ Author: Praveen Sripad <pravsripad@gmail.com>
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Left inferior parietal : [-45 -65  30] lh Closest vertex on surface chosen: [15645]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Right inferior parietal : [ 52 -60  26] rh Closest vertex on surface chosen: [26366]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Anterior cingulate : [ 2 42  7] lh Closest vertex on surface chosen: [155310]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Left FP Left angular gyrus : [-40 -58  56] lh Closest vertex on surface chosen: [24630]
@@ -107,7 +107,7 @@ Author: Praveen Sripad <pravsripad@gmail.com>
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Left middle frontal gyrus : [-42  28  23] lh Closest vertex on surface chosen: [126993]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Right FP Right angular gyrus : [ 53 -50  43] rh Closest vertex on surface chosen: [38519]
@@ -117,12 +117,12 @@ Author: Praveen Sripad <pravsripad@gmail.com>
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Right middle frontal gyrus : [45 28 26] rh Closest vertex on surface chosen: [130082]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Frontoinsular Left insula : [-38  16   2] lh Closest vertex on surface chosen: [115415]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Right insula : [38 16  2] rh Closest vertex on surface chosen: [119046]
@@ -190,7 +190,7 @@ Author: Praveen Sripad <pravsripad@gmail.com>
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  6.434 seconds)
+   **Total running time of the script:** ( 0 minutes  5.618 seconds)
 
 
 .. _sphx_glr_download_auto_examples_connectivity_plot_annot_standard_rsns.py:

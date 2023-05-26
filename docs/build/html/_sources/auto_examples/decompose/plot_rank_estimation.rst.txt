@@ -215,7 +215,7 @@ Example script to estimate the rank of the given data array.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  47.321 seconds)
+   **Total running time of the script:** ( 0 minutes  48.678 seconds)
 
 
 .. _sphx_glr_download_auto_examples_decompose_plot_rank_estimation.py:

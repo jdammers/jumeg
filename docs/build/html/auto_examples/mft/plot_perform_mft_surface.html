@@ -238,12 +238,12 @@ Number of source spaces = 2
  67          transversetemporal-lh      lh:   770 verts   22 used
  68          transversetemporal-rh      rh:   733 verts   20 used
 --&gt; sums: 295372 verts 7027 used
-prep. labels took 18.872 ms (0.019 s walltime)
+prep. labels took 19.193 ms (0.019 s walltime)
 ########## Calculate initial prob-dist:
 Setting initial w=const !
-calc(wdist0) took 0.084 ms (0.000 s walltime)
+calc(wdist0) took 0.081 ms (0.000 s walltime)
 ########## Calculate P-matrix, incl. weights:
-calc(lf*w*lf.T) took  117.2224999999969 ms (0.117 s walltime)
+calc(lf*w*lf.T) took  118.16724999999906 ms (0.118 s walltime)
 ln(condno) = -109.495, K_H = 10^( -47.553) =    0.000
 (K_H &lt; 0.01 : bad, K_H &gt; 0.1 : good)
 ########## Create stc data and qual data arrays:
@@ -672,13 +672,13 @@ slice= 418: relerr=9.330e-02 rdmerr=2.584e-01 mag=0.883 cdvmax= 1.75e-10
 slice= 419: relerr=8.200e-02 rdmerr=2.448e-01 mag=0.892 cdvmax= 1.69e-10
 slice= 420: relerr=7.210e-02 rdmerr=2.316e-01 mag=0.900 cdvmax= 1.64e-10
 stcdata from mft-SR and old calc agree.
-calc(lf*w*lf.T) took   total      97.06 s CPU-time (    97.06 s walltime)
-calc(lf*w*lf.T) took per call    115.14ms CPU-time (   115.14ms walltime)
-scan_cdm calls  took   total      13.46 s CPU-time (    13.46 s walltime)
-scan_cdm calls  took per call     31.98ms CPU-time (    31.98ms walltime)
-iteration-loops took   total      99.44 s CPU-time (    99.44 s walltime)
+calc(lf*w*lf.T) took   total      97.04 s CPU-time (    97.04 s walltime)
+calc(lf*w*lf.T) took per call    115.11ms CPU-time (   115.11ms walltime)
+scan_cdm calls  took   total      13.22 s CPU-time (    13.22 s walltime)
+scan_cdm calls  took per call     31.40ms CPU-time (    31.40ms walltime)
+iteration-loops took   total      99.44 s CPU-time (    99.45 s walltime)
 iteration-loops took per call    236.21ms CPU-time (   236.21ms walltime)
-Total mft-call  took   total     114.57 s CPU-time (   114.57 s walltime)
+Total mft-call  took   total     114.29 s CPU-time (   114.29 s walltime)
 Reading /Users/praveen.sripad/nanna_data/mne_data/MNE-sample-data/MEG/sample/sample_audvis-ave.fif ...
     Read a total of 4 projection items:
         PCA-v1 (1 x 102) active
@@ -1485,7 +1485,7 @@ Done.
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done.&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  59.761 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  59.472 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-mft-plot-perform-mft-surface-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/39b0f1d0381e68fb8eadecc32fb37b10/plot_perform_mft_surface.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_perform_mft_surface.py</span></code></a></p>

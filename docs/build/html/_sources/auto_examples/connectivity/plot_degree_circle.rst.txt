@@ -66,7 +66,7 @@ Plot degree values for a given set of nodes in a simple circle plot.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  3.058 seconds)
+   **Total running time of the script:** ( 0 minutes  1.439 seconds)
 
 
 .. _sphx_glr_download_auto_examples_connectivity_plot_degree_circle.py:

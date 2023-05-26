@@ -132,7 +132,7 @@ Author: Praveen Sripad <pravsripad@gmail.com>
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Median cingulate : [-2 12 40] lh Closest vertex on surface chosen: [110618]
     [Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
-    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.1s remaining:    0.1s
+    [Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.0s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s remaining:    0.0s
     [Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.1s finished
     Reading labels from parcellation...
@@ -255,7 +255,7 @@ Author: Praveen Sripad <pravsripad@gmail.com>
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  4.079 seconds)
+   **Total running time of the script:** ( 0 minutes  4.028 seconds)
 
 
 .. _sphx_glr_download_auto_examples_connectivity_plot_standard_resting_network_on_aparc_annot_map.py:

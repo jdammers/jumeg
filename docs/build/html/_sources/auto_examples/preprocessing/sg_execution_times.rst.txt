@@ -6,14 +6,14 @@
 
 Computation times
 =================
-**00:33.850** total execution time for **auto_examples_preprocessing** files:
+**00:30.965** total execution time for **auto_examples_preprocessing** files:
 
 +---------------------------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_preprocessing_plot_interpolate_bads.py` (``plot_interpolate_bads.py``)           | 00:11.574 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_preprocessing_plot_interpolate_bads.py` (``plot_interpolate_bads.py``)           | 00:10.194 | 0.0 MB |
 +---------------------------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_preprocessing_plot_suggest_bads.py` (``plot_suggest_bads.py``)                   | 00:09.547 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_preprocessing_plot_suggest_bads.py` (``plot_suggest_bads.py``)                   | 00:09.304 | 0.0 MB |
 +---------------------------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_preprocessing_plot_noise_reducer.py` (``plot_noise_reducer.py``)                 | 00:08.625 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_preprocessing_plot_noise_reducer.py` (``plot_noise_reducer.py``)                 | 00:07.594 | 0.0 MB |
 +---------------------------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_preprocessing_plot_compare_jumeg_filters.py` (``plot_compare_jumeg_filters.py``) | 00:04.103 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_preprocessing_plot_compare_jumeg_filters.py` (``plot_compare_jumeg_filters.py``) | 00:03.874 | 0.0 MB |
 +---------------------------------------------------------------------------------------------------------------+-----------+--------+
