@@ -76,12 +76,6 @@ coverage.xml
 # Sphinx documentation
 .buildinfo
 .doctrees/
-docs/_build/
-docs/generated/
-docs/auto_examples/
-docs/auto_tutorials/
-docs/modules/generated/
-docs/sphinxext/cachedir
 
 .DS_Store
 .ipynb_checkpoints/
