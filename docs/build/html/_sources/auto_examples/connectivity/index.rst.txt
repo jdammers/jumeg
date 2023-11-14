@@ -1,0 +1,418 @@
+
+
+.. _sphx_glr_auto_examples_connectivity:
+
+Connectivity analysis.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Plot degree values for a given set of nodes in a simple circle plot.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_degree_circle_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_degree_circle.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot degree circle</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Find distances between vertices and plot vertices in a small region.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_vertices_around_seed_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_vertices_around_seed.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot vertices around seed.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Read grouped aparc labels from yaml file.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_destriux_atlas_based_connectivity_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_destriux_atlas_based_connectivity.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot Destriux Atlas</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Example exposing the plot_labelled_group_connectivity_circle function.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_labelled_connectivity_circle_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_labelled_connectivity_circle.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot labelled connectivity circle</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Plotting vrious methods used to generate surrogates.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_surrogate_methods_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_surrogate_methods.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot surrogate methods</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Plot connectivity on a glass brain using &#x27;plot_connectome&#x27; function from Nilearn (https://nilea...">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_brain_connectome_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_brain_connectome.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot brain connectome</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Script to show functionality to plot centrality indices along with connectivity circle plot.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_circle_lines_and_blobs_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_circle_lines_and_blobs.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot centrality indices on connectivity circle plot</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Grow and visualize standard resting state ROIs from literature.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_annot_standard_rsns_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_annot_standard_rsns.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Visualise Standard RSNs</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Script exposing circle plots with outer ring.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_generic_grouped_connectivity_circle_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_generic_grouped_connectivity_circle.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Generic Grouped Connectivity Circle</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Script show how to compute and visualize distance between label center of masses for a given su...">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_compute_label_distances_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_compute_label_distances.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Compute Label Distances</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Example to show surrogate generation on Epochs using the jumeg Surrogates module.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_compute_epochs_surrogates_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_compute_epochs_surrogates.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Surrogate Connectivity Generation</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Example showing how to read grouped aparc labels from yaml file and plot grouped connectivity c...">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_grouped_connectivity_circle_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_grouped_connectivity_circle.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot grouped connectivity circle.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="It works when &#x27;fsaverage&#x27; subject is used, but does not when any other subjects are used.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_test_transform_mni_to_ras_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_test_transform_mni_to_ras.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">To plot a vertex point, convert it to MNI coordinates and then reconvert it back to RAS to obtain the vertex number.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip=" Example to show surrogate generation on STCs using the jumeg Surrogates module.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_generate_surrogate_stcs_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_generate_surrogate_stcs.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Generate surrogate STCs</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Shuffle channels&#x27; data in the time domain and plot.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_shuffle_time_slices_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_shuffle_time_slices.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Shuffle channels' data in the time domain and plot.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Script to plot label distances on circle and connectome plots.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_label_distances_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_label_distances.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot label distances</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Plot Networkx Communities on a connectome plot.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_communities_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_communities.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot network communities</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Example how to create a custom label groups and plot grouped connectivity circle with these lab...">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_custom_grouped_connectivity_circle_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_custom_grouped_connectivity_circle.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot Custom Grouped Circle</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Plot the visualization of the standard resting state network on the connectivity circle plot sh...">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_standard_resting_network_on_aparc_annot_map_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_standard_resting_network_on_aparc_annot_map.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Standard RSNs on the connectivity circle</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="[1] P. Garcés, M. C. Martín-Buro, and F. Maestú, “Quantifying the Test-Retest Reliability of Ma...">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_connectivity_between_standard_rsns_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_connectivity_between_standard_rsns.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Modified MNE-Python example script to show connectivity between standard</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Surrogate computation">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_generate_surrogate_connectivity_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_generate_surrogate_connectivity.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Surrogate computation</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Simple implementations of connectivity measures.">
+
+.. only:: html
+
+  .. image:: /auto_examples/connectivity/images/thumb/sphx_glr_plot_simulated_connectivity_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_connectivity_plot_simulated_connectivity.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Simulating Connectivity</div>
+    </div>
+
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/connectivity/plot_degree_circle
+   /auto_examples/connectivity/plot_vertices_around_seed
+   /auto_examples/connectivity/plot_destriux_atlas_based_connectivity
+   /auto_examples/connectivity/plot_labelled_connectivity_circle
+   /auto_examples/connectivity/plot_surrogate_methods
+   /auto_examples/connectivity/plot_brain_connectome
+   /auto_examples/connectivity/plot_circle_lines_and_blobs
+   /auto_examples/connectivity/plot_annot_standard_rsns
+   /auto_examples/connectivity/plot_generic_grouped_connectivity_circle
+   /auto_examples/connectivity/plot_compute_label_distances
+   /auto_examples/connectivity/plot_compute_epochs_surrogates
+   /auto_examples/connectivity/plot_grouped_connectivity_circle
+   /auto_examples/connectivity/plot_test_transform_mni_to_ras
+   /auto_examples/connectivity/plot_generate_surrogate_stcs
+   /auto_examples/connectivity/plot_shuffle_time_slices
+   /auto_examples/connectivity/plot_label_distances
+   /auto_examples/connectivity/plot_communities
+   /auto_examples/connectivity/plot_custom_grouped_connectivity_circle
+   /auto_examples/connectivity/plot_standard_resting_network_on_aparc_annot_map
+   /auto_examples/connectivity/plot_connectivity_between_standard_rsns
+   /auto_examples/connectivity/plot_generate_surrogate_connectivity
+   /auto_examples/connectivity/plot_simulated_connectivity
+

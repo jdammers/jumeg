@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.causality.compute\_causal\_outflow\_inflow
+=============================================================
+
+.. currentmodule:: jumeg.connectivity.causality
+
+.. autofunction:: compute_causal_outflow_inflow

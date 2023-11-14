@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.causality.make\_frequency\_bands
+===================================================
+
+.. currentmodule:: jumeg.connectivity.causality
+
+.. autofunction:: make_frequency_bands

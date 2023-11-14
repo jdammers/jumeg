@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Generic Grouped Connectivity Circle &#8212; jumeg 0.18 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/bootstrap-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html">
+          jumeg</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.18</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../index.html">Examples</a></li>
+                <li><a href="../../api.html">API</a></li>
+                <li><a href="https://github.com/jdammers/jumeg">GitHub</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Generic Grouped Connectivity Circle</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+            
+            
+            
+              <li class="hidden-sm"></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-connectivity-plot-generic-grouped-connectivity-circle-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="generic-grouped-connectivity-circle">
+<span id="sphx-glr-auto-examples-connectivity-plot-generic-grouped-connectivity-circle-py"></span><h1>Generic Grouped Connectivity Circle<a class="headerlink" href="#generic-grouped-connectivity-circle" title="Permalink to this heading">¶</a></h1>
+<p>Script exposing circle plots with outer ring.</p>
+<p>Author: Praveen Sripad &lt;<a class="reference external" href="mailto:pravsripad&#37;&#52;&#48;gmail&#46;com">pravsripad<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+<ul class="sphx-glr-horizontal">
+<li><img src="../../_images/sphx_glr_plot_generic_grouped_connectivity_circle_001.png" srcset="../../_images/sphx_glr_plot_generic_grouped_connectivity_circle_001.png" alt="Groups" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../_images/sphx_glr_plot_generic_grouped_connectivity_circle_002.png" srcset="../../_images/sphx_glr_plot_generic_grouped_connectivity_circle_002.png" alt="Groups + Labels" class = "sphx-glr-multi-img"/></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+<span class="kn">from</span> <span class="nn">jumeg.connectivity</span> <span class="kn">import</span> <span class="p">(</span><a href="../../generated/jumeg.connectivity.plot_generic_grouped_circle.html#jumeg.connectivity.plot_generic_grouped_circle" title="jumeg.connectivity.plot_generic_grouped_circle" class="sphx-glr-backref-module-jumeg-connectivity sphx-glr-backref-type-py-function"><span class="n">plot_generic_grouped_circle</span></a><span class="p">,</span>
+                                <a href="../../generated/jumeg.connectivity.plot_fica_grouped_circle.html#jumeg.connectivity.plot_fica_grouped_circle" title="jumeg.connectivity.plot_fica_grouped_circle" class="sphx-glr-backref-module-jumeg-connectivity sphx-glr-backref-type-py-function"><span class="n">plot_fica_grouped_circle</span></a><span class="p">,</span>
+                                <span class="n">generate_random_connectivity_matrix</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">jumeg</span> <span class="kn">import</span> <span class="n">get_jumeg_path</span>
+
+<span class="c1"># load the yaml grouping of Freesurfer labels</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">yaml_fname</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><span class="n">get_jumeg_path</span><span class="p">(),</span> <span class="s1">&#39;data/rsn_desikan_aparc_cortex_grouping.yaml&#39;</span><span class="p">)</span>
+
+<span class="c1"># make a random matrix</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">con</span></a> <span class="o">=</span> <span class="n">generate_random_connectivity_matrix</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">34</span><span class="p">,</span> <span class="mi">34</span><span class="p">),</span> <span class="n">symmetric</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># load the label names in the original order</span>
+<span class="c1"># this should be same order as the connectivity matrix</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">labels_fname</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><span class="n">get_jumeg_path</span><span class="p">(),</span> <span class="s1">&#39;data/fica_names.txt&#39;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">labels_fname</span></a><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <a href="https://docs.python.org/3/library/io.html#io.TextIOWrapper" title="io.TextIOWrapper" class="sphx-glr-backref-module-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">f</span></a><span class="p">:</span>
+    <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">orig_labels</span></a> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <a href="https://docs.python.org/3/library/io.html#io.TextIOWrapper" title="io.TextIOWrapper" class="sphx-glr-backref-module-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">f</span></a><span class="p">]</span>
+
+<span class="c1"># plot the connectivity circle grouped</span>
+<a href="../../generated/jumeg.connectivity.plot_generic_grouped_circle.html#jumeg.connectivity.plot_generic_grouped_circle" title="jumeg.connectivity.plot_generic_grouped_circle" class="sphx-glr-backref-module-jumeg-connectivity sphx-glr-backref-type-py-function"><span class="n">plot_generic_grouped_circle</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">yaml_fname</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">con</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">orig_labels</span></a><span class="p">,</span>
+                            <span class="n">node_order_size</span><span class="o">=</span><span class="mi">34</span><span class="p">,</span>
+                            <span class="n">out_fname</span><span class="o">=</span><span class="s1">&#39;fig_fica_circle.png&#39;</span><span class="p">,</span>
+                            <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">n_lines</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                            <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Groups&#39;</span><span class="p">)</span>
+
+<span class="c1"># plot the connectivity circle with outer group labels ring</span>
+<a href="../../generated/jumeg.connectivity.plot_fica_grouped_circle.html#jumeg.connectivity.plot_fica_grouped_circle" title="jumeg.connectivity.plot_fica_grouped_circle" class="sphx-glr-backref-module-jumeg-connectivity sphx-glr-backref-type-py-function"><span class="n">plot_fica_grouped_circle</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">yaml_fname</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">con</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">orig_labels</span></a><span class="p">,</span>
+                         <span class="n">node_order_size</span><span class="o">=</span><span class="mi">34</span><span class="p">,</span>
+                         <span class="n">out_fname</span><span class="o">=</span><span class="s1">&#39;fig_fica_circle_with_names.png&#39;</span><span class="p">,</span>
+                         <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">n_lines</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                         <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Groups + Labels&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  1.585 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-connectivity-plot-generic-grouped-connectivity-circle-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/456be38d745b17e2a5ea39eaa0fd0eb1/plot_generic_grouped_connectivity_circle.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_generic_grouped_connectivity_circle.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/3c7a4ed9e3829176ce3989bcf05ecfed/plot_generic_grouped_connectivity_circle.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_generic_grouped_connectivity_circle.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2023, JUMEG developers.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 7.0.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

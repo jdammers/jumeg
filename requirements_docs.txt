@@ -1,0 +1,16 @@
+mne
+mne-connectivity
+mne-features
+networkx
+nilearn
+python-louvain
+pyvistaqt
+PyQt5
+mayavi
+pysurfer
+pyyaml
+bctpy
+scot
+sphinx-gallery
+sphinx-bootstrap-theme
+numpydoc

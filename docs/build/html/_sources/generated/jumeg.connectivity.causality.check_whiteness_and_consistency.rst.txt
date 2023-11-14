@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.causality.check\_whiteness\_and\_consistency
+===============================================================
+
+.. currentmodule:: jumeg.connectivity.causality
+
+.. autofunction:: check_whiteness_and_consistency

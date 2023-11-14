@@ -1,0 +1,94 @@
+
+
+.. _sphx_glr_auto_examples_decompose:
+
+ICA Decomposition
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Example script to plot a given data distribution compared with a standard Gaussian distribution...">
+
+.. only:: html
+
+  .. image:: /auto_examples/decompose/images/thumb/sphx_glr_plot_data_distribution_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_decompose_plot_data_distribution.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot data distribution</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Compute the ica object on filtered data based on the mne and on the jumeg method. Compare pca_m...">
+
+.. only:: html
+
+  .. image:: /auto_examples/decompose/images/thumb/sphx_glr_do_compare_ica_methods_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_decompose_do_compare_ica_methods.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Compare ICA methods</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Example script to estimate the rank of the given data array.">
+
+.. only:: html
+
+  .. image:: /auto_examples/decompose/images/thumb/sphx_glr_plot_rank_estimation_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_decompose_plot_rank_estimation.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot rank estimation</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Compute ICA object based on filtered and downsampled data. Identify ECG and EOG artifacts using...">
+
+.. only:: html
+
+  .. image:: /auto_examples/decompose/images/thumb/sphx_glr_do_MLICA_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_decompose_do_MLICA.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Do MLICA</div>
+    </div>
+
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/decompose/plot_data_distribution
+   /auto_examples/decompose/do_compare_ica_methods
+   /auto_examples/decompose/plot_rank_estimation
+   /auto_examples/decompose/do_MLICA
+

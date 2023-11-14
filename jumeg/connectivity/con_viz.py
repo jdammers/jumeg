@@ -698,7 +698,7 @@ def plot_connectivity_circle(con, node_names, indices=None, n_lines=None,
     # edges: We modulate the noise with the number of connections of the
     # node and the connection strength, such that the strongest connections
     # are closer to the node center
-    nodes_n_con = np.zeros((n_nodes), dtype=np.int)
+    nodes_n_con = np.zeros((n_nodes), dtype=int)
     for i, j in zip(indices[0], indices[1]):
         nodes_n_con[i] += 1
         nodes_n_con[j] += 1
@@ -1315,7 +1315,7 @@ def plot_lines_and_blobs(con, degrees, cortex_grouping, orig_labels_fname,
     # edges: We modulate the noise with the number of connections of the
     # node and the connection strength, such that the strongest connections
     # are closer to the node center
-    nodes_n_con = np.zeros((n_nodes), dtype=np.int)
+    nodes_n_con = np.zeros((n_nodes), dtype=int)
     for i, j in zip(indices[0], indices[1]):
         nodes_n_con[i] += 1
         nodes_n_con[j] += 1
@@ -1679,7 +1679,7 @@ def _plot_connectivity_circle_group_bars(con, node_names,
     # edges: We modulate the noise with the number of connections of the
     # node and the connection strength, such that the strongest connections
     # are closer to the node center
-    nodes_n_con = np.zeros((n_nodes), dtype=np.int)
+    nodes_n_con = np.zeros((n_nodes), dtype=int)
     for i, j in zip(indices[0], indices[1]):
         nodes_n_con[i] += 1
         nodes_n_con[j] += 1

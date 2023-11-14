@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.causality.consistency
+========================================
+
+.. currentmodule:: jumeg.connectivity.causality
+
+.. autofunction:: consistency

@@ -1,0 +1,94 @@
+
+
+.. _sphx_glr_auto_examples_preprocessing:
+
+Preprocessing
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Example code to use the jumeg suggest bads functionality.">
+
+.. only:: html
+
+  .. image:: /auto_examples/preprocessing/images/thumb/sphx_glr_plot_suggest_bads_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_preprocessing_plot_suggest_bads.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot suggest bads.</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Use suggest_bads to automatically identify bad MEG channels and use interpolate_bads based on t...">
+
+.. only:: html
+
+  .. image:: /auto_examples/preprocessing/images/thumb/sphx_glr_plot_interpolate_bads_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_preprocessing_plot_interpolate_bads.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot and interpolate bads</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Script to show the application of noise reducer on jusample data.">
+
+.. only:: html
+
+  .. image:: /auto_examples/preprocessing/images/thumb/sphx_glr_plot_noise_reducer_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_preprocessing_plot_noise_reducer.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot noise reducer</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Comparison of the various filters available for use in mne/jumeg.">
+
+.. only:: html
+
+  .. image:: /auto_examples/preprocessing/images/thumb/sphx_glr_plot_compare_jumeg_filters_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_preprocessing_plot_compare_jumeg_filters.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Filtering in jumeg.</div>
+    </div>
+
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/preprocessing/plot_suggest_bads
+   /auto_examples/preprocessing/plot_interpolate_bads
+   /auto_examples/preprocessing/plot_noise_reducer
+   /auto_examples/preprocessing/plot_compare_jumeg_filters
+

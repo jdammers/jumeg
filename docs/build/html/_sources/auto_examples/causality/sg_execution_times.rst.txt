@@ -1,0 +1,17 @@
+
+:orphan:
+
+.. _sphx_glr_auto_examples_causality_sg_execution_times:
+
+
+Computation times
+=================
+**00:00.856** total execution time for **auto_examples_causality** files:
+
++-----------------------------------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_auto_examples_causality_plot_causality_circle.py` (``plot_causality_circle.py``)                             | 00:00.645 | 0.0 MB |
++-----------------------------------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_auto_examples_causality_plot_inter_and_intra_lobe_causality.py` (``plot_inter_and_intra_lobe_causality.py``) | 00:00.211 | 0.0 MB |
++-----------------------------------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_auto_examples_causality_do_granger_causality.py` (``do_granger_causality.py``)                               | 00:00.000 | 0.0 MB |
++-----------------------------------------------------------------------------------------------------------------------------+-----------+--------+

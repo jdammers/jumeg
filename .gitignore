@@ -15,12 +15,10 @@
 *.tar.*
 *.egg*
 *.tmproj
-*.png
 *.idea
 *.old
 *.dat
 *.bak
-test_*.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -35,7 +33,6 @@ old/
 devel
 env/
 bin/
-build/
 develop-eggs/
 dist/
 eggs/
@@ -76,6 +73,10 @@ coverage.xml
 *.pot
 
 # Sphinx documentation
-docs/_build/
+.buildinfo
+.doctrees/
 
 .DS_Store
+.ipynb_checkpoints/
+
+*.label

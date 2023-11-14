@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os,sys,argparse
+import os.path as op
+import os
+import sys
+import argparse
 import logging
 import numpy as np
 
@@ -303,8 +306,8 @@ def main(argv):
 
    #--- ToDo make logfile dir in fileout dir
     if opt.logfile:
-       name  = os.path.basename(argv[0])
-       HFile = jumeg_logger.LogFileHandler(name=os.path.splitext(name),mode="w")
+       name  = op.basename(argv[0])
+       HFile = jumeg_logger.LogFileHandler(name=op.splitext(name),mode="w")
        HFile.setLevel(logging.DEBUG)
        logger.addHandler(HFile)
 

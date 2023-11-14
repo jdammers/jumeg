@@ -85,7 +85,8 @@ def plot_visualize_mft_sources(fwdmag, stcdata, tmin, tstep,
             vertno_max, time_idx = stc_feat.get_peak(hemi=hemi, time_as_index=True,
                                                      tmin=twmin, tmax=twmax)
         print("hemi=%s: setting time_idx=%d" % (hemi, time_idx))
-        brain.set_data_time_index(time_idx)
+        # brain.set_data_time_index(time_idx)
+        brain.set_time_point(time_idx)
         if hemi == 'lh' or hemi == 'rh':
             # draw marker at maximum peaking vertex
             brain.add_foci(vertno_max, coords_as_verts=True, hemi=hemi, color='blue',
@@ -175,7 +176,7 @@ def plot_max_amplitude_data(fwdmag, stcdata, tmin, tstep, subject, method='mft')
     for s in fwdmag['src']:
         offsets = np.append(offsets, [offsets[-1] + s['nuse']])
     for isrc, s in enumerate(fwdmag['src']):
-        stc = VolSourceEstimate(stcdata[offsets[isrc]:offsets[isrc + 1], :], vertices=s['vertno'],
+        stc = VolSourceEstimate(stcdata[offsets[isrc]:offsets[isrc + 1], :], vertices=[s['vertno']],
                                 tmin=tmin, tstep=tstep, subject=subject)
         # View activation time-series
         plt.xlim((1e3 * np.min(stc.times), 1e3 * np.max(stc.times)))

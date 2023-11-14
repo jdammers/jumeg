@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.causality.do\_mvar\_evaluation
+=================================================
+
+.. currentmodule:: jumeg.connectivity.causality
+
+.. autofunction:: do_mvar_evaluation

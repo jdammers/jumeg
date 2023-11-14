@@ -1,0 +1,6 @@
+﻿jumeg.connectivity.causality.check\_model\_order
+================================================
+
+.. currentmodule:: jumeg.connectivity.causality
+
+.. autofunction:: check_model_order

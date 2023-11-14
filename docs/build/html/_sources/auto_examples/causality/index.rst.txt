@@ -1,0 +1,76 @@
+
+
+.. _sphx_glr_auto_examples_causality:
+
+Causality analysis. 
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Example showing how to plot a causality matrix on a circle plot.">
+
+.. only:: html
+
+  .. image:: /auto_examples/causality/images/thumb/sphx_glr_plot_causality_circle_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_causality_plot_causality_circle.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot Causality Matrix</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Group a causality matrix by lobes and plot the resulting inter- and intra-lobe causality.">
+
+.. only:: html
+
+  .. image:: /auto_examples/causality/images/thumb/sphx_glr_plot_inter_and_intra_lobe_causality_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_causality_plot_inter_and_intra_lobe_causality.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Group Causality Matrix</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Perform Granger based causality analysis using Generalized Parital Directed Coherence on exampl...">
+
+.. only:: html
+
+  .. image:: /auto_examples/causality/images/thumb/sphx_glr_do_granger_causality_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_causality_do_granger_causality.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Granger Causality Analysis</div>
+    </div>
+
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/causality/plot_causality_circle
+   /auto_examples/causality/plot_inter_and_intra_lobe_causality
+   /auto_examples/causality/do_granger_causality
+

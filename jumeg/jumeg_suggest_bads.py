@@ -160,8 +160,12 @@ def clustered_psd(epochs, sensitivity_psd, picks, min_samples=1, n_jobs = None):
     zlimit_psd: float
         A scaling value used for plotting.
     """
-    psds, freqs = mne.time_frequency.psd_welch(epochs, fmin=2., fmax=200.,
-                                               picks=picks)
+
+    # psds, freqs = mne.time_frequency.psd_welch(epochs, fmin=2., fmax=200.,
+    #                                            picks=picks)
+
+    epo_spectrum = epochs.compute_psd(fmin=2., fmax=200., picks=picks)
+    psds, freqs = epo_spectrum.get_data(return_freqs=True)
     psd_percentiles, psd_nearest_neighbour, psd_suspects = [], [], []
 
     for ipsd in psds:
